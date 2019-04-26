@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ClubIDs.cpp" />
+    <ClCompile Include="Talent6Stars.cpp" />
+    <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
+    <ClCompile Include="EditorChiefExecExport.cpp" />
+    <ClCompile Include="DatabaseName.cpp" />
+    <ClCompile Include="LowestLeagues.cpp" />
+    <ClCompile Include="StaffNames.cpp" />
+    <ClCompile Include="Country207.cpp" />
+    <ClCompile Include="FemaleNames.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ClubIDs.h" />
+    <ClInclude Include="Talent6Stars.h" />
+    <ClInclude Include="FixedArchivesReadingForEditor.h" />
+    <ClInclude Include="EditorChiefExecExport.h" />
+    <ClInclude Include="DatabaseName.h" />
+    <ClInclude Include="LowestLeagues.h" />
+    <ClInclude Include="StaffNames.h" />
+    <ClInclude Include="Country207.h" />
+    <ClInclude Include="FemaleNames.h" />
+  </ItemGroup>
+</Project>

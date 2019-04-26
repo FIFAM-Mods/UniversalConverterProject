@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{9892c2bc-cc9c-4d53-a2db-e843d4231ccf}</ProjectGuid>
+    <RootNamespace>UniversalConverterProject_Main</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetExt>.asi</TargetExt>
+    <OutDir>D:\Games\FIFA Manager 13\plugins\</OutDir>
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetExt>.asi</TargetExt>
+    <OutDir>D:\Games\FIFA Manager 13\plugins\</OutDir>
+    <TargetName>$(ProjectName)_d</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>No</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>version.lib;generic.lib;fmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 14\plugins\$(TargetName).asi"
+copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 12\plugins\$(TargetName).asi"
+copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(TargetName).asi"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="3dMatchStandings.cpp" />
+    <ClCompile Include="3dPatches.cpp" />
+    <ClCompile Include="Balls.cpp" />
+    <ClCompile Include="Competitions.cpp" />
+    <ClCompile Include="DatabaseName.cpp" />
+    <ClCompile Include="EABFFixes.cpp" />
+    <ClCompile Include="EasyEdit.cpp" />
+    <ClCompile Include="EuCountries.cpp" />
+    <ClCompile Include="FemaleNames.cpp" />
+    <ClCompile Include="FifaWorldPlayerGala.cpp" />
+    <ClCompile Include="ForeignersLimit.cpp" />
+    <ClCompile Include="GfxCoreHook.cpp" />
+    <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
+    <ClCompile Include="InternationalCupsFix.cpp" />
+    <ClCompile Include="Kits.cpp" />
+    <ClCompile Include="LeagueSelection.cpp" />
+    <ClCompile Include="LoansLimit.cpp" />
+    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LowestLeagues.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MasterDatLimit.cpp" />
+    <ClCompile Include="Minikits.cpp" />
+    <ClCompile Include="NationalTeamManagers.cpp" />
+    <ClCompile Include="PlayerDevelopment.cpp" />
+    <ClCompile Include="PlayerMatchEvents.cpp" />
+    <ClCompile Include="ScoutingSystems.cpp" />
+    <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="SpareEmployeeFix.cpp" />
+    <ClCompile Include="StaffNames.cpp" />
+    <ClCompile Include="Talent6Stars.cpp" />
+    <ClCompile Include="TeamControl.cpp" />
+    <ClCompile Include="TournamentFinalists.cpp" />
+    <ClCompile Include="WorldCup.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="3dMatchStandings.h" />
+    <ClInclude Include="3dPatches.h" />
+    <ClInclude Include="Balls.h" />
+    <ClInclude Include="Competitions.h" />
+    <ClInclude Include="DatabaseName.h" />
+    <ClInclude Include="EABFFixes.h" />
+    <ClInclude Include="EasyEdit.h" />
+    <ClInclude Include="EuCountries.h" />
+    <ClInclude Include="FemaleNames.h" />
+    <ClInclude Include="FifaWorldPlayerGala.h" />
+    <ClInclude Include="ForeignersLimit.h" />
+    <ClInclude Include="GfxCoreHook.h" />
+    <ClInclude Include="IncreaseSalaryOwnedClub.h" />
+    <ClInclude Include="InternationalCupsFix.h" />
+    <ClInclude Include="Kits.h" />
+    <ClInclude Include="LeagueSelection.h" />
+    <ClInclude Include="LoansLimit.h" />
+    <ClInclude Include="Log.h" />
+    <ClInclude Include="LowestLeagues.h" />
+    <ClInclude Include="MasterDatLimit.h" />
+    <ClInclude Include="Minikits.h" />
+    <ClInclude Include="NationalTeamManagers.h" />
+    <ClInclude Include="PlayerDevelopment.h" />
+    <ClInclude Include="PlayerMatchEvents.h" />
+    <ClInclude Include="ScoutingSystems.h" />
+    <ClInclude Include="Settings.h" />
+    <ClInclude Include="shared.h" />
+    <ClInclude Include="SpareEmployeeFix.h" />
+    <ClInclude Include="StaffNames.h" />
+    <ClInclude Include="Talent6Stars.h" />
+    <ClInclude Include="TeamControl.h" />
+    <ClInclude Include="TournamentFinalists.h" />
+    <ClInclude Include="WorldCup.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
