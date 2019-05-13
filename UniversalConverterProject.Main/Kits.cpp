@@ -25,33 +25,33 @@ void WriteToLog(String const &str) {
 }
 
 namespace gfx {
-    class Buffer {
-    public:
-        void *data;
-        UInt size;
-        
-        //Buffer(UInt Size) {
-        //    CallMethodDynGlobal(GfxCoreAddress(0x37382C), Size);
-        //}
-        //
-        //~Buffer() {
-        //    void *pool = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3726EF));
-        //    CallVirtualMethod<2>(pool, data);
-        //}
-    };
+class Buffer {
+public:
+    void *data;
+    UInt size;
 
-    struct RawImageDesc {
-        UInt width;
-        UInt height;
-        UInt stride;
-        Buffer buffer;
+    //Buffer(UInt Size) {
+    //    CallMethodDynGlobal(GfxCoreAddress(0x37382C), Size);
+    //}
+    //
+    //~Buffer() {
+    //    void *pool = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3726EF));
+    //    CallVirtualMethod<2>(pool, data);
+    //}
+};
 
-        //RawImageDesc(UInt Width, UInt Height, UInt Stride, UInt Size) : buffer(Size) {
-        //    width = Width;
-        //    height = Height;
-        //    stride = Stride;
-        //}
-    };
+struct RawImageDesc {
+    UInt width;
+    UInt height;
+    UInt stride;
+    Buffer buffer;
+
+    //RawImageDesc(UInt Width, UInt Height, UInt Stride, UInt Size) : buffer(Size) {
+    //    width = Width;
+    //    height = Height;
+    //    stride = Stride;
+    //}
+};
 }
 
 Bool FmFileExists(Path const &filepath) {
@@ -60,11 +60,12 @@ Bool FmFileExists(Path const &filepath) {
         return CallVirtualMethodAndReturn<Bool, 9>(fmFs, filepath.c_str());
     return false;
 }
+
 Bool FmFileExists_FM11(Path const &filepath) {
-	void *fmFs = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3E5349));
-	if (fmFs)
-		return CallVirtualMethodAndReturn<Bool, 9>(fmFs, filepath.c_str());
-	return false;
+    void *fmFs = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3E5349));
+    if (fmFs)
+        return CallVirtualMethodAndReturn<Bool, 9>(fmFs, filepath.c_str());
+    return false;
 }
 
 Bool FmFileImageExists(String const &filepathWithoutExtension, String &resultPath) {
@@ -88,23 +89,23 @@ Bool FmFileImageExists(String const &filepathWithoutExtension, String &resultPat
 }
 
 Bool FmFileImageExists_FM11(String const &filepathWithoutExtension, String &resultPath) {
-	void *fmFs = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3E5349));
-	if (fmFs) {
-		String fpstr = filepathWithoutExtension + L".tga";
-		if (CallVirtualMethodAndReturn<Bool, 9>(fmFs, fpstr.c_str())) {
-			resultPath = fpstr;
-			return true;
-		}
-		else {
-			fpstr = filepathWithoutExtension + L".kit";
-			if (CallVirtualMethodAndReturn<Bool, 9>(fmFs, fpstr.c_str())) {
-				resultPath = fpstr;
-				return true;
-			}
-		}
-	}
-	resultPath.clear();
-	return false;
+    void *fmFs = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3E5349));
+    if (fmFs) {
+        String fpstr = filepathWithoutExtension + L".tga";
+        if (CallVirtualMethodAndReturn<Bool, 9>(fmFs, fpstr.c_str())) {
+            resultPath = fpstr;
+            return true;
+        }
+        else {
+            fpstr = filepathWithoutExtension + L".kit";
+            if (CallVirtualMethodAndReturn<Bool, 9>(fmFs, fpstr.c_str())) {
+                resultPath = fpstr;
+                return true;
+            }
+        }
+    }
+    resultPath.clear();
+    return false;
 }
 
 Bool UserKitAvailable() {
@@ -173,32 +174,32 @@ void METHOD OnGenerateKit(void *kitGen, DUMMY_ARG, void *kitDesc, void *kitParam
 }
 
 void METHOD OnGenerateKit_FM11(void *kitGen, DUMMY_ARG, void *kitDesc, void *kitParams, void *resMan) {
-	ClearKitParams();
-	if (kitDesc) {
-		WideChar *pUserKitPath = *raw_ptr<WideChar *>(kitDesc, 0x18);
-		if (pUserKitPath && *pUserKitPath) {
-			Path userKitPath = pUserKitPath;
-			String userKitFilename = userKitPath.stem().c_str();
-			auto fileNameParts = Utils::Split(userKitFilename, L'_', false, false);
-			if (fileNameParts.size() == 2) {
-				gTeamId = Utils::SafeConvertInt<UInt>(fileNameParts[0], true);
-				gKitTypeStr = L"_" + fileNameParts[1];
-				WriteToLog(Utils::Format(L"OnGenerateKit: gTeamId=%08X, gKitTypeStr=%s", gTeamId, gKitTypeStr));
-				void *match = *(void **)0x1516C08;
-				if (match) {
-					CallMethod<0xE80190>(match, &gCurrCompId);
-					if (gCurrCompId > 0xFFFF) {
-						UInt compRegion = (gCurrCompId >> 24) & 0xFF;
-						if (compRegion <= 0 || compRegion > 207)
-							gCurrCompId = (gCurrCompId >> 16) & 0xFFFF;
-					}
-					WriteToLog(Utils::Format(L"OnGenerateKit: gCurrCompId=%08X", gCurrCompId));
-				}
-			}
-		}
-	}
-	CallMethodDynGlobal(GfxCoreAddress(0x3E615C), kitGen, kitDesc, kitParams, resMan);
-	ClearKitParams();
+    ClearKitParams();
+    if (kitDesc) {
+        WideChar *pUserKitPath = *raw_ptr<WideChar *>(kitDesc, 0x18);
+        if (pUserKitPath && *pUserKitPath) {
+            Path userKitPath = pUserKitPath;
+            String userKitFilename = userKitPath.stem().c_str();
+            auto fileNameParts = Utils::Split(userKitFilename, L'_', false, false);
+            if (fileNameParts.size() == 2) {
+                gTeamId = Utils::SafeConvertInt<UInt>(fileNameParts[0], true);
+                gKitTypeStr = L"_" + fileNameParts[1];
+                WriteToLog(Utils::Format(L"OnGenerateKit: gTeamId=%08X, gKitTypeStr=%s", gTeamId, gKitTypeStr));
+                void *match = *(void **)0x1516C08;
+                if (match) {
+                    CallMethod<0xE80190>(match, &gCurrCompId);
+                    if (gCurrCompId > 0xFFFF) {
+                        UInt compRegion = (gCurrCompId >> 24) & 0xFF;
+                        if (compRegion <= 0 || compRegion > 207)
+                            gCurrCompId = (gCurrCompId >> 16) & 0xFFFF;
+                    }
+                    WriteToLog(Utils::Format(L"OnGenerateKit: gCurrCompId=%08X", gCurrCompId));
+                }
+            }
+        }
+    }
+    CallMethodDynGlobal(GfxCoreAddress(0x3E615C), kitGen, kitDesc, kitParams, resMan);
+    ClearKitParams();
 }
 
 void ApplyCaptainArmbandTexture(String const &customCaptainArmbandPath, void *shapeGen, void *dataDesc) {
@@ -220,24 +221,24 @@ void ApplyCaptainArmbandTexture(String const &customCaptainArmbandPath, void *sh
 }
 
 void ApplyCaptainArmbandTexture_FM11(String const &customCaptainArmbandPath, void *shapeGen, void *dataDesc) {
-	WriteToLog(Utils::Format(L"ReadCaptainArmband: customCaptainArmbandPath=%s", customCaptainArmbandPath));
-	UInt acc;
-	CallMethodDynGlobal(GfxCoreAddress(0x3E2E7E), &acc);
-	gfx::RawImageDesc img;
-	CallVirtualMethod<5>(acc, &img, customCaptainArmbandPath.c_str(), 256 * 64 * 4 + 256, 1, 0); // loadImage
-	if (img.width == 256 && img.height == 64) {
-		gfx::RawImageDesc *dstImg = *raw_ptr<gfx::RawImageDesc *>(dataDesc, 0x400);
-		dstImg->width = 256;
-		dstImg->height = 64;
-		dstImg->stride = 256 * 4;
-		CallMethodDynGlobal(GfxCoreAddress(0x3E5908), shapeGen, dstImg, &img); // copyPixels
-		gUsedCustomCaptainArmband = true;
-	}
-	CallVirtualMethod<8>(acc, &img); // deleteImage
-	CallMethodDynGlobal(GfxCoreAddress(0x3E2E7E), &acc);
+    WriteToLog(Utils::Format(L"ReadCaptainArmband: customCaptainArmbandPath=%s", customCaptainArmbandPath));
+    UInt acc;
+    CallMethodDynGlobal(GfxCoreAddress(0x3E2E7E), &acc);
+    gfx::RawImageDesc img;
+    CallVirtualMethod<5>(acc, &img, customCaptainArmbandPath.c_str(), 256 * 64 * 4 + 256, 1, 0); // loadImage
+    if (img.width == 256 && img.height == 64) {
+        gfx::RawImageDesc *dstImg = *raw_ptr<gfx::RawImageDesc *>(dataDesc, 0x400);
+        dstImg->width = 256;
+        dstImg->height = 64;
+        dstImg->stride = 256 * 4;
+        CallMethodDynGlobal(GfxCoreAddress(0x3E5908), shapeGen, dstImg, &img); // copyPixels
+        gUsedCustomCaptainArmband = true;
+    }
+    CallVirtualMethod<8>(acc, &img); // deleteImage
+    CallMethodDynGlobal(GfxCoreAddress(0x3E2E7E), &acc);
 }
 
-void METHOD ReadCaptainArmband(void *_this, DUMMY_ARG, void *dataDesc, const Char *imageName, const WideChar *fshName) {
+void METHOD ReadCaptainArmband(void *_this, DUMMY_ARG, void *dataDesc, const Char * imageName, const WideChar * fshName) {
     WriteToLog(L"ReadCaptainArmband");
     gUsedCustomCaptainArmband = false;
     if (UserKitAvailable()) {
@@ -257,24 +258,24 @@ void METHOD ReadCaptainArmband(void *_this, DUMMY_ARG, void *dataDesc, const Cha
         CallMethodDynGlobal(GfxCoreAddress(0x383619), _this, dataDesc, imageName, fshName);
 }
 
-void METHOD ReadCaptainArmband_FM11(void *_this, DUMMY_ARG, void *dataDesc, const Char *imageName, const WideChar *fshName) {
-	WriteToLog(L"ReadCaptainArmband");
-	gUsedCustomCaptainArmband = false;
-	if (UserKitAvailable()) {
-		String customCaptainArmbandPath = GetUserTexturePath(L"data\\kitarmband", gCurrCompId, gTeamId, gKitTypeStr);
-		if (!customCaptainArmbandPath.empty())
-			ApplyCaptainArmbandTexture(customCaptainArmbandPath, _this, dataDesc);
-	}
-	if (!gUsedCustomCaptainArmband) {
-		String defaultCaptainArmbandPath;
-		if (FmFileImageExists(L"data\\kitarmband\\00000000", defaultCaptainArmbandPath)) {
-			ApplyCaptainArmbandTexture(defaultCaptainArmbandPath, _this, dataDesc);
-			if (gUsedCustomCaptainArmband)
-				gUsedCustomDefaultCaptainArmband = true;
-		}
-	}
-	if (!gUsedCustomCaptainArmband)
-		CallMethodDynGlobal(GfxCoreAddress(0x3E54AB), _this, dataDesc, imageName, fshName);
+void METHOD ReadCaptainArmband_FM11(void *_this, DUMMY_ARG, void *dataDesc, const Char * imageName, const WideChar * fshName) {
+    WriteToLog(L"ReadCaptainArmband");
+    gUsedCustomCaptainArmband = false;
+    if (UserKitAvailable()) {
+        String customCaptainArmbandPath = GetUserTexturePath(L"data\\kitarmband", gCurrCompId, gTeamId, gKitTypeStr);
+        if (!customCaptainArmbandPath.empty())
+            ApplyCaptainArmbandTexture(customCaptainArmbandPath, _this, dataDesc);
+    }
+    if (!gUsedCustomCaptainArmband) {
+        String defaultCaptainArmbandPath;
+        if (FmFileImageExists(L"data\\kitarmband\\00000000", defaultCaptainArmbandPath)) {
+            ApplyCaptainArmbandTexture(defaultCaptainArmbandPath, _this, dataDesc);
+            if (gUsedCustomCaptainArmband)
+                gUsedCustomDefaultCaptainArmband = true;
+        }
+    }
+    if (!gUsedCustomCaptainArmband)
+        CallMethodDynGlobal(GfxCoreAddress(0x3E54AB), _this, dataDesc, imageName, fshName);
 }
 
 void METHOD ApplyCaptainArmbandColor(void *_this, DUMMY_ARG, void *dataDesc, UInt color) {
@@ -285,10 +286,10 @@ void METHOD ApplyCaptainArmbandColor(void *_this, DUMMY_ARG, void *dataDesc, UIn
 }
 
 void METHOD ApplyCaptainArmbandColor_FM11(void *_this, DUMMY_ARG, void *dataDesc, UInt color) {
-	WriteToLog(L"ApplyCaptainArmbandColor");
-	if (!gUsedCustomCaptainArmband && !gUsedCustomDefaultCaptainArmband)
-		CallMethodDynGlobal(GfxCoreAddress(0x3E5AC0), _this, dataDesc, color);
-	gUsedCustomCaptainArmband = false;
+    WriteToLog(L"ApplyCaptainArmbandColor");
+    if (!gUsedCustomCaptainArmband && !gUsedCustomDefaultCaptainArmband)
+        CallMethodDynGlobal(GfxCoreAddress(0x3E5AC0), _this, dataDesc, color);
+    gUsedCustomCaptainArmband = false;
 }
 
 
@@ -311,19 +312,19 @@ void InstallKits_FM13() {
 
 void InstallKits_FM11() {
 
-	// custom captain armband
+    // custom captain armband
 
-	patch::RedirectCall(GfxCoreAddress(0x3E2DA8), OnGenerateKit_FM11);
-	patch::RedirectCall(GfxCoreAddress(0x3F6B48), OnGenerateKit_FM11);
-	patch::RedirectCall(GfxCoreAddress(0x3E67C5), ReadCaptainArmband_FM11);
-	patch::RedirectCall(GfxCoreAddress(0x3E67D8), ApplyCaptainArmbandColor_FM11);
+    //patch::RedirectCall(GfxCoreAddress(0x3E2DA8), OnGenerateKit_FM11);
+    //patch::RedirectCall(GfxCoreAddress(0x3F6B48), OnGenerateKit_FM11);
+    //patch::RedirectCall(GfxCoreAddress(0x3E67C5), ReadCaptainArmband_FM11);
+    //patch::RedirectCall(GfxCoreAddress(0x3E67D8), ApplyCaptainArmbandColor_FM11);
 
-	// gk kit
+    // gk kit
 
-	//patch::Nop(GfxCoreAddress(0x38FC05), 1);
-	//patch::SetUChar(GfxCoreAddress(0x38FC05 + 1), 0xE9);
+    //patch::Nop(GfxCoreAddress(0x38FC05), 1);
+    //patch::SetUChar(GfxCoreAddress(0x38FC05 + 1), 0xE9);
 
-	WriteToLog(L"Kits installed");
+    WriteToLog(L"Kits installed");
 }
 
 void PatchKits(FM::Version v) {

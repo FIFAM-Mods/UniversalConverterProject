@@ -148,9 +148,6 @@ unsigned int GetBallModelForCurrentMatch_FM11(int) {
     return 0;
 }
 
-	
-
-
 unsigned int gCurrentBallId = 0;
 
 void __declspec(naked) GetBallModelExec() {
@@ -170,18 +167,18 @@ void __declspec(naked) GetBallModelExec() {
 }
 
 void __declspec(naked) GetBallModelExec_FM11() {
-	__asm {
-		mov     gCurrentBallId, edx
-		mov     edx, [ecx]
-		add     esp, 4
-		push    gCurrentBallId
-		push    0x1264A94
-		call    dword ptr[edx + 4]
-		mov     eax, gCurrentBallId
-		mov     dword ptr[esi + 0x20C], eax
-		mov     eax, 0x42FFE8
-		jmp     eax
-	}
+    __asm {
+        mov     gCurrentBallId, edx
+        mov     edx, [ecx]
+        add     esp, 4
+        push    gCurrentBallId
+        push    0x1264A94
+        call    dword ptr[edx + 4]
+        mov     eax, gCurrentBallId
+        mov     dword ptr[esi + 0x20C], eax
+        mov     eax, 0x42FFE8
+        jmp     eax
+    }
 }
 
 void ReadBallInfos() {
@@ -215,9 +212,9 @@ void PatchBalls(FM::Version v) {
         patch::RedirectCall(0x44E57C, GetBallModelForCurrentMatch);
         patch::RedirectJump(0x44E589, GetBallModelExec);
     }
-	else if (v.id() == ID_FM_11_1003) {
-		ReadBallInfos();
-		patch::RedirectCall(0x44E57C, GetBallModelForCurrentMatch_FM11);
-		patch::RedirectJump(0x42FFB6, GetBallModelExec_FM11);
-	}
+    else if (v.id() == ID_FM_11_1003) {
+        ReadBallInfos();
+        patch::RedirectCall(0x44E57C, GetBallModelForCurrentMatch_FM11);
+        patch::RedirectJump(0x42FFB6, GetBallModelExec_FM11);
+    }
 }
