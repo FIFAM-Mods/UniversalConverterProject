@@ -48,10 +48,10 @@ public:
 
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
 
-            static std::wstring gameVersionStr = Magic<'1','.','0','.','3','.','0',' ','(','U','N','I','V','E','R','S','A','L',' ','C','O','N','V','E','R','T','E','R',' ','P','R','O','J','E','C','T',' ','-',' ','S','E','A','S','O','N',' ','2','0','1','9',')'>(3155934358);
+            static std::wstring gameVersionStr = Magic<'U','N','I','V','E','R','S','A','L',' ','C','O','N','V','E','R','T','E','R',' ','P','R','O','J','E','C','T',' ','S','E','A','S','O','N',' ','2','0','1','9',' ','1','.','3'>(1961756450);
             patch::SetPointer(0x4D2880 + 1, (void *)gameVersionStr.c_str());
         }
-        std::wstring testFileName = L"plugins\\ucp\\ucp-launched";
+        std::wstring testFileName = Magic<'p','l','u','g','i','n','s','\\','u','c','p','\\','u','c','p','-','l','a','u','n','c','h','e','d'>(3552446780);
         std::wstring readMode = Magic<'r','b'>(3009798726);
         std::wstring writeMode = Magic<'w','b'>(2430180274);
         FILE *testFile = _wfopen(testFileName.c_str(), readMode.c_str());

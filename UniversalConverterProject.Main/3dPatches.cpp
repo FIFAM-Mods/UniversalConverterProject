@@ -6,18 +6,6 @@ using namespace plugin;
 float NewDist = 8.0f;
 double NewAngleX = -2.0;
 
-void set_match_weather(char *dst, char const *format, int) {
-    sprintf(dst, format, 1);
-}
-
-unsigned int gSetAcc = 0;
-
-void set_acc(void *model, int, int) {
-    CallDynGlobal(gSetAcc, model, 7, 4); // 1 - white, 2 - black, 3 - blue, 4 - red, 5 - yellow
-    CallDynGlobal(gSetAcc, model, 8, 4);
-    CallDynGlobal(gSetAcc, model, 4, 4);
-}
-
 void Install3dPatches_FM13() {
     patch::SetDouble(GfxCoreAddress(0x549610), 90.0f);
     patch::SetPointer(GfxCoreAddress(0x378D22 + 2), &NewDist);
@@ -61,5 +49,4 @@ void Install3dPatches_FM13() {
     //patch::SetUInt(GfxCoreAddress(0x3B519 + 1), 120);
     
     //patch::SetUInt(GfxCoreAddress(0x23CE18 + 1), 5);
-    
 }

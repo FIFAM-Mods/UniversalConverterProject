@@ -9,6 +9,11 @@ Vector<Pair<UInt, String>> &GetPopupColors() {
     return popupColors;
 }
 
+Vector<Pair<UInt, String>>& GetPopupBadges() {
+	static Vector<Pair<UInt, String>> popupBadges;
+	return popupBadges;
+}
+
 String GetPopupColorsPathForCompetition(UInt compId) {
     for (auto &[id, p] : GetPopupColors()) {
         if (id <= 0xFFFF) {
@@ -19,6 +24,18 @@ String GetPopupColorsPathForCompetition(UInt compId) {
             return p;
     }
     return String();
+}
+
+String GetPopupBadgesPathForCompetition(UInt compId) {
+	for (auto& [id, p] : GetPopupBadges()) {
+		if (id <= 0xFFFF) {
+			if (id == ((compId >> 16) & 0xFFFF))
+				return p;
+		}
+		else if (id == compId)
+			return p;
+	}
+	return String();
 }
 
 void ReadColorsSettingsFile() {
@@ -41,6 +58,26 @@ void ReadColorsSettingsFile() {
     }
 }
 
+void ReadBadgesSettingsFile() {
+	// compId, pathToColorsFolder
+	FifamReader reader(L"plugins\\ucp\\popup_badges.dat", 14);
+	if (reader.Available()) {
+		while (!reader.IsEof()) {
+			if (!reader.EmptyLine()) {
+				UInt compId;
+				String pathToColors;
+				reader.ReadLine(Hexadecimal(compId), pathToColors);
+				Utils::Replace(pathToColors, L"/", L"\\");
+				if (!Utils::EndsWith(pathToColors, L"\\"))
+					pathToColors += L"\\";
+				GetPopupBadges().emplace_back(compId, pathToColors);
+			}
+			else
+				reader.SkipLine();
+		}
+	}
+}
+
 struct Standings3dAdditionalData {
     void *mImgAddedTime;
     void *mTbAddedTime;
@@ -48,6 +85,19 @@ struct Standings3dAdditionalData {
     void *mTbAggregate;
     void *mImgColor1;
     void *mImgColor2;
+};
+
+struct AdditionalDataOneCustomBadge {
+	void* mImgCustomBadge;
+	void* mImgColor1;
+	void* mImgColor2;
+};
+
+struct AdditionalDataCustomBadges {
+	void* mImgCustomBadge1;
+	void* mImgCustomBadge2;
+	void* mImgColor1;
+	void* mImgColor2;
 };
 
 Standings3dAdditionalData *GetStandingsAdditionalData(void *standingsInterface) {

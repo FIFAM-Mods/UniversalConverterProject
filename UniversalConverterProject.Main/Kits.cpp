@@ -195,12 +195,12 @@ void InstallKits_FM13() {
 
     // custom captain armband
 
-    patch::RedirectCall(GfxCoreAddress(0x3728EB), OnGenerateKit);
-    patch::RedirectCall(GfxCoreAddress(0x38FF20), OnGenerateKit);
-    patch::RedirectCall(GfxCoreAddress(0x384D6F), ReadCaptainArmband);
-    patch::RedirectCall(GfxCoreAddress(0x384DA5), ApplyCaptainArmbandColor);
+    //patch::RedirectCall(GfxCoreAddress(0x3728EB), OnGenerateKit);
+    //patch::RedirectCall(GfxCoreAddress(0x38FF20), OnGenerateKit);
+    //patch::RedirectCall(GfxCoreAddress(0x384D6F), ReadCaptainArmband);
+    //patch::RedirectCall(GfxCoreAddress(0x384DA5), ApplyCaptainArmbandColor);
 
-    // gk kit
+    // gk kit (doesn't work)
 
     //patch::Nop(GfxCoreAddress(0x38FC05), 1);
     //patch::SetUChar(GfxCoreAddress(0x38FC05 + 1), 0xE9);
@@ -209,7 +209,7 @@ void InstallKits_FM13() {
 }
 
 void PatchKits(FM::Version v) {
-    if (v.id() == ID_FM_13_1030_RLD) {
-        
-    }
+    //if (v.id() == ID_FM_13_1030_RLD) {
+    //
+    //}
 }
