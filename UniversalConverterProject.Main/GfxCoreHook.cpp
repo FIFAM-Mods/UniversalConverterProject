@@ -25,13 +25,13 @@ bool METHOD OnLoadGfxCore(void **info, int, const wchar_t *libFileName, const ch
     return result;
 }
 
-bool METHOD OnLoadGfxCore_FM11(void **info, int, const wchar_t *libFileName, const char *procName) {
-    bool result = false;
+void *OnLoadGfxCore_FM11() {
+    //Error("GFX core loaded");
+    void *result = nullptr;
     if (gOriginalLoadGfxCore) {
-        result = CallMethodAndReturnDynGlobal<bool>(gOriginalLoadGfxCore, info, libFileName, procName);
+        result = CallAndReturnDynGlobal<void *>(gOriginalLoadGfxCore);
         if (result) {
-            void *gfxCore = info[0];
-            hLibrary = (unsigned int)info[1];
+            hLibrary = *(unsigned int *)0x146A104;
 
             Install3dPatches_FM11();
             //InstallKits_FM11();
@@ -45,5 +45,5 @@ void PatchGfxCoreHook(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD)
         gOriginalLoadGfxCore = patch::RedirectCall(0x45BBEF, OnLoadGfxCore);
     else if (v.id() == ID_FM_11_1003)
-        gOriginalLoadGfxCore = patch::RedirectCall(0x43C55D, OnLoadGfxCore_FM11);
+        gOriginalLoadGfxCore = patch::RedirectCall(0x43C574, OnLoadGfxCore_FM11);
 }
