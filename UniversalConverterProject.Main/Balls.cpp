@@ -168,8 +168,7 @@ void __declspec(naked) GetBallModelExec() {
 
 void __declspec(naked) GetBallModelExec_FM11() {
     __asm {
-        mov     gCurrentBallId, edx
-        mov     edx, [ecx]
+        mov     gCurrentBallId, eax
         add     esp, 4
         push    gCurrentBallId
         push    0x1264A94
@@ -215,6 +214,6 @@ void PatchBalls(FM::Version v) {
     else if (v.id() == ID_FM_11_1003) {
         ReadBallInfos();
         patch::RedirectCall(0x42FFAB, GetBallModelForCurrentMatch_FM11);
-        patch::RedirectJump(0x42FFB6, GetBallModelExec_FM11);
+        patch::RedirectJump(0x42FFB8, GetBallModelExec_FM11);
     }
 }
