@@ -31,6 +31,7 @@
 #include "3dMatchStandings.h"
 #include "IncreaseSalaryOwnedClub.h"
 #include "Kits.h"
+#include "MiscFormerCupOpponents.h"
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitry/DK22");
 
@@ -85,7 +86,7 @@ public:
         PatchForeignersLimit(v);
         PatchTeamControl(v);
         InstallEasyEdit(v);
-        //PatchCompetitions(v);
+        PatchCompetitions(v);
         PatchSpareEmployeeFix(v);
         PatchEABFFixes(v);
         PatchLoansLimit(v);
@@ -96,6 +97,7 @@ public:
         Patch3dMatchStandings(v);
         PatchIncreaseSalaryOwnedClub(v);
         PatchKits(v);
+        PatchMiscFormerCupOpponents(v);
     }
 } universalConverterProject;
 

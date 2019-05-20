@@ -1,10 +1,8 @@
 #include "EABFFixes.h"
+#include "GameInterfaces.h"
 #include "shared.h"
 
 using namespace plugin;
-
-class CDBTeam; class CDBPlayer;
-using CTeamIndex = UInt;
 
 class FmUtils {
 public:

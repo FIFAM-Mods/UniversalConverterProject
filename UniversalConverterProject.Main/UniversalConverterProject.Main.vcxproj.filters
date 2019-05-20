@@ -34,6 +34,8 @@
     <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="GfxCoreHook.cpp" />
+    <ClCompile Include="MiscFormerCupOpponents.cpp" />
+    <ClCompile Include="GameInterfaces.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -69,5 +71,18 @@
     <ClInclude Include="IncreaseSalaryOwnedClub.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="GfxCoreHook.h" />
+    <ClInclude Include="MiscFormerCupOpponents.h" />
+    <ClInclude Include="GameInterfaces.h" />
+    <ClInclude Include="ContinentalOceania.h">
+      <Filter>competition_scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptsShared.h">
+      <Filter>competition_scripts</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="competition_scripts">
+      <UniqueIdentifier>{2c01ca93-1b9a-41b6-9774-74b6bac98e60}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

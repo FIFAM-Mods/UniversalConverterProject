@@ -110,6 +110,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClCompile Include="FemaleNames.cpp" />
     <ClCompile Include="FifaWorldPlayerGala.cpp" />
     <ClCompile Include="ForeignersLimit.cpp" />
+    <ClCompile Include="GameInterfaces.cpp" />
     <ClCompile Include="GfxCoreHook.cpp" />
     <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
     <ClCompile Include="InternationalCupsFix.cpp" />
@@ -121,6 +122,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MasterDatLimit.cpp" />
     <ClCompile Include="Minikits.cpp" />
+    <ClCompile Include="MiscFormerCupOpponents.cpp" />
     <ClCompile Include="NationalTeamManagers.cpp" />
     <ClCompile Include="PlayerDevelopment.cpp" />
     <ClCompile Include="PlayerMatchEvents.cpp" />
@@ -138,6 +140,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Competitions.h" />
+    <ClInclude Include="ContinentalOceania.h" />
     <ClInclude Include="DatabaseName.h" />
     <ClInclude Include="EABFFixes.h" />
     <ClInclude Include="EasyEdit.h" />
@@ -145,6 +148,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClInclude Include="FemaleNames.h" />
     <ClInclude Include="FifaWorldPlayerGala.h" />
     <ClInclude Include="ForeignersLimit.h" />
+    <ClInclude Include="GameInterfaces.h" />
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="IncreaseSalaryOwnedClub.h" />
     <ClInclude Include="InternationalCupsFix.h" />
@@ -155,10 +159,12 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClInclude Include="LowestLeagues.h" />
     <ClInclude Include="MasterDatLimit.h" />
     <ClInclude Include="Minikits.h" />
+    <ClInclude Include="MiscFormerCupOpponents.h" />
     <ClInclude Include="NationalTeamManagers.h" />
     <ClInclude Include="PlayerDevelopment.h" />
     <ClInclude Include="PlayerMatchEvents.h" />
     <ClInclude Include="ScoutingSystems.h" />
+    <ClInclude Include="ScriptsShared.h" />
     <ClInclude Include="Settings.h" />
     <ClInclude Include="shared.h" />
     <ClInclude Include="SpareEmployeeFix.h" />

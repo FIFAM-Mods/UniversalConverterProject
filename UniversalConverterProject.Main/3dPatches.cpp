@@ -6,6 +6,17 @@ using namespace plugin;
 float NewDist = 8.0f;
 double NewAngleX = -2.0;
 
+void OnCreateInputDevice() {
+    CallMethodDynGlobal(GfxCoreAddress(0x309150), patch::GetUInt(GfxCoreAddress(0x6696DC), false));
+    CallDynGlobal(GfxCoreAddress(0x308040));
+}
+
+void OnSetupTeamManagementDatas() {
+    patch::SetUInt(GfxCoreAddress(0x6FA2F8 + 0x64), 1, false);
+    //patch::SetUInt(GfxCoreAddress(0x6FA2F8 + 0x94 + 0x64), 1, false);
+    CallDynGlobal(GfxCoreAddress(0xCAC70));
+}
+
 void Install3dPatches_FM13() {
     patch::SetDouble(GfxCoreAddress(0x549610), 90.0f);
     patch::SetPointer(GfxCoreAddress(0x378D22 + 2), &NewDist);
@@ -49,6 +60,11 @@ void Install3dPatches_FM13() {
     //patch::SetUInt(GfxCoreAddress(0x3B519 + 1), 120);
 
     //patch::SetUInt(GfxCoreAddress(0x23CE18 + 1), 5);
+
+    // team control
+    patch::RedirectCall(GfxCoreAddress(0x11AB6E), OnSetupTeamManagementDatas);
+
+    patch::RedirectCall(GfxCoreAddress(0x165C3), OnCreateInputDevice);
 }
 void Install3dPatches_FM11() {
     patch::SetDouble(GfxCoreAddress(0x4C3CE8), 90.0f);
