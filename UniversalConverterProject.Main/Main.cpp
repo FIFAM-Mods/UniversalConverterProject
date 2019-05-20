@@ -86,7 +86,7 @@ public:
         PatchForeignersLimit(v);
         PatchTeamControl(v);
         InstallEasyEdit(v);
-        PatchCompetitions(v);
+        //PatchCompetitions(v); disabled to avoid the crash
         PatchSpareEmployeeFix(v);
         PatchEABFFixes(v);
         PatchLoansLimit(v);
