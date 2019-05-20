@@ -96,9 +96,9 @@ unsigned int GetBallModelForCurrentMatch_FM11(int) {
         return 0;
     void *match = *(void **)0x1516C08;
     if (!match)
-        return 0;
+      return 0;
     unsigned int compId = 0;
-    CallMethod<0xCDBD50>(match, &compId);
+   CallMethod<0xCDBD50>(match, &compId);
     if (compId == 0)
         return 0;
     void *game = CallAndReturn<void *, 0xDDEB70>();
@@ -168,15 +168,14 @@ void __declspec(naked) GetBallModelExec() {
 
 void __declspec(naked) GetBallModelExec_FM11() {
     __asm {
-        mov     gCurrentBallId, edx
-        mov     edx, [ecx]
+        mov     gCurrentBallId, eax
         add     esp, 4
         push    gCurrentBallId
         push    0x1264A94
         call    dword ptr[edx + 4]
         mov     eax, gCurrentBallId
         mov     dword ptr[esi + 0x20C], eax
-        mov     eax, 0x42FFE8
+        mov     eax, 0x42FFCF
         jmp     eax
     }
 }
@@ -214,7 +213,7 @@ void PatchBalls(FM::Version v) {
     }
     else if (v.id() == ID_FM_11_1003) {
         ReadBallInfos();
-        patch::RedirectCall(0x44E57C, GetBallModelForCurrentMatch_FM11);
-        patch::RedirectJump(0x42FFB6, GetBallModelExec_FM11);
+        patch::RedirectCall(0x42FFAB, GetBallModelForCurrentMatch_FM11);
+        patch::RedirectJump(0x42FFB8, GetBallModelExec_FM11);
     }
 }

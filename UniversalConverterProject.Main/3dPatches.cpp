@@ -67,7 +67,7 @@ void Install3dPatches_FM13() {
     patch::RedirectCall(GfxCoreAddress(0x165C3), OnCreateInputDevice);
 }
 void Install3dPatches_FM11() {
-    patch::SetDouble(GfxCoreAddress(0x4C3CE8), 90.0f);
+    patch::SetFloat(GfxCoreAddress(0x4C3CE8), 3.15f);
     patch::SetPointer(GfxCoreAddress(0x487844 + 2), &NewDist);
     //patch::SetPointer(GfxCoreAddress(0x378DAC + 2), &NewAngleX);
 
