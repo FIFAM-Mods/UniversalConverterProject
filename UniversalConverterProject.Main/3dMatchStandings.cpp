@@ -193,6 +193,38 @@ void METHOD OnCreateStandingsUI(void *standingsInterface) {
                 void *kitsData = raw_ptr<void *>(matchData, 0x30);
                 UInt homeTeamKitId = *raw_ptr<UInt>(kitsData, 0xED8);
                 UInt awayTeamKitId = *raw_ptr<UInt>(kitsData, 0xEDC);
+                WideChar const *homeTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x454);
+                WideChar const *awayTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x65C + 0x454);
+                if (homeTeamKitPath[0]) {
+                    String kitPath = homeTeamKitPath;
+                    auto dotPos = kitPath.find(L'.');
+                    if (dotPos != String::npos) {
+                        kitPath = kitPath.substr(0, dotPos);
+                        if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
+                            if (kitPath[kitPath.size() - 1] == L'h')
+                                homeTeamKitId = 0;
+                            else if (kitPath[kitPath.size() - 1] == L'a')
+                                homeTeamKitId = 1;
+                            else if (kitPath[kitPath.size() - 1] == L't')
+                                homeTeamKitId = 2;
+                        }
+                    }
+                }
+                if (awayTeamKitPath[0]) {
+                    String kitPath = awayTeamKitPath;
+                    auto dotPos = kitPath.find(L'.');
+                    if (dotPos != String::npos) {
+                        kitPath = kitPath.substr(0, dotPos);
+                        if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
+                            if (kitPath[kitPath.size() - 1] == L'h')
+                                awayTeamKitId = 0;
+                            else if (kitPath[kitPath.size() - 1] == L'a')
+                                awayTeamKitId = 1;
+                            else if (kitPath[kitPath.size() - 1] == L't')
+                                awayTeamKitId = 2;
+                        }
+                    }
+                }
                 //SafeLog::Write(Utils::Format(L"%08X (%d) - %08X (%d)", homeTeamUId, homeTeamKitId, awayTeamUId, awayTeamKitId));
                 //
                 String homeTeamColorPath = GetPathForTeamKitColor(colorsPathStr, homeTeamUId, homeTeamKitId);

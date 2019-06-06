@@ -17,6 +17,11 @@ void OnSetupTeamManagementDatas() {
     CallDynGlobal(GfxCoreAddress(0xCAC70));
 }
 
+void OnSetTeamDifficulty(unsigned int nTeam) {
+    patch::SetUInt(GfxCoreAddress(0x6FA2F8 + 0x58), 3, false);
+    patch::SetUInt(GfxCoreAddress(0x6FA2F8 + 0x94 + 0x58), 0, false);
+}
+
 void Install3dPatches_FM13() {
     patch::SetDouble(GfxCoreAddress(0x549610), 90.0f);
     patch::SetPointer(GfxCoreAddress(0x378D22 + 2), &NewDist);
@@ -29,6 +34,9 @@ void Install3dPatches_FM13() {
     //patch::SetUInt(GfxCoreAddress(0x2022F3 + 1), newSize);
     //patch::SetUInt(GfxCoreAddress(0x202338 + 1), newSize);
     //patch::SetUInt(GfxCoreAddress(0x20233D + 1), newSize);
+    
+
+
 
     patch::SetUInt(GfxCoreAddress(0x20F780 + 4), 4); // 25
     patch::SetUInt(GfxCoreAddress(0x20F794 + 4), 0); // 4
@@ -44,6 +52,9 @@ void Install3dPatches_FM13() {
     patch::SetUInt(GfxCoreAddress(0x20F834 + 4), 0); // 4
     patch::SetUInt(GfxCoreAddress(0x20F848 + 4), 60); // 39
     patch::SetUInt(GfxCoreAddress(0x20F85C + 4), 120); // 78
+    
+
+
 
     // player name
 
@@ -62,10 +73,13 @@ void Install3dPatches_FM13() {
     //patch::SetUInt(GfxCoreAddress(0x23CE18 + 1), 5);
 
     // team control
-    patch::RedirectCall(GfxCoreAddress(0x11AB6E), OnSetupTeamManagementDatas);
+    //patch::RedirectCall(GfxCoreAddress(0x11AB6E), OnSetupTeamManagementDatas);
 
-    patch::RedirectCall(GfxCoreAddress(0x165C3), OnCreateInputDevice);
+    //patch::RedirectCall(GfxCoreAddress(0x165C3), OnCreateInputDevice);
+
+    ///patch::RedirectJump(GfxCoreAddress(0x17CC90), OnSetTeamDifficulty);
 }
+
 void Install3dPatches_FM11() {
     patch::SetFloat(GfxCoreAddress(0x4C3CE8), 3.15f);
     patch::SetPointer(GfxCoreAddress(0x487844 + 2), &NewDist);

@@ -1,7 +1,7 @@
 #include "Log.h"
 
 Log::Log() {
-    mWriter = new FifamWriter(L"ucp.log", 14, 0, 0);
+    mWriter = new FifamWriter(L"ucp.log", 14, FifamVersion());
 }
 
 Log::~Log() {

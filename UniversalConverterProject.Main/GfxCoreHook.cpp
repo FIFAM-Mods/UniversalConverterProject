@@ -18,7 +18,7 @@ bool METHOD OnLoadGfxCore(void **info, int, const wchar_t *libFileName, const ch
             hLibrary = (unsigned int)info[1];
 
             Install3dPatches_FM13();
-            //InstallKits_FM13();
+            InstallKits_FM13();
 
         }
     }
