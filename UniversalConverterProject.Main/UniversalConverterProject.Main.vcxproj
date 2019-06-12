@@ -124,6 +124,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClCompile Include="Minikits.cpp" />
     <ClCompile Include="MiscFormerCupOpponents.cpp" />
     <ClCompile Include="NationalTeamManagers.cpp" />
+    <ClCompile Include="PlayerAccessories.cpp" />
     <ClCompile Include="PlayerDevelopment.cpp" />
     <ClCompile Include="PlayerMatchEvents.cpp" />
     <ClCompile Include="ScoutingSystems.cpp" />
@@ -161,6 +162,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClInclude Include="Minikits.h" />
     <ClInclude Include="MiscFormerCupOpponents.h" />
     <ClInclude Include="NationalTeamManagers.h" />
+    <ClInclude Include="PlayerAccessories.h" />
     <ClInclude Include="PlayerDevelopment.h" />
     <ClInclude Include="PlayerMatchEvents.h" />
     <ClInclude Include="ScoutingSystems.h" />

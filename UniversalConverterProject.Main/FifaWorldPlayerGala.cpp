@@ -43,7 +43,7 @@ std::vector<std::pair<std::wstring, float>> FifaNominantes = {
     /* 10 */ { L"KaneHa28071993", 0.98f }
 };
 
-unsigned short GetCurrentYear() {
+unsigned short GetCurrentYear2() {
     CDBGame *game = CallAndReturn<CDBGame *, 0xF61410>();
     return CallMethodAndReturn<unsigned short, 0xF498C0>(game);
 }
@@ -52,7 +52,7 @@ void METHOD CollectWorldPlayerGalaNominantes(WorldPlayerGalaList *list) {
     // collect default
     CallMethod<0x1136190>(list);
     
-    if (GetCurrentYear() == 2018) {
+    if (GetCurrentYear2() == 2018) {
         std::vector<CDBPlayer *> nominantesPlayers;
         for (unsigned int i = 0; i < 50; i++) {
             if (list->m_apPlayers[i])
@@ -81,7 +81,7 @@ void METHOD CalcVotes(WorldPlayerGalaEntry *entry) {
     // call original
     CallMethod<0x1134EC0>(entry);
 
-    if (GetCurrentYear() == 2018) {
+    if (GetCurrentYear2() == 2018) {
         // check all nominantes
         for (auto &n : FifaNominantes) {
             CDBPlayer *p = CallAndReturn<CDBPlayer *, 0xFAF750>(n.first.c_str());

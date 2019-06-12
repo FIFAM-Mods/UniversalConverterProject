@@ -42,6 +42,18 @@ CJDate CDBGame::GetCurrentDate() {
     return result;
 }
 
+unsigned short CDBGame::GetCurrentYear() {
+    return plugin::CallMethodAndReturn<unsigned short, 0xF498C0>(this);
+}
+
+bool CDBGame::GetIsWorldCupMode() {
+    return plugin::CallMethodAndReturn<bool, 0xF4A340>(this);
+}
+
+bool CDBGame::TestFlag(unsigned int flag) {
+    return plugin::CallMethodAndReturn<bool, 0xF49CA0>(this, flag);
+}
+
 std::wstring CCompID::ToStr() const {
     std::wstring typeName = plugin::Format(L"UNKNOWN (%d)", type);
     if (type == 0) typeName = L"ROOT";
@@ -143,6 +155,10 @@ bool CDBCompetition::IsTeamPresent(CTeamIndex const &teamIndex) {
     return plugin::CallMethodAndReturn<bool, 0xF82400>(this, &teamIndex);
 }
 
+unsigned int CDBCompetition::GetNumMatchdays() {
+    return plugin::CallVirtualMethodAndReturn<unsigned int, 8>(this);
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -165,6 +181,37 @@ CDBCompetition *GetCompetition(unsigned int *id) {
 
 CDBCompetition *GetCompetition(unsigned int id) {
     return plugin::CallAndReturn<CDBCompetition *, 0xF8AF50>(&id);
+}
+
+CDBLeague *GetLeague(CCompID const &id) {
+    return plugin::CallAndReturn<CDBLeague *, 0xF8C600>(&id);
+}
+
+CDBLeague *GetLeague(unsigned int *id) {
+    return plugin::CallAndReturn<CDBLeague *, 0xF8C600>(id);
+}
+
+CDBLeague *GetLeague(unsigned int id) {
+    return plugin::CallAndReturn<CDBLeague *, 0xF8C600>(&id);
+}
+
+CDBRound *GetRound(unsigned char region, unsigned char type, unsigned short index) {
+    return plugin::CallAndReturn<CDBRound *, 0xF8B150>(region, type, index);
+}
+
+CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType) {
+    return plugin::CallAndReturn<CDBRound *, 0xF8B190>(region, type, roundType);
+}
+
+wchar_t const *GetTranslation(const char *key) {
+    return plugin::CallMethodAndReturn<wchar_t const *, 0x14A9B78>(0x31E3FA8, key);
+}
+
+unsigned short GetCurrentYear() {
+    auto game = CDBGame::GetInstance();
+    if (game)
+        return game->GetCurrentYear();
+    return 0;
 }
 
 unsigned char CAssessmentTable::GetCountryIdAtPosition(int position) {

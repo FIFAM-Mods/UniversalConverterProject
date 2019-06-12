@@ -17,6 +17,9 @@ public:
     static CDBGame *GetInstance();
     CJDate GetStartDate();
     CJDate GetCurrentDate();
+    unsigned short GetCurrentYear();
+    bool GetIsWorldCupMode();
+    bool TestFlag(unsigned int flag);
 };
 
 struct CTeamIndex {
@@ -55,7 +58,7 @@ enum eCompetitionType : unsigned char {
     COMP_UNKNOWN_26 = 26,
     COMP_UNKNOWN_27 = 27,
     COMP_RESERVE = 28,
-    COMP_UNKNOWN_29 = 29,
+    COMP_INTERNATIONAL_FRIENDLY = 29,
     COMP_UNKNOWN_30 = 30,
     COMP_U20_WORLD_CUP = 31,
     COMP_CONFED_CUP = 32,
@@ -95,6 +98,7 @@ public:
     void AddTeamsFromCountry(unsigned char countryId, unsigned int numTeams);
     bool AddTeam(CTeamIndex const &teamIndex, int position = -1);
     bool IsTeamPresent(CTeamIndex const &teamIndex);
+    unsigned int GetNumMatchdays();
 };
 
 class CDBRoot : public CDBCompetition {};
@@ -143,3 +147,11 @@ CDBCompetition *GetCompetition(unsigned char region, unsigned char type, unsigne
 CDBCompetition *GetCompetition(CCompID const &id);
 CDBCompetition *GetCompetition(unsigned int *id);
 CDBCompetition *GetCompetition(unsigned int id);
+CDBLeague *GetLeague(CCompID const &id);
+CDBLeague *GetLeague(unsigned int *id);
+CDBLeague *GetLeague(unsigned int id);
+CDBRound *GetRound(unsigned char region, unsigned char type, unsigned short index);
+CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType);
+
+wchar_t const *GetTranslation(const char *key);
+unsigned short GetCurrentYear();

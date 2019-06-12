@@ -1,6 +1,7 @@
 #include "GfxCoreHook.h"
 #include "3dPatches.h"
 #include "Kits.h"
+#include "PlayerAccessories.h"
 
 unsigned int gOriginalLoadGfxCore = 0;
 unsigned int hLibrary = 0;
@@ -19,6 +20,7 @@ bool METHOD OnLoadGfxCore(void **info, int, const wchar_t *libFileName, const ch
 
             Install3dPatches_FM13();
             InstallKits_FM13();
+            InstallPlayerAccessoriesGfxPatches();
 
         }
     }

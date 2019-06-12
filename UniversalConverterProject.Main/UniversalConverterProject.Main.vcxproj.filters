@@ -36,6 +36,7 @@
     <ClCompile Include="GfxCoreHook.cpp" />
     <ClCompile Include="MiscFormerCupOpponents.cpp" />
     <ClCompile Include="GameInterfaces.cpp" />
+    <ClCompile Include="PlayerAccessories.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -79,6 +80,7 @@
     <ClInclude Include="ScriptsShared.h">
       <Filter>competition_scripts</Filter>
     </ClInclude>
+    <ClInclude Include="PlayerAccessories.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

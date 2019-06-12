@@ -35,9 +35,6 @@ void Install3dPatches_FM13() {
     //patch::SetUInt(GfxCoreAddress(0x202338 + 1), newSize);
     //patch::SetUInt(GfxCoreAddress(0x20233D + 1), newSize);
     
-
-
-
     patch::SetUInt(GfxCoreAddress(0x20F780 + 4), 4); // 25
     patch::SetUInt(GfxCoreAddress(0x20F794 + 4), 0); // 4
     patch::SetUInt(GfxCoreAddress(0x20F7A8 + 4), 60); // 39
@@ -52,9 +49,6 @@ void Install3dPatches_FM13() {
     patch::SetUInt(GfxCoreAddress(0x20F834 + 4), 0); // 4
     patch::SetUInt(GfxCoreAddress(0x20F848 + 4), 60); // 39
     patch::SetUInt(GfxCoreAddress(0x20F85C + 4), 120); // 78
-    
-
-
 
     // player name
 

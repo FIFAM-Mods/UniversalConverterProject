@@ -33,8 +33,9 @@ CompTypeNameDesc gNewCompTypeNames[] = {
      { L"CONFED_CUP", 32 }, // Confederations Cup
      { L"COPA_AMERICA", 33 }, // Copa America
      { L"ICC", 35 }, // International Champions Cup
-     { L"EURO_NATIONSLEAGUE", 36 }, // Nations League
-     { L"YOUTH_CHAMPIONSLEAGUE", 37 }, // Youth Champions League
+     { L"EURO_QUALI_NL", 36 }, // Nations League Quali
+     { L"EURO_NL", 37 }, // Nations League Finals
+     { L"YOUTH_CHAMPIONSLEAGUE", 38 }, // Youth Champions League
 
      { L"", 0 }
 };
@@ -42,17 +43,20 @@ CompTypeNameDesc gNewCompTypeNames[] = {
 const unsigned char gNumCompetitionTypes = std::extent<decltype(gNewCompTypeNames)>::value + 10;
 
 unsigned int gContinentalCompetitionTypes[] = {
-    9, 10, 12, 11, 13, 35, 37
+    9, 10, 12, 11, 13, 35
 };
 
-unsigned int gNewIntlComps[] = { 36 };
+unsigned int gNewIntlComps[] = { 36, 37 };
+
+unsigned int gInternationalCompsTypes[] = { 36, 15, 16, 37, 17, 18, 32, 33 }; // for NT matches info screen
 
 // TODO: replace with translated strings
 void OnSetCompetitionName(int compRegion, int compType, wchar_t const *name) {
     Call<0xF904D0>(compRegion, compType, name);
-    Call<0xF904D0>(249, 35, L"International Champions Cup");
-    Call<0xF904D0>(255, 36, L"UEFA Nations League");
-    Call<0xF904D0>(255, 37, L"UEFA Youth League");
+    Call<0xF904D0>(249, 35, GetTranslation("IDS_NAME_ICC"));
+    Call<0xF904D0>(255, 36, GetTranslation("IDS_NAME_EURO_NL_QUALIFICATION"));
+    Call<0xF904D0>(255, 37, GetTranslation("IDS_NAME_EURO_NL"));
+    Call<0xF904D0>(249, 38, GetTranslation("IDS_NAME_EURO_YOUTH_LEAGUE"));
 }
 
 void ReadCompetitionFile(wchar_t const *filename, wchar_t const *typeName, void *root) {
@@ -72,7 +76,7 @@ void ReadCompetitionFile(wchar_t const *filename, wchar_t const *typeName, void 
 }
 
 void METHOD OnSetupRoot(void *root, DUMMY_ARG, int id) {
-    ReadCompetitionFile(L"EuroNationsLeague.txt", L"EURO_NATIONSLEAGUE", root);
+    //ReadCompetitionFile(L"EuroNationsLeague.txt", L"EURO_NATIONSLEAGUE", root);
     CallMethod<0x11F21B0>(root, id);
 }
 
@@ -110,7 +114,8 @@ bool METHOD TakesPlaceInThisYear(void *comp, DUMMY_ARG, int) {
         if (year % 4 == 2)
             return true;
         break;
-    case 36: // EURO_NATIONSLEAGUE
+    case 36: // EURO_QUALI_NATIONSLEAGUE
+    case 37: // EURO_NATIONSLEAGUE
         if (year % 2 == 0)
             return true;
         break;
@@ -118,6 +123,35 @@ bool METHOD TakesPlaceInThisYear(void *comp, DUMMY_ARG, int) {
         return true;
     }
     return false;
+}
+
+WideChar const * METHOD GetCompetitionShortName(CDBCompetition *comp) {
+    switch (comp->GetCompID().type) {
+    case COMP_WORLD_CLUB_CHAMP:
+        return GetTranslation("IDS_FIFA_CLUB_WORLD_CUP_SHORTNAMES");
+    case COMP_QUALI_WC:
+        return GetTranslation("IDS_FIFA_WORLD_CUP_QUALIFICATION_SHORTNAMES");
+    case COMP_WORLD_CUP:
+        return GetTranslation("IDS_FIFA_SHORTNAMES");
+    case COMP_CONFED_CUP:
+        return GetTranslation("IDS_FIFA_CONFED_CUP_SHORTNAMES");
+    case COMP_EURO_CUP:
+        return GetTranslation("IDS_EURO_CUP_SHORTNAMES");
+    case COMP_QUALI_EC:
+        return GetTranslation("IDS_EURO_CUP_QUALIFICATION_SHORTNAMES");
+    case COMP_COPA_AMERICA:
+        return GetTranslation("IDS_COPA_AMERICA_SHORTNAMES");
+    case 36: // EURO_QUALI_NL
+        return GetTranslation("IDS_EURO_NL_QUALIFICATION_SHORTNAMES");
+    case 37: // EURO_NL
+        return GetTranslation("IDS_EURO_NL_SHORTNAMES");
+    }
+    if (CallMethodAndReturn<Bool, 0x12D4AA0>(&comp->GetCompID()) || CallMethodAndReturn<Bool, 0x12D4A40>(&comp->GetCompID())) {
+        CDBCompetition *baseComp = GetCompetition(comp->GetCompID().ToInt() & 0xFFFF0000);
+        if (baseComp)
+            return raw_ptr<WideChar>(baseComp, 0x26);
+    }
+    return raw_ptr<WideChar>(comp, 0x26);
 }
 
 void LaunchCompetition(unsigned char region, unsigned char type, unsigned short index) {
@@ -134,7 +168,7 @@ void LaunchCompetitions() {
     if (year % 4 == 0) LaunchCompetition(255, 32, 0); // CONFED_CUP
     if (year % 4 == 2) LaunchCompetition(255, 33, 0); // COPA_AMERICA
 
-    if (year % 2 == 0) LaunchCompetition(255, 36, 0); // EURO_NATIONSLEAGUE
+    if (year % 2 == 0) LaunchCompetition(255, 36, 0); // EURO_QUALI_NATIONSLEAGUE
 }
 
 void __declspec(naked) LaunchCompetitions_Exec() {
@@ -168,14 +202,14 @@ bool METHOD MatchdayScreen_TestGameFlag(void *game, DUMMY_ARG, unsigned int flag
 
 void *MatchdayScreen_GetCompById(unsigned int *pCompId) {
     gLastCompType = (*pCompId >> 16) & 0xFF;
-    if ((gLastCompType >= 15 && gLastCompType <= 18) || gLastCompType == 36)
+    if ((gLastCompType >= 15 && gLastCompType <= 18) || gLastCompType == 36 || gLastCompType == 37)
         return GetCompetition(pCompId);
     return nullptr;
 }
 
 unsigned char gCompTypesClub[] =         { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 8, 19, 20, 21, 35, 23, 27, 35 };
-unsigned char gCompTypesClubYouth[] =    { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 8, 19, 20, 21, 35, 23, 35, 37 };
-unsigned char gCompTypesNationalTeam[] = { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 8, 19, 20, 21, 15, 16, 17, 18, 32, 33, 29, 36 };
+unsigned char gCompTypesClubYouth[] =    { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 8, 19, 20, 21, 35, 23, 35, 38 };
+unsigned char gCompTypesNationalTeam[] = { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 8, 19, 20, 21, 15, 16, 17, 18, 32, 33, 29, 36, 37 };
 unsigned char *gCurrFixturesCompTypes = gCompTypesClub;
 
 void *SetupFixturesList(unsigned int teamId) {
@@ -197,16 +231,20 @@ void *SetupFixturesList(unsigned int teamId) {
 
 void __declspec(naked) CheckFixtureList_1_Exec() { __asm {
     shr ecx, 0x10
-    movzx eax, cl
-    cmp eax, gCurrFixturesCompTypes[edx]
+    mov eax, gCurrFixturesCompTypes
+    add eax, edx
+    mov al, byte ptr[eax]
+    cmp cl, al
     mov eax, 0x96A6BD
     jmp eax
 }}
 
 void __declspec(naked) CheckFixtureList_2_Exec() { __asm {
     mov edx, [esp+0x14]
-    movzx eax, cl
-    cmp eax, gCurrFixturesCompTypes[edx]
+    mov eax, gCurrFixturesCompTypes
+    add eax, edx
+    mov al, byte ptr[eax]
+    cmp cl, al
     mov eax, 0x96AABD
     jmp eax
 }}
@@ -375,44 +413,180 @@ void OnGetSpare(CDBCompetition **ppComp) {
 
 //unsigned char gCompTypesForInternationalCalendar[] = {};
 
+void METHOD OnAddMyCareerTrophyNationalTeam(void *vec, DUMMY_ARG, void *pValue) {
+    CallMethod<0x416950>(vec, pValue);
+    static UInt compType = 37;
+    CallMethod<0x416950>(vec, &compType);
+}
+
+UChar GetCompetitionGroupByCompetitionId(UInt competitionId) {
+    CDBLeague *league = nullptr;
+    switch ((competitionId >> 16) & 0xFF) {
+    case COMP_LEAGUE:
+        return 1;
+    case COMP_FA_CUP:
+    case COMP_LE_CUP:
+        return 2;
+    case COMP_RELEGATION:
+        league = GetLeague(competitionId);
+        if (league && league->GetNumMatchdays() >= 4)
+            return 1;
+        break;
+    case COMP_CHAMPIONSLEAGUE:
+    case COMP_UEFA_CUP:
+    case COMP_TOYOTA:
+    case COMP_EURO_SUPERCUP:
+    case COMP_WORLD_CLUB_CHAMP:
+        return 3;
+    case COMP_QUALI_WC:
+    case COMP_QUALI_EC:
+    case COMP_WORLD_CUP:
+    case COMP_EURO_CUP:
+    case COMP_INTERNATIONAL_FRIENDLY:
+    case COMP_U20_WORLD_CUP:
+    case COMP_CONFED_CUP:
+    case COMP_COPA_AMERICA:
+    case 36:
+    case 37:
+        return 4;
+    case COMP_FRIENDLY:
+    case COMP_UNKNOWN_27:
+    case COMP_RESERVE:
+        return 5;
+    }
+    return 0;
+}
+
+UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
+    UChar compType = *raw_ptr<UChar>(comp, 0x1A);
+    if (compType == 37)
+        return COMP_WORLD_CUP;
+    return compType;
+}
+
+Char const *GetNationalTeamECQualifiedTeamsScreenName() {
+    if (GetCurrentYear() == 2020)
+        return "Screens/10NationalTeamECQualifiedTeams_2020_FF12.xml";
+    return "Screens/10NationalTeamECQualifiedTeams.xml";
+}
+
+Char const *GetNationalTeamTournamentWelcomeScreenName() {
+    auto game = CDBGame::GetInstance();
+    if (game->GetIsWorldCupMode())
+        return "Screens/11NationalTeamWC2010TournamentWelcome.xml";
+    if (game->TestFlag(2)) {
+        return "Screens/10NationalTeamWCTournamentWelcome.xml";
+    }
+    else {
+        //if (game->TestFlag(4);
+        if (game->GetCurrentYear() == 2020)
+            return "Screens/10NationalTeamECTournamentWelcome_2020_FF12.xml";
+        return "Screens/10NationalTeamECTournamentWelcome.xml";
+    }
+    return "Screens/10NationalTeamECTournamentWelcome.xml";
+}
+
+Char const *GetNationalTeamTournamentGroupsScreenName() {
+    if (*(UChar *)0x3111C74 == 2) {
+        auto game = CDBGame::GetInstance();
+        if (game->GetCurrentYear() == 2020)
+            return "11NationalTeamECTournamentGroups_2020_FF12.xml";
+        return "11NationalTeamECTournamentGroups.xml";
+    }
+    return "11NationalTeamWCTournamentGroups.xml";
+}
+
+UInt gTmpAddress = 0;
+wchar_t gTmpMessage[256];
+
+void __declspec(naked) GetNumOfTeamsInComp() {
+    __asm {
+        mov eax, dword ptr[esp]
+        mov gTmpAddress, eax
+        test ecx, ecx
+        jz SHOW_ERR
+        mov eax, [ecx + 0xA8]
+        cdq
+        sub eax, edx
+        sar eax, 1
+        retn
+        SHOW_ERR :
+    }
+        swprintf(gTmpMessage, L"0x%X", gTmpAddress);
+        MessageBoxW(NULL, gTmpMessage, L"Season 2019 (v.1.3) - Exception", MB_ICONERROR);
+    __asm {
+        xor eax, eax
+        retn
+    }
+}
+
+CDBRound *GetECLast16Round(Int, Int, Int) {
+    CDBRound *round = GetRoundByRoundType(255, COMP_EURO_CUP, 12); // Last16
+    if (!round) {
+        round = GetRoundByRoundType(255, COMP_EURO_CUP, 13); // Quarterfinal
+        if (!round) {
+            round = GetRound(255, COMP_EURO_CUP, 15);
+            if (!round)
+                round = GetRound(255, COMP_EURO_CUP, 10);
+        }
+    }
+    return round;
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
 
-        patch::RedirectCall(0x10F47CB, ChampionsLeagueUniversalSort);
+        ///patch::RedirectCall(0x10F47CB, ChampionsLeagueUniversalSort);
 
-        patch::SetPointer(0x24B1874, GetPoolNumberOfTeamsFromCountry);
+        ///patch::SetPointer(0x24B1874, GetPoolNumberOfTeamsFromCountry);
 
-        patch::RedirectCall(0x88F9DD, OnFillEuropeanCompsParticipants);
-        patch::RedirectCall(0x88F9ED, OnFillEuropeanCompsParticipants);
+        ///patch::RedirectCall(0x88F9DD, OnFillEuropeanCompsParticipants);
+        ///patch::RedirectCall(0x88F9ED, OnFillEuropeanCompsParticipants);
 
-        patch::RedirectCall(0x88F73C, EuropeanCompsParticipants_GetNumEntries);
-        patch::RedirectCall(0x88F85D, EuropeanCompsParticipants_GetNumEntries);
-        patch::RedirectCall(0x88F75D, EuropeanCompsParticipants_GetCountryAtPosition);
-        patch::RedirectCall(0x88F6F6, EuropeanCompsParticipants_GetPool);
+        ///patch::RedirectCall(0x88F73C, EuropeanCompsParticipants_GetNumEntries);
+        ///patch::RedirectCall(0x88F85D, EuropeanCompsParticipants_GetNumEntries);
+        ///patch::RedirectCall(0x88F75D, EuropeanCompsParticipants_GetCountryAtPosition);
+        ///patch::RedirectCall(0x88F6F6, EuropeanCompsParticipants_GetPool);
 
-        patch::RedirectCall(0x139EFAF, OnGetSpare);
+        ///patch::RedirectCall(0x139EFAF, OnGetSpare);
 
-        /*
-        patch::SetUChar(0x23D4A84, 36);
+        
+        //patch::SetUChar(0x23D4A84, 36);
+        patch::SetPointer(0x5EF7D0 + 2, gInternationalCompsTypes);
+        patch::SetUChar(0x5F03ED + 2, (UChar)(std::size(gInternationalCompsTypes) * 4));
+        // B8 64 00 00 00
+        patch::SetUInt(0x5EF7FC, 0x000064B8);
+        patch::SetUChar(0x5EF7FC + 4, 0);
+        patch::Nop(0x5EF7FC + 5, 2);
 
         patch::SetPointer(0xF815C8 + 1, gNewCompTypeNames);
         patch::SetPointer(0xF87462 + 1, gNewCompTypeNames);
         // comp name
         patch::RedirectCall(0xF9793F, OnSetCompetitionName);
-        patch::RedirectCall(0xF97033, OnSetupRoot);
+        //patch::RedirectCall(0xF97033, OnSetupRoot);
         // comp types
         patch::SetPointer(0x11F2CFE + 2, gContinentalCompetitionTypes);
         patch::SetPointer(0x11F2D4F + 2, gContinentalCompetitionTypes);
         patch::SetUChar(0x11F2D6E + 2, 6 * 4);
-        // stats browser 1 - CStatsCupFixturesResults (Cup overview) - continental
+
+        // CStatsCupFixturesResults
         patch::SetUChar(0x703659 + 2, gNumCompetitionTypes - 1);
-        patch::SetUChar(0x704F59 + 2, gNumCompetitionTypes - 1);
-        patch::SetUChar(0x7061CE + 2, gNumCompetitionTypes - 1);
-        // stats browser 1 - CStatsCupFixturesResults (Cup overview) - international
         patch::SetUChar(0x703592, 0xEB);
         patch::SetUChar(0x7035D6, 0xEB);
         patch::SetUChar(0x703515, 0xEB);
         patch::SetUChar(0x703564 + 2, gNumCompetitionTypes - 1);
+
+        // CStatsCupResults
+        patch::SetUChar(0x704F59 + 2, gNumCompetitionTypes - 1);
+        patch::SetUChar(0x704E4E, 0xEB);
+        patch::SetUChar(0x704E92, 0xEB);
+        patch::SetUChar(0x704ED6, 0xEB);
+        patch::Nop(0x704DFB, 2);
+        patch::Nop(0x704E00, 2);
+        patch::SetUChar(0x704E25 + 2, gNumCompetitionTypes - 1);
+        
+        // CStatsCupTablesFinals
+        patch::SetUChar(0x7061CE + 2, gNumCompetitionTypes - 1);
 
         // standings
         patch::SetUChar(0xE3EBC1 + 2, gNumCompetitionTypes - 1);
@@ -438,12 +612,57 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectJump(0xF83180, TakesPlaceInThisYear);
 
         // fixture list
-        //patch::RedirectCall(0x96A3EF, SetupFixturesList);
-        //patch::RedirectJump(0x96A6B6, CheckFixtureList_1_Exec);
-        //patch::RedirectJump(0x96AAB5, CheckFixtureList_2_Exec);
-        //patch::SetUChar(0x96A4B6 + 4, std::extent<decltype(gCompTypesClubYouth)>::value); // Youth clubs
-        //patch::SetUChar(0x96A4D1 + 4, std::extent<decltype(gCompTypesClub)>::value); // Clubs
-        //patch::SetUChar(0x96A431 + 1, std::extent<decltype(gCompTypesNationalTeam)>::value); // National teams
-        */
+        patch::RedirectCall(0x96A3EF, SetupFixturesList);
+        patch::RedirectJump(0x96A6B6, CheckFixtureList_1_Exec);
+        patch::RedirectJump(0x96AAB5, CheckFixtureList_2_Exec);
+        patch::SetUInt(0x96A4B6 + 4, std::size(gCompTypesClubYouth)); // Youth clubs
+        patch::SetUInt(0x96A4D1 + 4, std::size(gCompTypesClub)); // Clubs
+        patch::SetUInt(0x96A431 + 1, std::size(gCompTypesNationalTeam)); // National teams
+        
+        // competition short names
+        patch::RedirectJump(0xF8B3E0, GetCompetitionShortName);
+
+        patch::SetUChar(0xEFBCAF + 2, gNumCompetitionTypes - 4);
+        static UChar gCompWinYearsJumpTable[] = { 0, 1, 11, 11, 2, 11, 3, 4, 5, 6, 7, 11, 11, 11, 8, 9, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 11, 11, 11, 10, 11 };
+        patch::SetPointer(0xEFBCB8 + 3, gCompWinYearsJumpTable);
+        patch::RedirectCall(0x7DA52D, OnAddMyCareerTrophyNationalTeam);
+
+        // international goals
+        patch::RedirectJump(0xF8DF90, GetCompetitionGroupByCompetitionId);
+
+        // tournament status (groups)
+        static UInt gTournamentStatusGroupsComps[] = { 15, 16, 17, 18, 32, 33, 36, 37 };
+        patch::SetPointer(0x844334 + 2, gTournamentStatusGroupsComps);
+        patch::SetUChar(0x8443A0 + 2, (UChar)std::size(gTournamentStatusGroupsComps) * 4);
+
+        // tournament status (fixtures and tables)
+        static UInt gTournamentStatusFixturesAndTablesComps[] = { 15, 16, 17, 18, 32, 33, 36, 37 };
+        patch::SetPointer(0x837760 + 3, gTournamentStatusFixturesAndTablesComps);
+        patch::SetPointer(0x8377A8 + 3, gTournamentStatusFixturesAndTablesComps);
+        patch::SetUChar(0x83776A + 2, (UChar)std::size(gTournamentStatusFixturesAndTablesComps));
+        patch::SetUChar(0x837785 + 2, (UChar)std::size(gTournamentStatusFixturesAndTablesComps));
+        patch::SetUInt(0x83778E, 0x3C24448B);
+        patch::SetUInt(0x837738 + 4, 100);
+
+        // international hosts - national team
+        patch::RedirectCall(0x1044950, GetCompetitionTypeForNationalTeamHost);
+
+        // Euro
+        const UInt NumEuroTeams = 24;
+        const UInt NumEuroGroups = 6;
+
+        // Euro - welcome
+        patch::SetUChar(0x836409 + 2, NumEuroTeams - 1);
+        patch::SetUInt(0x835E8F + 4, NumEuroGroups);
+        patch::SetChar(0x8359D1 + 2, NumEuroTeams - 18);
+
+        // Euro - screens
+        patch::RedirectJump(0x829880, GetNationalTeamECQualifiedTeamsScreenName);
+        patch::RedirectJump(0x835590, GetNationalTeamTournamentWelcomeScreenName);
+        patch::RedirectJump(0x831DE0, GetNationalTeamTournamentGroupsScreenName);
+
+        patch::RedirectCall(0x106D2F3, GetECLast16Round);
+        patch::RedirectCall(0x106D571, GetECLast16Round);
+        patch::RedirectCall(0x, GetECLast16Round);
     }
 }
