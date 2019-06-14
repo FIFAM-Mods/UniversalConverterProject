@@ -490,10 +490,48 @@ Char const *GetNationalTeamTournamentGroupsScreenName() {
     if (*(UChar *)0x3111C74 == 2) {
         auto game = CDBGame::GetInstance();
         if (game->GetCurrentYear() == 2020)
-            return "11NationalTeamECTournamentGroups_2020_FF12.xml";
-        return "11NationalTeamECTournamentGroups.xml";
+            return "Screens/11NationalTeamECTournamentGroups_2020_FF12.xml";
+        return "Screens/11NationalTeamECTournamentGroups.xml";
     }
-    return "11NationalTeamWCTournamentGroups.xml";
+    return "Screens/11NationalTeamWCTournamentGroups.xml";
+}
+
+Char const *GetNationalTeamECTournamentFinalsScreenName() {
+    auto game = CDBGame::GetInstance();
+    if (game->GetCurrentYear() == 2020)
+        return "Screens/10NationalTeamECTournamentFinals_2020_FF12.xml";
+    return "Screens/10NationalTeamECTournamentFinals.xml";
+}
+
+Char const *GetNationalTeamTournamentReportScreenName() {
+    auto game = CDBGame::GetInstance();
+    if (game->GetIsWorldCupMode())
+        return "Screens/11NationalTeamWC2010TournamentReport.xml";
+    if (game->TestFlag(4) || !game->TestFlag(2)) {
+        if (game->GetCurrentYear() == 2020)
+            return "Screens/10NationalTeamECTournamentReport_2020_FF12.xml";
+        return "Screens/10NationalTeamECTournamentReport.xml";
+    }
+    return "Screens/10NationalTeamWCTournamentReport.xml";
+}
+
+Char const *GetNationalTeamTournamentDreamTeamScreenName() {
+    auto game = CDBGame::GetInstance();
+    if (game->GetIsWorldCupMode())
+        return "Screens/11NationalTeamWC2010DreamTeam.xml";
+    if (game->TestFlag(4) || !game->TestFlag(2)) {
+        if (game->GetCurrentYear() == 2020)
+            return "Screens/10NationalTeamECTournamentDreamTeam_2020_FF12.xml";
+        return "Screens/10NationalTeamECTournamentDreamTeam.xml";
+    }
+    return "Screens/10NationalTeamWCTournamentDreamTeam.xml";
+}
+
+Char const *GetNationalTeamTournamentECUpsAndDownsScreenName() {
+    auto game = CDBGame::GetInstance();
+    if (game->GetCurrentYear() == 2020)
+        return "Screens/13NationalTeamECUpsAndDowns_2020_FF12.xml";
+    return "Screens/13NationalTeamECUpsAndDowns.xml";
 }
 
 UInt gTmpAddress = 0;
@@ -506,9 +544,9 @@ void __declspec(naked) GetNumOfTeamsInComp() {
         test ecx, ecx
         jz SHOW_ERR
         mov eax, [ecx + 0xA8]
-        cdq
-        sub eax, edx
-        sar eax, 1
+        //cdq
+        //sub eax, edx
+        //sar eax, 1
         retn
         SHOW_ERR :
     }
@@ -523,14 +561,104 @@ void __declspec(naked) GetNumOfTeamsInComp() {
 CDBRound *GetECLast16Round(Int, Int, Int) {
     CDBRound *round = GetRoundByRoundType(255, COMP_EURO_CUP, 12); // Last16
     if (!round) {
-        round = GetRoundByRoundType(255, COMP_EURO_CUP, 13); // Quarterfinal
+        round = GetRound(255, COMP_EURO_CUP, 15);
         if (!round) {
-            round = GetRound(255, COMP_EURO_CUP, 15);
+            round = GetRoundByRoundType(255, COMP_EURO_CUP, 13); // Quarterfinal
             if (!round)
                 round = GetRound(255, COMP_EURO_CUP, 10);
         }
     }
     return round;
+}
+
+CDBRound *GetECQuarterfinal(Int, Int, Int) {
+    CDBRound *round = GetRoundByRoundType(255, COMP_EURO_CUP, 13);
+    if (!round) {
+        round = GetRound(255, COMP_EURO_CUP, 16);
+        if (!round)
+            round = GetRound(255, COMP_EURO_CUP, 10);
+    }
+    return round;
+}
+
+CDBRound *GetECSemifinal(Int, Int, Int) {
+    CDBRound *round = GetRoundByRoundType(255, COMP_EURO_CUP, 14);
+    if (!round) {
+        round = GetRound(255, COMP_EURO_CUP, 17);
+        if (!round)
+            round = GetRound(255, COMP_EURO_CUP, 11);
+    }
+    return round;
+}
+
+CDBRound *GetECFinal(Int, Int, Int) {
+    CDBRound *round = GetRoundByRoundType(255, COMP_EURO_CUP, 15);
+    if (!round) {
+        round = GetRound(255, COMP_EURO_CUP, 18);
+        if (!round)
+            round = GetRound(255, COMP_EURO_CUP, 12);
+    }
+    return round;
+}
+
+void METHOD OnSetupTeamsForECQuarterfinal(void *screen, DUMMY_ARG, UChar roundType, CDBCompetition *comp) {
+    CDBRound *last16 = GetECLast16Round(0, 0, 0);
+    if (last16)
+        CallMethod<0x8304A0>(screen, 0, last16);
+    CallMethod<0x8304A0>(screen, 1, comp);
+}
+
+struct ECFinalsAdditionalData {
+    CTeamIndex mTeamIDs[30];
+    void *mFlags[30];
+    void *mTextBoxes[60];
+};
+
+ECFinalsAdditionalData *GetECFinalsAdditionalData(void *screen) {
+    return raw_ptr<ECFinalsAdditionalData>(screen, 0x594);
+}
+
+void * METHOD OnCreateNationalTeamTournamentFinalsEC(void *screen, DUMMY_ARG, Int a) {
+    CallMethod<0x830390>(screen, a);
+    auto data = GetECFinalsAdditionalData(screen);
+    for (UInt i = 0; i < 30; i++) {
+        data->mTeamIDs[i].countryId = 0;
+        data->mTeamIDs[i].type = 0;
+        data->mTeamIDs[i].index = 0;
+        data->mFlags[i] = nullptr;
+        data->mTextBoxes[i] = nullptr;
+        data->mTextBoxes[i + 30] = nullptr;
+    }
+    return screen;
+}
+
+void __declspec(naked) ECSetupTeamsForFinal() {
+    __asm {
+        cmp al, 2
+        jnz CHECK_FOR_FINAL
+        lea esi, [ebx + 0x744]
+        lea edi, [ebx + 0x66C]
+        mov[esp + 0x10], 24
+        jmp RETN_BACK
+    CHECK_FOR_FINAL:
+        cmp al, 3
+        jnz RETN_BACK
+        lea esi, [ebx + 0x764]
+        lea edi, [ebx + 0x67C]
+        mov [esp + 0x10], 28
+     RETN_BACK:
+        mov eax, 0x830510
+        jmp eax
+    }
+}
+
+CDBLeague *OnGetLeagueTournamentWelcome(UChar region, UChar type, UShort index) {
+    if (type == COMP_EURO_CUP) {
+        CDBLeague *league = GetLeague(region, type, index + 6);
+        if (league)
+            return league;
+    }
+    return GetLeague(region, type, index);
 }
 
 void PatchCompetitions(FM::Version v) {
@@ -660,9 +788,54 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectJump(0x829880, GetNationalTeamECQualifiedTeamsScreenName);
         patch::RedirectJump(0x835590, GetNationalTeamTournamentWelcomeScreenName);
         patch::RedirectJump(0x831DE0, GetNationalTeamTournamentGroupsScreenName);
+        patch::RedirectJump(0x8300E0, GetNationalTeamECTournamentFinalsScreenName);
+        patch::RedirectJump(0x832940, GetNationalTeamTournamentReportScreenName);
+        patch::RedirectJump(0x82E9E0, GetNationalTeamTournamentDreamTeamScreenName);
+        patch::RedirectJump(0xE5F100, GetNationalTeamTournamentECUpsAndDownsScreenName);
 
         patch::RedirectCall(0x106D2F3, GetECLast16Round);
         patch::RedirectCall(0x106D571, GetECLast16Round);
-        patch::RedirectCall(0x, GetECLast16Round);
+
+        patch::RedirectCall(0x49B747, OnCreateNationalTeamTournamentFinalsEC);
+        patch::SetUInt(0x49B714 + 1, 0x594 + sizeof(ECFinalsAdditionalData));
+        patch::SetUInt(0x49B71B + 1, 0x594 + sizeof(ECFinalsAdditionalData));
+        patch::SetUInt(0x830190 + 1, 1);
+        patch::SetUInt(0x830184 + 2, 0x594 + offsetof(ECFinalsAdditionalData, mTextBoxes));
+        patch::SetUInt(0x8301CA + 1, 1);
+        patch::SetUInt(0x8301CF + 2, 0x594 + offsetof(ECFinalsAdditionalData, mFlags));
+        patch::SetUInt(0x830201 + 1, 30);
+        patch::SetUInt(0x83021F + 2, 0x594 + 3 * 4 + offsetof(ECFinalsAdditionalData, mTextBoxes));
+        patch::SetUInt(0x830225 + 1, 15);
+        patch::SetUInt(0x830249 + 2, 0x594 + offsetof(ECFinalsAdditionalData, mFlags));
+        patch::SetUInt(0x83024F + 1, 30);
+
+        patch::SetUInt(0x830AEC + 2, 0x594 + offsetof(ECFinalsAdditionalData, mTextBoxes));
+        patch::SetUChar(0x830B04 + 2, 60);
+        patch::SetUInt(0x830B0B + 2, 0x594 + offsetof(ECFinalsAdditionalData, mFlags));
+        patch::SetUChar(0x830B23 + 2, 30);
+        patch::SetUInt(0x830B3A + 3, 0x594 + offsetof(ECFinalsAdditionalData, mTeamIDs) + 2);
+        patch::SetUInt(0x830B5F + 3, 0x594 + offsetof(ECFinalsAdditionalData, mTeamIDs) + 2);
+        patch::SetUInt(0x830B44 + 3, 0x594 + offsetof(ECFinalsAdditionalData, mTeamIDs));
+        patch::SetUInt(0x830B69 + 3, 0x594 + offsetof(ECFinalsAdditionalData, mTeamIDs));
+        
+        patch::RedirectCall(0x8309BF, GetECQuarterfinal);
+        patch::RedirectCall(0x8309DE, GetECSemifinal);
+        patch::RedirectCall(0x8309FD, GetECFinal);
+        patch::RedirectCall(0x8309D0, OnSetupTeamsForECQuarterfinal);
+        patch::SetUChar(0x8309CC + 1, 1);
+        patch::SetUChar(0x8309EB + 1, 2);
+        patch::SetUChar(0x830A0C + 1, 3);
+        
+        patch::SetUInt(0x8304CA + 2, 0x594 + offsetof(ECFinalsAdditionalData, mTextBoxes));
+        patch::SetUInt(0x8304D0 + 2, 0x594 + offsetof(ECFinalsAdditionalData, mFlags));
+        patch::SetUInt(0x83052C + 3, 0x594 + 4 + offsetof(ECFinalsAdditionalData, mTeamIDs));
+        patch::SetUInt(0x8304E2 + 2, 0x594 + 32 * 4 + offsetof(ECFinalsAdditionalData, mTextBoxes));
+        patch::SetUInt(0x8304E8 + 2, 0x594 + 16 * 4 + offsetof(ECFinalsAdditionalData, mFlags));
+        patch::SetUInt(0x8304EE + 4, 16);
+        patch::RedirectJump(0x8304F8, ECSetupTeamsForFinal);
+
+        patch::SetUInt(0x830455 + 3, 0x594 + offsetof(ECFinalsAdditionalData, mFlags));
+
+        patch::RedirectCall(0x835EC9, OnGetLeagueTournamentWelcome);
     }
 }

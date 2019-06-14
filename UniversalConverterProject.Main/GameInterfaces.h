@@ -147,6 +147,7 @@ CDBCompetition *GetCompetition(unsigned char region, unsigned char type, unsigne
 CDBCompetition *GetCompetition(CCompID const &id);
 CDBCompetition *GetCompetition(unsigned int *id);
 CDBCompetition *GetCompetition(unsigned int id);
+CDBLeague *GetLeague(unsigned char region, unsigned char type, unsigned short index);
 CDBLeague *GetLeague(CCompID const &id);
 CDBLeague *GetLeague(unsigned int *id);
 CDBLeague *GetLeague(unsigned int id);

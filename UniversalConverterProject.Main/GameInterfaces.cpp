@@ -183,6 +183,10 @@ CDBCompetition *GetCompetition(unsigned int id) {
     return plugin::CallAndReturn<CDBCompetition *, 0xF8AF50>(&id);
 }
 
+CDBLeague *GetLeague(unsigned char region, unsigned char type, unsigned short index) {
+    return plugin::CallAndReturn<CDBLeague *, 0xF8C620>(region, type, index);
+}
+
 CDBLeague *GetLeague(CCompID const &id) {
     return plugin::CallAndReturn<CDBLeague *, 0xF8C600>(&id);
 }
