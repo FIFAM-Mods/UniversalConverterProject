@@ -1,4 +1,7 @@
 #include "LeagueSelection.h"
+#include "GameInterfaces.h"
+#include "FifamCompType.h"
+#include "FifamCompRegion.h"
 
 using namespace plugin;
 
@@ -20,10 +23,9 @@ struct RecommendedLeagues {
 
 void PatchLeagueSelection(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        // remove special places for Germany, Spain and Scotland
-        patch::RedirectJump(0xF8E60A, (void *)0xF8E6DF);
         // enable 'IGNORE_LEAGUE_LIMITATION'
         patch::Nop(0x5424D3, 2);
+        patch::SetUInt(0x3067B20, 3);
         
         // league selection
         RecommendedLeagues *ptr = (RecommendedLeagues *)0x23BDE10;

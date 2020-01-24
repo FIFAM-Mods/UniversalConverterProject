@@ -171,6 +171,8 @@ Int gCurrentPlayerCustomGlove = -1;
 void ObtainCurrentPlayerAccessories(char *a, const char *b, Int id) { // manager
     sprintf(a, b, id);
     gCurrentPlayerAccessories = nullptr;
+    gCurrentPlayerCustomShoe = -1;
+    gCurrentPlayerCustomGlove = -1;
     void *player = CallAndReturn<void *, 0xF97C70>(id); // PlayerFromUID
     if (player) {
         UInt empicsid = *raw_ptr<UInt>(player, 0xE0);
@@ -190,7 +192,7 @@ void PassPlayerAccessoriesSleeves(char *a, const char *b, UInt sleeves) { // man
 
 void PassPlayerAccessoriesShoeColor(void *a, const char *b, UInt shoecolor) { // manager
     if (gCurrentPlayerCustomShoe >= 0)
-        shoecolor = gCurrentPlayerCustomShoe;
+        shoecolor = gCurrentPlayerCustomShoe + 100;
     Call<0x413AB0>(a, b, shoecolor);
 }
 
@@ -300,13 +302,21 @@ void SetupSleevesForPlayerModel(void *plmodel) { // gfxcore
         void *player = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x950B0), gPlayerAccessoriesTeamDb, gPlayerAccessoriesPlayerIndex);
         // sleeves
         UInt sleeves = *raw_ptr<UInt>(player, 0x1C8);
+        if (sleeves != 1) {
+            void *match = *(void **)0x3124748;
+            if (match) {
+                UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
+                if (weather == 1)
+                    sleeves = 1;
+            }
+        }
         if (sleeves == 1)
             CallDynGlobal(GfxCoreAddress(0x23C0B0), plmodel, gPlayerAccessoriesIsCaptain ? 3 : 1);
         else
             CallDynGlobal(GfxCoreAddress(0x23C0B0), plmodel, gPlayerAccessoriesIsCaptain ? 2 : 0);
         UInt shoecolor = *raw_ptr<UInt>(player, 0x1C4);
         // shoecolor
-        if (shoecolor > 100)
+        if (shoecolor >= 100)
             * raw_ptr<UInt>(plmodel, 0xFA8) = shoecolor - 100;
         // gk gloves
 
@@ -316,9 +326,12 @@ void SetupSleevesForPlayerModel(void *plmodel) { // gfxcore
 
 Bool METHOD OnParseTcmMatchInfo(void *io, DUMMY_ARG, wchar_t const *str) {
     FILE *f = _wfopen(Utils::Format(L"teamdata_%d.txt", rand() & 0xFFFF).c_str(), L"wb");
-    fwrite(str, 200000, 1, f);
-    fclose(f);
+    if (f) {
+        fwrite(str, 200000, 1, f);
+        fclose(f);
+    }
     CallMethodDynGlobal(GfxCoreAddress(0x25CE70), io, str);
+    return true;
 }
 
 void InstallPlayerAccessoriesGfxPatches() {
@@ -336,7 +349,7 @@ void InstallPlayerAccessoriesGfxPatches() {
 void PatchPlayerAccessories(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadPlayerAccessoriesFile();
-        //ReadPlayerCustomShoesFile();
+        ReadPlayerCustomShoesFile();
         //ReadPlayerCustomGlovesFile();
 
         patch::RedirectCall(0x40D805, ObtainCurrentPlayerAccessories);

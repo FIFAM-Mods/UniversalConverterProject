@@ -2,6 +2,8 @@
 #include "3dPatches.h"
 #include "Kits.h"
 #include "PlayerAccessories.h"
+#include "WindowedMode.h"
+#include "Pitch.h"
 
 unsigned int gOriginalLoadGfxCore = 0;
 unsigned int hLibrary = 0;
@@ -10,7 +12,7 @@ unsigned int GfxCoreAddress(unsigned int addr) {
     return hLibrary + addr;
 }
 
-bool METHOD OnLoadGfxCore(void **info, int, const wchar_t *libFileName, const char *procName) {
+bool METHOD OnLoadGfxCore(void **info, DUMMY_ARG, const wchar_t *libFileName, const char *procName) {
     bool result = false;
     if (gOriginalLoadGfxCore) {
         result = CallMethodAndReturnDynGlobal<bool>(gOriginalLoadGfxCore, info, libFileName, procName);
@@ -21,6 +23,8 @@ bool METHOD OnLoadGfxCore(void **info, int, const wchar_t *libFileName, const ch
             Install3dPatches_FM13();
             InstallKits_FM13();
             InstallPlayerAccessoriesGfxPatches();
+            InstallWindowedMode_GfxCore();
+            InstallPitch3D();
 
         }
     }

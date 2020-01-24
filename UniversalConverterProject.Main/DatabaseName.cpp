@@ -4,6 +4,7 @@
 using namespace plugin;
 
 #define DB_VERSION_HEX 0x2019
+#define SAVE_VERSION 40
 
 void OnSetRadioButtonIndex(void **rb, unsigned int num, unsigned int index) {
     Call<0xD2D040>(rb, num, 0);
@@ -21,9 +22,20 @@ void OnSetRadioButtonIndex_11(void **rb, unsigned int num, unsigned int index) {
     CallVirtualMethod<9>(rb[0], 0);
 }
 
+void *ShowDbLoadError(char *m) {
+    Error(m);
+    return CallAndReturn<void *, 0x1493E98>();
+}
+
 void PatchDatabaseName(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        //patch::RedirectCall(0x10845AE, ShowDbLoadError);
+
         patch::SetUInt(0x108F675 + 1, DB_VERSION_HEX);
+
+        //patch::SetUChar(0x1080E29 + 2, SAVE_VERSION);
+        //patch::SetUInt(0x1082C02 + 3, SAVE_VERSION);
+        //patch::SetUInt(0x107F278 + 3, SAVE_VERSION);
 
         patch::SetPointer(0x524B09 + 1, (void *)GetMainDatabaseName());
         patch::SetPointer(0x524B24 + 1, (void *)GetEditorDatabaseName());
@@ -33,7 +45,7 @@ void PatchDatabaseName(FM::Version v) {
         patch::SetPointer(0x5247C0 + 1, (void *)GetDatabaseScreenName());
         patch::SetPointer(0x52E1F0 + 1, (void *)GetMainMenuScreenName());
 
-        patch::RedirectCall(0x524E1A, OnSetRadioButtonIndex);
+        //patch::RedirectCall(0x524E1A, OnSetRadioButtonIndex);
 
         //patch::SetUChar(0x1080E29 + 2, 40);
         //patch::SetUInt(0x1082C02 + 3, 40);

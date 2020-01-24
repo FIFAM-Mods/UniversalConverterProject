@@ -73,13 +73,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -88,8 +88,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
-      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>generic.lib;fmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>generic.lib;fmapi.lib;UCPCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent>
@@ -99,27 +99,43 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="ClubIDs.cpp" />
+    <ClCompile Include="Competitions.cpp" />
+    <ClCompile Include="compression.cpp" />
     <ClCompile Include="Country207.cpp" />
     <ClCompile Include="DatabaseName.cpp" />
+    <ClCompile Include="Editor.cpp" />
     <ClCompile Include="EditorChiefExecExport.cpp" />
     <ClCompile Include="FemaleNames.cpp" />
     <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
+    <ClCompile Include="Formations.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ParameterFiles.cpp" />
+    <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="Talent6Stars.cpp" />
+    <ClCompile Include="Translation.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="3dPatches.h" />
     <ClInclude Include="ClubIDs.h" />
+    <ClInclude Include="Competitions.h" />
+    <ClInclude Include="compression.h" />
     <ClInclude Include="Country207.h" />
     <ClInclude Include="DatabaseName.h" />
+    <ClInclude Include="Editor.h" />
     <ClInclude Include="EditorChiefExecExport.h" />
     <ClInclude Include="FemaleNames.h" />
     <ClInclude Include="FixedArchivesReadingForEditor.h" />
+    <ClInclude Include="Formations.h" />
     <ClInclude Include="LowestLeagues.h" />
+    <ClInclude Include="ParameterFiles.h" />
+    <ClInclude Include="RendererHook.h" />
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="Talent6Stars.h" />
+    <ClInclude Include="Translation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

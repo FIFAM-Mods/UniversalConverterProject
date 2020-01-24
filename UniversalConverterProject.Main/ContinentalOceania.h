@@ -1,5 +1,6 @@
 #pragma once
 #include "ScriptsShared.h"
+#include "FifamCompID.h"
 
 const UInt Oceania_ParticipantsCountries[] = {
     FifamCompRegion::New_Zealand,

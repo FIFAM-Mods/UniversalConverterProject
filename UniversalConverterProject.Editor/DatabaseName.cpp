@@ -1,11 +1,13 @@
 #include "DatabaseName.h"
+#include "license_check/license_check.h"
 
 using namespace plugin;
 
 void SetDatabaseName(wchar_t *dst, wchar_t const *a, wchar_t const *b) {
     static wchar_t dbname[MAX_PATH];
     wcscpy(dbname, b);
-    wcscpy(&wcsrchr(dbname, L'\\')[1], L"fmdata\\UniversalConverterProjectDatabase.ucpdb");
+    std::wstring edDbName = Magic<'d','a','t','a','b','a','s','e','\\','U','C','P','E','d','i','t','o','r','D','a','t','a','b','a','s','e','.','u','c','p','d','b'>(3967910619);
+    wcscpy(&wcsrchr(dbname, L'\\')[1], edDbName.c_str());
     wcscpy(dst, dbname);
 }
 

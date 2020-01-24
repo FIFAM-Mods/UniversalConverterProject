@@ -1,6 +1,7 @@
 #include "FemaleNames.h"
 #include "FifamTypes.h"
 #include "Log.h"
+#include "license_check/license_check.h"
 
 using namespace plugin;
 
@@ -63,9 +64,9 @@ Bool IsFemale(UShort nameIndex, UChar languageId, UInt nameType) {
     return false;
 }
 
-UInt ReadNamesFile(WideChar const *filename, NamesArray &names) {
+UInt ReadNamesFile(String const &filename, NamesArray &names) {
     UInt numNamesRead = 0;
-    FILE *f = _wfopen(filename, L"rb");
+    FILE *f = _wfopen(filename.c_str(), Magic<'r','b'>(3009798726).c_str());
     if (f) {
         for (UInt l = 0; l < MAX_LANGUAGES; l++) {
             UInt numNames = 0;
@@ -140,9 +141,9 @@ void * METHOD GetRandomFirstLast(UInt pools, DUMMY_ARG, void *desc, UChar langua
 
 void PatchFemaleNames(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        UInt numNames = ReadNamesFile(L"fmdata\\UCP_FemaleNames.bin", GetFemaleNames());
-        numNames += ReadNamesFile(L"fmdata\\UCP_FemaleSurnames.bin", GetFemaleSurnames());
-        numNames += ReadNamesFile(L"fmdata\\UCP_FemaleCommonNames.bin", GetFemaleCommonNames());
+        UInt numNames = ReadNamesFile(Magic<'f','m','d','a','t','a','\\','U','C','P','_','F','e','m','a','l','e','N','a','m','e','s','.','b','i','n'>(4134089135), GetFemaleNames());
+        numNames += ReadNamesFile(Magic<'f','m','d','a','t','a','\\','U','C','P','_','F','e','m','a','l','e','S','u','r','n','a','m','e','s','.','b','i','n'>(482911666), GetFemaleSurnames());
+        numNames += ReadNamesFile(Magic<'f','m','d','a','t','a','\\','U','C','P','_','F','e','m','a','l','e','C','o','m','m','o','n','N','a','m','e','s','.','b','i','n'>(1755295342), GetFemaleCommonNames());
         if (numNames > 0) {
             patch::RedirectJump(0x1499E11, GetOneRandomNameIndex);
             patch::RedirectJump(0x1499E45, GetRandomFirstLast);

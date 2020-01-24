@@ -1,13 +1,40 @@
 #include "WorldCup.h"
+#include "GameInterfaces.h"
+#include "FifamCompRegion.h"
 
 using namespace plugin;
 
+Bool gChangedStartDateForWC = false;
+
+void METHOD SetSeasonStartDateForWorldCup(CDBGame *g, DUMMY_ARG, CJDate d) {
+    gChangedStartDateForWC = true;
+    g->SetCurrentDate(d);
+    //Message(L"SetSeasonStartDateForWorldCup");
+}
+
+void METHOD OnLoadGameStartDatabase(void *t, DUMMY_ARG, Int e) {
+    if (gChangedStartDateForWC) {
+        gChangedStartDateForWC = false;
+        CDBGame *g = CDBGame::GetInstance();
+        if (g) {
+            CJDate date;
+            date.Set(2019, 7, 1); // Change this with new start year
+            g->SetCurrentDate(date);
+            //Message(L"OnLoadGameStartDatabase");
+        }
+    }
+    CallMethod<0x524A90>(t, e);
+}
+
 void PatchWorldCup(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        patch::SetUInt(0x108A8E6 + 1, 2018); // Start year
-        patch::SetUInt(0x108C7FC + 1, 2017); // Quali start year
+        patch::SetUInt(0x108A8E6 + 1, 2022); // Start year
+        patch::SetUInt(0x108C7FC + 1, 2021); // Quali start year
 
-        patch::SetUInt(0x308DC88, 40); // Hosting team
+        patch::RedirectCall(0x108C81D, SetSeasonStartDateForWorldCup);
+        patch::RedirectCall(0x47F7D7, OnLoadGameStartDatabase);
+
+        patch::SetUInt(0x308DC88, FifamCompRegion::Qatar); // Hosting team
 
         using CdeclRetInt = int(__cdecl *)();
         //patch::RedirectCall(0x108C6F0, (CdeclRetInt)([] {
@@ -29,6 +56,6 @@ void PatchWorldCup(FM::Version v) {
         }));
     }
     else if (v.id() == ID_FM_11_1003) {
-        patch::SetUInt(0x145E240, 40); // Hosting team
+        patch::SetUInt(0x145E240, FifamCompRegion::Qatar); // Hosting team
     }
 }

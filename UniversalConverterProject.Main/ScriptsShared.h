@@ -1,6 +1,6 @@
 #pragma once
 #include "GameInterfaces.h"
-#include "FifamCompID.h"
+#include "FifamTypes.h"
 #include "Random.h"
 
 Bool AddTeamFromCountry(CDBCompetition *comp, UInt countryId, UInt teamIndex, Bool keepAddingIfFailed = false) {
@@ -48,4 +48,35 @@ void AddRandomTeams(CDBCompetition *comp, UInt countryId, UInt numTeams, Vector<
         for (UInt i = 0; i < numTeams; i++)
             AddTeamFromCountry(comp, countryId, c[i], true);
     }
+}
+
+bool AddFinalWinner(CDBCompetition *comp, UInt regionId, UInt compType) {
+    auto round = GetRoundByRoundType(regionId, compType, 15);
+    if (round)
+        return comp->AddTeam(round->GetChampion());
+    return false;
+}
+
+UInt AddEuropeanTeams(CDBCompetition *comp, UInt countryId, UInt startPos, UInt numTeams) {
+    UInt numAddedTeams = 0;
+    auto league = GetLeague(countryId, COMP_LEAGUE, 0);
+    if (league) {
+        if (startPos == 0)
+            startPos = 1;
+        UInt numTeamsInLeague = league->GetNumOfRegisteredTeams();
+        for (UInt i = startPos - 1; i < numTeamsInLeague; i++) {
+            if (!numTeams)
+                break;
+            CTeamIndex teamId = league->GetTeamAtPosition(i);
+            if (teamId.countryId > 0) {
+                if (comp->IsTeamPresent(teamId))
+                    numTeams--;
+                else if (comp->AddTeam(teamId)) {
+                    numAddedTeams++;
+                    numTeams--;
+                }
+            }
+        }
+    }
+    return numAddedTeams;
 }

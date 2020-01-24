@@ -124,7 +124,7 @@ void WriteNamesFile(WideChar const *filename, NamesArray &names) {
 }
 
 void WriteDebugNamesFile(WideChar const *filename, NamesArray &names, DebugNamesArray &debugNames) {
-    FifamWriter writer(filename, 14, 0, 0);
+    FifamWriter writer(filename, 14, FifamVersion());
     if (writer.Available()) {
         for (UInt l = 0; l < MAX_LANGUAGES; l++) {
             UInt numNames = 0;

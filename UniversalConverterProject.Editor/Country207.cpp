@@ -2,6 +2,16 @@
 
 using namespace plugin;
 
+void *METHOD OnGetCountryFor5YearTable(void *world, DUMMY_ARG, int countryId) {
+    if (countryId == 207)
+        return 0;
+    return CallMethodAndReturn<void *, 0x4C9DC0>(world, countryId);
+}
+
+int METHOD OnGetNumberOfLinesInAssessmentSav(void *) {
+    return 207;
+}
+
 void PatchCountry207(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         patch::SetUInt(0x413DA2 + 2, 208);
@@ -10,7 +20,7 @@ void PatchCountry207(FM::Version v) {
         patch::SetUInt(0x413ED2 + 2, 208);
 
         //patch::SetUInt(0x416819 + 2, 207);
-        patch::SetUInt(0x416939 + 2, 208);
+        //patch::SetUInt(0x416939 + 2, 208);
 
         patch::SetUInt(0x421445 + 1, 208);
 
@@ -96,8 +106,8 @@ void PatchCountry207(FM::Version v) {
 
         // 4F5B8E not sure
 
-        patch::SetUInt(0x4153F4 + 1, 207); // country sorter
-        patch::SetUInt(0x416819 + 2, 207);
+        //patch::SetUInt(0x4153F4 + 1, 207); // country sorter
+        //patch::SetUInt(0x416819 + 2, 207);
         patch::SetUInt(0x5524F2 + 4, 207);
         // fix legal issues
         patch::SetUInt(0x556E97 + 1, 207);
@@ -114,6 +124,9 @@ void PatchCountry207(FM::Version v) {
         patch::SetUInt(0x45F4BA + 1, 208);
         patch::SetUInt(0x45DCCB + 2, 208);
         patch::SetUInt(0x45DDD6 + 1, 208);
+
+        patch::RedirectCall(0x4167FB, OnGetCountryFor5YearTable);
+        patch::RedirectCall(0x4CA3C5, OnGetNumberOfLinesInAssessmentSav);
 
     }
     else if (v.id() == ID_ED_11_1003) {

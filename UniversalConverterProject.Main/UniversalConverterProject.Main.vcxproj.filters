@@ -37,6 +37,27 @@
     <ClCompile Include="MiscFormerCupOpponents.cpp" />
     <ClCompile Include="GameInterfaces.cpp" />
     <ClCompile Include="PlayerAccessories.cpp" />
+    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="Formations.cpp" />
+    <ClCompile Include="tinyxml\tinystr.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxml.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlerror.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlparser.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowedMode.cpp" />
+    <ClCompile Include="3dAdboards.cpp" />
+    <ClCompile Include="Pitch.cpp" />
+    <ClCompile Include="Beta.cpp" />
+    <ClCompile Include="Scouting.cpp" />
+    <ClCompile Include="Media.cpp" />
+    <ClCompile Include="Translation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -74,17 +95,32 @@
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="MiscFormerCupOpponents.h" />
     <ClInclude Include="GameInterfaces.h" />
-    <ClInclude Include="ContinentalOceania.h">
-      <Filter>competition_scripts</Filter>
-    </ClInclude>
     <ClInclude Include="ScriptsShared.h">
       <Filter>competition_scripts</Filter>
     </ClInclude>
     <ClInclude Include="PlayerAccessories.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="Formations.h" />
+    <ClInclude Include="tinyxml\tinystr.h">
+      <Filter>tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml\tinyxml.h">
+      <Filter>tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowedMode.h" />
+    <ClInclude Include="3dAdboards.h" />
+    <ClInclude Include="Pitch.h" />
+    <ClInclude Include="Beta.h" />
+    <ClInclude Include="Scouting.h" />
+    <ClInclude Include="Media.h" />
+    <ClInclude Include="Translation.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">
       <UniqueIdentifier>{2c01ca93-1b9a-41b6-9774-74b6bac98e60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tinyxml">
+      <UniqueIdentifier>{1164b2a0-d31c-469f-afd5-3f5ac999ab9e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

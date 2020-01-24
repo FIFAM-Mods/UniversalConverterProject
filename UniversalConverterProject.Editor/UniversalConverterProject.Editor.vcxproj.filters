@@ -11,6 +11,14 @@
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="Country207.cpp" />
     <ClCompile Include="FemaleNames.cpp" />
+    <ClCompile Include="Competitions.cpp" />
+    <ClCompile Include="Formations.cpp" />
+    <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="ParameterFiles.cpp" />
+    <ClCompile Include="compression.cpp" />
+    <ClCompile Include="RendererHook.cpp" />
+    <ClCompile Include="3dPatches.cpp" />
+    <ClCompile Include="Translation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -22,5 +30,13 @@
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="Country207.h" />
     <ClInclude Include="FemaleNames.h" />
+    <ClInclude Include="Competitions.h" />
+    <ClInclude Include="Formations.h" />
+    <ClInclude Include="Editor.h" />
+    <ClInclude Include="ParameterFiles.h" />
+    <ClInclude Include="compression.h" />
+    <ClInclude Include="RendererHook.h" />
+    <ClInclude Include="3dPatches.h" />
+    <ClInclude Include="Translation.h" />
   </ItemGroup>
 </Project>

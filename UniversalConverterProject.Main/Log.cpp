@@ -13,6 +13,10 @@ Log &Log::Instance() {
     return log;
 }
 
+FifamWriter *Log::GetWriter() {
+    return Instance().mWriter;
+}
+
 void Log::Write(String const & str) {
     Instance().mWriter->Write(str);
 }

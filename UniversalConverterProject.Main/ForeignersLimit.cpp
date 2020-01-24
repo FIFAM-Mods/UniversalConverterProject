@@ -1,4 +1,7 @@
 #include "ForeignersLimit.h"
+#include "GameInterfaces.h"
+#include "FifamCompID.h"
+#include "shared.h"
 
 using namespace plugin;
 
@@ -8,7 +11,7 @@ void __declspec(naked) CheckSpainNominationDateMonth_13() {
         je LABEL_TRUE
         cmp dword ptr[esp + 0x2D8], 8
         je LABEL_TRUE
-    LABEL_FALSE:
+
         mov eax, 0xF2342D
         jmp eax
     LABEL_TRUE:
@@ -23,7 +26,7 @@ void __declspec(naked) CheckSpainNominationDateMonth_11() {
         je LABEL_TRUE
         cmp dword ptr[esp + 0x2D8], 8
         je LABEL_TRUE
-    LABEL_FALSE :
+
         mov eax, 0xD5A4B7
         jmp eax
     LABEL_TRUE :
@@ -32,30 +35,115 @@ void __declspec(naked) CheckSpainNominationDateMonth_11() {
     }
 }
 
+CDBTeam *gTeamNominationTeam = nullptr;
+int gTeamNominationYear = 0;
+int gTeamNominationMonth = 0;
+int gTeamNominationDay = 0;
+
+void METHOD OnProcessSquadNominating(CDBTeam *team, DUMMY_ARG, int year, int month, int day) {
+    gTeamNominationYear = year;
+    gTeamNominationMonth = month;
+    gTeamNominationDay = day;
+    gTeamNominationTeam = team;
+    CallMethod<0xF23030>(team, year, month, day);
+    gTeamNominationTeam = nullptr;
+}
+
+bool RequiresAdditionalTeamNominationForContinentalComps(CDBCompetition **outComp) {
+    if (outComp)
+        *outComp = nullptr;
+    if (gTeamNominationTeam) {
+        CJDate nominationDate;
+        nominationDate.Set(gTeamNominationYear, gTeamNominationMonth, gTeamNominationDay);
+        UInt nomd = nominationDate.Value();
+        auto IsRoundPlayedToday = [&](CDBRound *r) {
+            UInt date = CallMethodAndReturn<UInt, 0x10423F0>(r, 0);
+            if (nomd == date)
+                return true;
+            return false;
+        };
+        static CCompID compIDsAry[] = {
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 1),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 2),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 3),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 4),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 5),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 6),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 7),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 8),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 9),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 1),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 2),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 3),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 4),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 5),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 6),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 7),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 8),
+        };
+        for (auto const &id : compIDsAry) {
+            CDBRound *round = GetRound(id.countryId, id.type, id.index);
+            if (round && IsRoundPlayedToday(round) && round->IsTeamPresent(gTeamNominationTeam->GetTeamID())) {
+                SafeLog::Write(Utils::Format(L"found team %s in round %08X", gTeamNominationTeam->GetName(), id));
+                *outComp = round;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+Bool32 RequiresTeamNominationForContinentalComps() {
+    CDBCompetition *comp = nullptr;
+    if (RequiresAdditionalTeamNominationForContinentalComps(&comp))
+        return true;
+    return (gTeamNominationMonth == 1 || gTeamNominationMonth == 8) && gTeamNominationDay == 31;
+}
+
+void __declspec(naked) TeamNominationForContinentalCompsCheck() {
+    __asm {
+        call RequiresTeamNominationForContinentalComps
+        test eax, eax
+        jz SKIP_NOMINATION
+    DO_NOMINATION:
+        mov eax, 0xF23146
+        jmp eax
+    SKIP_NOMINATION:
+        mov eax, 0xF2308B
+        jmp eax
+    }
+}
+
+Int METHOD GetTeamQualifiedForContinentalCompetition(CDBTeam *team, DUMMY_ARG, int unk, CCompID *outCompId) {
+    CDBCompetition *comp = nullptr;
+    if (RequiresAdditionalTeamNominationForContinentalComps(&comp)) {
+        *outCompId = comp->GetCompID();
+        return 1;
+    }
+    return CallMethodAndReturn<Int, 0xEFE330>(team, unk, outCompId);
+}
+
 void PatchForeignersLimit(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::SetUChar(0xF8D672, 4); // default for Turkey
         patch::Nop(0xF8D540, 2);
 
-        // Scotland
-        patch::SetUChar(0xEE2983 + 6, 245);
-        patch::SetUChar(0xF3FC9C + 1, 245);
-        patch::SetUChar(0x1067F5E + 1, 245);
-        patch::SetUChar(0x10680BF + 1, 245);
-        patch::SetUChar(0x10682F1 + 3, 245);
-        patch::SetUChar(0x106C451 + 1, 245);
-        patch::SetUChar(0x62BF8F + 3, 245);
-        patch::SetUChar(0x65400E + 3, 245);
-        patch::SetUChar(0xAA1C25 + 1, 245);
-        patch::SetUChar(0xE3F56D + 1, 245);
-        patch::SetUChar(0xEA109D + 1, 245);
-        patch::SetUChar(0xF6A9FD + 3, 245);
-        patch::SetUChar(0xF6CD78 + 3, 245);
-        patch::SetUChar(0xFF5EA2 + 3, 245);
-        patch::SetUChar(0xFF5F4B + 3, 245);
-
         // Spain players registration
         patch::RedirectJump(0xF23106, CheckSpainNominationDateMonth_13);
+
+        // CL/EL players registration
+        patch::RedirectCall(0xF35F0A, OnProcessSquadNominating);
+        patch::RedirectCall(0xF3D641, OnProcessSquadNominating);
+
+        //patch::SetUShort(0xF2313E, 0xC085);
+        patch::RedirectJump(0xF23074, TeamNominationForContinentalCompsCheck);
+        //patch::Nop(0xF23125, 20);
+
+        //patch::RedirectCall(0xF23161, GetTeamQualifiedForContinentalCompetition);
+        //patch::RedirectCall(0xF23268, GetTeamQualifiedForContinentalCompetition);
+        //patch::RedirectCall(0xF233AE, GetTeamQualifiedForContinentalCompetition);
+
+        patch::Nop(0xF2324E, 6);
     }
     else if (v.id() == ID_FM_11_1003) {
         patch::SetUChar(0xDFD896, 4); // default for Turkey
