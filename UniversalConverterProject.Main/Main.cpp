@@ -42,6 +42,7 @@
 #include "Scouting.h"
 #include "Media.h"
 #include "Translation.h"
+#include "GenericHeads.h"
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitry/DK22");
 
@@ -54,6 +55,10 @@ public:
     UniversalConverterProject() {
         if (!CheckLicense(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','M','a','i','n','.','a','s','i'>(1583797143)))
             return;
+    #ifdef DELETE_LOG
+        if (exists("ucp_safe.log"))
+            remove("ucp_safe.log");
+    #endif
         v = FM::GetAppVersion();
         if (v.id() == ID_FM_13_1030_RLD) {
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
@@ -123,6 +128,7 @@ public:
         PatchPitch(v);
         PatchScouting(v);
         //PatchMedia(v);
+        //PatchGenericHeads(v);
     #ifdef BETA
         DoBetaPatches(v);
     #endif

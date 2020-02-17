@@ -690,6 +690,72 @@ Int METHOD OnDialogDoModal(void *dlg) {
     return CallMethodAndReturn<Int, 0x5B0869>(dlg);
 }
 
+unsigned int beardTypes[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+unsigned int skinColors[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+unsigned int hairColors[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9 };
+unsigned int hairTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162 };
+unsigned int headTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1500,1501,1502,1503,1504,1505,1506,1507,1508,1509,1510,1511,1512,1513,1514,1515,1516,1517,1518,1519,1520,1521,1522,1523,1524,1525,1526,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2012,2500,2501,2502,2503,2504,2505,2506,3000,3001,3002,3003,3004,3005,3500,3501,3502,3503,3504,3505,4000,4001,4002,4003,4500,4501,4502,5000,5001,5002,5003,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,1019,1020,1021,1022,1023,1024,1025,1026,1027,1527,1528,2011,2013,2014,2015,2016,2017,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2507,2508,2509,2510,2511,2512,2513,2514,2515,2516,2517,2518,4525 };
+unsigned int eyeColors[] = { 1,2,9,5,4,7,0,3,8,6 };
+
+unsigned int METHOD GetAppearanceAssetCount(void *t, DUMMY_ARG, int type) {
+    switch (type) {
+    case 0:
+        return std::size(headTypes);
+    case 1:
+        return  std::size(skinColors);
+    case 2:
+        return 3;
+    case 3:
+        return std::size(hairTypes);
+    case 4:
+        return std::size(hairColors);
+    case 5:
+        return std::size(eyeColors);
+    case 6:
+        return 2;
+    case 7:
+        return std::size(beardTypes);
+    case 8:
+        return 5;
+    }
+    return 0;
+}
+
+unsigned int gAddress = 0;
+wchar_t gMessage[512];
+
+void __declspec(naked) ShowExceptionError() {
+    __asm mov eax, dword ptr[esp]
+        __asm mov gAddress, eax
+    swprintf(gMessage, L"Unhandled exception at 0x%X\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", gAddress);
+    MessageBoxW(NULL, gMessage, L"Exception", MB_ICONERROR);
+    __asm retn
+}
+
+void *gPlayerPlayerFaceDialog = nullptr;
+
+int METHOD OnGetPlayerSpecialFace(void *player) {
+    gPlayerPlayerFaceDialog = player;
+    return CallMethodAndReturn<int, 0x51C410>(player);
+}
+
+void StorePlayerEyeColorForStarhead(void *data) {
+    *raw_ptr<UInt>(data, 0x74) = 2;
+    if (gPlayerPlayerFaceDialog) {
+        UChar eyeColor = CallMethodAndReturn<UChar, 0x51C3D0>(gPlayerPlayerFaceDialog);
+        if (eyeColor < std::size(eyeColors))
+        *raw_ptr<UInt>(data, 0x74) = eyeColors[eyeColor];
+    }
+}
+
+void __declspec(naked) OnGetPlayerEyeColorForStarhead() {
+    __asm push ebp
+    __asm call StorePlayerEyeColorForStarhead
+    __asm pop ebp
+    __asm mov eax, 0x4B6B34
+    __asm jmp eax
+}
+
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         auto fileName = Magic<'.', '\\', 'u', 'c', 'p', '.', 'i', 'n', 'i'>(2278893143);
@@ -702,10 +768,10 @@ void PatchEditor(FM::Version v) {
         //Int bNoEditorModalDialogsFix = GetPrivateProfileIntW(mainSectionStr.c_str(), noEditorModalDialogsFix.c_str(), 0, fileName.c_str());
 
         //if (bUseOriginalDocumentsFolder == 0)
-            patch::SetPointer(0x6685BC, GetAppLocalizedName);
+        patch::SetPointer(0x6685BC, GetAppLocalizedName);
 
-        //if (bNoEditorModalDialogsFix == 0)
-            patch::RedirectCall(0x5B0D69, OnDialogDoModal);
+    //if (bNoEditorModalDialogsFix == 0)
+        patch::RedirectCall(0x5B0D69, OnDialogDoModal);
 
         wchar_t textLang[MAX_PATH];
         GetPrivateProfileStringW(Magic<'O', 'P', 'T', 'I', 'O', 'N', 'S'>(1224534890).c_str(), Magic<'T', 'E', 'X', 'T', '_', 'L', 'A', 'N', 'G', 'U', 'A', 'G', 'E'>(3562105574).c_str(), Magic<'e', 'n', 'g'>(3703889367).c_str(), textLang, MAX_PATH, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
@@ -740,7 +806,7 @@ void PatchEditor(FM::Version v) {
         patch::SetUChar(0x555A10 + 1, 0x04);
         patch::SetUChar(0x555A10 + 2, 0x00);
         patch::SetUChar(0x463F2A, 0xEB);
-        
+
         //patch::Nop(0x460429, 1);
         //patch::SetUChar(0x460429 + 1, 0xE9);
 
@@ -765,11 +831,11 @@ void PatchEditor(FM::Version v) {
 
         patch::SetUChar(0x45EE21, 0xEB);
 
-        static std::wstring newClbFormat = Magic<'u','c','p','c','l','b'>(1969560182);
+        static std::wstring newClbFormat = Magic<'u', 'c', 'p', 'c', 'l', 'b'>(1969560182);
         patch::SetPointer(0x4601E1 + 1, (void *)newClbFormat.c_str());
         patch::SetPointer(0x46033B + 1, (void *)newClbFormat.c_str());
 
-        static std::wstring newSavFormat = Magic<'u','c','p','d','b'>(2349550184);
+        static std::wstring newSavFormat = Magic<'u', 'c', 'p', 'd', 'b'>(2349550184);
         patch::SetPointer(0x4536D2 + 1, (void *)newSavFormat.c_str());
 
     #ifndef EDITOR_WRITE_TEXT
@@ -784,7 +850,7 @@ void PatchEditor(FM::Version v) {
 
         patch::RedirectCall(0x451785, OnLoadCountry);
         patch::RedirectCall(0x4D4076, OnLoadCountry);
-        
+
     #ifndef EDITOR_READ_TEXT
         patch::RedirectCall(0x4EA364, OnReadCountryData<true>);
         patch::RedirectCall(0x4EA3B2, OnReadCountryData<false>);
@@ -867,5 +933,184 @@ void PatchEditor(FM::Version v) {
             }
         }
     #endif
+
+        // Mutex names
+        patch::SetUInt(0x540F07 + 1, 0);
+        patch::SetUInt(0x54108D + 1, 0);
+
+        //patch::RedirectJump(0x5F92CF, ShowExceptionError);
+
+
+        // sideburns
+        patch::SetUInt(0x681C14 + 4 * 1, 0); // sideburns 1
+
+        // beard types
+        patch::SetUInt(0x681C40, std::size(beardTypes));
+        patch::SetPointer(0x418720 + 0xA8 + 2, beardTypes); // mov     ecx, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0xC9 + 2, beardTypes); // mov     edx, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0xF3 + 1, beardTypes); // mov     eax, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0x11D + 2, beardTypes); // mov     ecx, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0x13E + 2, beardTypes); // mov     edx, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0x15C + 2, beardTypes); // mov     edx, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0x17A + 2, beardTypes); // mov     edx, ds:gFifaBeardTypes
+        patch::SetPointer(0x418720 + 0x191 + 3, beardTypes); // mov     ecx, ds:gFifaBeardTypes[eax*4]
+        patch::SetPointer(0x41FE10 + 0x110 + 3, beardTypes); // mov     edx, ds:gFifaBeardTypes[ecx*4]
+        patch::SetPointer(0x486E50 + 0x17C + 3, beardTypes); // mov     eax, ds:gFifaBeardTypes[edx*4]
+        patch::SetPointer(0x4B6AE0 + 0x11E + 3, beardTypes); // mov     eax, ds:gFifaBeardTypes[edx*4]
+        patch::SetPointer(0x418720 + 0x48 + 1, beardTypes); // mov     eax, ds:gFifaBeardTypes+4
+        patch::SetPointer(0x486DCC + 3, beardTypes); // mov     edx, ds:gFifaBeardTypes[eax*4]; jumptable 00486D5C case 7
+        patch::SetPointer(0x6D0A84, beardTypes); // .data:006D0A84	dd offset gFifaBeardTypes
+        patch::SetPointer(0x5A04CD + 1, &beardTypes[0]);
+        patch::SetPointer(0x5A04C8 + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x5A04DE + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x5A04F7 + 1, &beardTypes[0]);
+        patch::SetPointer(0x5A054D + 1, &beardTypes[0]);
+        patch::SetPointer(0x5A0548 + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x5A055E + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x5A0575 + 1, &beardTypes[0]);
+        patch::SetPointer(0x5A0570 + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x5A058A + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x5A059C + 1, &beardTypes[0]);
+        patch::SetPointer(0x59F19C + 1, &beardTypes[0]);
+        patch::SetPointer(0x59F197 + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x59F1A9 + 1, &beardTypes[std::size(beardTypes)]);
+        patch::SetPointer(0x59F1B8 + 1, &beardTypes[0]);
+
+        // skin colors
+        patch::SetUInt(0x681C44, std::size(skinColors));
+        patch::SetPointer(0x418720 + 0xC2 + 3, skinColors); // mov     ecx, ds:gFifaSkinColors[eax*4]
+        patch::SetPointer(0x41FE10 + 0xB6 + 3, skinColors); // mov     edx, ds:gFifaSkinColors[ecx*4]
+        patch::SetPointer(0x486E50 + 0xDA + 3, skinColors); // mov     eax, ds:gFifaSkinColors[edx*4]
+        patch::SetPointer(0x4B6AE0 + 0x9D + 3, skinColors); // mov     eax, ds:gFifaSkinColors[edx*4]
+        patch::SetPointer(0x418720 + 0x2A + 1, skinColors); // mov     eax, ds:gFifaSkinColors+4
+        patch::SetPointer(0x486D72 + 3, skinColors); // mov     edx, ds:gFifaSkinColors[eax*4]; jumptable 00486D5C case 1
+        patch::SetPointer(0x6D0A74, skinColors); // .data:006D0A74	dd offset gFifaSkinColors
+        patch::SetPointer(0x59FB63 + 1, &skinColors[0]);
+        patch::SetPointer(0x59FB5E + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59FB74 + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59FB7F + 1, &skinColors[0]);
+        patch::SetPointer(0x59FDE0 + 1, &skinColors[0]);
+        patch::SetPointer(0x59FDDB + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59FDF1 + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59FE07 + 1, &skinColors[0]);
+        patch::SetPointer(0x59FE02 + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59FE18 + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59FE23 + 1, &skinColors[0]);
+        patch::SetPointer(0x59F21C + 1, &skinColors[0]);
+        patch::SetPointer(0x59F217 + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59F229 + 1, &skinColors[std::size(skinColors)]);
+        patch::SetPointer(0x59F238 + 1, &skinColors[0]);
+
+        // hair colors
+        patch::SetUInt(0x681C50, std::size(hairColors));
+        patch::SetPointer(0x418720 + 0x155 + 3, hairColors); // mov     ecx, ds:gFifaHairColors[eax*4]
+        patch::SetPointer(0x41FE10 + 0xF2 + 3, hairColors); // mov     ecx, ds:gFifaHairColors[eax*4]
+        patch::SetPointer(0x486E50 + 0x140 + 3, hairColors); // mov     edx, ds:gFifaHairColors[ecx*4]
+        patch::SetPointer(0x4B6AE0 + 0xEE + 3, hairColors); // mov     edx, ds:gFifaHairColors[ecx*4]
+        patch::SetPointer(0x418720 + 0x5B + 2, hairColors); // mov     ecx, ds:gFifaHairColors+4
+        patch::SetPointer(0x486D9F + 3, hairColors); // mov     edx, ds:gFifaHairColors[eax*4]; jumptable 00486D5C case 4
+        patch::SetPointer(0x6D0A8C, hairColors); // .data:006D0A8C	dd offset gFifaHairColors
+        patch::SetPointer(0x5A0269 + 1, &hairColors[0]);
+        patch::SetPointer(0x5A0264 + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x5A027A + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x5A0285 + 1, &hairColors[0]);
+        patch::SetPointer(0x5A036F + 1, &hairColors[0]);
+        patch::SetPointer(0x5A036A + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x5A0380 + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x5A0397 + 1, &hairColors[0]);
+        patch::SetPointer(0x5A0392 + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x5A03AC + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x5A03B8 + 1, &hairColors[0]);
+        patch::SetPointer(0x59F11C + 1, &hairColors[0]);
+        patch::SetPointer(0x59F117 + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x59F129 + 1, &hairColors[std::size(hairColors)]);
+        patch::SetPointer(0x59F138 + 1, &hairColors[0]);
+
+        // hair models
+        patch::SetUInt(0x681C3C, std::size(hairTypes));
+        patch::SetPointer(0x418720 + 0xCF + 1, hairTypes); // mov     eax, ds:gFifaHairModels
+        patch::SetPointer(0x418720 + 0xF8 + 2, hairTypes); // mov     ecx, ds:gFifaHairModels
+        patch::SetPointer(0x418720 + 0x137 + 3, hairTypes); // mov     ecx, ds:gFifaHairModels[eax*4]
+        patch::SetPointer(0x41FE10 + 0xE3 + 3, hairTypes); // mov     edx, ds:gFifaHairModels[ecx*4]
+        patch::SetPointer(0x486E50 + 0x12B + 3, hairTypes); // mov     eax, ds:gFifaHairModels[edx*4]
+        patch::SetPointer(0x4B6AE0 + 0xDC + 3, hairTypes); // mov     eax, ds:gFifaHairModels[edx*4]
+        patch::SetPointer(0x4188D0 + 2, hairTypes); // mov     edx, ds:gFifaHairModels
+        patch::SetPointer(0x486D90 + 3, hairTypes); // mov     ecx, ds:gFifaHairModels[eax*4]; jumptable 00486D5C case 3
+        patch::SetPointer(0x6D0A70, hairTypes); // .data:006D0A70	dd offset gFifaHairModels
+        patch::SetPointer(0x59FFD1 + 1, &hairTypes[0]);
+        patch::SetPointer(0x59FFCC + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x59FFE2 + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x59FFED + 1, &hairTypes[0]);
+        patch::SetPointer(0x5A0110 + 1, &hairTypes[0]);
+        patch::SetPointer(0x5A010B + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x5A0121 + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x5A0138 + 1, &hairTypes[0]);
+        patch::SetPointer(0x5A0133 + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x5A014D + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x5A0159 + 1, &hairTypes[0]);
+        patch::SetPointer(0x59F0DC + 1, &hairTypes[0]);
+        patch::SetPointer(0x59F0D7 + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x59F0E9 + 1, &hairTypes[std::size(hairTypes)]);
+        patch::SetPointer(0x59F0F8 + 1, &hairTypes[0]);
+
+        // head models
+        patch::SetUInt(0x681C38, std::size(headTypes));
+        patch::SetPointer(0x418720 + 0xA1 + 3, headTypes); // mov     eax, ds:gFifaHeadModels[edx*4]
+        patch::SetPointer(0x41FE10 + 0xAB + 3, headTypes); // mov     eax, ds:gFifaHeadModels[edx*4]
+        patch::SetPointer(0x486E50 + 0xB9 + 3, headTypes); // mov     ecx, ds:gFifaHeadModels[eax*4]
+        patch::SetPointer(0x4B6AE0 + 0x85 + 3, headTypes); // mov     ecx, ds:gFifaHeadModels[eax*4]
+        patch::SetPointer(0x418720 + 0x2F + 2, headTypes); // mov     edx, ds:gFifaHeadModels+4
+        patch::SetPointer(0x486D63 + 3, headTypes); // mov     ecx, ds:gFifaHeadModels[eax*4]; jumptable 00486D5C case 0
+        patch::SetPointer(0x6D0A6C, headTypes); // .data:off_6D0A6C	dd offset gFifaHeadModels
+        patch::SetPointer(0x59FAF1 + 1, &headTypes[0]);
+        patch::SetPointer(0x59FAEC + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59FB02 + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59FB0D + 1, &headTypes[0]);
+        patch::SetPointer(0x59FD31 + 1, &headTypes[0]);
+        patch::SetPointer(0x59FD2C + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59FD42 + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59FD4D + 1, &headTypes[0]);
+        patch::SetPointer(0x59FD6C + 1, &headTypes[0]);
+        patch::SetPointer(0x59FD67 + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59FD7D + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59FD88 + 1, &headTypes[0]);
+        patch::SetPointer(0x59F09C + 1, &headTypes[0]);
+        patch::SetPointer(0x59F097 + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59F0A9 + 1, &headTypes[std::size(headTypes)]);
+        patch::SetPointer(0x59F0B8 + 1, &headTypes[0]);
+
+        patch::SetUInt(0x681C58, std::size(eyeColors));
+        patch::SetPointer(0x418720 + 0x51 + 2, eyeColors); // mov     edx, ds:gFifaEyeColors
+        patch::SetPointer(0x418720 + 0x116 + 3, eyeColors); // mov     eax, ds:gFifaEyeColors[edx*4]
+        patch::SetPointer(0x41FE10 + 0xD4 + 3, eyeColors); // mov     eax, ds:gFifaEyeColors[edx*4]
+        patch::SetPointer(0x486E50 + 0x10A + 3, eyeColors); // mov     ecx, ds:gFifaEyeColors[eax*4]
+        patch::SetPointer(0x4B6AE0 + 0xC4 + 3, eyeColors); // mov     ecx, ds:gFifaEyeColors[eax*4]
+        patch::SetPointer(0x486DAE + 3, eyeColors); // mov     eax, ds:gFifaEyeColors[eax*4]; jumptable 00486D5C case 5
+        patch::SetPointer(0x6D0A80, eyeColors); // .data:006D0A80	dd offset gFifaEyeColors
+        patch::SetPointer(0x59FC73 + 1, &eyeColors[0]);
+        patch::SetPointer(0x59FC6E + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FC84 + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FC8F + 1, &eyeColors[0]);
+        patch::SetPointer(0x59FCAF + 1, &eyeColors[0]);
+        patch::SetPointer(0x59FCAA + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FCC4 + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FCD0 + 1, &eyeColors[0]);
+        patch::SetPointer(0x59FF19 + 1, &eyeColors[0]);
+        patch::SetPointer(0x59FF14 + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FF2A + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FF40 + 1, &eyeColors[0]);
+        patch::SetPointer(0x59FF3B + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FF51 + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59FF5C + 1, &eyeColors[0]);
+        patch::SetPointer(0x59F29C + 1, &eyeColors[0]);
+        patch::SetPointer(0x59F297 + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59F2A9 + 1, &eyeColors[std::size(eyeColors)]);
+        patch::SetPointer(0x59F2B8 + 1, &eyeColors[0]);
+
+        patch::RedirectJump(0x4FB290, GetAppearanceAssetCount);
+
+        // starheads eye colors
+        patch::RedirectCall(0x4B6B1D, OnGetPlayerSpecialFace);
+        patch::RedirectJump(0x4B6B2D, OnGetPlayerEyeColorForStarhead);
     }
 }

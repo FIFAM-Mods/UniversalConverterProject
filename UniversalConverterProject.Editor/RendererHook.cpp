@@ -24,6 +24,6 @@ bool METHOD OnLoadRenderer(void **info, DUMMY_ARG, const wchar_t *libFileName, c
 }
 
 void PatchRendererHook(FM::Version v) {
-    if (v.id() == ID_FM_13_1030_RLD)
+    if (v.id() == ID_ED_13_1000)
         gOriginalLoadRenderer = patch::RedirectCall(0x5410B5, OnLoadRenderer);
 }

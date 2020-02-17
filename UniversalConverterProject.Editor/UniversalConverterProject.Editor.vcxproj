@@ -93,9 +93,8 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 14\plugins\$(TargetName).asi"
-copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 12\plugins\$(TargetName).asi"
-copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(TargetName).asi"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -58,6 +58,7 @@
     <ClCompile Include="Scouting.cpp" />
     <ClCompile Include="Media.cpp" />
     <ClCompile Include="Translation.cpp" />
+    <ClCompile Include="GenericHeads.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -114,6 +115,7 @@
     <ClInclude Include="Scouting.h" />
     <ClInclude Include="Media.h" />
     <ClInclude Include="Translation.h" />
+    <ClInclude Include="GenericHeads.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

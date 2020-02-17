@@ -15,6 +15,7 @@
 #include "ParameterFiles.h"
 #include "Translation.h"
 #include "compression.h"
+#include "RendererHook.h"
 
 using namespace plugin;
 
@@ -24,6 +25,7 @@ public:
         compression_open();
         enable_compression_extended_file_size();
         auto v = FM::GetAppVersion();
+        PatchRendererHook(v);
         PatchTranslation(v);
         PatchDatabaseName(v);
         PatchClubIDs(v);

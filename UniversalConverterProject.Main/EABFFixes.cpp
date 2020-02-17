@@ -761,6 +761,10 @@ void METHOD OnNationalTeam(CDBTeam *team) {
     CallMethod<0xEDEA90>(team);
 }
 
+Bool32 METHOD OnPlayerHasPhoto(CDBPlayer *) {
+    return false;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
 
@@ -1072,5 +1076,8 @@ void PatchEABFFixes(FM::Version v) {
 
         // remove short-term loans
         patch::SetUChar(0x912C83, 0xEB);
+
+       // if (true)
+       //     patch::RedirectJump(0xFCEFE0, OnPlayerHasPhoto);
     }
 }

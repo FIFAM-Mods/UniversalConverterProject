@@ -452,7 +452,7 @@ UChar METHOD OnGetPlayerAttribute3D(CDBPlayer *player, DUMMY_ARG, UInt attrId, U
         if (result == 0 && !isZero)
             result = 1;
     }
-    SafeLog::Write(Utils::Format(L"Player: %s, AttrId: %d, OldValue: %d, NewValue: %d", CallMethodAndReturn<WideChar *, 0xFA2010>(player, 0), attrId, oldValue, result));
+    //SafeLog::Write(Utils::Format(L"Player: %s, AttrId: %d, OldValue: %d, NewValue: %d", CallMethodAndReturn<WideChar *, 0xFA2010>(player, 0), attrId, oldValue, result));
     return result;
 }
 

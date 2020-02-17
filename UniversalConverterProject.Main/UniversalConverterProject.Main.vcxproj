@@ -94,8 +94,8 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 14\plugins\$(TargetName).asi"
-copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(TargetName).asi"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -115,6 +115,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClCompile Include="ForeignersLimit.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="GameInterfaces.cpp" />
+    <ClCompile Include="GenericHeads.cpp" />
     <ClCompile Include="GfxCoreHook.cpp" />
     <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
     <ClCompile Include="InternationalCupsFix.cpp" />
@@ -166,6 +167,7 @@ copy /Y "$(TargetDir)$(TargetName).asi" "D:\Games\FIFA Manager 11\plugins\$(Targ
     <ClInclude Include="ForeignersLimit.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="GameInterfaces.h" />
+    <ClInclude Include="GenericHeads.h" />
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="IncreaseSalaryOwnedClub.h" />
     <ClInclude Include="InternationalCupsFix.h" />
