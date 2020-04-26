@@ -1,0 +1,57 @@
+#include "gfxcorehook.h"
+#include "plugin-std.h"
+
+using namespace plugin;
+unsigned int gOriginalLoadGfxCore = 0;
+unsigned int hLibrary = 0;
+
+unsigned int GfxCoreAddress(unsigned int addr) {
+    return hLibrary + addr;
+}
+
+wchar_t const* SkyDir = L"data\\stadium\\generator\\sky";
+void __declspec(naked) SkyModel() {
+    __asm {
+        cmp [ebp + 0x28],3
+        je Night_ID
+        movzx edx, byte ptr ss : [ebp + 0x1A31] // Weather ID
+        je Weather_ID
+     Night_ID:
+        mov edx,5
+     Weather_ID:      
+        PUSH EDX
+        MOV EAX, SkyDir
+        mov ecx, 0x10421575
+        push ecx
+        retn
+           }
+}
+
+bool METHOD OnLoadGfxCore(void** info, DUMMY_ARG, const wchar_t* libFileName, const char* procName) {
+    bool result = false;
+    if (gOriginalLoadGfxCore) {
+        result = CallMethodAndReturnDynGlobal<bool>(gOriginalLoadGfxCore, info, libFileName, procName);
+        if (result) {
+            void* gfxCore = info[0];
+            hLibrary = (unsigned int)info[1];
+            patch::RedirectCall(GfxCoreAddress(0x42156d), SkyModel);
+            
+        }
+    }
+    return result;
+}
+void PatchGfxCoreHook(FM::Version v) {
+    if (v.id() == ID_FM_13_1030_RLD)
+        gOriginalLoadGfxCore = patch::RedirectCall(0x45BBEF, OnLoadGfxCore);
+
+}
+
+class Sky {
+public:
+    Sky() {
+        auto v = FM::GetAppVersion();
+        PatchGfxCoreHook(v);
+
+    }
+};
+Sky sky;
