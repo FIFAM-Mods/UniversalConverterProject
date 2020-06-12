@@ -18,6 +18,9 @@ class Settings {
     std::pair<bool, bool> mUseHairLODs = { true, true };
     std::pair<bool, bool> mEnableSpeechInAllMatches = { false, false };
 
+    std::pair<bool, bool> mEnableCommentaryPatches = { false, false };
+    std::pair<bool, bool> mEnableStadiumsPatches = { false, false };
+
 public:
     bool getExtendLoansLimit();
     void setExtendLoansLimit(bool set);
@@ -50,6 +53,11 @@ public:
     void setUseHairLODs(bool set);
     bool getEnableSpeechInAllMatches();
     void setEnableSpeechInAllMatches(bool set);
+
+    bool getEnableCommentaryPatches();
+    void setEnableCommentaryPatches(bool set);
+    bool getEnableStadiumsPatches();
+    void setEnableStadiumsPatches(bool set);
 
     static Settings &GetInstance();
     void save();

@@ -36,6 +36,11 @@ void Settings::setUseHairLODs(bool set) { mUseHairLODs.first = set; }
 bool Settings::getEnableSpeechInAllMatches() { return mEnableSpeechInAllMatches.first; }
 void Settings::setEnableSpeechInAllMatches(bool set) { mEnableSpeechInAllMatches.first = set; }
 
+bool Settings::getEnableCommentaryPatches() { return mEnableCommentaryPatches.first; }
+void Settings::setEnableCommentaryPatches(bool set) { mEnableCommentaryPatches.first = set; }
+bool Settings::getEnableStadiumsPatches() { return mEnableStadiumsPatches.first; }
+void Settings::setEnableStadiumsPatches(bool set) { mEnableStadiumsPatches.first = set; }
+
 Settings &Settings::GetInstance() {
     static Settings settings;
     return settings;
@@ -71,6 +76,9 @@ Settings::Settings() {
     setUseHairLODs(GetPrivateProfileIntW(mainSectionStr.c_str(), L"USE_HAIR_LODS", 1, fileName.c_str()));
     setEnableSpeechInAllMatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_SPEECH_IN_ALL_MATCHES", 0, fileName.c_str()));
 
+    setEnableCommentaryPatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", 0, fileName.c_str()));
+    setEnableStadiumsPatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_STADIUMS_PATCHES", 0, fileName.c_str()));
+
     mExtendLoansLimit.second = mExtendLoansLimit.first;
     mTeamControl.second = mTeamControl.first;
     mManualPlayerSwitch.second = mManualPlayerSwitch.first;
@@ -85,6 +93,9 @@ Settings::Settings() {
     mRandomizeTalents.second = mRandomizeTalents.first;
     mUseRealSalaries.second = mUseRealSalaries.first;
     mEnableSpeechInAllMatches.second = mEnableSpeechInAllMatches.first;
+
+    mEnableCommentaryPatches.second = mEnableCommentaryPatches.first;
+    mEnableStadiumsPatches.second = mEnableStadiumsPatches.first;
 }
 
 void Settings::save() {
@@ -131,4 +142,9 @@ void Settings::save() {
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"USE_HAIR_LODS", Utils::Format(L"%u", getUseHairLODs()).c_str(), fileName.c_str());
     if (mEnableSpeechInAllMatches.first != mEnableSpeechInAllMatches.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_SPEECH_IN_ALL_MATCHES", Utils::Format(L"%u", getEnableSpeechInAllMatches()).c_str(), fileName.c_str());
+
+    if (mEnableCommentaryPatches.first != mEnableCommentaryPatches.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", Utils::Format(L"%u", getEnableCommentaryPatches()).c_str(), fileName.c_str());
+    if (mEnableStadiumsPatches.first != mEnableStadiumsPatches.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_STADIUMS_PATCHES", Utils::Format(L"%u", getEnableStadiumsPatches()).c_str(), fileName.c_str());
 }

@@ -540,6 +540,26 @@ Bool METHOD OnSetFifaTexture(void *t, DUMMY_ARG, int samplerIndex) {
     return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(OriginalAddr), t, samplerIndex);
 }
 
+wchar_t const *gSkyDir = L"data\\stadium\\generator\\sky";
+
+void __declspec(naked) OnSkyModel() {
+    static unsigned int gRetAddr = 0x10421575;
+    __asm {
+        cmp[ebp + 0x28], 3
+        je Night_ID
+        movzx edx, byte ptr ss : [ebp + 0x1A31] // Weather ID
+        je Weather_ID
+    Night_ID:
+        mov edx, 5
+    Weather_ID:
+        PUSH EDX
+        MOV EAX, gSkyDir
+        mov ecx, gRetAddr
+        push ecx
+        retn
+    }
+}
+
 void Install3dPatches_FM13() {
 
     //patch::RedirectJump(GfxCoreAddress(0x20D21D), OnGenerateCrowdTex);
@@ -712,4 +732,20 @@ void Install3dPatches_FM13() {
 
     //patch::RedirectJump(GfxCoreAddress(0x19E60), CachedExists);
     //patch::RedirectJump(GfxCoreAddress(0x19E70), CachedSize);
+
+    if (Settings::GetInstance().getEnableStadiumsPatches()) {
+        patch::RedirectCall(GfxCoreAddress(0x42156d), OnSkyModel);
+    }
+
+    if (Settings::GetInstance().getEnableCommentaryPatches()) {
+        patch::SetUInt(GfxCoreAddress(0x231a0f + 1), GfxCoreAddress(0x51d0a8));
+        patch::SetUInt(GfxCoreAddress(0x231a14 + 2), GfxCoreAddress(0x51d0ac));
+        patch::SetUInt(GfxCoreAddress(0x231a1a + 2), GfxCoreAddress(0x51d0b0));
+        patch::SetPointer(GfxCoreAddress(0x235c9f + 1), "Commentary\\pbp.evt");
+        patch::SetPointer(GfxCoreAddress(0x235de4 + 1), "Commentary\\hdr.big");
+        patch::SetUInt(GfxCoreAddress(0x235e4d + 1), 17);
+        patch::SetPointer(GfxCoreAddress(0x235e52 + 1), "data\\audio\\Commentary\\dat.big");
+        patch::SetUInt(GfxCoreAddress(0x235e82 + 1), 18);
+        patch::SetPointer(GfxCoreAddress(0x235e87 + 1), "data\\audio\\Commentary\\dat.big");
+    }
 }
