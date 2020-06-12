@@ -4,6 +4,7 @@
 #include "PlayerAccessories.h"
 #include "WindowedMode.h"
 #include "Pitch.h"
+#include "GenericHeads.h"
 
 unsigned int gOriginalLoadGfxCore = 0;
 unsigned int hLibrary = 0;
@@ -25,6 +26,7 @@ bool METHOD OnLoadGfxCore(void **info, DUMMY_ARG, const wchar_t *libFileName, co
             InstallPlayerAccessoriesGfxPatches();
             InstallWindowedMode_GfxCore();
             InstallPitch3D();
+            InstallGenericHeads_GfxCore();
         }
     }
     return result;

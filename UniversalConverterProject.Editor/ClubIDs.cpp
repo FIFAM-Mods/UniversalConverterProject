@@ -35,16 +35,4 @@ void PatchClubIDs(FM::Version v) {
         patch::Nop(0x54506D, 2); // save team position for league levels (saved only for level 0 originally)
         patch::RedirectCall(0x5450C6, MySortClubs); // apply our sorting algorithm instead of original
     }
-    else if (v.id() == VERSION_ED_14) {
-        patch::Nop(0x546E21, 1); // remove the 8 prior clubs
-        patch::SetUChar(0x546E21 + 1, 0xE9); // remove the 8 prior clubs
-        patch::Nop(0x546DBD, 2); // save team position for league levels (saved only for level 0 originally)
-        patch::RedirectCall(0x546E16, MySortClubs); // apply our sorting algorithm instead of original
-    }
-    else if (v.id() == ID_ED_11_1000 || v.id() == ID_ED_11_1003) {
-        patch::Nop(0x505BE7, 1); // remove the 8 prior clubs
-        patch::SetUChar(0x505BE7 + 1, 0xE9); // remove the 8 prior clubs
-        patch::Nop(0x505B77, 2); // save team position for league levels (saved only for level 0 originally)
-        patch::RedirectCall(0x505BDC, MySortClubs); // apply our sorting algorithm instead of original
-    }
 }

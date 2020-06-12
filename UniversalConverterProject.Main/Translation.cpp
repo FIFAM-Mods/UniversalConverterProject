@@ -35,6 +35,10 @@ const WideChar *GetLocaleShortName(UInt) {
     return L"eng";
 }
 
+const WideChar * METHOD GetCurrentLocaleShortName() {
+    return GetLocaleShortName(0);
+}
+
 template<UInt Addr>
 void METHOD OnReadAdditionalTranslationFile(void *t, DUMMY_ARG, const WideChar *filepath) {
     if (!GameLanguage().empty()) {
@@ -71,5 +75,6 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectJump(0x14A950B, GetLocaleShortName);
         patch::RedirectCall(0x111920A, OnReadAdditionalTranslationFile<0x13B5820>);
         patch::RedirectCall(0x111924A, OnReadAdditionalTranslationFile<0x13B6C90>);
+        patch::SetPointer(0x23AB37C, GetCurrentLocaleShortName);
     }
 }

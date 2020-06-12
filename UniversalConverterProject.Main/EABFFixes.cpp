@@ -134,13 +134,6 @@ void METHOD OnReadContract(void *contract, DUMMY_ARG, void *reader) {
         Error(L"%p", contract);
 }
 
-void METHOD OnClearContractAtStartOfTheSeason(void *contract) {
-    UInt64 savedSalary = *raw_ptr<UInt64>(contract, 0x20);
-    CallMethod<0x1014E90>(contract);
-    *raw_ptr<UInt64>(contract, 0x20) = savedSalary;
-
-}
-
 bool METHOD UnknownLeaguePlayerCheck(CDBLeague *league, DUMMY_ARG, CDBPlayer *player) {
     void *vecData = *raw_ptr<void *>(league, 0x3A5C + 0x0);
     void *vecBegin = *raw_ptr<void *>(league, 0x3A5C + 0xC);
@@ -325,8 +318,12 @@ EAGMoney *SetBaseNationalTeamSalaryBudget(EAGMoney *out, EAGMoney *base, EAGMone
                 if (leagueAvg < 15)
                     leagueAvg = 15;
                 UInt64 newSalaries = leagueAvg * leagueAvg * leagueAvg * Settings::GetInstance().getNTBudgetMultiplier();
-                EAGMoney newBase = 0;
                 CallMethod<0x149C282>(out, newSalaries, 0);
+                //void *finance = CallMethodAndReturn<void *, 0xED2810>(gCurrentNationalTeamForSalaries); // GetFinance
+                //EAGMoney *clubBudgets = CallVirtualMethodAndReturn<EAGMoney *, 0>(finance, 13);
+                //if (!CallAndReturn<Bool, 0x149D392>(&clubBudgets[1], 0)) {
+                //
+                //}
                 calculated = true;
             }
         }
@@ -334,6 +331,19 @@ EAGMoney *SetBaseNationalTeamSalaryBudget(EAGMoney *out, EAGMoney *base, EAGMone
     if (!calculated)
         Call<0x149D49E>(out, base, current);
     return out;
+}
+
+CDBTeam *gTeamForSalaryCalculations = nullptr;
+
+CDBTeam *OnGetTeamForSalaryCalculation(CTeamIndex teamIndex) {
+    gTeamForSalaryCalculations = GetTeam(teamIndex);
+    return gTeamForSalaryCalculations;
+}
+
+Bool NT_SalaryCheck(EAGMoney const *a, EAGMoney const *b) {
+    if (gTeamForSalaryCalculations && gTeamForSalaryCalculations->GetTeamID().index == 0xFFFF)
+        return false;
+    return CallAndReturn<Bool, 0x149D07A>(a, b);
 }
 
 void CopyStrMem(UInt addr, WideChar const *what) {
@@ -380,12 +390,17 @@ bool METHOD IsCountryAvailableForCooperation(void *game, DUMMY_ARG, unsigned cha
     return countryId != 0;
 }
 
-bool METHOD CanCooperateWithClub(CDBTeam **c, DUMMY_ARG, CTeamIndex *teamIndex, bool *out2) {
-    if (((*c)->GetTeamID().ToInt() & 0xFFFFFF) == (teamIndex->ToInt() & 0xFFFFFF)) {
+bool METHOD CanCooperateWithClub(CDBTeam **c, DUMMY_ARG, CTeamIndex const &teamIndex, bool *out2) {
+    CDBTeam *teamA = *c;
+    if (!teamA) {
         *out2 = false;
         return false;
     }
-    return CallMethodAndReturn<bool, 0x1127B30>(c, teamIndex, out2);
+    if ((teamA->GetTeamID().ToInt() & 0xFFFFFF) == (teamIndex.ToInt() & 0xFFFFFF) || teamA->IsRivalWith(teamIndex)) {
+        *out2 = false;
+        return false;
+    }
+    return CallMethodAndReturn<bool, 0x1127B30>(c, &teamIndex, out2);
 }
 
 void *g3dMatchLoadingMatch = nullptr;
@@ -765,9 +780,56 @@ Bool32 METHOD OnPlayerHasPhoto(CDBPlayer *) {
     return false;
 }
 
+void __declspec(naked) Fix_DB842C() {
+    __asm mov[esp + 0x44], eax
+    __asm cmp ebp, 1
+    __asm mov eax, 0xDB83EA
+    __asm jmp eax
+}
+
+CDBLeague *OnGetLeagueForQuiz(CCompID const &compID) {
+    auto league = GetLeague(compID);
+    if (league && league->GetNumOfTeams() < 8)
+        return nullptr;
+    return league;
+}
+
+UInt METHOD UserFormationsBugFix(void *t) {
+    if (UInt(t) < 100)
+        return 0;
+    return CallMethodAndReturn<UInt, 0x11EDE10>(t);
+}
+
+Bool METHOD OnFireEmployee(CDBEmployee *employee, DUMMY_ARG, UInt type, Bool flag) {
+    
+    CDBTeam *managerTeam = managerTeam = GetTeam(*raw_ptr<CTeamIndex>(employee, 0x20)); // GetTeam(employee->mTeamIndex)
+    Bool result = CallMethodAndReturn<Bool, 0xEB6D70>(employee, type, flag); // employee->Fire(type, flag)
+    if (!result && managerTeam) {
+
+        void *tasks = CallMethodAndReturn<void *, 0x1017380>(managerTeam); // managerTeam->GetTasks()
+        CallMethod<0xEC2BE0>(employee, tasks); // employee->RemoveFromTasks(tasks)
+        if (CallMethodAndReturn<Bool, 0xEB1600>(employee)) { // employee->IsHumanManager()
+            CallMethod<0x11A1020>(tasks); // tasks->DelegateAll()
+
+            //Error(L"Delegated all tasks for\nteam %s\nmanager: %s %s",
+            //    managerTeam->GetName(),
+            //    CallMethodAndReturn<WideChar *, 0xE7E990>(raw_ptr<void *>(employee, 0x10)),
+            //    CallMethodAndReturn<WideChar *, 0xE7E9A0>(raw_ptr<void *>(employee, 0x10)));
+        }
+    }
+    return result;
+}
+
+template<UInt Addr>
+void * METHOD Handler_1010D90(void *t, DUMMY_ARG, UInt a, UInt b) {
+    gPreviousAddress = Addr;
+    void *result = CallMethodAndReturn<void *, 0x1010D90>(t, a, b);
+    gPreviousAddress = 0;
+    return result;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-
         //patch::RedirectJump(0x14C5E17, ConsolePrint<false>);
         //patch::RedirectJump(0x14C5E2D, ConsolePrint<true>);
         //patch::RedirectJump(0x14C5E55, ConsolePrintTag);
@@ -832,11 +894,9 @@ void PatchEABFFixes(FM::Version v) {
         // skip reserve teams for FA_CUP
         patch::RedirectCall(0x1049924, GetFACompCountryId_SkipReserveTeams);
 
-        //patch::RedirectCall(0xF24DFC, OnClearContractAtStartOfTheSeason);
-
-        patch::RedirectCall(0x1068FA2, UnknownLeaguePlayerCheck);
-        patch::RedirectCall(0x12822C5, UnknownLeaguePlayerCheck);
-        patch::RedirectCall(0x1389844, UnknownLeaguePlayerCheck);
+        //patch::RedirectCall(0x1068FA2, UnknownLeaguePlayerCheck);
+        //patch::RedirectCall(0x12822C5, UnknownLeaguePlayerCheck);
+        //patch::RedirectCall(0x1389844, UnknownLeaguePlayerCheck);
 
         // 100.000.000 Transfer Fee limit
         patch::SetUInt(0x109F950, 900'000'000);
@@ -855,6 +915,9 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x9E39C7, OnGetNationalTeamSalaryBudget);
         patch::RedirectCall(0x1362756, OnGetNationalTeamSalaryBudget);
         patch::RedirectCall(0xF20E23, SetBaseNationalTeamSalaryBudget);
+       
+        patch::RedirectCall(0x695640, NT_SalaryCheck);
+        patch::RedirectCall(0x695586, OnGetTeamForSalaryCalculation);
 
         // parameters
         CopyStrMem(0x23B2290, L"..\\fmdata\\ParameterFiles\\Product Configuration.txt");
@@ -971,8 +1034,8 @@ void PatchEABFFixes(FM::Version v) {
         // cooperations
         patch::SetUChar(0x1127C00, 0xEB);
 
-        patch::Nop(0x1127CDA, 2);
-        patch::Nop(0x1127CE7, 2);
+        patch::Nop(0x1127CDA, 2); // TODO: remove
+        patch::Nop(0x1127CE7, 2); // TODO: remove
 
         patch::RedirectCall(0x61883D, IsCountryAvailableForCooperation);
 
@@ -1077,7 +1140,50 @@ void PatchEABFFixes(FM::Version v) {
         // remove short-term loans
         patch::SetUChar(0x912C83, 0xEB);
 
+        patch::RedirectJump(0xDB83E4, Fix_DB842C);
+
+        patch::RedirectCall(0x7F57B2, OnGetLeagueForQuiz);
+
        // if (true)
        //     patch::RedirectJump(0xFCEFE0, OnPlayerHasPhoto);
+
+        // national team select - 35 players => 18
+        patch::SetUChar(0x5467FD + 3, 18);
+
+        // user formation bug
+        patch::RedirectCall(0x13ED595, UserFormationsBugFix);
+        patch::RedirectCall(0x13ED5CC, UserFormationsBugFix);
+        patch::RedirectCall(0x1172FF7, UserFormationsBugFix);
+        patch::RedirectCall(0x141558C, UserFormationsBugFix);
+
+        // manager fire - task delegation fix
+        patch::RedirectCall(0xEDCEDD, OnFireEmployee);
+        patch::RedirectCall(0xEDCFD3, OnFireEmployee);
+        patch::RedirectCall(0xF3BD47, OnFireEmployee);
+        patch::RedirectCall(0xF3BDEC, OnFireEmployee);
+        patch::RedirectCall(0xF3C02A, OnFireEmployee);
+        patch::RedirectCall(0xF3C173, OnFireEmployee);
+
+        // temporary handler for 1010DAA
+        patch::RedirectCall(0x5401D0 + 0x1DA, Handler_1010D90<0x5401D0 + 0x1DA>);
+        patch::RedirectCall(0x5751C0 + 0x60, Handler_1010D90<0x5751C0 + 0x60 >);
+        patch::RedirectCall(0x5818F0 + 0xAF, Handler_1010D90<0x5818F0 + 0xAF >);
+        patch::RedirectCall(0x5822A0 + 0xB8, Handler_1010D90<0x5822A0 + 0xB8 >);
+        patch::RedirectCall(0x584B00 + 0xE0, Handler_1010D90<0x584B00 + 0xE0 >);
+        patch::RedirectCall(0x63C740 + 0x2D2, Handler_1010D90<0x63C740 + 0x2D2>);
+        patch::RedirectCall(0x6B7300 + 0xF0, Handler_1010D90<0x6B7300 + 0xF0 >);
+        patch::RedirectCall(0x85DE40 + 0xCC, Handler_1010D90<0x85DE40 + 0xCC >);
+        patch::RedirectCall(0x86F700 + 0x15C, Handler_1010D90<0x86F700 + 0x15C>);
+        patch::RedirectCall(0x8CCEA0 + 0x24, Handler_1010D90<0x8CCEA0 + 0x24 >);
+        patch::RedirectCall(0x8CF700 + 0x107, Handler_1010D90<0x8CF700 + 0x107>);
+        patch::RedirectCall(0x8CFEF0 + 0x68, Handler_1010D90<0x8CFEF0 + 0x68 >);
+        patch::RedirectCall(0x8D5030 + 0x68, Handler_1010D90<0x8D5030 + 0x68 >);
+        patch::RedirectCall(0x9CC0F0 + 0xFF, Handler_1010D90<0x9CC0F0 + 0xFF >);
+
+        // commentary
+        if (Settings::GetInstance().getEnableSpeechInAllMatches()) {
+            patch::SetUChar(0x44E484, 0xEB);
+            patch::SetUChar(0x44E54A, 0xEB);
+        }
     }
 }

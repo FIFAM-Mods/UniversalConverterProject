@@ -43,12 +43,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>D:\Games\FIFA Manager 13\plugins\</OutDir>
+    <OutDir>E:\Games\FIFA Manager 13\plugins\</OutDir>
     <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>D:\Games\FIFA Manager 13\plugins\</OutDir>
+    <OutDir>E:\Games\FIFA Manager 13\plugins\</OutDir>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -56,7 +56,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;E:\Projects\fifam\fmapi;E:\Projects\fifam\generic;E:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -88,7 +88,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
-      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\Projects\fifam\output\libs;E:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>generic.lib;fmapi.lib;UCPCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
@@ -101,9 +101,7 @@
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="ClubIDs.cpp" />
     <ClCompile Include="Competitions.cpp" />
-    <ClCompile Include="compression.cpp" />
     <ClCompile Include="Country207.cpp" />
-    <ClCompile Include="DatabaseName.cpp" />
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="EditorChiefExecExport.cpp" />
     <ClCompile Include="FemaleNames.cpp" />
@@ -121,9 +119,7 @@
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="ClubIDs.h" />
     <ClInclude Include="Competitions.h" />
-    <ClInclude Include="compression.h" />
     <ClInclude Include="Country207.h" />
-    <ClInclude Include="DatabaseName.h" />
     <ClInclude Include="Editor.h" />
     <ClInclude Include="EditorChiefExecExport.h" />
     <ClInclude Include="FemaleNames.h" />

@@ -1,7 +1,6 @@
 #include "Translation.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
-#include "license_check/license_check.h"
 
 using namespace plugin;
 
@@ -18,9 +17,9 @@ Array<String, 207> &CountryNames() {
 Bool countryNamesFileRead;
 
 String GetTranslationFileModifiedPath(String const &originalPath) {
-    if (Utils::StartsWith(originalPath, Magic<'f', 'm', 'd', 'a', 't', 'a', '\\'>(3512122331))) {
+    if (Utils::StartsWith(originalPath, L"fmdata\\")) {
         auto fileName = originalPath.substr(7);
-        auto modifiedPath = Utils::Format(Magic<'f', 'm', 'd', 'a', 't', 'a', '\\', '%', 's', '\\', '%', 's'>(2333809814), GameLanguage().c_str(), fileName.c_str());
+        auto modifiedPath = Utils::Format(L"fmdata\\%s\\%s", GameLanguage().c_str(), fileName.c_str());
         if (exists(modifiedPath))
             return modifiedPath;
     }
@@ -34,8 +33,7 @@ void METHOD OnReadLocalisationFile(void *loc, DUMMY_ARG, WideChar const *origina
 
 void METHOD OnSetLocaleCurrentLanguage(void *loc, DUMMY_ARG, Int langId) {
     CallMethod<0x574700>(loc, langId);
-    static auto filepath = Magic<'f', 'm', 'd', 'a', 't', 'a', '\\', 'D', 'a', 't', 'a', 'b', 'a', 's', 'e', 'E', 'd', 'i', 't', 'o', 'r', '.', 'd', 'e', '.', 't', 'x', 't'>(2498057817);
-    OnReadLocalisationFile(loc, 0, filepath.c_str(), 8);
+    OnReadLocalisationFile(loc, 0, L"fmdata\\DatabaseEditor.de.txt", 8);
 }
 
 void METHOD OnSetCountryName(void *country, DUMMY_ARG, const WideChar *name) {
@@ -64,10 +62,25 @@ WideChar const *METHOD OnGetCountryNameEditor(void *country) {
     return (WideChar const *)((UInt)country + 4 + 60 * currLang);
 }
 
+void OnGetFaceIDsPath(WideChar *dst, WideChar const *format, WideChar const *arg) {
+    static Path faceIDsPath = FM::GetGameDir() + L"fmdata\\eng\\faceIDs.txt";
+    wcscpy(dst, faceIDsPath.c_str());
+}
+
+void OnGetClubIDsPath(WideChar *dst, WideChar const *format, WideChar const *arg) {
+    static Path clubIDsPath = FM::GetGameDir() + L"fmdata\\eng\\ClubIDs.txt";
+    wcscpy(dst, clubIDsPath.c_str());
+}
+
+void OnGetStadiumListPath(WideChar *dst, WideChar const *format, WideChar const *arg) {
+    static Path clubIDsPath = FM::GetGameDir() + L"fmdata\\eng\\StadiumList.txt";
+    wcscpy(dst, clubIDsPath.c_str());
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         wchar_t gameLanguageStr[MAX_PATH];
-        GetPrivateProfileStringW(Magic<'O', 'P', 'T', 'I', 'O', 'N', 'S'>(1224534890).c_str(), Magic<'T', 'E', 'X', 'T', '_', 'L', 'A', 'N', 'G', 'U', 'A', 'G', 'E'>(3562105574).c_str(), Magic<'e', 'n', 'g'>(3703889367).c_str(), gameLanguageStr, MAX_PATH, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
+        GetPrivateProfileStringW(L"OPTIONS", L"TEXT_LANGUAGE", L"eng", gameLanguageStr, MAX_PATH, L".\\locale.ini");
         GameLanguage() = Utils::ToLower(gameLanguageStr);
         if (!GameLanguage().empty()) {
             // TODO
@@ -90,5 +103,8 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x4BF0E0, OnReadLocalisationFile);
         patch::RedirectCall(0x4BF0F7, OnReadLocalisationFile);
         patch::RedirectJump(0x4DCEE0, OnGetCountryNameEditor);
+        patch::RedirectCall(0x5100BA, OnGetFaceIDsPath);
+        patch::RedirectCall(0x510141, OnGetClubIDsPath);
+        patch::RedirectCall(0x548F5B, OnGetStadiumListPath);
     }
 }

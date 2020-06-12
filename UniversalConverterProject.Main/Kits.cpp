@@ -1198,7 +1198,9 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
             };
 
             // TODO: enable this
-            //PutOverlay(shapeGen, dstImg, GetUserTexturePath(L"data\\kitoverlay", gCurrCompId, teamId, kitTypeStr), 512, 1024, 0, 0, 512, 1024);
+            String kitOverlayPath = GetUserTexturePath(L"data\\kitoverlay", gCurrCompId, teamId, kitTypeStr);
+            if (!kitOverlayPath.empty())
+                PutOverlay(shapeGen, dstImg, kitOverlayPath, 512, 1024, 0, 0, 512, 1024);
 
             UInt lastSeasonYear = 0;
             Bool isChampion = false;
@@ -1601,9 +1603,6 @@ void InstallKits_FM13() {
 
     // kit overlay
     patch::RedirectCall(GfxCoreAddress(0x384E15), OnWriteKitShape);
-}
-
-void InstallKits_FM11() {
 }
 
 void PatchKits(FM::Version v) {

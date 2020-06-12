@@ -482,8 +482,4 @@ void PatchTeamControl(FM::Version v) {
             patch::RedirectCall(0x414118, OnGetPlayerAttribute3D);
         }
     }
-    if (v.id() == ID_FM_11_1003) {
-        patch::SetUShort(0x406210, 0x1B0); // mov al, 1
-        patch::SetUChar(0x406210 + 2, 0xC3); // retn
-    }
 }

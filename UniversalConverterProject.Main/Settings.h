@@ -12,6 +12,11 @@ class Settings {
     std::pair<bool, bool> mDisableTeamControl = { true, true };
     std::pair<bool, bool> mUseNew3dPitch = { false, false };
     std::pair<bool, bool> mNoHardwareAccelerationFix = { false, false };
+    std::pair<int, int> mCrowdResolution = { 1024, 1024 };
+    std::pair<bool, bool> mRandomizeTalents = { false, false };
+    std::pair<bool, bool> mUseRealSalaries = { false, false };
+    std::pair<bool, bool> mUseHairLODs = { true, true };
+    std::pair<bool, bool> mEnableSpeechInAllMatches = { false, false };
 
 public:
     bool getExtendLoansLimit();
@@ -35,10 +40,19 @@ public:
     void setUseNew3dPitch(bool set);
     bool getNoHardwareAccelerationFix();
     void setNoHardwareAccelerationFix(bool set);
+    int getCrowdResolution();
+    void setCrowdResolution(int resolution);
+    bool getRandomizeTalents();
+    void setRandomizeTalents(bool set);
+    bool getUseRealSalaries();
+    void setUseRealSalaries(bool set);
+    bool getUseHairLODs();
+    void setUseHairLODs(bool set);
+    bool getEnableSpeechInAllMatches();
+    void setEnableSpeechInAllMatches(bool set);
 
     static Settings &GetInstance();
     void save();
 private:
     Settings();
-    ~Settings();
 };

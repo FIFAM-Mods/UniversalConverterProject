@@ -516,6 +516,14 @@ CTeamSponsor &CDBTeam::GetSponsor() {
     return plugin::CallMethodAndReturn<CTeamSponsor &, 0xED5170>(this);
 }
 
+bool CDBTeam::IsRivalWith(CTeamIndex const &teamIndex) {
+    return CallMethodAndReturn<bool, 0xEE40D0>(this, &teamIndex);
+}
+
+CDBTeamKit *CDBTeam::GetKit() {
+    return CallMethodAndReturn<CDBTeamKit *, 0xED3D60>(this);
+}
+
 CTeamIndex &CDBLeagueBase::GetTeamAtPosition(int position) {
     return plugin::CallMethodAndReturn<CTeamIndex &, 0x10CBE20>(this, position);
 }
@@ -609,4 +617,12 @@ Bool CDBSponsorContractBase::IsActive() {
 
 SponsorPlacement &CDBSponsorContractBase::GetPlacement() {
     return plugin::CallMethodAndReturn<SponsorPlacement &, 0x11B8530>(this);
+}
+
+UInt CDBTeamKit::GetPartType(UChar kitType, UChar shirtPart) {
+    return CallMethodAndReturn<UInt, 0xFFCBD0>(this, kitType, shirtPart);
+}
+
+UChar CDBTeamKit::GetPartColor(UChar kitType, UChar shirtPart, UChar colorIndex) {
+    return CallMethodAndReturn<UInt, 0xFFCC20>(this, kitType, shirtPart, colorIndex);
 }

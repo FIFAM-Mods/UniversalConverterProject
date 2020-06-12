@@ -2,22 +2,26 @@
 #include <Windows.h>
 #include "shared.h"
 #include "Utils.h"
-#include "license_check/license_check.h"
 
 unsigned int gAddress = 0;
 wchar_t gMessage[512];
 
+unsigned int gPreviousAddress = 0;
+
 wchar_t const *GetSafePatchName() {
-    
-    String str;
-    str = GetPatchNameWithVersion() + Magic<' ','E','x','c','p','e','t','i','o','n'>(2057051410);
+    static String str = GetPatchNameWithVersion() + L" Exception";
     return str.c_str();
 }
 
 void __declspec(naked) ShowExceptionError() {
     __asm mov eax, dword ptr[esp]
         __asm mov gAddress, eax
-    swprintf(gMessage, L"Unhandled exception at 0x%X\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", gAddress);
+    if (gPreviousAddress != 0) {
+        swprintf(gMessage, L"Unhandled exception at 0x%X/0x%X\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", gAddress, gPreviousAddress);
+        gPreviousAddress = 0;
+    }
+    else
+        swprintf(gMessage, L"Unhandled exception at 0x%X\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", gAddress);
     MessageBoxW(NULL, gMessage, GetSafePatchName(), MB_ICONERROR);
     __asm retn
 }

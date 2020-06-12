@@ -39,6 +39,8 @@ void EnableCursor(Bool enable) {
 }
 
 INT __stdcall MyShowCursor(BOOL show) {
+    if (!gWindowsMousePointer)
+        EnableCursor(false);
     INT result = show ? 0 : -1;
     return result;
 }
@@ -99,16 +101,20 @@ void UpdateCursor(Bool winCursor) {
         ClientToScreen(*(HWND *)(GfxCoreAddress(0x669064)), &b);
         POINT p = { 0, 0 };
         GetCursorPos(&p);
-        if (p.x > a.x && p.x < b.x && p.y > a.y && p.y < b.y)
+        if (p.x > a.x &&p.x < b.x && p.y > a.y &&p.y < b.y) {
             EnableCursor(false);
-        else
+        }
+        else {
             EnableCursor(true);
+            
+        }
     }
 }
 
 Int AppIdle() {
-    if (!gWindowsMousePointer)
-        UpdateCursor(false);
+    UpdateCursor(true);
+    //if (!gWindowsMousePointer)
+    //    UpdateCursor(false);
     return CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x3147A0));
 }
 
@@ -497,8 +503,8 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         if (CallAndReturn<Bool, 0x4514F0>() != 1) {
             return 0;
         }
+        SaveWindowedMode();
         Settings::GetInstance().save();
-        CloseWindowedMode(ID_FM_13_1030_RLD);
     }
     return CallMethodAndReturnDynGlobal<Int>(GfxCoreAddress(0x6E00), 0, hWnd, uCmd, wParam, lParam);
 }
@@ -507,7 +513,7 @@ void InstallWindowedMode_GfxCore() {
     if (gWindowedMode) {
         patch::RedirectCall(GfxCoreAddress(0x3BB82C), ProcessMouse);
 
-        patch::RedirectCall(GfxCoreAddress(0x28212D), AppIdle);
+        //patch::RedirectCall(GfxCoreAddress(0x28212D), AppIdle);
 
         // lossfocus
         patch::Nop(GfxCoreAddress(0x169F8), 2);
@@ -519,7 +525,7 @@ void InstallWindowedMode_GfxCore() {
         //patch::SetPointer(GfxCoreAddress(0x4EB50C), MyShowCursor);
         patch::SetPointer(GfxCoreAddress(0x4EB4B4), MySetCursorPos);
 
-        // dsiable minimize
+        // disable minimize
         NopWinapiMethod(GfxCoreAddress(0x7000), 2);
         NopWinapiMethod(GfxCoreAddress(0x3BBCB6), 2);
 
@@ -590,16 +596,13 @@ void PatchWindowedMode(FM::Version v) {
     }
 }
 
-void CloseWindowedMode(FM::Version v) {
-    if (v.id() == ID_FM_13_1030_RLD) {
-        if (gWindowedMode != gWindowedModeStartValue)
-            WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','E','D'>(1735279180).c_str(), Utils::Format(L"%u", gWindowedMode).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-        if (gWindowsMousePointer != gWindowsMousePointerStartValue)
-            WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','S','_','M','O','U','S','E','_','P','O','I','N','T','E','R'>(2820247460).c_str(), Utils::Format(L"%u", gWindowsMousePointer).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-        if (gWindowPosition != gWindowPositionStartValue)
-            WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','_','P','O','S','I','T','I','O','N'>(3666493466).c_str(), Utils::Format(L"%u", gWindowPosition).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-        if (gDisableResourcePathsCaching != gDisableResourcePathsCachingStartValue)
-            WritePrivateProfileStringW(L"", Magic<'D','I','S','A','B','L','E','_','R','E','S','_','P','A','T','H','_','C','A','C','H','I','N','G'>(206041226).c_str(), Utils::Format(L"%u", gDisableResourcePathsCaching).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-        
-    }
+void SaveWindowedMode() {
+    if (gWindowedMode != gWindowedModeStartValue)
+        WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','E','D'>(1735279180).c_str(), Utils::Format(L"%u", gWindowedMode).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
+    if (gWindowsMousePointer != gWindowsMousePointerStartValue)
+        WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','S','_','M','O','U','S','E','_','P','O','I','N','T','E','R'>(2820247460).c_str(), Utils::Format(L"%u", gWindowsMousePointer).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
+    if (gWindowPosition != gWindowPositionStartValue)
+        WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','_','P','O','S','I','T','I','O','N'>(3666493466).c_str(), Utils::Format(L"%u", gWindowPosition).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
+    if (gDisableResourcePathsCaching != gDisableResourcePathsCachingStartValue)
+        WritePrivateProfileStringW(L"", Magic<'D','I','S','A','B','L','E','_','R','E','S','_','P','A','T','H','_','C','A','C','H','I','N','G'>(206041226).c_str(), Utils::Format(L"%u", gDisableResourcePathsCaching).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
 }

@@ -6,7 +6,6 @@
     <ClCompile Include="Talent6Stars.cpp" />
     <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
     <ClCompile Include="EditorChiefExecExport.cpp" />
-    <ClCompile Include="DatabaseName.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="Country207.cpp" />
@@ -15,7 +14,6 @@
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="ParameterFiles.cpp" />
-    <ClCompile Include="compression.cpp" />
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
@@ -25,7 +23,6 @@
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="FixedArchivesReadingForEditor.h" />
     <ClInclude Include="EditorChiefExecExport.h" />
-    <ClInclude Include="DatabaseName.h" />
     <ClInclude Include="LowestLeagues.h" />
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="Country207.h" />
@@ -34,7 +31,6 @@
     <ClInclude Include="Formations.h" />
     <ClInclude Include="Editor.h" />
     <ClInclude Include="ParameterFiles.h" />
-    <ClInclude Include="compression.h" />
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />

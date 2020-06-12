@@ -2,6 +2,7 @@
 #include "FifamReadWrite.h"
 #include "shared.h"
 #include "license_check/license_check.h"
+#include "GameInterfaces.h"
 
 const UInt STANDINGS3D_ORIGINAL_STRUCT_SIZE = 0x4F8;
 
@@ -142,6 +143,101 @@ void SetWidgetTeamColor(void *widget, String const &resourcePath, void *competit
 
 }
 
+String GetGenericKitColorName(CDBTeamKit *kit, Bool home) {
+    UChar kitId = (home == true) ? 0 : 1;
+    UChar color1 = 0, color2 = 0;
+    switch (kit->GetPartType(kitId, 0)) {
+    case 2:
+    case 4:
+    case 5:
+    case 8:
+    case 9:
+    case 18:
+    case 26:
+    case 28:
+    case 29:
+    case 30:
+    case 31:
+    case 32:
+    case 35:
+    case 54:
+    case 56:
+    case 58:
+    case 61:
+    case 62:
+    case 66:
+        color1 = 0;
+        color2 = 0;
+        break;
+    case 1:
+    case 6:
+    case 10:
+    case 11:
+    case 13:
+    case 20:
+    case 27:
+    case 33:
+    case 34:
+    case 37:
+    case 38:
+    case 39:
+    case 40:
+    case 42:
+    case 43:
+    case 44:
+    case 45:
+    case 46:
+    case 47:
+    case 50:
+    case 52:
+    case 64:
+        color1 = 0;
+        color2 = 2;
+        break;
+    case 22:
+    case 53:
+    case 57:
+    case 59:
+    case 60:
+        color1 = 0;
+        color2 = 1;
+        break;
+    case 23:
+        color1 = 2;
+        color2 = 0;
+        break;
+    case 3:
+    case 7:
+    case 14:
+    case 16:
+    case 17:
+    case 19:
+    case 21:
+    case 24:
+    case 25:
+    case 36:
+    case 41:
+    case 48:
+    case 55:
+    case 65:
+        color1 = 0;
+        color2 = 2;
+        break;
+    case 15:
+    case 63:
+        color1 = 0;
+        color2 = 1;
+        break;
+    case 12:
+    case 49:
+    case 51:
+        color1 = 0;
+        color2 = 1;
+        break;
+    }
+    return Utils::Format(L"clr_%d_%d", kit->GetPartColor(kitId, 0, color1), kit->GetPartColor(kitId, 0, color2));
+}
+
 void METHOD OnCreateStandingsUI(void *standingsInterface) {
     // get additional elements
     auto additionalData = GetStandingsAdditionalData(standingsInterface);
@@ -166,8 +262,8 @@ void METHOD OnCreateStandingsUI(void *standingsInterface) {
         SetVisible(additionalData->mTbAggregate, false);
     }
     // setup team colors
-    void *homeTeam = *raw_ptr<void *>(standingsInterface, 0x4CC);
-    void *awayTeam = *raw_ptr<void *>(standingsInterface, 0x4D0);
+    CDBTeam *homeTeam = *raw_ptr<CDBTeam *>(standingsInterface, 0x4CC);
+    CDBTeam *awayTeam = *raw_ptr<CDBTeam *>(standingsInterface, 0x4D0);
     if (homeTeam && awayTeam) {
         UInt compId = 0;
         void *currentCompetition = *raw_ptr<void *>(standingsInterface, 0x4D4);
@@ -198,49 +294,70 @@ void METHOD OnCreateStandingsUI(void *standingsInterface) {
             void *kitsData = raw_ptr<void *>(matchData, 0x30);
             UInt homeTeamKitId = *raw_ptr<UInt>(kitsData, 0xED8);
             UInt awayTeamKitId = *raw_ptr<UInt>(kitsData, 0xEDC);
-            WideChar const *homeTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x454);
-            WideChar const *awayTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x65C + 0x454);
-            if (homeTeamKitPath[0]) {
-                String kitPath = homeTeamKitPath;
-                auto dotPos = kitPath.find(L'.');
-                if (dotPos != String::npos) {
-                    kitPath = kitPath.substr(0, dotPos);
-                    if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
-                        if (kitPath[kitPath.size() - 1] == L'h')
-                            homeTeamKitId = 0;
-                        else if (kitPath[kitPath.size() - 1] == L'a')
-                            homeTeamKitId = 1;
-                        else if (kitPath[kitPath.size() - 1] == L't')
-                            homeTeamKitId = 2;
+
+            Bool homeSet = false;
+            Bool awaySet = false;
+            
+            CDBTeamKit *homeTeamKit = homeTeam->GetKit();
+            Bool homeGenericKit = (*raw_ptr<UInt>(homeTeamKit, 4) & 0xC0000000) == 0;
+            CDBTeamKit *awayTeamKit = awayTeam->GetKit();
+            Bool awayGenericKit = (*raw_ptr<UInt>(awayTeamKit, 4) & 0xC0000000) == 0;
+
+            if (!homeGenericKit) {
+                WideChar const *homeTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x454);
+                if (homeTeamKitPath[0]) {
+                    String kitPath = homeTeamKitPath;
+                    auto dotPos = kitPath.find(L'.');
+                    if (dotPos != String::npos) {
+                        kitPath = kitPath.substr(0, dotPos);
+                        if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
+                            if (kitPath[kitPath.size() - 1] == L'h')
+                                homeTeamKitId = 0;
+                            else if (kitPath[kitPath.size() - 1] == L'a')
+                                homeTeamKitId = 1;
+                            else if (kitPath[kitPath.size() - 1] == L't')
+                                homeTeamKitId = 2;
+                        }
                     }
                 }
-            }
-            if (awayTeamKitPath[0]) {
-                String kitPath = awayTeamKitPath;
-                auto dotPos = kitPath.find(L'.');
-                if (dotPos != String::npos) {
-                    kitPath = kitPath.substr(0, dotPos);
-                    if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
-                        if (kitPath[kitPath.size() - 1] == L'h')
-                            awayTeamKitId = 0;
-                        else if (kitPath[kitPath.size() - 1] == L'a')
-                            awayTeamKitId = 1;
-                        else if (kitPath[kitPath.size() - 1] == L't')
-                            awayTeamKitId = 2;
-                    }
+                String homeTeamColorPath = GetPathForTeamKitColor(colorsPathStr, homeTeamUId, homeTeamKitId);
+                if (!homeTeamColorPath.empty() && FileExists(homeTeamColorPath)) {
+                    SetImageFilename(additionalData->mImgColor1, homeTeamColorPath);
+                    homeSet = true;
                 }
             }
-            //SafeLog::Write(Utils::Format(L"%08X (%d) - %08X (%d)", homeTeamUId, homeTeamKitId, awayTeamUId, awayTeamKitId));
-            //
-            String homeTeamColorPath = GetPathForTeamKitColor(colorsPathStr, homeTeamUId, homeTeamKitId);
-            if (!homeTeamColorPath.empty() && FileExists(homeTeamColorPath)) {
-                SetImageFilename(additionalData->mImgColor1, homeTeamColorPath);
-                //SafeLog::Write(L"home team color set");
+            if (!awayGenericKit) {
+                WideChar const *awayTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x65C + 0x454);
+                if (awayTeamKitPath[0]) {
+                    String kitPath = awayTeamKitPath;
+                    auto dotPos = kitPath.find(L'.');
+                    if (dotPos != String::npos) {
+                        kitPath = kitPath.substr(0, dotPos);
+                        if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
+                            if (kitPath[kitPath.size() - 1] == L'h')
+                                awayTeamKitId = 0;
+                            else if (kitPath[kitPath.size() - 1] == L'a')
+                                awayTeamKitId = 1;
+                            else if (kitPath[kitPath.size() - 1] == L't')
+                                awayTeamKitId = 2;
+                        }
+                    }
+                }
+                String awayTeamColorPath = GetPathForTeamKitColor(colorsPathStr, awayTeamUId, awayTeamKitId);
+                if (!awayTeamColorPath.empty() && FileExists(awayTeamColorPath)) {
+                    SetImageFilename(additionalData->mImgColor2, awayTeamColorPath);
+                    awaySet = true;
+                }
             }
-            String awayTeamColorPath = GetPathForTeamKitColor(colorsPathStr, awayTeamUId, awayTeamKitId);
-            if (!awayTeamColorPath.empty() && FileExists(awayTeamColorPath)) {
-                SetImageFilename(additionalData->mImgColor2, awayTeamColorPath);
-                //SafeLog::Write(L"away team color set");
+            if (!homeSet) {
+                String homeTeamColorPath = colorsPathStr + GetGenericKitColorName(homeTeamKit, homeTeamKitId == 0) + L".png";
+                if (FileExists(homeTeamColorPath))
+                    SetImageFilename(additionalData->mImgColor1, homeTeamColorPath);
+            }
+            if (!awaySet) {
+                String awayTeamColorPath = colorsPathStr + GetGenericKitColorName(awayTeamKit, awayTeamKitId == 0) + L".png";
+                if (FileExists(awayTeamColorPath))
+                    SetImageFilename(additionalData->mImgColor2, awayTeamColorPath);
             }
         }
     }

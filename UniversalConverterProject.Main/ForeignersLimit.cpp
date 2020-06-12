@@ -20,21 +20,6 @@ void __declspec(naked) CheckSpainNominationDateMonth_13() {
     }
 }
 
-void __declspec(naked) CheckSpainNominationDateMonth_11() {
-    __asm {
-        cmp dword ptr[esp + 0x2D8], 1
-        je LABEL_TRUE
-        cmp dword ptr[esp + 0x2D8], 8
-        je LABEL_TRUE
-
-        mov eax, 0xD5A4B7
-        jmp eax
-    LABEL_TRUE :
-        mov eax, 0xD5A4A6
-        jmp eax
-    }
-}
-
 CDBTeam *gTeamNominationTeam = nullptr;
 int gTeamNominationYear = 0;
 int gTeamNominationMonth = 0;
@@ -144,13 +129,5 @@ void PatchForeignersLimit(FM::Version v) {
         //patch::RedirectCall(0xF233AE, GetTeamQualifiedForContinentalCompetition);
 
         patch::Nop(0xF2324E, 6);
-    }
-    else if (v.id() == ID_FM_11_1003) {
-        patch::SetUChar(0xDFD896, 4); // default for Turkey
-        patch::Nop(0xDFD70A, 2);
-
-
-        // Spain players registration
-        patch::RedirectJump(0xD5A49C, CheckSpainNominationDateMonth_11);
     }
 }

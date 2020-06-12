@@ -25,6 +25,16 @@ bool Settings::getUseNew3dPitch() { return mUseNew3dPitch.first; }
 void Settings::setUseNew3dPitch(bool set) { mUseNew3dPitch.first = set; }
 bool Settings::getNoHardwareAccelerationFix() { return mNoHardwareAccelerationFix.first; }
 void Settings::setNoHardwareAccelerationFix(bool set) { mNoHardwareAccelerationFix.first = set; }
+int Settings::getCrowdResolution() { return mCrowdResolution.first; }
+void Settings::setCrowdResolution(int resolution) { mCrowdResolution.first = resolution; }
+bool Settings::getRandomizeTalents() { return mRandomizeTalents.first; }
+void Settings::setRandomizeTalents(bool set) { mRandomizeTalents.first = set; }
+bool Settings::getUseRealSalaries() { return mUseRealSalaries.first; }
+void Settings::setUseRealSalaries(bool set) { mUseRealSalaries.first = set; }
+bool Settings::getUseHairLODs() { return mUseHairLODs.first; }
+void Settings::setUseHairLODs(bool set) { mUseHairLODs.first = set; }
+bool Settings::getEnableSpeechInAllMatches() { return mEnableSpeechInAllMatches.first; }
+void Settings::setEnableSpeechInAllMatches(bool set) { mEnableSpeechInAllMatches.first = set; }
 
 Settings &Settings::GetInstance() {
     static Settings settings;
@@ -55,6 +65,11 @@ Settings::Settings() {
     setTeamControlDisabled(GetPrivateProfileIntW(mainSectionStr.c_str(), disableTeamControlStr.c_str(), 1, fileName.c_str()));
     setUseNew3dPitch(GetPrivateProfileIntW(mainSectionStr.c_str(), useNew3dPitchStr.c_str(), 0, fileName.c_str()));
     setNoHardwareAccelerationFix(GetPrivateProfileIntW(mainSectionStr.c_str(), noHardwareAccelerationStr.c_str(), 0, fileName.c_str()));
+    setCrowdResolution(GetPrivateProfileIntW(mainSectionStr.c_str(), L"CROWD_RESOLUTION", 1024, fileName.c_str()));
+    setRandomizeTalents(GetPrivateProfileIntW(mainSectionStr.c_str(), L"RANDOMIZE_TALENTS", 0, fileName.c_str()));
+    setUseRealSalaries(GetPrivateProfileIntW(mainSectionStr.c_str(), L"USE_REAL_SALARIES", 0, fileName.c_str()));
+    setUseHairLODs(GetPrivateProfileIntW(mainSectionStr.c_str(), L"USE_HAIR_LODS", 1, fileName.c_str()));
+    setEnableSpeechInAllMatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_SPEECH_IN_ALL_MATCHES", 0, fileName.c_str()));
 
     mExtendLoansLimit.second = mExtendLoansLimit.first;
     mTeamControl.second = mTeamControl.first;
@@ -66,6 +81,10 @@ Settings::Settings() {
     mDisableTeamControl.second = mDisableTeamControl.first;
     mUseNew3dPitch.second = mUseNew3dPitch.first;
     mNoHardwareAccelerationFix.second = mNoHardwareAccelerationFix.first;
+    mCrowdResolution.second = mCrowdResolution.first;
+    mRandomizeTalents.second = mRandomizeTalents.first;
+    mUseRealSalaries.second = mUseRealSalaries.first;
+    mEnableSpeechInAllMatches.second = mEnableSpeechInAllMatches.first;
 }
 
 void Settings::save() {
@@ -102,8 +121,14 @@ void Settings::save() {
         WritePrivateProfileStringW(mainSectionStr.c_str(), useNew3dPitchStr.c_str(), Utils::Format(L"%u", getUseNew3dPitch()).c_str(), fileName.c_str());
     if (mNoHardwareAccelerationFix.first != mNoHardwareAccelerationFix.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), noHardwareAccelerationStr.c_str(), Utils::Format(L"%u", getNoHardwareAccelerationFix()).c_str(), fileName.c_str());
-}
-
-Settings::~Settings() {
-    save();
+    if (mCrowdResolution.first != mCrowdResolution.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"CROWD_RESOLUTION", Utils::Format(L"%u", getCrowdResolution()).c_str(), fileName.c_str());
+    if (mRandomizeTalents.first != mRandomizeTalents.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"RANDOMIZE_TALENTS", Utils::Format(L"%u", getRandomizeTalents()).c_str(), fileName.c_str());
+    if (mUseRealSalaries.first != mUseRealSalaries.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"USE_REAL_SALARIES", Utils::Format(L"%u", getUseRealSalaries()).c_str(), fileName.c_str());
+    if (mUseHairLODs.first != mUseHairLODs.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"USE_HAIR_LODS", Utils::Format(L"%u", getUseHairLODs()).c_str(), fileName.c_str());
+    if (mEnableSpeechInAllMatches.first != mEnableSpeechInAllMatches.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_SPEECH_IN_ALL_MATCHES", Utils::Format(L"%u", getEnableSpeechInAllMatches()).c_str(), fileName.c_str());
 }

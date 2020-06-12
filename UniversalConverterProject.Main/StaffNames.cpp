@@ -70,58 +70,6 @@ void __declspec(naked) SetTeamPresidentName() {
 }
 }
 
-namespace fm11 {
-unsigned short METHOD ReadStaffNickname(void *reader) {
-    // read nickname
-    CallMethod<0x103F450>(reader);
-    // read and return pseudonym
-    return CallMethodAndReturn<unsigned short, 0x103F450>(reader);
-}
-
-void *CDBStaff_GetName(void *staff, void *desc) {
-    void *worker = *raw_ptr<void *>(staff, 0xC);
-    if (*raw_ptr<unsigned short>(worker, 0xE))
-        CallMethod<0x1081B90>(worker, desc);
-    else
-        CallMethod<0x1081B70>(worker, desc);
-    return desc;
-}
-
-wchar_t * METHOD GetFullStaffName(unsigned int staff, DUMMY_ARG, wchar_t *nameBuf) {
-    return CallAndReturn<wchar_t *, 0xBA5A97>(*(DWORD *)(staff + 12) + 8, nameBuf);
-}
-
-wchar_t * METHOD GetStaffNameWithPseudonym(void *staff, DUMMY_ARG, wchar_t *nameBuf) {
-    int buf[2];
-    void *desc = CDBStaff_GetName(staff, buf);
-    return CallAndReturn<wchar_t *, 0xBA5A97>(desc, nameBuf);
-}
-
-wchar_t * METHOD GetStaffShortNameWithPseudonym(void *staff, DUMMY_ARG, wchar_t *nameBuf) {
-    int buf[2];
-    void *desc = CDBStaff_GetName(staff, buf);
-    return CallAndReturn<wchar_t *, 0xBA5BB9>(desc, nameBuf);
-}
-
-wchar_t * METHOD GetEmployeeBaseNameWithPseudonym(unsigned int base, DUMMY_ARG, wchar_t *nameBuf) {
-    int buf[2];
-    void *desc = CallMethodAndReturn<void *, 0xD9C750>(base, buf);
-    return CallAndReturn<wchar_t *, 0xBA5A97>(desc, nameBuf);
-}
-
-wchar_t * METHOD GetEmployeeBaseShortNameV1WithPseudonym(unsigned int base, DUMMY_ARG, wchar_t *nameBuf) {
-    int buf[2];
-    void *desc = CallMethodAndReturn<void *, 0xD9C750>(base, buf);
-    return CallAndReturn<wchar_t *, 0xBA5BB9>(desc, nameBuf);
-}
-
-wchar_t * METHOD GetEmployeeBaseShortNameV2WithPseudonym(unsigned int base, DUMMY_ARG, wchar_t *nameBuf) {
-    int buf[2];
-    void *desc = CallMethodAndReturn<void *, 0xD9C750>(base, buf);
-    return CallAndReturn<wchar_t *, 0xBA5D20>(desc, nameBuf);
-}
-}
-
 void PatchStaffNames(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         /* STAFF */
@@ -167,40 +115,5 @@ void PatchStaffNames(FM::Version v) {
         patch::SetUInt(0x68DF12 + 4, MIN_AGE);
         patch::SetUInt(0x68DEB6 + 4, MAX_AGE);
 
-    }
-    else if (v.id() == ID_FM_11_1003) {
-        /* STAFF */
-
-        /* reading from database */
-
-        // disable original pseudonym read
-        patch::Nop(0xEDF83A, 5);
-        // replace original nickname read
-        patch::RedirectCall(0xEDF831, fm11::ReadStaffNickname);
-
-        /* portrait resolver */
-
-        patch::SetUChar(0x1081B9F + 1, 2);
-
-        /* displayed name */
-
-        patch::RedirectJump(0xEDF190, fm11::GetStaffNameWithPseudonym);
-        patch::RedirectCall(0x62940D, fm11::GetFullStaffName);
-        patch::RedirectJump(0xEDF1A0, fm11::GetStaffShortNameWithPseudonym);
-
-        /* EMPLOYEE */
-
-        patch::SetUChar(0xD9C778 + 1, 2);
-
-        patch::SetUChar(0xD9C6AC + 1, 2);
-        patch::RedirectCall(0xD9C6BA, (void *)0xBA5A29);
-
-        patch::RedirectJump(0xD9C6D0, fm11::GetEmployeeBaseNameWithPseudonym);
-        patch::RedirectJump(0xD9C6F0, fm11::GetEmployeeBaseShortNameV1WithPseudonym);
-        patch::RedirectJump(0xD9C710, fm11::GetEmployeeBaseShortNameV2WithPseudonym);
-
-        // Empics ID
-        patch::SetPointer(0x43AB4F + 1, L"%02d%02d%04d-%d");
-        patch::SetPointer(0x43AB77 + 1, L"-%d");
     }
 }

@@ -15,8 +15,7 @@ enum eNameType {
     NAME_LAST = 4
 };
 
-const UInt MAX_LANGUAGES = 128;
-using NamesArray = Array<Set<UShort>, MAX_LANGUAGES>;
+using NamesArray = Set<String>;
 
 NamesArray &GetFemaleNames() {
     static NamesArray femaleNames;
@@ -33,64 +32,37 @@ NamesArray &GetFemaleCommonNames() {
     return femaleCommonNames;
 }
 
-Bool IsFemaleName(UChar languageId, UShort nameIndex) {
-    if (languageId < MAX_LANGUAGES)
-        return false;
-    auto &names = GetFemaleNames()[languageId];
-    return names.find(nameIndex) != names.end();
-}
-
-Bool IsFemaleSurname(UChar languageId, UShort nameIndex) {
-    if (languageId < MAX_LANGUAGES)
-        return false;
-    auto &names = GetFemaleSurnames()[languageId];
-    return names.find(nameIndex) != names.end();
-}
-
-Bool IsFemaleCommonName(UChar languageId, UShort nameIndex) {
-    if (languageId < MAX_LANGUAGES)
-        return false;
-    auto &names = GetFemaleCommonNames()[languageId];
-    return names.find(nameIndex) != names.end();
+WideChar const *GetNameByIndex(UInt nameType, UChar languageId, UShort index) {
+    return CallMethodAndReturn<WideChar const *, 0x1499EC3>(CallAndReturn<void *, 0x1499D1D>(), languageId, nameType, index);
 }
 
 Bool IsFemale(UShort nameIndex, UChar languageId, UInt nameType) {
     if (nameType == NAME_FIRST)
-        return IsFemaleName(languageId, nameIndex);
+        return GetFemaleNames().contains(GetNameByIndex(nameType, languageId, nameIndex));
     else if (nameType == NAME_LAST)
-        return IsFemaleSurname(languageId, nameIndex);
+        return GetFemaleSurnames().contains(GetNameByIndex(nameType, languageId, nameIndex));
     else if (nameType == NAME_COMMON)
-        return IsFemaleCommonName(languageId, nameIndex);
+        return GetFemaleCommonNames().contains(GetNameByIndex(nameType, languageId, nameIndex));
     return false;
 }
 
 UInt ReadNamesFile(String const &filename, NamesArray &names) {
-    UInt numNamesRead = 0;
-    FILE *f = _wfopen(filename.c_str(), Magic<'r','b'>(3009798726).c_str());
-    if (f) {
-        for (UInt l = 0; l < MAX_LANGUAGES; l++) {
-            UInt numNames = 0;
-            if (fread(&numNames, 4, 1, f) == 1 && numNames > 0) {
-                for (UInt i = 0; i < numNames; i++) {
-                    UShort nameIndex = 0;
-                    if (fread(&nameIndex, 2, 1, f) != 1)
-                        break;
-                    names[l].insert(nameIndex);
-                    numNamesRead++;
-                }
-            }
+    UInt numNames = names.size();
+	FifamReader reader(filename, 14, FifamVersion());
+	if (reader.Available()) {
+		while (!reader.IsEof()) {
+			String name;
+			reader.ReadLine(name);
+			Utils::Trim(name);
+			if (!name.empty())
+			    names.insert(name);
         }
-        fclose(f);
     }
-    return numNamesRead;
+    return names.size() - numNames;
 }
 
 UShort METHOD GetRandomNameIndex(UInt namesPool) {
     return CallMethodAndReturn<UShort, 0x149970B>(namesPool);
-}
-
-WideChar const *GetNameByIndex(UInt nameType, UChar languageId, UShort index) {
-    return CallMethodAndReturn<WideChar const *, 0x1499EC3>(CallAndReturn<void *, 0x1499D1D>(), languageId, nameType, index);
 }
 
 UShort GetRandomNonFemaleNameIndex(UInt pools, UChar languageId, UInt nameType) {
@@ -141,9 +113,9 @@ void * METHOD GetRandomFirstLast(UInt pools, DUMMY_ARG, void *desc, UChar langua
 
 void PatchFemaleNames(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        UInt numNames = ReadNamesFile(Magic<'f','m','d','a','t','a','\\','U','C','P','_','F','e','m','a','l','e','N','a','m','e','s','.','b','i','n'>(4134089135), GetFemaleNames());
-        numNames += ReadNamesFile(Magic<'f','m','d','a','t','a','\\','U','C','P','_','F','e','m','a','l','e','S','u','r','n','a','m','e','s','.','b','i','n'>(482911666), GetFemaleSurnames());
-        numNames += ReadNamesFile(Magic<'f','m','d','a','t','a','\\','U','C','P','_','F','e','m','a','l','e','C','o','m','m','o','n','N','a','m','e','s','.','b','i','n'>(1755295342), GetFemaleCommonNames());
+        UInt numNames = ReadNamesFile(L"fmdata\\UCP_FemaleNames.txt", GetFemaleNames());
+        numNames += ReadNamesFile(L"fmdata\\UCP_FemaleSurnames.txt", GetFemaleSurnames());
+        numNames += ReadNamesFile(L"fmdata\\UCP_FemaleCommonNames.txt", GetFemaleCommonNames());
         if (numNames > 0) {
             patch::RedirectJump(0x1499E11, GetOneRandomNameIndex);
             patch::RedirectJump(0x1499E45, GetRandomFirstLast);

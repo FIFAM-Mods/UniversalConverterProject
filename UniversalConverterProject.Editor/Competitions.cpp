@@ -205,7 +205,21 @@ void METHOD ReadRoundDate(void *file, DUMMY_ARG, int *n) {
         *raw_ptr<unsigned char>(gStoredRound, 0x316 + 365 * !S + (*n - 365)) = L + 1;
 }
 
+void *gCountryForComplexLeagueSystemCheck = nullptr;
 
+Bool METHOD OnGetCountryForComplexLeagueSystemCheck(void *country) {
+    gCountryForComplexLeagueSystemCheck = country;
+    return CallMethodAndReturn<Bool, 0x4DE560>(gCountryForComplexLeagueSystemCheck);
+}
+
+void METHOD OnEnableLeagueCalendarButton(void *t, DUMMY_ARG, Bool32 enable) {
+    Bool32 finalEnable = enable;
+    if (finalEnable && gCountryForComplexLeagueSystemCheck) {
+        finalEnable = CallMethodAndReturn<Bool, 0x4DD450>(gCountryForComplexLeagueSystemCheck);
+        gCountryForComplexLeagueSystemCheck = nullptr;
+    }
+    CallMethod<0x5B9DAC>(t, finalEnable);
+}
 
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
@@ -271,6 +285,7 @@ void PatchCompetitions(FM::Version v) {
         // remove fixture files
         patch::RedirectJump(0x4EA3C7, (void *)0x4EA416);
         patch::RedirectJump(0x4E6B98, (void *)0x4E6BD2);
+        patch::Nop(0x4E6B06, 9);
 
         patch::SetUChar(0x50362C, 6); // GET_CC_SPARE fix
 
@@ -296,5 +311,9 @@ void PatchCompetitions(FM::Version v) {
         };
 
         patch::SetPointer(0x4E3B23 + 2, divNames);
+
+        // Editor - disable calendar editing for countries with complex league system
+        patch::RedirectCall(0x44921D, OnGetCountryForComplexLeagueSystemCheck);
+        patch::RedirectCall(0x449249, OnEnableLeagueCalendarButton);
     }
 }

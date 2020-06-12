@@ -2370,18 +2370,20 @@ CDBCup *OnGetLeagueCupToLaunch(unsigned int countryId, unsigned int type, unsign
 
 void METHOD GetPositionPromotionsRelegationsPlacesInfo(CDBLeague *league, DUMMY_ARG, unsigned char *numGreen, unsigned char *numBlue, unsigned char *numWhite, unsigned char *numPink) {
     CallMethod<0xF8E3E0>(league, numGreen, numBlue, numWhite, numPink);
-    auto id = league->GetCompID().ToInt();
-    auto info = GetLeagueTableInfo(id);
-    if (info) {
-        UInt numTeams = league->GetNumOfTeams();
-        if (info->promotion >= 0)
-            *numGreen = info->promotion;
-        if (info->promotionPlayOff >= 0)
-            *numBlue = info->promotionPlayOff;
-        if (info->relegationPlayOff >= 0)
-            *numPink = info->relegationPlayOff;
-        if (info->relegation >= 0 && numTeams >= (UInt)info->relegation)
-            *numWhite = numTeams - info->relegation;
+    auto rel = GetCompetition(league->GetCompID().countryId, COMP_RELEGATION, 0);
+    if (rel) {
+        auto info = GetLeagueTableInfo(league->GetCompID().ToInt());
+        if (info) {
+            UInt numTeams = league->GetNumOfTeams();
+            if (info->promotion >= 0)
+                *numGreen = info->promotion;
+            if (info->promotionPlayOff >= 0)
+                *numBlue = info->promotionPlayOff;
+            if (info->relegationPlayOff >= 0)
+                *numPink = info->relegationPlayOff;
+            if (info->relegation >= 0 && numTeams >= (UInt)info->relegation)
+                *numWhite = numTeams - info->relegation;
+        }
     }
     //if (id.type == FifamCompType::League) {
     //    if (id.countryId == FifamCompRegion::Germany) {
@@ -3115,5 +3117,17 @@ void PatchCompetitions(FM::Version v) {
 
         // World Club Cup for season transition screen
         patch::SetUInt(0x8875CA + 4, 0xF90D0008);
+
+        // remove loading of all clubs when all league levels selected
+       // patch::Nop(0xF954DC, 1);
+       // patch::SetUChar(0xF954DC + 1, 0xE9);
+
+        static UChar gCompSpectatorCalcType[] = {
+            0, 2, 2, 3, 4, 4, 4, 5, 8, 10, 6, 6, 7, 6, 6, 2, 2, 2, 2, 8, 8, 8, 2, 9, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0,
+            30, 2, 2, 31, 32, 32, 2, 2, 2, 2, 2, 2, 2, 2, 2
+        };
+
+        patch::SetPointer(0x62BE96 + 3, gCompSpectatorCalcType);
+        patch::SetPointer(0x62C121 + 3, gCompSpectatorCalcType);
     }
 }

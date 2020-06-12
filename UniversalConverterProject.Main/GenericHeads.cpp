@@ -1,20 +1,35 @@
 #include "GenericHeads.h"
+#include "GfxCoreHook.h"
+#include "GameInterfaces.h"
+#include "Utils.h"
+#include "Settings.h"
 
 using namespace plugin;
 
 unsigned int beardTypes[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 unsigned int skinColors[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+unsigned int skinColors_oldSave[] = { 2, 4, 5, 6, 8, 9, 10, 10, 10, 10 };
 unsigned int hairColors[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9 };
 unsigned int hairTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162 };
 unsigned int headTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1500,1501,1502,1503,1504,1505,1506,1507,1508,1509,1510,1511,1512,1513,1514,1515,1516,1517,1518,1519,1520,1521,1522,1523,1524,1525,1526,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2012,2500,2501,2502,2503,2504,2505,2506,3000,3001,3002,3003,3004,3005,3500,3501,3502,3503,3504,3505,4000,4001,4002,4003,4500,4501,4502,5000,5001,5002,5003,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,1019,1020,1021,1022,1023,1024,1025,1026,1027,1527,1528,2011,2013,2014,2015,2016,2017,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2507,2508,2509,2510,2511,2512,2513,2514,2515,2516,2517,2518,4525 };
 unsigned int eyeColors[] = { 1,2,9,5,4,7,0,3,8,6 };
+int hairLODs[std::size(hairTypes)];
+
+UChar METHOD OnSetupPlayer3D(void *player3d, DUMMY_ARG, UInt playerId, CTeamIndex *teamID, Int a4, Int a5) {
+    UChar result = CallMethodAndReturn<UChar, 0x413CA0>(player3d, playerId, teamID, a4, a5);
+    auto player = CallAndReturn<CDBPlayer *, 0xF97C70>(playerId);
+    if (player && *raw_ptr<UInt>(player, 0xE0) == 43093171) {
+        Error("player: %d player3D: %d", *raw_ptr<UChar>(player, 0x1A8 + 3), *raw_ptr<UChar>(player3d, 0x31F));
+    }
+    return result;
+}
 
 void PatchGenericHeads(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
 
-    // generic heads
+        //patch::RedirectCall(0x417F87, OnSetupPlayer3D);
 
-    // sideburns
+        // sideburns
         patch::SetUInt(0x24A1854 + 4 * 1, 0); // sideburns 1
 
         // beard types
@@ -42,29 +57,35 @@ void PatchGenericHeads(FM::Version v) {
         patch::SetPointer(0xEA1A08 + 1, &beardTypes[0]);
 
         // skin colors
+        auto skinColorsToUse = skinColors;
+        std::error_code dummy_ec;
+        if (exists("IM_USING_SEASON_2020_1_0_SAVEGAME", dummy_ec)) {
+            Warning("The fix for skin tones on Season 2020 1.0 savegames is enabled.\nIn order to remove the fix, delete the file 'IM_USING_SEASON_2020_1_0_SAVEGAME' in the game folder");
+            skinColorsToUse = skinColors_oldSave;
+        }
         patch::SetUInt(0x24A1884, std::size(skinColors));
-        patch::SetPointer(0x40BEB0 + 0x7 + 3, skinColors); // mov     eax, ds:gFifaSkinColors[eax*4]
-        patch::SetPointer(0x40C650 + 0x82 + 3, skinColors); // mov     ecx, ds:gFifaSkinColors[eax*4]
-        patch::SetPointer(0x413BB0 + 0xAB + 3, skinColors); // mov     al, byte ptr ds:gFifaSkinColors[eax*4]
-        patch::SetPointer(0x413CA0 + 0x259 + 4, skinColors); // movzx   ecx, byte ptr ds:gFifaSkinColors[eax*4]
-        patch::SetPointer(0x4534F0 + 0x59 + 3, skinColors); // mov     edx, ds:gFifaSkinColors[edx*4]
-        patch::SetPointer(0xCB5AE0 + 0x78 + 3, skinColors); // mov     eax, ds:gFifaSkinColors[ebx*4]
-        patch::SetPointer(0x30994CC, skinColors); // .data:030994CC	dd offset gFifaSkinColors
-        patch::SetPointer(0xEA1C63 + 1, &skinColors[0]);
-        patch::SetPointer(0xEA1C5E + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1C74 + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1C7F + 1, &skinColors[0]);
-        patch::SetPointer(0xEA1EE0 + 1, &skinColors[0]);
-        patch::SetPointer(0xEA1EDB + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1EF1 + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1F07 + 1, &skinColors[0]);
-        patch::SetPointer(0xEA1F02 + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1F18 + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1F23 + 1, &skinColors[0]);
-        patch::SetPointer(0xEA1A6C + 1, &skinColors[0]);
-        patch::SetPointer(0xEA1A67 + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1A79 + 1, &skinColors[std::size(skinColors)]);
-        patch::SetPointer(0xEA1A88 + 1, &skinColors[0]);
+        patch::SetPointer(0x40BEB0 + 0x7 + 3, skinColorsToUse); // mov     eax, ds:gFifaSkinColors[eax*4]
+        patch::SetPointer(0x40C650 + 0x82 + 3, skinColorsToUse); // mov     ecx, ds:gFifaSkinColors[eax*4]
+        patch::SetPointer(0x413BB0 + 0xAB + 3, skinColorsToUse); // mov     al, byte ptr ds:gFifaSkinColors[eax*4]
+        patch::SetPointer(0x413CA0 + 0x259 + 4, skinColorsToUse); // movzx   ecx, byte ptr ds:gFifaSkinColors[eax*4]
+        patch::SetPointer(0x4534F0 + 0x59 + 3, skinColorsToUse); // mov     edx, ds:gFifaSkinColors[edx*4]
+        patch::SetPointer(0xCB5AE0 + 0x78 + 3, skinColorsToUse); // mov     eax, ds:gFifaSkinColors[ebx*4]
+        patch::SetPointer(0x30994CC, skinColorsToUse); // .data:030994CC	dd offset gFifaSkinColors
+        patch::SetPointer(0xEA1C63 + 1, &skinColorsToUse[0]);
+        patch::SetPointer(0xEA1C5E + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1C74 + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1C7F + 1, &skinColorsToUse[0]);
+        patch::SetPointer(0xEA1EE0 + 1, &skinColorsToUse[0]);
+        patch::SetPointer(0xEA1EDB + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1EF1 + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1F07 + 1, &skinColorsToUse[0]);
+        patch::SetPointer(0xEA1F02 + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1F18 + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1F23 + 1, &skinColorsToUse[0]);
+        patch::SetPointer(0xEA1A6C + 1, &skinColorsToUse[0]);
+        patch::SetPointer(0xEA1A67 + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1A79 + 1, &skinColorsToUse[std::size(skinColors)]);
+        patch::SetPointer(0xEA1A88 + 1, &skinColorsToUse[0]);
 
         // hair colors
         patch::SetUInt(0x24A1890, std::size(hairColors));
@@ -169,5 +190,50 @@ void PatchGenericHeads(FM::Version v) {
         patch::SetPointer(0xEA1AE7 + 1, &eyeColors[std::size(eyeColors)]);
         patch::SetPointer(0xEA1AF9 + 1, &eyeColors[std::size(eyeColors)]);
         patch::SetPointer(0xEA1B08 + 1, &eyeColors[0]);
+
+        // FIFA head IDs
+        patch::SetUInt(0x3062748, 500'000);
     }
+}
+
+int METHOD GetLowMedHairId(void *player) {
+    if (Settings::GetInstance().getUseHairLODs()) {
+        int specialfaceid = *raw_ptr<int>(player, 0x1BC);
+        if (specialfaceid != 0 && FmFileExists(Utils::Format("m728__%d.o", specialfaceid))) {
+            return specialfaceid;
+        }
+        int hairstyleid = *raw_ptr<int>(player, 0x1DC);
+        if (hairstyleid < std::size(hairLODs))
+            return hairLODs[hairstyleid];
+    }
+    return 0;
+}
+
+void InstallGenericHeads_GfxCore() {
+    for (int i = 0; i < std::size(hairLODs); i++) {
+        if (!Settings::GetInstance().getUseHairLODs() || i == 0)
+            hairLODs[i] = 0;
+        else
+            hairLODs[i] = -i;
+    }
+    //patch::SetPointer(GfxCoreAddress(0x920B2 + 3), hairLODs);
+
+    patch::SetPointer(GfxCoreAddress(0x23C2D7 + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23C359 + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23C3B6 + 3), hairLODs);
+
+    patch::SetPointer(GfxCoreAddress(0x23C995 + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23CA59 + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23CB07 + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23CC69 + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23CD2D + 3), hairLODs);
+    patch::SetPointer(GfxCoreAddress(0x23CDDD + 3), hairLODs);
+
+    patch::Nop(GfxCoreAddress(0x920B0), 2);
+    patch::SetUShort(GfxCoreAddress(0x920B2), 0xCE8B);
+    patch::RedirectCall(GfxCoreAddress(0x920B2 + 2), GetLowMedHairId);
+
+    // FIFA head IDs
+    patch::SetUInt(GfxCoreAddress(0x201DA8 + 2), 500'000);
+    patch::SetUInt(GfxCoreAddress(0x202723 + 1), 500'000);
 }

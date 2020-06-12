@@ -11,6 +11,57 @@
 
 using namespace plugin;
 
+struct PitchColorConfig {
+    UInt mPitchColorDay1 = 0x7ccc47;
+    UInt mPitchColorDay2 = 0x93d012;
+    UInt mPitchColorDay3 = 0x7ec701;
+    UInt mPitchColorOvercast = 0x6edf24;
+    UInt mPitchColorNight = 0x6edf24;
+    UInt mPitchColorSynthetic = 0x20d835;
+    UInt mGrassWear = 0x8d845c;
+    UInt mGrassWearRain = 0x242117;
+    Float mPitchBrightnessDay = 1.0f;
+    Float mPitchBrightnessOvercast = 0.9f;
+    Float mPitchBrightnessNight = 1.2f;
+};
+
+PitchColorConfig &GetPitchColorConfig() {
+    static PitchColorConfig config;
+    return config;
+}
+
+void ReadPitchColorConfig() {
+    auto ReadFloat = [](String const &key, Float &out) {
+        WideChar buf[260];
+        UInt res = GetPrivateProfileStringW(L"MAIN", key.c_str(), Utils::Format(L"%f", out).c_str(), buf, 260, L"plugins\\ucp\\pitch_color.ini");
+        if (res != 0)
+            out = Utils::SafeConvertFloat(buf);
+
+        //Error(L"%s : %g", key.c_str(), out);
+    };
+
+    auto ReadColor = [](String const &key, UInt &out) {
+        WideChar buf[260];
+        UInt res = GetPrivateProfileStringW(L"MAIN", key.c_str(), Utils::Format(L"%x", out).c_str(), buf, 260, L"plugins\\ucp\\pitch_color.ini");
+        if (res != 0)
+            out = Utils::SafeConvertInt<UInt>(buf, true);
+
+        //Error(L"%s : %x", key.c_str(), out);
+    };
+
+    ReadColor(L"PITCH_COLOR_DAY1", GetPitchColorConfig().mPitchColorDay1);
+    ReadColor(L"PITCH_COLOR_DAY2", GetPitchColorConfig().mPitchColorDay2);
+    ReadColor(L"PITCH_COLOR_DAY3", GetPitchColorConfig().mPitchColorDay3);
+    ReadColor(L"PITCH_COLOR_OVERCAST", GetPitchColorConfig().mPitchColorOvercast);
+    ReadColor(L"PITCH_COLOR_NIGHT", GetPitchColorConfig().mPitchColorNight);
+    ReadColor(L"PITCH_COLOR_SYNTHETIC", GetPitchColorConfig().mPitchColorSynthetic);
+    ReadColor(L"PITCH_COLOR_GRASS_WEAR", GetPitchColorConfig().mGrassWear);
+    ReadColor(L"PITCH_COLOR_GRASS_WEAR_RAIN", GetPitchColorConfig().mGrassWearRain);
+    ReadFloat(L"PITCH_BRIGHTNESS_DAY", GetPitchColorConfig().mPitchBrightnessDay);
+    ReadFloat(L"PITCH_BRIGHTNESS_OVERCAST", GetPitchColorConfig().mPitchBrightnessOvercast);
+    ReadFloat(L"PITCH_BRIGHTNESS_NIGHT", GetPitchColorConfig().mPitchBrightnessNight);
+}
+
 struct StadiumData {
     UInt mowPattern = 1;
     UInt netColor = 0;
@@ -22,6 +73,7 @@ struct StadiumData {
     Float pitchBrightnessOvercast = 0.0f;
     UInt pitchColorNight = 0;
     Float pitchBrightnessNight = 0.0f;
+    UInt venueId = 0;
 };
 
 Map<UInt, StadiumData> &GetStadiumDataMap() {
@@ -29,8 +81,11 @@ Map<UInt, StadiumData> &GetStadiumDataMap() {
     return stadiumDataMap;
 }
 
-StadiumData *GetTeamStadiumData(UInt teamId) {
-    auto it = GetStadiumDataMap().find(teamId);
+StadiumData *GetTeamStadiumData(UInt teamId, UInt teamType) {
+    UInt finalId = teamId;
+    if (teamType != 0)
+        finalId |= (teamType << 24);
+    auto it = GetStadiumDataMap().find(finalId);
     if (it != GetStadiumDataMap().end())
         return &(*it).second;
     return nullptr;
@@ -47,7 +102,8 @@ void ReadStadiumDataFile() {
                 reader.ReadLine(Hexadecimal(teamId), data.mowPattern, data.netColor, data.environment, data.isSynthetic, 
                     Hexadecimal(data.pitchColorDay), data.pitchBrightnessDay,
                     Hexadecimal(data.pitchColorOvercast), data.pitchBrightnessOvercast,
-                    Hexadecimal(data.pitchColorNight), data.pitchBrightnessNight);
+                    Hexadecimal(data.pitchColorNight), data.pitchBrightnessNight,
+                    data.venueId);
                 if (teamId != 0)
                     GetStadiumDataMap()[teamId] = data;
             }
@@ -98,26 +154,6 @@ UInt GetLighting() {
     return gfxGetVarInt("LIGHTING", 1);
 }
 
-struct RGBAReal {
-    Float r, g, b, a;
-
-    void Set(Float _r, Float _g, Float _b, Float _a) {
-        r = _r; g = _g; b = _b; a = _a;
-    }
-
-    void SetRGB(UChar _r, UChar _g, UChar _b) {
-        r = Float(_r) / 255.0f;
-        g = Float(_g) / 255.0f;
-        b = Float(_b) / 255.0f;
-    }
-
-    void SetInt(UInt value) {
-        r = Float((value >> 16) & 0xFF) / 255.0f;
-        g = Float((value >> 8) & 0xFF) / 255.0f;
-        b = Float(value & 0xFF) / 255.0f;
-    }
-};
-
 Int OnReadLightingFile(char const *filename) {
     Int result = CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x1EE710), filename);
 
@@ -143,7 +179,7 @@ Int OnReadLightingFile(char const *filename) {
         if (hostTeamId.countryId) {
             hostTeam = GetTeam(hostTeamId);
             if (hostTeam) {
-                stadiumData = GetTeamStadiumData(hostTeam->GetTeamUniqueID());
+                stadiumData = GetTeamStadiumData(hostTeam->GetTeamUniqueID(), hostTeamId.type);
                 void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(hostTeam);
                 if (stadiumDevelopment) {
                     stadiumCapacity = CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
@@ -285,33 +321,33 @@ Int OnReadLightingFile(char const *filename) {
                     customBrightness = stadiumData->pitchBrightnessDay;
                 }
                 if (customColor == 0 && stadiumData->isSynthetic)
-                    customColor = 0x20d835;
+                    customColor = GetPitchColorConfig().mPitchColorSynthetic;
             }
 
             if (customColor != 0)
                 grassColor->SetInt(customColor);
             else {
                 if (stadWeather == StadWeather::Night)
-                    grassColor->SetInt(0x6edf24);
+                    grassColor->SetInt(GetPitchColorConfig().mPitchColorNight);
                 else if (stadWeather == StadWeather::Overcast)
-                    grassColor->SetInt(0x6edf24);
+                    grassColor->SetInt(GetPitchColorConfig().mPitchColorOvercast);
                 else {
                     UInt rndValue = Random::Get(0, 100);
                     if (rndValue < 33)
-                        grassColor->SetInt(0x7ccc47);
+                        grassColor->SetInt(GetPitchColorConfig().mPitchColorDay1);
                     else if (rndValue < 66)
-                        grassColor->SetInt(0x93d012);
+                        grassColor->SetInt(GetPitchColorConfig().mPitchColorDay2);
                     else
-                        grassColor->SetInt(0x7ec701);
+                        grassColor->SetInt(GetPitchColorConfig().mPitchColorDay3);
                 }
             }
             if (customBrightness == 0.0f) {
                 if (stadWeather == StadWeather::Night)
-                    customBrightness = 1.2f;
+                    customBrightness = GetPitchColorConfig().mPitchBrightnessNight;
                 else if (stadWeather == StadWeather::Overcast)
-                    customBrightness = 0.9f;
+                    customBrightness = GetPitchColorConfig().mPitchBrightnessOvercast;
                 else
-                    customBrightness = 1.0f;
+                    customBrightness = GetPitchColorConfig().mPitchBrightnessDay;
             }
 
             gBrightnessColor->r = customBrightness;
@@ -356,7 +392,7 @@ void OnSetupStadiumPitch() {
         if (hostTeamId.countryId) {
             hostTeam = GetTeam(hostTeamId);
             if (hostTeam) {
-                stadiumData = GetTeamStadiumData(hostTeam->GetTeamUniqueID());
+                stadiumData = GetTeamStadiumData(hostTeam->GetTeamUniqueID(), hostTeamId.type);
                 if (stadiumData) {
                     mowPattern = stadiumData->mowPattern;
                     netColor = stadiumData->netColor;
@@ -441,9 +477,9 @@ void OnGetTeam_StadiumMatch(UChar unk) {
 }
 
 void GetTeamStadiumEnvironment(CDBTeam *team, UInt &environment) {
-    if (team) {
+    if (team && gCurrentTeamForStadium) {
         CTeamIndex teamId = gCurrentTeamForStadium->GetTeamID();
-        StadiumData *stadiumData = GetTeamStadiumData(teamId.ToInt());
+        StadiumData *stadiumData = GetTeamStadiumData(gCurrentTeamForStadium->GetTeamUniqueID(), 0);
         if (stadiumData && stadiumData->environment >= 1 && stadiumData->environment <= 5) {
             switch (stadiumData->environment) {
             case 1:
@@ -485,9 +521,37 @@ void METHOD OnSetupStadiumEnvironment(void *t, DUMMY_ARG, UInt element, Int inde
     CallMethodDynGlobal(GfxCoreAddress(0x40BFF0), t, element, index);
 }
 
+// stadium venue
+
+Bool MyIsValidFifaStadium(int id) {
+    static UInt lightingIDs[] = { 0, 1, 3 };
+    for (UInt i = 0; i < std::size(lightingIDs); i++) {
+        if (FmFileExists(Utils::Format(L"m716__%d_%d.o", id, i)) || FmFileExists(Utils::Format(L"data\\assets\\m716__%d_%d.o", id, i)))
+            return true;
+    }
+    return false;
+}
+
+UInt METHOD MyGetVenueId(void *stad, DUMMY_ARG, Int, Int) {
+    // get CDBTeam* from CDBStadiumDevelopment
+    CDBTeam *team = (CDBTeam *)(Int(stad) - 0x11F8);
+    // validate CDBTeam*
+    if (*raw_ptr<UInt>(team) == 0x24A370C) {
+        auto customData = GetTeamStadiumData(team->GetTeamUniqueID(), 0);
+        if (customData)
+            return customData->venueId;
+    }
+    return 0;
+}
+
+UInt METHOD MyGetVenueId_0(void *stad) {
+    return 0;
+}
+
 void PatchPitch(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadStadiumDataFile();
+        ReadPitchColorConfig();
         // moderate climate base temperature
         patch::SetUChar(0x124366C + 1, 27);
 
@@ -503,6 +567,36 @@ void PatchPitch(FM::Version v) {
         patch::RedirectCall(0x442D93, OnGetTeam_StadiumMatch);
 
         //patch::SetUInt(GfxCoreAddress(0x40B819) + 1, 9051);
+
+        // venue
+        return;
+
+        patch::RedirectJump(0xF70420, MyIsValidFifaStadium);
+        patch::RedirectJump(0xF70410, MyGetVenueId_0);
+        patch::RedirectJump(0xF70670, MyGetVenueId);
+
+        // movzx   ebp, al  >>  mov ebp, eax
+        patch::SetUShort(0x65D777, 0xE88B);
+        patch::Nop(0x65D777 + 2, 1);
+       
+        // movzx   eax, al  >>  -
+        patch::Nop(0x65EF64, 3);
+       
+        // movzx   edx, al  >>  mov edx, eax
+        patch::SetUShort(0x44D2BD, 0xD08B);
+        patch::Nop(0x44D2BD + 2, 1);
+
+        // test    al, al  >>  test eax, eax
+        patch::SetUShort(0x40D395, 0xC085);
+
+        // movzx   eax, al  >>  -
+        patch::Nop(0x40D3AB, 3);
+
+        // movzx   eax, al  >>  -
+        patch::Nop(0x4429E7, 3);
+
+        // movzx   eax, al  >>  -
+        patch::Nop(0x442A87, 3);
     }
 }
 

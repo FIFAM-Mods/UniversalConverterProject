@@ -32,6 +32,25 @@ enum eMetricCode {
     METRIC_SOUTH_KOREA = 82
 };
 
+struct RGBAReal {
+    Float r, g, b, a;
+
+    void Set(Float _r, Float _g, Float _b, Float _a) {
+        r = _r; g = _g; b = _b; a = _a;
+    }
+
+    void SetRGB(UChar _r, UChar _g, UChar _b) {
+        r = Float(_r) / 255.0f;
+        g = Float(_g) / 255.0f;
+        b = Float(_b) / 255.0f;
+    }
+
+    void SetInt(UInt value) {
+        r = Float((value >> 16) & 0xFF) / 255.0f;
+        g = Float((value >> 8) & 0xFF) / 255.0f;
+        b = Float(value & 0xFF) / 255.0f;
+    }
+};
 
 template<typename T>
 class FmVec {
@@ -296,6 +315,12 @@ public:
     CDBSponsorContractBase &GetMainSponsor();
 };
 
+class CDBTeamKit {
+public:
+    UInt GetPartType(UChar kitType, UChar shirtPart);
+    UChar GetPartColor(UChar kitType, UChar shirtPart, UChar colorIndex);
+};
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -303,6 +328,8 @@ public:
     unsigned char GetInternationalPrestige();
     wchar_t *GetName(bool first = true);
     CTeamSponsor &GetSponsor();
+    bool IsRivalWith(CTeamIndex const &teamIndex);
+    CDBTeamKit *GetKit();
 };
 
 struct CAssessmentInfo {

@@ -55,7 +55,4 @@ void PatchWorldCup(FM::Version v) {
             CallMethod<0xF49960>(game, date);
         }));
     }
-    else if (v.id() == ID_FM_11_1003) {
-        patch::SetUInt(0x145E240, FifamCompRegion::Qatar); // Hosting team
-    }
 }

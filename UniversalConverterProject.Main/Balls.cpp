@@ -95,63 +95,6 @@ unsigned int GetBallModelForCurrentMatch(int) {
     return defaultBallForWeather;
 }
 
-//unsigned int GetBallModelForCurrentMatch_FM11(int) {
-//    if (GetBallInfos().empty())
-//        return 0;
-//    void *match = *(void **)0x1516C08;
-//    if (!match)
-//      return 0;
-//    unsigned int compId = 0;
-//   CallMethod<0xCDBD50>(match, &compId);
-//    if (compId == 0)
-//        return 0;
-//    void *game = CallAndReturn<void *, 0xDDEB70>();
-//    if (!game)
-//        return 0;
-//    unsigned char day = CallMethodAndReturn<unsigned char, 0xDCCFE0>(game);
-//    unsigned char month = CallMethodAndReturn<unsigned char, 0xDCCFF0>(game);
-//    BallDesc const *resultBall = nullptr;
-//    BallDesc const *defaultBall = nullptr;
-//    for (BallDesc const &desc : GetBallInfos()) {
-//        bool dateCheck = false;
-//        if (desc.startDay == 0 || desc.startMonth == 0 || desc.endDay == 0 || desc.endMonth == 0)
-//            dateCheck = true;
-//        if (!dateCheck) {
-//            unsigned short currDate = day | (month << 8);
-//            unsigned short startDate = desc.startDay | (desc.startMonth << 8);
-//            unsigned short endDate = desc.endDay | (desc.endMonth << 8);
-//            if (startDate <= endDate)
-//                dateCheck = currDate >= startDate && currDate <= endDate;
-//            else
-//                dateCheck = currDate >= startDate || currDate <= endDate;
-//        }
-//        if (dateCheck) {
-//            if (desc.compId == 0) {
-//                if (!defaultBall)
-//                    defaultBall = &desc;
-//            }
-//            else if (desc.compId <= 0xFFFF) {
-//                if (!resultBall && desc.compId == (compId >> 16))
-//                    resultBall = &desc;
-//            }
-//            else {
-//                if (desc.compId == compId) {
-//                    resultBall = &desc;
-//                    break;
-//                }
-//            }
-//        }
-//    }
-//    if (resultBall)
-//        return resultBall->ballId;
-//    if (defaultBall) {
-//        if (!IsEuropeanCompId(compId))
-//            return 0;
-//        return defaultBall->ballId;
-//    }
-//    return 0;
-//}
-
 unsigned int gCurrentBallId = 0;
 
 void __declspec(naked) GetBallModelExec() {
@@ -166,20 +109,6 @@ void __declspec(naked) GetBallModelExec() {
         mov     eax, gCurrentBallId
         mov     dword ptr[esi + 0x20C], eax
         mov     eax, 0x44E5A4
-        jmp     eax
-    }
-}
-
-void __declspec(naked) GetBallModelExec_FM11() {
-    __asm {
-        mov     gCurrentBallId, eax
-        add     esp, 4
-        push    gCurrentBallId
-        push    0x1264A94
-        call    dword ptr[edx + 4]
-        mov     eax, gCurrentBallId
-        mov     dword ptr[esi + 0x20C], eax
-        mov     eax, 0x42FFCF
         jmp     eax
     }
 }
@@ -205,9 +134,4 @@ void PatchBalls(FM::Version v) {
         patch::RedirectCall(0x44E57C, GetBallModelForCurrentMatch);
         patch::RedirectJump(0x44E589, GetBallModelExec);
     }
-    //else if (v.id() == ID_FM_11_1003) {
-    //    ReadBallInfos();
-    //    patch::RedirectCall(0x42FFAB, GetBallModelForCurrentMatch_FM11);
-    //    patch::RedirectJump(0x42FFB8, GetBallModelExec_FM11);
-    //}
 }

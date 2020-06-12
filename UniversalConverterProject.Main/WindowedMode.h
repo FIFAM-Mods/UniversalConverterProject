@@ -4,4 +4,4 @@
 
 void InstallWindowedMode_GfxCore();
 void PatchWindowedMode(FM::Version v);
-void CloseWindowedMode(FM::Version v);
+void SaveWindowedMode();
