@@ -39,6 +39,14 @@ unsigned int gCurrentPlayerLoadPlayerId = 0;
 
 void METHOD OnLoadFifaPlayer(void *player, DUMMY_ARG, void *playerInfo, void *resource, bool loadBody, void *resMan) {
     gCurrentPlayerLoadPlayerId = *raw_ptr<unsigned int>(playerInfo, 4);
+    //void *textures = raw_ptr<void>(player, 0x20);
+    //CallMethodDynGlobal(RendererAddress(0xAC0C3), textures); // clear loaded textures
+    //*raw_ptr<unsigned int>(textures, 0x0) = 0;
+    //*raw_ptr<unsigned int>(textures, 0x8) = 0;
+    //*raw_ptr<unsigned int>(textures, 0xC) = 0;
+    //*raw_ptr<unsigned int>(player, 0x70) = 0;
+    //*raw_ptr<unsigned int>(player, 0x74) = 0;
+    //CallMethodDynGlobal(RendererAddress(0xA09DC), textures, 16); // init loaded textures
     CallMethodDynGlobal(RendererAddress(0x9E6CA), player, playerInfo, resource, loadBody, resMan);
     gCurrentPlayerLoadPlayerId = 0;
 }
@@ -52,7 +60,13 @@ int METHOD OnGetPlayerEffTexture(void *t, DUMMY_ARG, char const *name, bool cach
     return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB9FE), t, name, cached, cube);
 }
 
+void *METHOD Test1(void *t, DUMMY_ARG, int a) {
+    Error("Test");
+    return CallMethodAndReturnDynGlobal<void *>(RendererAddress(0x83D23), t, a);
+}
+
 void Install3dPatches() {
+    //Error("%X", RendererAddress(0));
     patch::RedirectCall(RendererAddress(0x92579), OnCreateFileIO);
 
     patch::SetChar(RendererAddress(0xAB61B + 3), 't');
@@ -76,4 +90,26 @@ void Install3dPatches() {
     patch::RedirectCall(RendererAddress(0xAE389), OnLoadFifaPlayer);
 
     patch::RedirectCall(RendererAddress(0x9F6C2), OnGetPlayerEffTexture);
+
+    patch::SetUChar(RendererAddress(0x5EE2), 0xEB);
+
+    //const unsigned int kitW = 1024;
+    //const unsigned int kitH = 2048;
+    //
+    //patch::SetUInt(RendererAddress(0x8F34B + 6), kitW);
+    //patch::SetUInt(RendererAddress(0x8F355 + 6), kitH);
+    //patch::SetUInt(RendererAddress(0x8F337 + 1), kitW * 2);
+    //patch::SetUInt(RendererAddress(0x8F40C + 6), kitW);
+    //patch::SetUInt(RendererAddress(0x8F418 + 6), kitH);
+    //patch::SetUInt(RendererAddress(0x8F3E9 + 1), kitW * kitH * 4 + 0x100);
+    //patch::SetUInt(RendererAddress(0x8F48D + 1), kitW);
+    //patch::SetUInt(RendererAddress(0x8F488 + 1), kitH);
+    //patch::SetUInt(RendererAddress(0x8F35F + 1), kitW);
+    //patch::SetUChar(RendererAddress(0xAB39C), 0xC3);
+
+    //patch::SetUChar(RendererAddress(0x901AF + 1), 3);
+    //patch::SetUChar(RendererAddress(0x901C9 + 1), 3);
+    //patch::SetUChar(RendererAddress(0x901E2 + 1), 3);
+
+    //patch::RedirectCall(RendererAddress(0x7BCDC), Test1);
 }

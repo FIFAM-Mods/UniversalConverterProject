@@ -828,6 +828,13 @@ void * METHOD Handler_1010D90(void *t, DUMMY_ARG, UInt a, UInt b) {
     return result;
 }
 
+int MyCompareStringsPNG(WideChar const *a, WideChar const *b) {
+    int result = CallAndReturn<int, 0x1493FCB>(a, L".png");
+    if (!result)
+        return result;
+    return CallAndReturn<int, 0x1493FCB>(a, b);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectJump(0x14C5E17, ConsolePrint<false>);
@@ -1179,6 +1186,10 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x8CFEF0 + 0x68, Handler_1010D90<0x8CFEF0 + 0x68 >);
         patch::RedirectCall(0x8D5030 + 0x68, Handler_1010D90<0x8D5030 + 0x68 >);
         patch::RedirectCall(0x9CC0F0 + 0xFF, Handler_1010D90<0x9CC0F0 + 0xFF >);
+
+        // PNG support for HOF and some other
+        patch::RedirectCall(0x4D79AA, MyCompareStringsPNG);
+        patch::RedirectCall(0xF30AD9, MyCompareStringsPNG);
 
         // commentary
         if (Settings::GetInstance().getEnableSpeechInAllMatches()) {

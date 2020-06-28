@@ -84,7 +84,7 @@ void ExportClubBudgets() {
                 CallMethod<0x10DB600>(clubFinance, &money[2]);
                 CallMethod<0x10DDBC0>(clubFinance, &money[3]);
                 CallVirtualMethod<53>(clubFinance, &money[4]);
-                writer.WriteLine(Utils::Format(L"%s,%s,0x%08X,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", country->GetContinentName(), country->GetName(), club->GetTeamUniqueID(), club->GetName(), M(cash), M(budgets[0]), M(money[0]), M(budgets[1]), M(money[1]), M(budgets[2]), M(money[2]), M(budgets[3]), M(money[3]), M(money[4])));
+                writer.WriteLine(Utils::Format(L"\"%s\",\"%s\",0x%08X,\"%s\",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", country->GetContinentName(), country->GetName(), club->GetTeamUniqueID(), club->GetName(), M(cash), M(budgets[0]), M(money[0]), M(budgets[1]), M(money[1]), M(budgets[2]), M(money[2]), M(budgets[3]), M(money[3]), M(money[4])));
             }
         }
     }

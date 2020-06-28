@@ -341,7 +341,7 @@ wchar_t *OnPlayerCommentFormat(const wchar_t *in, const wchar_t *what, const wch
 }
 
 #ifdef UPDATE_CLUB_BUDGETS
-UInt const minBudget = 10'000;
+UInt const minBudget = 50'000;
 
 struct ClubBudget {
     Int cash = 0,
@@ -363,37 +363,38 @@ void METHOD OnReadClubCapital(void *reader, DUMMY_ARG, Int *dst) {
     CallMethod<0x513500>(reader, dst);
     void *club = (void *)(UInt(dst) - 0xD7C);
     UInt uid = *raw_ptr<UInt>(club, 0xC);
-    if (*dst == 0) {
-        auto it = budgets.find(uid);
-        if (it != budgets.end()) {
-            auto const &b = (*it).second;
-            Int total = 0;
-            Int inc = 0;
-            if (b.salariesLeft < 0)
-                total += b.salariesLeft;
-            if (b.transfersLeft < 0)
-                total += b.transfersLeft;
-            if (b.infrastructureLeft < 0)
-                total += b.infrastructureLeft;
-            if (b.miscLeft < 0)
-                total += b.miscLeft;
-            if (b.reserve < 0)
-                total += b.reserve;
-            if (total < 0)
-                inc = minBudget + total * -1;
-            else {
-                total = b.salariesLeft + b.transfersLeft + b.infrastructureLeft + b.miscLeft + b.reserve;
-                if (total < minBudget)
-                    inc = minBudget - total;
-            }
-            if (inc != 0) {
+    auto it = budgets.find(uid);
+    if (it != budgets.end()) {
+        auto const &b = (*it).second;
+        Int total = 0;
+        Int inc = 0;
+        if (b.salariesLeft < 0)
+            total += b.salariesLeft;
+        if (b.transfersLeft < 0)
+            total += b.transfersLeft;
+        if (b.infrastructureLeft < 0)
+            total += b.infrastructureLeft;
+        if (b.miscLeft < 0)
+            total += b.miscLeft;
+        if (b.reserve < 0)
+            total += b.reserve;
+        if (total < 0)
+            inc = minBudget + total * -1;
+        else {
+            total = b.salariesLeft + b.transfersLeft + b.infrastructureLeft + b.miscLeft + b.reserve;
+            if (total < minBudget)
+                inc = minBudget - total;
+        }
+        if (inc != 0) {
+            if (*dst == 0)
                 *dst = b.cash + inc;
-                changedClubs[uid] = *dst;
-            }
+            else
+                *dst += inc;
+            changedClubs[uid] = *dst;
         }
     }
-    if (*dst < 500'000) {
-        *dst = 500'000 + Random::Get(1, 10) * 10'000;
+    if (*dst < 300'000) {
+        *dst = 300'000 + Random::Get(1, 10) * 10'000;
         changedClubs[uid] = *dst;
     }
     //if (*dst != 0) {
@@ -715,19 +716,24 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x4C5563, OnReadClubCapital);
         patch::RedirectCall(0x4C5571, OnReadClubTransferBudget);
 
-        FifamReader reader(L"D:\\Games\\FIFA Manager 13\\ClubBudgets.csv", 13);
-        reader.SkipLine();
-        while (!reader.IsEof()) {
-            if (reader.EmptyLine())
+        for (int i = 1; i < 100; i++) {
+            FifamReader reader(Utils::Format(L"E:\\Games\\FIFA Manager 13\\ClubBudgets%d.csv", i), 13);
+            if (reader.Available()) {
+                //Error("Reading");
                 reader.SkipLine();
-            else {
-                String d;
-                ClubBudget b;
-                UInt clubId = 0;
-                reader.ReadLine(d, d, Hexadecimal(clubId), d, b.cash, b.salaries, b.salariesLeft, b.transfers, b.transfersLeft, b.infrastructure, b.infrastructureLeft,
-                    b.misc, b.miscLeft, b.reserve);
-                if (clubId != 0)
-                    budgets[clubId] = b;
+                while (!reader.IsEof()) {
+                    if (reader.EmptyLine())
+                        reader.SkipLine();
+                    else {
+                        String d;
+                        ClubBudget b;
+                        UInt clubId = 0;
+                        reader.ReadLine(d, d, Hexadecimal(clubId), d, b.cash, b.salaries, b.salariesLeft, b.transfers, b.transfersLeft, b.infrastructure, b.infrastructureLeft,
+                            b.misc, b.miscLeft, b.reserve);
+                        if (clubId != 0 && !budgets.contains(clubId))
+                            budgets[clubId] = b;
+                    }
+                }
             }
         }
     #endif

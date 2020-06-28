@@ -157,7 +157,7 @@ String GetPatchName() {
 }
 
 String GetPatchVersion() {
-    return L"1.1.1";
+    return L"1.2";
 }
 
 String GetFullAppName(Bool upperCase) {
