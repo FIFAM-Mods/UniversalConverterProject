@@ -521,7 +521,7 @@ void InstallEasyEdit(FM::Version v) {
         edManager.RegisterEditor<TeamEditor<0xF33F8E, UChar, true, MinMaxArrayReader<UChar, 1, 207>>>(L"SET_TEAM_TRANSFER_COUNTRIES");
         edManager.RegisterEditor<TeamEditor<0xF80B5C, String>>(L"SET_TEAM_STADIUM_NAME");
         edManager.RegisterEditor<TeamEditor<0xF80AF5, UInt, true, MinMaxArrayReader<UInt, 0, 250'000>>>(L"SET_TEAM_STADIUM_CAPACITY");
-        edManager.RegisterEditor<TeamEditor<0xF80AC7, UInt>>(L"SET_TEAM_VENUE_ID");
+        //edManager.RegisterEditor<TeamEditor<0xF80AC7, UInt>>(L"SET_TEAM_VENUE_ID");
         edManager.RegisterEditor<TeamEditor<0xFFE202, UInt>>(L"SET_TEAM_FIFA_KIT_ID");
         edManager.RegisterEditor<TeamEditor<0xFFE310, UChar, true, MinMaxArrayReader<UChar, 0, 20>>>(L"SET_TEAM_KIT_NUMBER_COLORS");
         edManager.RegisterEditor<TeamEditor<0xF3404C, UChar, false, MinMaxReader<UChar, 0, 6>>>(L"SET_TEAM_CLUB_FACILITIES");

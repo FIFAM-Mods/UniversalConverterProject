@@ -1196,5 +1196,11 @@ void PatchEABFFixes(FM::Version v) {
             patch::SetUChar(0x44E484, 0xEB);
             patch::SetUChar(0x44E54A, 0xEB);
         }
+
+        // TODO :remove this
+        //patch::SetUInt(0x24D25B8, 1);
+        //patch::SetUInt(0x24D25B8 + 4, 2);
+        //patch::SetUInt(0x24D25B8 + 4 * 2, 3);
+        //patch::SetUInt(0x24D25B8 + 4 * 3, 4);
     }
 }

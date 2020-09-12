@@ -93,6 +93,8 @@ void Install3dPatches() {
 
     patch::SetUChar(RendererAddress(0x5EE2), 0xEB);
 
+    patch::SetDouble(RendererAddress(0x2CC110), 91.0);
+
     //const unsigned int kitW = 1024;
     //const unsigned int kitH = 2048;
     //

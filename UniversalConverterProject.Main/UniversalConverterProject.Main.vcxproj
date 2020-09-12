@@ -99,12 +99,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="3dAdboards.cpp" />
+    <ClCompile Include="3dAdboardsAndBanners.cpp" />
     <ClCompile Include="3dMatchStandings.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Balls.cpp" />
     <ClCompile Include="Beta.cpp" />
     <ClCompile Include="Competitions.cpp" />
+    <ClCompile Include="CustomStadiums.cpp" />
     <ClCompile Include="EABFFixes.cpp" />
     <ClCompile Include="EasyEdit.cpp" />
     <ClCompile Include="EuCountries.cpp" />
@@ -151,12 +152,13 @@
     <ClCompile Include="WorldCup.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="3dAdboards.h" />
+    <ClInclude Include="3dAdboardsAndBanners.h" />
     <ClInclude Include="3dMatchStandings.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Beta.h" />
     <ClInclude Include="Competitions.h" />
+    <ClInclude Include="CustomStadiums.h" />
     <ClInclude Include="EABFFixes.h" />
     <ClInclude Include="EasyEdit.h" />
     <ClInclude Include="EuCountries.h" />

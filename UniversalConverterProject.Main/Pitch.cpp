@@ -102,8 +102,7 @@ void ReadStadiumDataFile() {
                 reader.ReadLine(Hexadecimal(teamId), data.mowPattern, data.netColor, data.environment, data.isSynthetic, 
                     Hexadecimal(data.pitchColorDay), data.pitchBrightnessDay,
                     Hexadecimal(data.pitchColorOvercast), data.pitchBrightnessOvercast,
-                    Hexadecimal(data.pitchColorNight), data.pitchBrightnessNight,
-                    data.venueId);
+                    Hexadecimal(data.pitchColorNight), data.pitchBrightnessNight);
                 if (teamId != 0)
                     GetStadiumDataMap()[teamId] = data;
             }
@@ -453,6 +452,19 @@ Int METHOD GetRainAlpha2(void *t, DUMMY_ARG, const Char *, Int, Int) {
 CDBTeam *gCurrentTeamForStadium = nullptr;
 
 void METHOD OnGetTeam_StadiumView(void *t) {
+    // fix for generated banners/adboards
+    //void *dynamicGraphics = *raw_ptr<void *>(t, 0xC3C);
+    //if (dynamicGraphics) {
+    //    if (exists("E:\\Documents\\FM\\Temp\\BannerHome.big"))
+    //        remove("E:\\Documents\\FM\\Temp\\BannerHome.big");
+    //    if (exists("E:\\Documents\\FM\\Temp\\BannerAway.big"))
+    //        remove("E:\\Documents\\FM\\Temp\\BannerAway.big");
+    //    if (exists("E:\\Documents\\FM\\Temp\\Adboards.big"))
+    //        remove("E:\\Documents\\FM\\Temp\\Adboards.big");
+    //    CallVirtualMethod<0>(dynamicGraphics);
+    //    *raw_ptr<void *>(t, 0xC3C) = nullptr;
+    //}
+    //
     gCurrentTeamForStadium = GetTeam(*raw_ptr<CTeamIndex>(t, 0x494));
     CallMethod<0x65D730>(t);
     gCurrentTeamForStadium = nullptr;

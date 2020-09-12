@@ -51,7 +51,6 @@
       <Filter>tinyxml</Filter>
     </ClCompile>
     <ClCompile Include="WindowedMode.cpp" />
-    <ClCompile Include="3dAdboards.cpp" />
     <ClCompile Include="Pitch.cpp" />
     <ClCompile Include="Beta.cpp" />
     <ClCompile Include="Scouting.cpp" />
@@ -59,6 +58,8 @@
     <ClCompile Include="Translation.cpp" />
     <ClCompile Include="GenericHeads.cpp" />
     <ClCompile Include="GameStartTweaks.cpp" />
+    <ClCompile Include="3dAdboardsAndBanners.cpp" />
+    <ClCompile Include="CustomStadiums.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -108,7 +109,6 @@
       <Filter>tinyxml</Filter>
     </ClInclude>
     <ClInclude Include="WindowedMode.h" />
-    <ClInclude Include="3dAdboards.h" />
     <ClInclude Include="Pitch.h" />
     <ClInclude Include="Beta.h" />
     <ClInclude Include="Scouting.h" />
@@ -116,6 +116,8 @@
     <ClInclude Include="Translation.h" />
     <ClInclude Include="GenericHeads.h" />
     <ClInclude Include="GameStartTweaks.h" />
+    <ClInclude Include="3dAdboardsAndBanners.h" />
+    <ClInclude Include="CustomStadiums.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

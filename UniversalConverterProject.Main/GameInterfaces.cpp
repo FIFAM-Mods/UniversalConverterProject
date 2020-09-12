@@ -73,6 +73,14 @@ void CDBGame::SetCurrentDate(CJDate date) {
     plugin::CallMethod<0xF49960>(this, date);
 }
 
+CDBGameOptions &CDBGame::GetOptions() {
+    return *plugin::CallMethodAndReturn<CDBGameOptions *, 0xF49D70>(this);
+}
+
+bool CDBGameOptions::CheckFlag(unsigned int flag) {
+    return plugin::CallMethodAndReturn<bool, 0x10410E0>(this, flag);
+}
+
 std::wstring CCompID::ToStr() const {
     std::wstring typeName = plugin::Format(L"UNKNOWN (%d)", type);
     if (type == 0) typeName = L"ROOT";
@@ -522,6 +530,10 @@ bool CDBTeam::IsRivalWith(CTeamIndex const &teamIndex) {
 
 CDBTeamKit *CDBTeam::GetKit() {
     return CallMethodAndReturn<CDBTeamKit *, 0xED3D60>(this);
+}
+
+bool CDBTeam::IsManagedByAI(bool flag) {
+    return CallMethodAndReturn<bool, 0xECA230>(this, flag);
 }
 
 CTeamIndex &CDBLeagueBase::GetTeamAtPosition(int position) {

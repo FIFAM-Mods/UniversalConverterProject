@@ -76,6 +76,11 @@ public:
     }
 };
 
+class CDBGameOptions {
+public:
+    bool CheckFlag(unsigned int flag);
+};
+
 class CDBGame {
 public:
     static CDBGame *GetInstance();
@@ -86,6 +91,7 @@ public:
     bool GetIsWorldCupMode();
     bool TestFlag(unsigned int flag);
     void SetCurrentDate(CJDate date);
+    CDBGameOptions &GetOptions();
 };
 
 struct CTeamIndex {
@@ -330,6 +336,7 @@ public:
     CTeamSponsor &GetSponsor();
     bool IsRivalWith(CTeamIndex const &teamIndex);
     CDBTeamKit *GetKit();
+    bool IsManagedByAI(bool flag = true);
 };
 
 struct CAssessmentInfo {
@@ -424,3 +431,28 @@ Bool FmFileExists(Path const &filepath);
 Bool FmFileImageExists(String const &filepathWithoutExtension, String &resultPath);
 UInt FmFileGetSize(Path const &filepath);
 Bool FmFileRead(Path const &filepath, void *outData, UInt size);
+
+struct ShapeWriterImageRegion {
+    Char const *name;
+    UInt width;
+    UInt height;
+    UInt offsetX;
+    UInt offsetY;
+    Int field_14;
+};
+
+struct FshWriterWriteInfo {
+    UInt format;
+    Char const *name;
+    UInt width;
+    UInt height;
+    ShapeWriterImageRegion *regions;
+    UInt numRegions;
+
+    enum Format {
+        Format5551 = 0,
+        Format4444 = 1,
+        Format565 = 2,
+        Format8888 = 3,
+    };
+};

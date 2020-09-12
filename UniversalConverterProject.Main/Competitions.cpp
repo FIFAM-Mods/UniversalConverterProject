@@ -1006,10 +1006,8 @@ void OnGetSpare(CDBCompetition **ppComp) {
 
                     if (DUMP_TO_LOG) {
                         SafeLog::Write(L"Champions League Pool");
-                        for (UInt i = 0; i < comp->GetNumOfTeams(); i++) {
-                            String teamNam;
+                        for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
                             SafeLog::Write(Utils::Format(L"%2d. %08X %s", i, pTeamIDs[i].ToInt(), (pTeamIDs[i].countryId && GetTeam(pTeamIDs[i]))? GetTeam(pTeamIDs[i])->GetName() : L"n/a"));
-                        }
                     }
 
                     for (UInt i = 0; i < 24; i++)

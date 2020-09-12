@@ -35,11 +35,15 @@ bool Settings::getUseHairLODs() { return mUseHairLODs.first; }
 void Settings::setUseHairLODs(bool set) { mUseHairLODs.first = set; }
 bool Settings::getEnableSpeechInAllMatches() { return mEnableSpeechInAllMatches.first; }
 void Settings::setEnableSpeechInAllMatches(bool set) { mEnableSpeechInAllMatches.first = set; }
+int Settings::getAdboardTransitionDuration() { return mAdboardTransitionDuration.first; }
+void Settings::setAdboardTransitionDuration(int duration) { mAdboardTransitionDuration.first = duration; }
+int Settings::getAdboardDisplayDuration() { return mAdboardDisplayDuration.first; }
+void Settings::setAdboardDisplayDuration(int duration) { mAdboardDisplayDuration.first = duration; }
+bool Settings::getEnableDefaultStadiums() { return mEnableDefaultStadiums.first; }
+void Settings::setEnableDefaultStadiums(bool set) { mEnableDefaultStadiums.first = set; }
 
 bool Settings::getEnableCommentaryPatches() { return mEnableCommentaryPatches.first; }
 void Settings::setEnableCommentaryPatches(bool set) { mEnableCommentaryPatches.first = set; }
-bool Settings::getEnableStadiumsPatches() { return mEnableStadiumsPatches.first; }
-void Settings::setEnableStadiumsPatches(bool set) { mEnableStadiumsPatches.first = set; }
 
 Settings &Settings::GetInstance() {
     static Settings settings;
@@ -75,9 +79,11 @@ Settings::Settings() {
     setUseRealSalaries(GetPrivateProfileIntW(mainSectionStr.c_str(), L"USE_REAL_SALARIES", 0, fileName.c_str()));
     setUseHairLODs(GetPrivateProfileIntW(mainSectionStr.c_str(), L"USE_HAIR_LODS", 1, fileName.c_str()));
     setEnableSpeechInAllMatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_SPEECH_IN_ALL_MATCHES", 0, fileName.c_str()));
+    setAdboardTransitionDuration(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ADBOARD_TRANSITION_DURATION", 1, fileName.c_str()));
+    setAdboardDisplayDuration(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ADBOARD_DISPLAY_DURATION", 15, fileName.c_str()));
+    setEnableDefaultStadiums(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_DEFAULT_STADIUMS", 0, fileName.c_str()));
 
     setEnableCommentaryPatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", 0, fileName.c_str()));
-    setEnableStadiumsPatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_STADIUMS_PATCHES", 0, fileName.c_str()));
 
     mExtendLoansLimit.second = mExtendLoansLimit.first;
     mTeamControl.second = mTeamControl.first;
@@ -93,9 +99,11 @@ Settings::Settings() {
     mRandomizeTalents.second = mRandomizeTalents.first;
     mUseRealSalaries.second = mUseRealSalaries.first;
     mEnableSpeechInAllMatches.second = mEnableSpeechInAllMatches.first;
+    mAdboardTransitionDuration.second = mAdboardTransitionDuration.first;
+    mAdboardDisplayDuration.second = mAdboardDisplayDuration.first;
+    mEnableDefaultStadiums.second = mEnableDefaultStadiums.first;
 
     mEnableCommentaryPatches.second = mEnableCommentaryPatches.first;
-    mEnableStadiumsPatches.second = mEnableStadiumsPatches.first;
 }
 
 void Settings::save() {
@@ -142,9 +150,13 @@ void Settings::save() {
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"USE_HAIR_LODS", Utils::Format(L"%u", getUseHairLODs()).c_str(), fileName.c_str());
     if (mEnableSpeechInAllMatches.first != mEnableSpeechInAllMatches.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_SPEECH_IN_ALL_MATCHES", Utils::Format(L"%u", getEnableSpeechInAllMatches()).c_str(), fileName.c_str());
+    if (mAdboardTransitionDuration.first != mAdboardTransitionDuration.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ADBOARD_TRANSITION_DURATION", Utils::Format(L"%u", getAdboardTransitionDuration()).c_str(), fileName.c_str());
+    if (mAdboardDisplayDuration.first != mAdboardDisplayDuration.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ADBOARD_DISPLAY_DURATION", Utils::Format(L"%u", getAdboardDisplayDuration()).c_str(), fileName.c_str());
+    if (mEnableDefaultStadiums.first != mEnableDefaultStadiums.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_DEFAULT_STADIUMS", Utils::Format(L"%u", getEnableDefaultStadiums()).c_str(), fileName.c_str());
 
     if (mEnableCommentaryPatches.first != mEnableCommentaryPatches.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", Utils::Format(L"%u", getEnableCommentaryPatches()).c_str(), fileName.c_str());
-    if (mEnableStadiumsPatches.first != mEnableStadiumsPatches.second)
-        WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_STADIUMS_PATCHES", Utils::Format(L"%u", getEnableStadiumsPatches()).c_str(), fileName.c_str());
 }

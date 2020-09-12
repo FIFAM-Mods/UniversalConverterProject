@@ -35,7 +35,7 @@
 #include "Formations.h"
 #include "Utils.h"
 #include "WindowedMode.h"
-#include "3dAdboards.h"
+#include "3dAdboardsAndBanners.h"
 #include "Pitch.h"
 #include "Beta.h"
 #include "Scouting.h"
@@ -43,6 +43,7 @@
 #include "Translation.h"
 #include "GenericHeads.h"
 #include "GameStartTweaks.h"
+#include "CustomStadiums.h"
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitry/DK22");
 
@@ -123,18 +124,19 @@ public:
         PatchBalls(v);
         PatchFemaleNames(v);
         Patch3dMatchStandings(v);
-        //PatchIncreaseSalaryOwnedClub(v);
+        PatchIncreaseSalaryOwnedClub(v);
         PatchKits(v);
         PatchMiscFormerCupOpponents(v);
         PatchPlayerAccessories(v);
         PatchFormations(v);
         PatchWindowedMode(v);
-        Patch3dAdBoards(v);
+        Patch3dAdBoardsAndBanners(v);
         PatchPitch(v);
         PatchScouting(v);
         PatchMedia(v);
         PatchGenericHeads(v);
         PatchGameStartTweaks(v);
+        PatchCustomStadiums(v);
     #ifdef BETA
         DoBetaPatches(v);
     #endif

@@ -29,11 +29,11 @@ public:
     }
 
     static void WriteToFile(Path const &fileName, String const &msg) {
-        static bool firstWrite = true;
+        static Map<Path, bool> fileCreated;
         FILE *file = nullptr;
-        if (firstWrite) {
+        if (!fileCreated[fileName]) {
             file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
-            firstWrite = false;
+            fileCreated[fileName] = true;
         }
         else
             file = _wfopen(fileName.c_str(), L"at,ccs=UTF-8");

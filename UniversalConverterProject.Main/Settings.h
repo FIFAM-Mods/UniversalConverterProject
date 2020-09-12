@@ -17,9 +17,11 @@ class Settings {
     std::pair<bool, bool> mUseRealSalaries = { false, false };
     std::pair<bool, bool> mUseHairLODs = { true, true };
     std::pair<bool, bool> mEnableSpeechInAllMatches = { false, false };
+    std::pair<int, int> mAdboardTransitionDuration = { 1, 1 };
+    std::pair<int, int> mAdboardDisplayDuration = { 15, 15 };
+    std::pair<bool, bool> mEnableDefaultStadiums = { false, false };
 
     std::pair<bool, bool> mEnableCommentaryPatches = { false, false };
-    std::pair<bool, bool> mEnableStadiumsPatches = { false, false };
 
 public:
     bool getExtendLoansLimit();
@@ -53,11 +55,15 @@ public:
     void setUseHairLODs(bool set);
     bool getEnableSpeechInAllMatches();
     void setEnableSpeechInAllMatches(bool set);
+    int getAdboardTransitionDuration();
+    void setAdboardTransitionDuration(int duration);
+    int getAdboardDisplayDuration();
+    void setAdboardDisplayDuration(int duration);
+    bool getEnableDefaultStadiums();
+    void setEnableDefaultStadiums(bool set);
 
     bool getEnableCommentaryPatches();
     void setEnableCommentaryPatches(bool set);
-    bool getEnableStadiumsPatches();
-    void setEnableStadiumsPatches(bool set);
 
     static Settings &GetInstance();
     void save();

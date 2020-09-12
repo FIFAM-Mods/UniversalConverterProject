@@ -80,7 +80,7 @@ unsigned int GetBallModelForCurrentMatch(int) {
     BallDesc const *resultBall = nullptr;
     for (BallDesc const &desc : GetBallInfos()) {
         if (desc.compId <= 0xFFFF) {
-            if (!resultBall && desc.compId == (compId >> 16))
+            if (!resultBall && desc.compId == ((compId >> 16) & 0xFFFF))
                 resultBall = &desc;
         }
         else {
