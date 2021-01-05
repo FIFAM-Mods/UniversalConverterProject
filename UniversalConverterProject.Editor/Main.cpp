@@ -13,6 +13,7 @@
 #include "ParameterFiles.h"
 #include "Translation.h"
 #include "RendererHook.h"
+#include "GenerateBigIdx.h"
 
 using namespace plugin;
 
@@ -20,6 +21,8 @@ class UniversalConverterProject {
 public:
     UniversalConverterProject() {
         auto v = FM::GetAppVersion();
+        if (v.id() == ID_ED_13_1000)
+            GenerateBigIdx();
         PatchRendererHook(v);
         PatchTranslation(v);
         PatchClubIDs(v);

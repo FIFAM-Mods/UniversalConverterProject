@@ -44,6 +44,8 @@
 #include "GenericHeads.h"
 #include "GameStartTweaks.h"
 #include "CustomStadiums.h"
+#include "GenerateBigIdx.h"
+#include "PortraitDialog.h"
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitry/DK22");
 
@@ -70,6 +72,7 @@ public:
     #endif
         v = FM::GetAppVersion();
         if (v.id() == ID_FM_13_1030_RLD) {
+            GenerateBigIdx();
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
@@ -137,6 +140,7 @@ public:
         PatchGenericHeads(v);
         PatchGameStartTweaks(v);
         PatchCustomStadiums(v);
+        PatchPortraitDialog(v);
     #ifdef BETA
         DoBetaPatches(v);
     #endif
@@ -155,11 +159,11 @@ String GetAppName() {
 }
 
 String GetPatchName() {
-    return L"Season 2020";
+    return L"2021";
 }
 
 String GetPatchVersion() {
-    return L"1.2";
+    return L"1.0";
 }
 
 String GetFullAppName(Bool upperCase) {

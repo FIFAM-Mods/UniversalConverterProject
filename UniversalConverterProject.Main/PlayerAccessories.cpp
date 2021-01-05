@@ -3,6 +3,7 @@
 #include "FifamReadWrite.h"
 #include "GfxCoreHook.h"
 #include "shared.h"
+#include "GameInterfaces.h"
 
 struct PlayerAccessories {
     unsigned char jerseystyle : 1; // 0 - tucked, 1 - untucked (not used currently)
@@ -301,13 +302,25 @@ void SetupSleevesForPlayerModel(void *plmodel) { // gfxcore
     if (gPlayerAccessoriesTeamDb && gPlayerAccessoriesPlayerIndex != 0) {
         void *player = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x950B0), gPlayerAccessoriesTeamDb, gPlayerAccessoriesPlayerIndex);
         // sleeves
+        bool snow = false;
+        void* match = *(void**)0x3124748;
+        if (match) {
+            UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
+            if (weather == 1)
+                snow = true;
+        }
         UInt sleeves = *raw_ptr<UInt>(player, 0x1C8);
-        if (sleeves != 1) {
-            void *match = *(void **)0x3124748;
-            if (match) {
-                UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
-                if (weather == 1)
-                    sleeves = 1;
+        if (snow)
+            sleeves = 1;
+        else {
+            if (sleeves == 1) {
+                CDBGame* game = CDBGame::GetInstance();
+                if (game) {
+                    auto currDate = game->GetCurrentDate();
+                    auto currMonth = currDate.GetMonth();
+                    if (currMonth >= 5 && currMonth <= 9)
+                        sleeves = false;
+                }
             }
         }
         if (sleeves == 1)

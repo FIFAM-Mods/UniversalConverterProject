@@ -97,7 +97,7 @@ void METHOD PlayerLoader(void *player, DUMMY_ARG, void *loader) {
         if (it == GetAdditionalPlayerInfoMap().end())
             it = GetAdditionalPlayerInfoMap().find(GetPlayerId(player, true));
         if (it != GetAdditionalPlayerInfoMap().end()) {
-            if ((*it).second.mStarHeadId != 0)
+            if ((*it).second.mStarHeadId != 0 && exists("data\\assets\\" + Utils::Format("m228__%d.o", (*it).second.mStarHeadId)))
                 *raw_ptr<UInt>(player, 0xDC) = (*it).second.mStarHeadId;
             if ((*it).second.mLevel > 0) {
                 UChar desiredLevel = Utils::Clamp((*it).second.mLevel, 1, 99);

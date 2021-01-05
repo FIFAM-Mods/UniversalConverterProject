@@ -5,3 +5,5 @@
 
 void PatchCompetitions(FM::Version v);
 Bool IsCompetitionLeagueSplit(CCompID const &compId);
+Bool IsCompetitionLeagueSplit_UInt(UInt compIdUInt);
+UInt GetCompetitionLeagueSplitMainLeague(UInt compIdUInt);

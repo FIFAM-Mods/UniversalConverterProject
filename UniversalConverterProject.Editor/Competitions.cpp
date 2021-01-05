@@ -313,7 +313,10 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x4E3B23 + 2, divNames);
 
         // Editor - disable calendar editing for countries with complex league system
-        patch::RedirectCall(0x44921D, OnGetCountryForComplexLeagueSystemCheck);
-        patch::RedirectCall(0x449249, OnEnableLeagueCalendarButton);
+        Int bForceCalendar = GetPrivateProfileIntW(L"MAIN", L"FORCE_CALENDAR_EDITOR", 0, L".\\ucp.ini");
+        if (!bForceCalendar) {
+            patch::RedirectCall(0x44921D, OnGetCountryForComplexLeagueSystemCheck);
+            patch::RedirectCall(0x449249, OnEnableLeagueCalendarButton);
+        }
     }
 }

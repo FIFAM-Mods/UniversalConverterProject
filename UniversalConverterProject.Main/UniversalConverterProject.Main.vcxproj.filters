@@ -60,6 +60,8 @@
     <ClCompile Include="GameStartTweaks.cpp" />
     <ClCompile Include="3dAdboardsAndBanners.cpp" />
     <ClCompile Include="CustomStadiums.cpp" />
+    <ClCompile Include="GenerateBigIdx.cpp" />
+    <ClCompile Include="PortraitDialog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -118,6 +120,8 @@
     <ClInclude Include="GameStartTweaks.h" />
     <ClInclude Include="3dAdboardsAndBanners.h" />
     <ClInclude Include="CustomStadiums.h" />
+    <ClInclude Include="GenerateBigIdx.h" />
+    <ClInclude Include="PortraitDialog.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

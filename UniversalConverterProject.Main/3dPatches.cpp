@@ -219,7 +219,7 @@ Bool32 CachedExists(char const *filename) {
 }
 
 UInt CachedSize(char const *filename) {
-    return file_size(filename);
+    return UInt(file_size(filename));
 
     //static Map<StringA, UInt> cache;
     //StringA filenameStr = filename;
@@ -524,15 +524,16 @@ Bool METHOD OnSetFifaTexture(void *t, DUMMY_ARG, int samplerIndex) {
 Vector<Tuple<int, D3DSAMPLERSTATETYPE, DWORD>> fifaTexSamplersToRestore;
 
 void OnSetFifaTexture2(void *t, int samplerIndex) {
-    IDirect3DDevice9 *device = *(IDirect3DDevice9 **)GfxCoreAddress(0xDB21D0);
-    static DWORD oldValue = 0;
 
-    device->GetSamplerState(samplerIndex, D3DSAMP_ADDRESSU, &oldValue);
-    fifaTexSamplersToRestore.emplace_back(samplerIndex, D3DSAMP_ADDRESSU, oldValue);
+    IDirect3DDevice9 *device = *(IDirect3DDevice9 **)GfxCoreAddress(0xDB21D0);
+    //static DWORD oldValue = 0;
+
+    //device->GetSamplerState(samplerIndex, D3DSAMP_ADDRESSU, &oldValue);
+    //fifaTexSamplersToRestore.emplace_back(samplerIndex, D3DSAMP_ADDRESSU, oldValue);
     device->SetSamplerState(samplerIndex, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
 
-    device->GetSamplerState(samplerIndex, D3DSAMP_ADDRESSV, &oldValue);
-    fifaTexSamplersToRestore.emplace_back(samplerIndex, D3DSAMP_ADDRESSV, oldValue);
+    //device->GetSamplerState(samplerIndex, D3DSAMP_ADDRESSV, &oldValue);
+    //fifaTexSamplersToRestore.emplace_back(samplerIndex, D3DSAMP_ADDRESSV, oldValue);
     device->SetSamplerState(samplerIndex, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 
     CallDynGlobal(GfxCoreAddress(0x458DE0), t, samplerIndex);
@@ -544,6 +545,15 @@ void METHOD OnRenderFifaPlayerInMatch(void *t, DUMMY_ARG, void *m) {
     for (auto const &e : fifaTexSamplersToRestore)
         device->SetSamplerState(get<0>(e), get<1>(e), get<2>(e));
     fifaTexSamplersToRestore.clear();
+}
+
+void OnRenderRenderSlots(void *s) {
+    IDirect3DDevice9 *device = *(IDirect3DDevice9 **)GfxCoreAddress(0xDB21D0);
+    for (UInt i = 0; i < 8; i++) {
+        device->SetSamplerState(i, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+        device->SetSamplerState(i, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+    }
+    CallDynGlobal(GfxCoreAddress(0x408B60), s);
 }
 
 wchar_t const *gSkyDir = L"data\\stadium\\generator\\sky";
@@ -870,7 +880,7 @@ void DumpChoreoEvents() {
     fputs("};\n\n", f);
     for (int i = 0; i < 84; i++) {
         fprintf(f, "%s\n", events[i].name);
-        for (int t = 0; t < events[i].numTasks; t++)
+        for (unsigned int t = 0; t < events[i].numTasks; t++)
             fprintf(f, "    %s(%d, %d, %d)\n", events[i].tasks[t].name, events[i].tasks[t].arg1, events[i].tasks[t].arg2, events[i].tasks[t].arg3);
         fputs("\n", f);
     }
@@ -925,7 +935,15 @@ void MyError(Int, char const *format, char const *message) {
     Error(message);
 }
 
+bool METHOD OnMotionMgrStartScript(void *m, DUMMY_ARG, int a) {
+    bool result = CallMethodAndReturnDynGlobal<bool>(GfxCoreAddress(0x222710), m, a);
+    if (result)
+        Error("StartScript: %s", CallMethodAndReturnDynGlobal<char const *>(GfxCoreAddress(0x21F3C0), m));
+    return result;
+}
+
 void Install3dPatches_FM13() {
+    //patch::RedirectCall(GfxCoreAddress(0x21CC6B), OnMotionMgrStartScript);
     //DumpChoreoEvents();
     //patch::RedirectCall(GfxCoreAddress(0x0018BA0 + 0x61), OnPostEvent);
     //patch::RedirectCall(GfxCoreAddress(0x0035260 + 0x17), OnPostEvent);
@@ -1311,7 +1329,7 @@ void Install3dPatches_FM13() {
     //patch::RedirectCall(GfxCoreAddress(0x2E2449), OnExecuteRenderMethod);
     //patch::RedirectCall(GfxCoreAddress(0x2E23CB), OnExecuteRenderMethod);
 
-    ///patch::SetUInt(GfxCoreAddress(0x1621F + 6), 0x30000000);
+    //patch::SetUInt(GfxCoreAddress(0x1621F + 6), 0x30000000);
 
     ReadPlayerCommentaryConfig();
 
@@ -1445,10 +1463,11 @@ void Install3dPatches_FM13() {
     //patch::RedirectCall(GfxCoreAddress(0x1EEAD8), OnSetupLightingData);
 
     // fix for hair textures rendering
-    ///patch::RedirectCall(GfxCoreAddress(0x39DEDD), OnSetFifaTexture<0xC0F1E4, 0x39DC49>);
-    ///patch::RedirectCall(GfxCoreAddress(0x39DEF1), OnSetFifaTexture<0xC0F1E4, 0x39DC49>);
-    ///patch::RedirectCall(GfxCoreAddress(0x454743), OnSetFifaTexture2);
-    ///patch::RedirectCall(GfxCoreAddress(0x45483D), OnRenderFifaPlayerInMatch);
+    patch::RedirectCall(GfxCoreAddress(0x39DEDD), OnSetFifaTexture<0xC0F1E4, 0x39DC49>);
+    patch::RedirectCall(GfxCoreAddress(0x39DEF1), OnSetFifaTexture<0xC0F1E4, 0x39DC49>);
+    patch::RedirectJump(GfxCoreAddress(0x2155EC), OnRenderRenderSlots);
+    //patch::RedirectCall(GfxCoreAddress(0x454743), OnSetFifaTexture2);
+    //patch::RedirectCall(GfxCoreAddress(0x45483D), OnRenderFifaPlayerInMatch);
 
     // commentary
     //patch::RedirectCall(GfxCoreAddress(0x2361B3), GetPlayerCommentaryID);
@@ -1477,11 +1496,17 @@ void Install3dPatches_FM13() {
     patch::SetUInt(GfxCoreAddress(0x382FC0 + 6), 0x400000); // file size limit
     patch::SetUInt(GfxCoreAddress(0x383058 + 6), 0x400000); // file size limit
 
-    //patch::SetUInt(GfxCoreAddress(0x1621A + 1), 0x6000000 * 2);
-    //patch::SetUInt(GfxCoreAddress(0x1621F + 6), 0x18000000 * 2);
-    //patch::SetUInt(GfxCoreAddress(0x16233 + 1), 0x200000 * 2);
-    //patch::SetUInt(GfxCoreAddress(0x49E72E + 1), 0x4000000 * 2);
-    //patch::SetUInt(GfxCoreAddress(0x49E741 + 1), 0x4000000 * 2);
+    // Ball Near/Far Clip
+    static Float BallHDFar = 0.95f; // 4.5
+    static Float BallLDNear = 1.0f; // 4.7
+    patch::SetPointer(GfxCoreAddress(0x24104A + 2), &BallHDFar);
+    patch::SetPointer(GfxCoreAddress(0x241056 + 2), &BallLDNear);
+
+   /// patch::SetUInt(GfxCoreAddress(0x1621A + 1), 0x6000000 * 4);
+   //patch::SetUInt(GfxCoreAddress(0x1621F + 6), 0x18000000 * 2);
+   //patch::SetUInt(GfxCoreAddress(0x16233 + 1), 0x300000);
+   /// patch::SetUInt(GfxCoreAddress(0x49E72E + 1), 0x4000000 * 4);
+   /// patch::SetUInt(GfxCoreAddress(0x49E741 + 1), 0x4000000 * 4);
     //
     //patch::SetUInt(GfxCoreAddress(0x3BAE8C + 1), 0x10000000 * 2);
     //patch::SetUInt(GfxCoreAddress(0x3C1E0E + 1), 256);
@@ -1489,4 +1514,17 @@ void Install3dPatches_FM13() {
     //patch::RedirectCall(GfxCoreAddress(0x316BF5), MyError);
 
     //patch::RedirectCall(GfxCoreAddress(0x16239), OnAllocRAM);
+   /// const unsigned int kitW = 1024;
+   /// const unsigned int kitH = 2048;
+   ///
+   /// patch::SetUInt(GfxCoreAddress(0x383F9C + 6), kitW);
+   /// patch::SetUInt(GfxCoreAddress(0x383FA6 + 6), kitH);
+   /// patch::SetUInt(GfxCoreAddress(0x383FB0 + 1), kitW);
+   /// patch::SetUInt(GfxCoreAddress(0x383F88 + 1), kitW * 2);
+   /// patch::SetUInt(GfxCoreAddress(0x38403A + 1), kitW * kitH * 4 + 0x100);
+   ///
+   /// patch::SetUInt(GfxCoreAddress(0x38405D + 6), kitW);
+   /// patch::SetUInt(GfxCoreAddress(0x384069 + 6), kitH);
+   /// patch::SetUInt(GfxCoreAddress(0x3840D9 + 1), kitH);
+   /// patch::SetUInt(GfxCoreAddress(0x3840DE + 1), kitW);
 }

@@ -3,11 +3,13 @@
 #include "GameInterfaces.h"
 #include "3dAdboardsAndBanners.h"
 #include "Settings.h"
+#include "Utils.h"
 
 unsigned int gCustomStadiumTeamUID = 0;
 char const *gFifaTemplateFilename = "data\\stadium\\FIFA\\template.xml";
 bool gResourceCacheEnabled = true;
 UInt gCurrentLighting = 0;
+Float gStadiumScaling[3] = { 1.0f, 1.0f, 1.0f };
 
 void *shapeBannersHome = nullptr;
 void *shapeBannersAway = nullptr;
@@ -44,11 +46,11 @@ void SetupStadiumXmlResolver(void *templates, unsigned int numTemplates, void *c
         static char TeamUIDStr[128];
         sprintf(TeamUIDStr, "%08X", gCustomStadiumTeamUID);
         *raw_ptr<char const *>(templates, 0x14) = TeamUIDStr;
-        if (CheckBannersFolder(AtoW(TeamUIDStr), nullptr)) {
+        //if (CheckBannersFolder(AtoW(TeamUIDStr), nullptr)) {
             static char const *customBannersFilename = "t13__201002_0_0.fsh";
             *raw_ptr<char const *>(templates, 0x4) = customBannersFilename;
             *raw_ptr<char const *>(templates, 0xC) = customBannersFilename;
-        }
+        //}
         //Error("ReadXmlDataForStadium3: %X", gCustomStadiumTeamUID);
     }
 }
@@ -173,6 +175,9 @@ void *METHOD OnSetupCustomStadiumCrowdEffects(CDBTeam *team, DUMMY_ARG, void *a2
 
 void METHOD OnOrigStadiumLoad(void *origStadium, DUMMY_ARG, const WideChar *stadiumFolder, UChar lighting) {
     gCurrentLighting = lighting;
+    gStadiumScaling[0] = 1.0f;
+    gStadiumScaling[1] = 1.0f;
+    gStadiumScaling[2] = 1.0f;
     void *stadiumEngine = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x4100B0));
     CallMethodDynGlobal(GfxCoreAddress(0x4211A0), origStadium, stadiumFolder, lighting);
     auto LoadShape = [&](WideChar const *fileName, Bool isGlobal, void *&outShape) {
@@ -183,13 +188,46 @@ void METHOD OnOrigStadiumLoad(void *origStadium, DUMMY_ARG, const WideChar *stad
     LoadShape(L"t13__201002_0_0.fsh", true, shapeBannersHome);
     LoadShape(L"t13__201003_0_0.fsh", true, shapeBannersAway);
 
-    static WideChar shadowModelFilename[256];
-    _snwprintf(shadowModelFilename, std::size(shadowModelFilename), L"%s\\shadow_%d.o", stadiumFolder, lighting);
-    if (FmFileExists(shadowModelFilename)) {
+    static WideChar filename[512];
+
+    _snwprintf(filename, std::size(filename), L"%s\\config.ini", stadiumFolder);
+    if (FmFileExists(filename)) {
+        WideChar scaleStr[256];
+        GetPrivateProfileStringW(L"MAIN", L"SCALE", L"", scaleStr, 256, filename);
+        if (scaleStr[0] != L'\0') {
+            String sstr = scaleStr;
+            if (!sstr.empty()) {
+                auto scaleParts = Utils::Split(sstr, L',');
+                if (scaleParts.size() >= 1 && scaleParts.size() <= 3) {
+                    Float x = Utils::SafeConvertFloat(scaleParts[0]);
+                    if (x != 0.0f)
+                        gStadiumScaling[0] = x;
+                    if (scaleParts.size() >= 2) {
+                        Float y = Utils::SafeConvertFloat(scaleParts[1]);
+                        if (y != 0.0f)
+                            gStadiumScaling[1] = y;
+                        if (scaleParts.size() >= 3) {
+                            Float z = Utils::SafeConvertFloat(scaleParts[2]);
+                            if (z != 0.0f)
+                                gStadiumScaling[2] = z;
+                        }
+                    }
+                    else {
+                        gStadiumScaling[1] = x;
+                        gStadiumScaling[2] = x;
+                    }
+                }
+            }
+        }
+    }
+
+    _snwprintf(filename, std::size(filename), L"%s\\shadow_%d.o", stadiumFolder, lighting);
+
+    if (FmFileExists(filename)) {
         modelShadow = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x41F8F0), 172, "NewStadGen::OrigStad::ShadowModel");
         if (modelShadow) {
             modelShadow = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x41F930), modelShadow);
-            void *fileData = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x410950), stadiumEngine, shadowModelFilename);
+            void *fileData = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x410950), stadiumEngine, filename);
             if (fileData)
                 CallMethodDynGlobal(GfxCoreAddress(0x41F9B0), modelShadow, fileData);
             void *textures = *raw_ptr<void *>(origStadium, 0x10);
@@ -282,7 +320,7 @@ void RenderStadiumShadow() {
                 CallDynGlobal(GfxCoreAddress(0x451540), GfxCoreAddress(0xABE9D4), 0.53f, 90.0f);
                 float transform[16];
                 CallMethodDynGlobal(GfxCoreAddress(0x2D8C50), transform, 1.0f, 1.0f, 1.0f, 1.0f);
-                transform[13] = 1.0f;
+                transform[13] = 20.0f;
                 //*(UInt *)GfxCoreAddress(0x64C898) = 123;
                 CallMethodDynGlobal(GfxCoreAddress(0x41FB60), modelShadow, transform);
                 //CallMethodDynGlobal(GfxCoreAddress(0x2E2230), modelShadowModel, transform);
@@ -341,6 +379,10 @@ void OnSetupShadow(float *color, float a, float b) {
     Error("%g %g %g %g - %g - %g", color[0], color[1], color[2], color[3], a, b);
 }
 
+void METHOD OnSetCustomStadiumScale(void *m, DUMMY_ARG, float x, float y, float z, float w) {
+    CallMethodDynGlobal(GfxCoreAddress(0x2D8C50), m, gStadiumScaling[0], gStadiumScaling[1], gStadiumScaling[2], w);
+}
+
 void PatchCustomStadiums(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         // movzx   ebp, al  >>  mov ebp, eax
@@ -355,6 +397,9 @@ void PatchCustomStadiums(FM::Version v) {
         patch::RedirectCall(0x442B25, OnSetupCustomStadiumCrowdEffects);
 
         patch::RedirectCall(0x4422B6, OnGetTeamIdForStadium);
+
+        // weather fix
+        patch::SetUChar(0x44231D + 1, 0x97);
 
         if (!Settings::GetInstance().getEnableDefaultStadiums()) {
             patch::RedirectCall(0xF80AC7, OnReadFifaStadiumIdFromDb);
@@ -382,9 +427,10 @@ void InstallCustomStadiums3DPatches() {
 
     // remove custom FIFA stadium scaling
     //patch::Nop(GfxCoreAddress(0x420FB9), 5);
-    static Float fOne = 1.0f;
-    patch::SetPointer(GfxCoreAddress(0x420F9D + 2), &fOne);
-    patch::SetPointer(GfxCoreAddress(0x420FAD + 2), &fOne);
+    //static Float fOne = 1.0f;
+    //patch::SetPointer(GfxCoreAddress(0x420F9D + 2), &fOne);
+    //patch::SetPointer(GfxCoreAddress(0x420FAD + 2), &fOne);
+    patch::RedirectCall(GfxCoreAddress(0x420FB9), OnSetCustomStadiumScale);
 
     // temporary - remove flag reset for custom stadiums - TODO
     patch::Nop(GfxCoreAddress(0x208450), 5);
@@ -406,4 +452,8 @@ void InstallCustomStadiums3DPatches() {
     patch::RedirectCall(GfxCoreAddress(0x41FC2B), OnStadGeoPrimStateCullEnable);
 
     //patch::RedirectCall(GfxCoreAddress(0x454665), OnSetupShadow);
+
+    const float StadiumFarClip = 150000.0f;
+    patch::SetFloat(GfxCoreAddress(0x630DE4), StadiumFarClip);
+    patch::SetFloat(GfxCoreAddress(0x630DEC), StadiumFarClip);
 }

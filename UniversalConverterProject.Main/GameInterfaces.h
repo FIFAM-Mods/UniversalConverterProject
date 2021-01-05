@@ -232,6 +232,8 @@ public:
     CCompID GetPredecessor(Int index);
     CCompID GetSuccessor(Int index);
     unsigned int GetLevel();
+    unsigned int GetRoundType();
+    int GetTeamIndex(CTeamIndex const& teamId);
 };
 
 enum CompDbType {

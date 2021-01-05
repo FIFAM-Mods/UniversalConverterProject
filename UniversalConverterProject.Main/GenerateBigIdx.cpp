@@ -1,0 +1,218 @@
+#include "GenerateBigIdx.h"
+#include <vector>
+#include <map>
+#include <filesystem>
+#include <stdio.h>
+#include <Windows.h>
+#include <string>
+#include "plugin-std.h"
+
+using namespace std;
+using namespace std::filesystem;
+
+vector<string> archiveNames13 = {
+    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big",
+    /*"data\\zdata_00.big",*/ "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
+    "data\\zdata_05.big", "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_08.big", "data\\zdata_09.big",
+    "data\\zdata_10.big", "data\\zdata_11.big", "data\\zdata_12.big", "data\\zdata_13.big", "data\\zdata_14.big",
+    "data\\zdata_15.big", "data\\zdata_16.big", "data\\zdata_17.big", "data\\zdata_18.big", "data\\zdata_19.big",
+    "data\\zdata_20.big", "data\\zdata_21.big", "data\\zdata_22.big", "data\\zdata_23.big", "data\\zdata_24.big",
+    "data\\zdata_25.big", "data\\zdata_26.big", "data\\zdata_27.big", "data\\zdata_28.big", "data\\zdata_29.big",
+    "data\\zdata_30.big", "data\\zdata_31.big", "data\\zdata_32.big", "data\\zdata_33.big", "data\\zdata_34.big",
+    "data\\zdata_35.big", "data\\zdata_36.big", "data\\zdata_37.big", "data\\zdata_38.big", "data\\zdata_39.big",
+    "data\\zdata_40.big", /*"data\\zdata_41.big", "data\\zdata_42.big", "data\\zdata_43.big", "data\\zdata_44.big",*/
+    "data\\zdata_45.big", "data\\zdata_46.big", "data\\zdata_47.big", "data\\zdata_48.big",
+    "badges.big", "badges_small.big", "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big",
+    "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big"
+};
+
+vector<string> archiveNames14 = {
+    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big",
+    /*"data\\zdata_00.big",*/ "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
+    "data\\zdata_05.big", "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_08.big", "data\\zdata_09.big",
+    "data\\zdata_10.big", "data\\zdata_11.big", "data\\zdata_12.big", "data\\zdata_13.big", "data\\zdata_14.big",
+    "data\\zdata_15.big", "data\\zdata_16.big", "data\\zdata_17.big", "data\\zdata_18.big", "data\\zdata_19.big",
+    "data\\zdata_20.big", "data\\zdata_21.big", "data\\zdata_22.big", "data\\zdata_23.big", "data\\zdata_24.big",
+    "data\\zdata_25.big", "data\\zdata_26.big", "data\\zdata_27.big", "data\\zdata_28.big", "data\\zdata_29.big",
+    "data\\zdata_30.big", "data\\zdata_31.big", "data\\zdata_32.big", "data\\zdata_33.big", "data\\zdata_34.big",
+    "data\\zdata_35.big", "data\\zdata_36.big", "data\\zdata_37.big", "data\\zdata_38.big", "data\\zdata_39.big",
+    "data\\zdata_40.big", "data\\zdata_41.big", /*"data\\zdata_42.big", "data\\zdata_43.big", "data\\zdata_44.big",
+    "data\\zdata_45.big", "data\\zdata_46.big",*/ "data\\zdata_47.big", "data\\zdata_48.big",
+    "badges.big", "badges_small.big", "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big",
+    "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big"
+};
+
+bool IsFileIncludedToIndex(string const& fileName) {
+    if (fileName.starts_with("m228__") ||
+        fileName.starts_with("m728__") ||
+        fileName.starts_with("m432__") ||
+        //fileName.starts_with("t75__") ||
+        //fileName.starts_with("tag-") ||
+        //fileName.starts_with("flr-") ||
+        //fileName.starts_with("fls-") ||
+        //fileName.starts_with("sle-") ||
+        //fileName.starts_with("m713__") ||
+        //fileName.starts_with("m714__") ||
+        //fileName.starts_with("m715__") ||
+        //fileName.starts_with("m716__") ||
+        //fileName.starts_with("m717__") ||
+        //fileName.starts_with("m718__") ||
+        //fileName.starts_with("m720__") ||
+        //fileName.starts_with("t226__") ||
+        //fileName.starts_with("t13__") ||
+        //fileName.starts_with("t122__") ||
+        //fileName.starts_with("t212__") ||
+        //fileName.starts_with("t238__") ||
+        fileName.starts_with("t21__") ||
+        fileName.starts_with("cm_") ||
+        fileName.starts_with("cmbhair_") ||
+        fileName.starts_with("hair_cm")
+        )
+    {
+        return false;
+    }
+    return true;
+}
+
+unsigned int FileNameHash(string const& fileName) {
+    unsigned int hash = 0;
+    for (auto c : fileName) {
+        unsigned char t = static_cast<unsigned char>(c);
+        if (c >= 'A' && c <= 'Z')
+            t += 32;
+        else if (c == '\\')
+            t = static_cast<unsigned char>('/');
+        hash = t + 33 * hash;
+    }
+    return hash;
+}
+
+template <typename T> T data_at(void* data, unsigned int offset = 0) {
+    return *(T*)((unsigned int)data + offset);
+}
+
+bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, unsigned int gameId) {
+    struct FileDesc {
+        unsigned int archiveId : 8;
+        unsigned int nameOffset : 24;
+        string name;
+
+        FileDesc(unsigned char _archiveId, unsigned int _nameOffset, string const& _name) {
+            archiveId = _archiveId;
+            nameOffset = _nameOffset;
+            name = _name;
+        }
+    };
+    map<unsigned int, vector<FileDesc>> filesMap;
+    vector<unsigned int> archiveNamesOffsets;
+    vector<string> fileNamesList;
+    unsigned int archivesCount = 0;
+    unsigned int filesCount = 0;
+    unsigned int currentNamesListOffset = 0;
+    unsigned int totalFileSize = 32;
+    unsigned int archiveId = 0;
+    for (unsigned int i = 0; i < archiveNames.size(); i++) {
+        path archivePath = rootFolder / archiveNames[i];
+        if (exists(archivePath)) {
+            FILE* bigFile = _wfopen(archivePath.c_str(), L"rb");
+            if (bigFile) {
+                fseek(bigFile, 0, SEEK_END);
+                unsigned int fileSize = ftell(bigFile);
+                fseek(bigFile, 0, SEEK_SET);
+                if (fileSize > 0x200000)
+                    fileSize = 0x200000;
+                unsigned char* fileData = new unsigned char[fileSize];
+                fread(fileData, fileSize, 1, bigFile);
+                fclose(bigFile);
+                if (fileSize >= 4) {
+                    if (fileSize >= 16) {
+                        if (data_at<unsigned int>(fileData) == 'FGIB') {
+                            unsigned int numFiles = _byteswap_ulong(data_at<unsigned int>(fileData, 8));
+                            unsigned char* fileDesc = (unsigned char*)((unsigned int)fileData + 16);
+                            for (unsigned int i = 0; i < numFiles; i++) {
+                                char* fileName = (char*)((unsigned int)fileDesc + 8);
+                                //if (IsFileIncludedToIndex(fileName)) {
+                                    unsigned int hash = FileNameHash(fileName);
+                                    filesMap[hash].emplace_back(archiveId, -1, fileName);
+                                    filesCount++;
+                                    totalFileSize += 8;
+                                    fileDesc = (unsigned char*)((unsigned int)fileDesc + 8 + strlen(fileName) + 1);
+                                //}
+                            }
+                        }
+                    }
+                }
+                delete[] fileData;
+                archivesCount++;
+                fileNamesList.emplace_back(archiveNames[i]);
+                archiveNamesOffsets.emplace_back(currentNamesListOffset);
+                unsigned int fileNameSize = archiveNames[i].size() + 1;
+                currentNamesListOffset += fileNameSize;
+                totalFileSize += 4 + fileNameSize;
+                archiveId++;
+            }
+        }
+    }
+    for (auto& [hash, fileDesc] : filesMap) {
+        if (fileDesc.size() > 1) {
+            for (unsigned int i = 0; i < fileDesc.size(); i++) {
+                fileNamesList.emplace_back(fileDesc[i].name);
+                fileDesc[i].nameOffset = currentNamesListOffset;
+                unsigned int fileNameSize = fileDesc[i].name.size() + 1;
+                currentNamesListOffset += fileNameSize;
+                totalFileSize += fileNameSize;
+            }
+        }
+    }
+    FILE* idxFile = _wfopen(path(rootFolder / L"big.idx").c_str(), L"wb");
+    if (!idxFile)
+        return false;
+    unsigned int signature = 'XIDF';
+    fwrite(&signature, 4, 1, idxFile);
+    fwrite(&totalFileSize, 4, 1, idxFile);
+    unsigned int version = 1;
+    fwrite(&version, 4, 1, idxFile);
+    fwrite(&archivesCount, 4, 1, idxFile);
+    fwrite(&filesCount, 4, 1, idxFile);
+    unsigned int unknownValue = 2572896;
+    if (gameId == 14)
+        unknownValue = 2572896;
+    else if (gameId == 13)
+        unknownValue = 2529719;
+    else if (gameId == 12)
+        unknownValue = 2292434;
+    fwrite(&unknownValue, 4, 1, idxFile);
+    unsigned int offsetToFilesDescriptors = 32 + archivesCount * 4;
+    fwrite(&offsetToFilesDescriptors, 4, 1, idxFile);
+    unsigned int offsetToArchiveNames = 32 + archivesCount * 4 + filesCount * 8;
+    fwrite(&offsetToArchiveNames, 4, 1, idxFile);
+    for (unsigned int offset : archiveNamesOffsets)
+        fwrite(&offset, 4, 1, idxFile);
+    for (auto& [hash, fileDesc] : filesMap) {
+        for (unsigned int i = 0; i < fileDesc.size(); i++) {
+            fwrite(&fileDesc[i], 4, 1, idxFile);
+            fwrite(&hash, 4, 1, idxFile);
+        }
+    }
+    for (auto const& name : fileNamesList)
+        fwrite(name.c_str(), name.size() + 1, 1, idxFile);
+    fclose(idxFile);
+    return true;
+}
+
+void GenerateBigIdx() {
+    path rootFolder = FM::GetGameDir();
+    path bigIdxPath = rootFolder / L"big.idx";
+    error_code ec;
+    if (!exists(bigIdxPath, ec) || !is_regular_file(bigIdxPath, ec)) {
+        try {
+            unsigned int gameId = 13;
+            if (exists(rootFolder / L"data" / L"zdata_48.big"))
+                gameId = 14;
+            GenerateBigIdx(rootFolder, gameId == 14 ? archiveNames14 : archiveNames13, gameId);
+        }
+        catch (exception e) {
+            plugin::Error("An error occured during big.idx regeneration\n%s", e.what());
+        }
+    }
+}

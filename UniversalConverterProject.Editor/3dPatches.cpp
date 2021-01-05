@@ -65,6 +65,19 @@ void *METHOD Test1(void *t, DUMMY_ARG, int a) {
     return CallMethodAndReturnDynGlobal<void *>(RendererAddress(0x83D23), t, a);
 }
 
+template<UInt Func>
+Char const* METHOD OnGetHeadResourceName(void* t, DUMMY_ARG, Char *filename, Int a3, Bool* bExists) {
+    UInt headId = *raw_ptr<UInt>(t, 4);
+    void* pT = t;
+    if (headId != 0 && !exists("data\\assets\\" + Utils::Format("m228__%d.o", headId))) {
+        static UChar buf[60];
+        memcpy(buf, t, 60);
+        pT = buf;
+        *raw_ptr<UInt>(pT, 4) = 0;
+    }
+    return CallMethodAndReturnDynGlobal<Char const*>(RendererAddress(Func), pT, filename, a3, bExists);
+}
+
 void Install3dPatches() {
     //Error("%X", RendererAddress(0));
     patch::RedirectCall(RendererAddress(0x92579), OnCreateFileIO);
@@ -95,18 +108,28 @@ void Install3dPatches() {
 
     patch::SetDouble(RendererAddress(0x2CC110), 91.0);
 
-    //const unsigned int kitW = 1024;
-    //const unsigned int kitH = 2048;
-    //
-    //patch::SetUInt(RendererAddress(0x8F34B + 6), kitW);
-    //patch::SetUInt(RendererAddress(0x8F355 + 6), kitH);
-    //patch::SetUInt(RendererAddress(0x8F337 + 1), kitW * 2);
-    //patch::SetUInt(RendererAddress(0x8F40C + 6), kitW);
-    //patch::SetUInt(RendererAddress(0x8F418 + 6), kitH);
-    //patch::SetUInt(RendererAddress(0x8F3E9 + 1), kitW * kitH * 4 + 0x100);
-    //patch::SetUInt(RendererAddress(0x8F48D + 1), kitW);
-    //patch::SetUInt(RendererAddress(0x8F488 + 1), kitH);
-    //patch::SetUInt(RendererAddress(0x8F35F + 1), kitW);
+    // starhead
+    patch::RedirectCall(RendererAddress(0x91A18), OnGetHeadResourceName<0x920B1>);
+    patch::RedirectCall(RendererAddress(0x9E75C), OnGetHeadResourceName<0x920B1>);
+    patch::RedirectCall(RendererAddress(0x91949), OnGetHeadResourceName<0x91B7D>);
+    patch::RedirectCall(RendererAddress(0x9EC00), OnGetHeadResourceName<0x91B7D>);
+    patch::RedirectCall(RendererAddress(0x919B0), OnGetHeadResourceName<0x91E11>);
+    patch::RedirectCall(RendererAddress(0x9F63E), OnGetHeadResourceName<0x91E11>);
+    patch::RedirectCall(RendererAddress(0x919E4), OnGetHeadResourceName<0x91EAA>);
+    patch::RedirectCall(RendererAddress(0x9F68E), OnGetHeadResourceName<0x91EAA>);
+
+   // const unsigned int kitW = 1024;
+   // const unsigned int kitH = 2048;
+   // 
+   // patch::SetUInt(RendererAddress(0x8F34B + 6), kitW);
+   // patch::SetUInt(RendererAddress(0x8F355 + 6), kitH);
+   // patch::SetUInt(RendererAddress(0x8F337 + 1), kitW * 2);
+   // patch::SetUInt(RendererAddress(0x8F40C + 6), kitW);
+   // patch::SetUInt(RendererAddress(0x8F418 + 6), kitH);
+   // patch::SetUInt(RendererAddress(0x8F3E9 + 1), kitW * kitH * 4 + 0x100);
+   // patch::SetUInt(RendererAddress(0x8F48D + 1), kitW);
+   // patch::SetUInt(RendererAddress(0x8F488 + 1), kitH);
+   // patch::SetUInt(RendererAddress(0x8F35F + 1), kitW);
     //patch::SetUChar(RendererAddress(0xAB39C), 0xC3);
 
     //patch::SetUChar(RendererAddress(0x901AF + 1), 3);

@@ -18,7 +18,7 @@ void METHOD OnLoadGameStartDatabase(void *t, DUMMY_ARG, Int e) {
         CDBGame *g = CDBGame::GetInstance();
         if (g) {
             CJDate date;
-            date.Set(2019, 7, 1); // Change this with new start year
+            date.Set(patch::GetUInt(0xF5B121 + 1), patch::GetUChar(0xF5B11F + 1), patch::GetUChar(0xF5B11D + 1));
             g->SetCurrentDate(date);
             //Message(L"OnLoadGameStartDatabase");
         }

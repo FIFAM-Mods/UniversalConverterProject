@@ -73,7 +73,8 @@ struct StadiumData {
     Float pitchBrightnessOvercast = 0.0f;
     UInt pitchColorNight = 0;
     Float pitchBrightnessNight = 0.0f;
-    UInt venueId = 0;
+    UInt venueId = 0; // TODO: remove this
+    Bool enableTrack = false;
 };
 
 Map<UInt, StadiumData> &GetStadiumDataMap() {
@@ -102,7 +103,7 @@ void ReadStadiumDataFile() {
                 reader.ReadLine(Hexadecimal(teamId), data.mowPattern, data.netColor, data.environment, data.isSynthetic, 
                     Hexadecimal(data.pitchColorDay), data.pitchBrightnessDay,
                     Hexadecimal(data.pitchColorOvercast), data.pitchBrightnessOvercast,
-                    Hexadecimal(data.pitchColorNight), data.pitchBrightnessNight);
+                    Hexadecimal(data.pitchColorNight), data.pitchBrightnessNight, data.enableTrack);
                 if (teamId != 0)
                     GetStadiumDataMap()[teamId] = data;
             }
@@ -560,6 +561,28 @@ UInt METHOD MyGetVenueId_0(void *stad) {
     return 0;
 }
 
+void OnSetupStadiumPitchTexture() {
+    CallDynGlobal(GfxCoreAddress(0x23FBE0));
+    void *match = *(void **)0x3124748;
+    if (match) {
+        CTeamIndex hostTeamId = CTeamIndex::make(0, 0, 0);
+        CallMethod<0xE814C0>(match, &hostTeamId);
+        if (hostTeamId.countryId) {
+            CDBTeam *hostTeam = GetTeam(hostTeamId);
+            if (hostTeam) {
+                StadiumData *stadiumData = GetTeamStadiumData(hostTeam->GetTeamUniqueID(), hostTeamId.type);
+                if (stadiumData && stadiumData->enableTrack) {
+                    UInt &pitchTextureType = *(UInt *)(GfxCoreAddress(0xAE0B3C));
+                    if (pitchTextureType == 0)
+                        pitchTextureType = 10;
+                    else if (pitchTextureType == 1)
+                        pitchTextureType = 11;
+                }
+            }
+        }
+    }
+}
+
 void PatchPitch(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadStadiumDataFile();
@@ -646,4 +669,6 @@ void InstallPitch3D() {
     patch::RedirectCall(GfxCoreAddress(0x2414A1), OnSetupStadiumPitch);
 
     patch::RedirectCall(GfxCoreAddress(0x40B82B), OnSetupStadiumEnvironment);
+
+    patch::RedirectCall(GfxCoreAddress(0x24000B), OnSetupStadiumPitchTexture);
 }

@@ -835,6 +835,29 @@ int MyCompareStringsPNG(WideChar const *a, WideChar const *b) {
     return CallAndReturn<int, 0x1493FCB>(a, b);
 }
 
+int METHOD ResolveUserKitPath(void *t, DUMMY_ARG, int kitId, wchar_t *buf) {
+    *buf = 0;
+    return 0;
+}
+
+UInt METHOD OnGetPlayerSpecialFaceId(CDBPlayer* player) {
+    UInt specialFaceID = *raw_ptr<UInt>(player, 0xDC);
+    Error(L"Player face: %d", specialFaceID);
+    if (specialFaceID != 0) {
+        if (!exists("data\\assets\\" + Utils::Format("m228__%d.o", specialFaceID))) {
+            Error(L"Not present");
+            return 0;
+        }
+    }
+    return specialFaceID;
+}
+
+void METHOD OnReadPlayerSpecialFaceId(void *reader, DUMMY_ARG, UInt *out) {
+    CallMethod<0x1338B10>(reader, out);
+    if (*out != 0 && !exists("data\\assets\\" + Utils::Format("m228__%d.o", *out)))
+        *out = 0;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectJump(0x14C5E17, ConsolePrint<false>);
@@ -1202,5 +1225,10 @@ void PatchEABFFixes(FM::Version v) {
         //patch::SetUInt(0x24D25B8 + 4, 2);
         //patch::SetUInt(0x24D25B8 + 4 * 2, 3);
         //patch::SetUInt(0x24D25B8 + 4 * 3, 4);
+
+        //patch::RedirectJump(0xFFD730, ResolveUserKitPath);
+
+        //patch::RedirectJump(0xF985F0, OnGetPlayerSpecialFaceId);
+        patch::RedirectCall(0xFD14E6, OnReadPlayerSpecialFaceId);
     }
 }

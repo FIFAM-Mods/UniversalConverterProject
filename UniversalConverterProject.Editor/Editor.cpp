@@ -6,12 +6,15 @@
 #include "Compiler.h"
 #include "FifamReadWrite.h"
 #include "Competitions.h"
+#include "libpng/png.h"
 
 using namespace plugin;
 
 //#define EDITOR_READ_TEXT
 #define EDITOR_WRITE_TEXT
 //#define UPDATE_CLUB_BUDGETS
+
+//#define EDITOR_TEST_FIXTURES
 
 enum FmLanguage {
     English,
@@ -483,9 +486,10 @@ Int METHOD OnDialogDoModal(void *dlg) {
 unsigned int beardTypes[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 unsigned int skinColors[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 unsigned int hairColors[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9 };
-unsigned int hairTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162 };
-unsigned int headTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1500,1501,1502,1503,1504,1505,1506,1507,1508,1509,1510,1511,1512,1513,1514,1515,1516,1517,1518,1519,1520,1521,1522,1523,1524,1525,1526,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2012,2500,2501,2502,2503,2504,2505,2506,3000,3001,3002,3003,3004,3005,3500,3501,3502,3503,3504,3505,4000,4001,4002,4003,4500,4501,4502,5000,5001,5002,5003,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,1019,1020,1021,1022,1023,1024,1025,1026,1027,1527,1528,2011,2013,2014,2015,2016,2017,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2507,2508,2509,2510,2511,2512,2513,2514,2515,2516,2517,2518,4525 };
+unsigned int hairTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242 };
+unsigned int headTypes[] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1500,1501,1502,1503,1504,1505,1506,1507,1508,1509,1510,1511,1512,1513,1514,1515,1516,1517,1518,1519,1520,1521,1522,1523,1524,1525,1526,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2012,2500,2501,2502,2503,2504,2505,2506,3000,3001,3002,3003,3004,3005,3500,3501,3502,3503,3504,3505,4000,4001,4002,4003,4500,4501,4502,5000,5001,5002,5003,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,1019,1020,1021,1022,1023,1024,1025,1026,1027,1527,1528,2011,2013,2014,2015,2016,2017,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2507,2508,2509,2510,2511,2512,2513,2514,2515,2516,2517,2518,4525,3507,5500,5501,5502,5503,5504,5505,5506,5507,5508,5509,5510,6000,6001,6002,6003,6004,6005,6006,6007,6008,6009,6010,6011,6012,6013,6014,6015,6016,6017,6018,6019,6020,6021,6022,6023,6024,6025,6026,6027,6028,6029,6500,6501,6502,7000,7001,7002,7003,7004,7005,7006,7007,7008,7009,7010,7011,7012,7013,7014,7015,7016,7017,7018,7019,7020,7021,7022,7023,7024,7025,7026,7500,7501,7502,8000,8001,8002,8500,8501,8502,9000,9001,9002,9500,9501,9502,9503,9504,9505,9506,9507,9508,9509,9510,9511,9512,10000,10001,10002,10003,10004,10005,10006,10007,10008,10009,10010,10011,10012,10013,10014,10015,10016,10017,10018,10019,10020,10021,10022,10023,10024,10025,10026,10027,10500,10501,10502,10503,10504,10505,10506,10507 };
 unsigned int eyeColors[] = { 1,2,9,5,4,7,0,3,8,6 };
+unsigned int skinTypes[] = { 0, 1, 2, 3 };
 
 unsigned int METHOD GetAppearanceAssetCount(void *t, DUMMY_ARG, int type) {
     switch (type) {
@@ -494,7 +498,7 @@ unsigned int METHOD GetAppearanceAssetCount(void *t, DUMMY_ARG, int type) {
     case 1:
         return  std::size(skinColors);
     case 2:
-        return 3;
+        return std::size(skinTypes);
     case 3:
         return std::size(hairTypes);
     case 4:
@@ -554,6 +558,309 @@ Bool METHOD ShowErr(void *t, DUMMY_ARG, wchar_t const *filename) {
 
     Error("%d", *raw_ptr<UInt>(t, 0x14));
     return CallMethodAndReturn<Bool, 0x550B90>(t, filename);
+}
+
+#define LANGUAGE_COUNT 106
+
+void __declspec(naked) CheckLanguageID_1() {
+    __asm {
+        cmp esi, LANGUAGE_COUNT
+        jb JMP_4FB6AC
+        mov eax, 0x4FB6AA
+        jmp eax
+    JMP_4FB6AC:
+        mov eax, 0x4FB6AC
+        jmp eax
+    }
+}
+
+void __declspec(naked) CheckLanguageID_2() {
+    __asm {
+        cmp esi, LANGUAGE_COUNT
+        jl JMP_413C33
+        mov eax, 0x413C79
+        jmp eax
+    JMP_413C33:
+        mov eax, 0x413C33
+        jmp eax
+    }
+}
+
+void __declspec(naked) CheckLanguageID_3() {
+    __asm {
+        cmp edi, LANGUAGE_COUNT
+        jl JMP_48A190
+        mov eax, 0x48A1BE
+        jmp eax
+    JMP_48A190:
+        mov eax, 0x48A190
+        jmp eax
+    }
+}
+
+unsigned int gLanguageNameHashes[LANGUAGE_COUNT];
+
+const wchar_t * METHOD GetLanguageName(void *text, DUMMY_ARG, unsigned int id) {
+    if (id < 0 || id >= LANGUAGE_COUNT)
+        id = 0;
+    if (!gLanguageNameHashes[id]) {
+        wchar_t str[256];
+        str[std::size(str) - 1] = L'\0';
+        str[0] = L'\0';
+        swprintf(str, L"Country.Language.%02d", id);
+        gLanguageNameHashes[id] = CallAndReturn<unsigned int, 0x578750>(str);
+    }
+    void *locale = *raw_ptr<void *>(text, 0);
+    auto result = CallMethodAndReturn<wchar_t const *, 0x575750>(locale, gLanguageNameHashes[id], *raw_ptr<unsigned int>(locale, 0x18));
+    if (!result) {
+        static wchar_t emptyLanguageName[256];
+        swprintf(emptyLanguageName, L"Country.Language.%02d", id);
+        result = emptyLanguageName;
+    }
+    return result;
+}
+
+inline static struct IO {
+    unsigned char* data;
+    unsigned int size;
+    unsigned int numReadBytes;
+
+    void Init(unsigned char* Data, unsigned int Size) {
+        data = Data;
+        size = Size;
+        numReadBytes = 0;
+    }
+} io;
+
+static void ReadFunction(png_structp png_ptr, png_bytep data, png_uint_32 length) {
+    IO* myIo = (IO*)png_get_io_ptr(png_ptr);
+    if (myIo) {
+        if (length <= myIo->size - myIo->numReadBytes) {
+            memcpy(data, &myIo->data[myIo->numReadBytes], length);
+            myIo->numReadBytes += length;
+        }
+    }
+}
+
+unsigned char* PngToTga(unsigned char* pngData, unsigned int dataSize) {
+    unsigned int width = 0;
+    unsigned int height = 0;
+    int depth = 0;
+    int color_type = 0;
+    png_bytep* rows = nullptr;
+
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
+    if (!png_ptr)
+        return nullptr;
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+        png_destroy_read_struct(&png_ptr, 0, 0);
+        return nullptr;
+    }
+    io.Init(pngData, dataSize);
+    png_set_read_fn(png_ptr, &io, ReadFunction);
+    png_read_info(png_ptr, info_ptr);
+    png_uint_32 result = png_get_IHDR(png_ptr, info_ptr, &width, &height, &depth, &color_type, 0, 0, 0);
+    if (result != 1) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+        return nullptr;
+    }
+    if (depth == 8 && (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA)) {
+        png_set_bgr(png_ptr);
+        rows = new png_bytep[height];
+        for (unsigned int i = 0; i < height; ++i)
+            rows[i] = new png_byte[png_get_rowbytes(png_ptr, info_ptr)];
+        png_read_image(png_ptr, rows);
+        png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+
+#pragma pack(push, 1)
+        struct TgaHeader {
+            unsigned char idLength; // The number of bytes that the image ID field consists of
+            unsigned char colorMapType; // 0 if image file contains no color map, 1 if present
+            unsigned char imageType; // 2 - uncompressed true-color image, 10 - run-length encoded true-color image
+            unsigned short firstEntryIndex; // index of first color map entry that is included in the file
+            unsigned short colorMapLength; // number of entries of the color map that are included in the file
+            unsigned char colorMapEntrySize; // number of bits per pixel
+            short originX; // absolute coordinate of lower-left corner for displays where origin is at the lower left
+            short originY; // as for X-origin
+            short width; // width in pixels
+            short height; // height in pixels
+            unsigned char depth; // bits per pixel
+            unsigned char attrBits : 4;
+            unsigned char reserved1 : 1;
+            unsigned char direction : 1;
+            unsigned char interleaving : 2;
+        };
+
+        struct rgba8888 {
+            unsigned char r;
+            unsigned char g;
+            unsigned char b;
+            unsigned char a;
+        };
+
+        struct rgb888 {
+            unsigned char r;
+            unsigned char g;
+            unsigned char b;
+        };
+#pragma pack(pop)
+
+        unsigned char pixelSize = 4;
+        depth = 32;
+        if (color_type == PNG_COLOR_TYPE_RGB) {
+            pixelSize = 3;
+            depth = 24;
+        }
+
+        unsigned int pixelsSize = width * height * pixelSize;
+        unsigned char* tga = new unsigned char[sizeof(TgaHeader) + pixelsSize];
+        TgaHeader* tgaHeader = reinterpret_cast<TgaHeader*>(tga);
+        tgaHeader->idLength = 0;
+        tgaHeader->colorMapType = 0;
+        tgaHeader->imageType = 2;
+        tgaHeader->firstEntryIndex = 0;
+        tgaHeader->colorMapLength = 0;
+        tgaHeader->colorMapEntrySize = 0;
+        tgaHeader->originX = 0;
+        tgaHeader->originY = 0;
+        tgaHeader->width = width;
+        tgaHeader->height = height;
+        tgaHeader->depth = depth;
+        tgaHeader->attrBits = (color_type == PNG_COLOR_TYPE_RGB_ALPHA) ? 8 : 0;
+        tgaHeader->reserved1 = 0;
+        tgaHeader->direction = 1;
+        tgaHeader->interleaving = 0;
+
+        if (color_type == PNG_COLOR_TYPE_RGB) {
+            for (unsigned int i = 0; i < height; i++) {
+                rgb888* pixels = reinterpret_cast<rgb888*>(&tga[sizeof(TgaHeader)]);
+                rgb888* rgb = (rgb888*)rows[i];
+                for (unsigned int j = 0; j < width; j++) {
+                    pixels[i * width + j].r = rgb->r;
+                    pixels[i * width + j].g = rgb->g;
+                    pixels[i * width + j].b = rgb->b;
+                    rgb++;
+                }
+            }
+        }
+        else {
+            for (unsigned int i = 0; i < height; i++) {
+                rgba8888* pixels = reinterpret_cast<rgba8888*>(&tga[sizeof(TgaHeader)]);
+                rgba8888* rgba = (rgba8888*)rows[i];
+                for (unsigned int j = 0; j < width; j++) {
+                    pixels[i * width + j].r = rgba->r;
+                    pixels[i * width + j].g = rgba->g;
+                    pixels[i * width + j].b = rgba->b;
+                    pixels[i * width + j].a = rgba->a;
+                    rgba++;
+                }
+            }
+        }
+
+        for (unsigned int i = 0; i < height; i++)
+            delete rows[i];
+        delete[] rows;
+
+        return tga;
+    }
+    else {
+        png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+        return nullptr;
+    }
+}
+
+static HBITMAP MyReadClubBadge(wchar_t const* badgePath) {
+    path originalPath = badgePath;
+    enum BadgeFileType { None, PNG, TGA } fileType = None;
+    if (originalPath.extension() == L".png" || originalPath.extension() == L".PNG")
+        fileType = PNG;
+    else if (originalPath.extension() == L".tga" || originalPath.extension() == L".TGA")
+        fileType = TGA;
+    if (fileType != None) {
+        FILE* file = _wfopen(originalPath.c_str(), L"rb");
+        if (!file)
+            return nullptr;
+        fseek(file, 0, SEEK_END);
+        auto fileSize = ftell(file);
+        fseek(file, 0, SEEK_SET);
+        unsigned char* fileData = new unsigned char[fileSize];
+        fread(fileData, fileSize, 1, file);
+        fclose(file);
+        if (fileType == PNG) {
+            if (!png_sig_cmp(fileData, 0, 8)) {
+                unsigned char* tga = PngToTga(fileData, fileSize);
+                if (tga) {
+                    delete[] fileData;
+                    fileData = tga;
+                }
+            }
+            else
+                return nullptr;
+        }
+        auto bitmap = CallAndReturn<HBITMAP, 0x54EFB0>(fileData);
+        delete[] fileData;
+        return bitmap;
+    }
+    return nullptr;
+}
+
+static int MyBadgeExists(wchar_t* filepath, int mode) {
+    if (!_waccess(filepath, 0))
+        return 0;
+    auto len = wcslen(filepath);
+    if (len >= 4) {
+        wchar_t* ext = &filepath[len - 4];
+        if (*ext == L'.') {
+            static wchar_t originalExt[8];
+            wcscpy(originalExt, ext);
+            static wchar_t const* exts[5] = { L".tga", L".png", L".bmp", L".jpg", L".tpi" };
+            for (size_t i = 0; i < 5; i++) {
+                wcscpy(ext, exts[i]);
+                if (!_waccess(filepath, 0))
+                    return 0;
+            }
+            wcscpy(ext, originalExt);
+        }
+    }
+    return -1;
+}
+
+unsigned int gBadgesBigBadgeDataSize = 0;
+
+bool METHOD OnBadgesBigGetFileData(void* b, DUMMY_ARG, const wchar_t* filepath, void** outData, unsigned int* outDataSize, int bDecompress) {
+    auto result = CallMethodAndReturn<bool, 0x408160>(b, filepath, outData, outDataSize, bDecompress);
+    gBadgesBigBadgeDataSize = *outDataSize;
+    return result;
+}
+
+HBITMAP BitmapFromPNGorTGA(unsigned char *data) {
+    if (!png_sig_cmp(data, 0, 8)) {
+        unsigned char* fileData = PngToTga(data, gBadgesBigBadgeDataSize);
+        if (fileData) {
+            auto bitmap = CallAndReturn<HBITMAP, 0x54EFB0>(fileData);
+            delete[] fileData;
+            return bitmap;
+        }
+    }
+    return CallAndReturn<HBITMAP, 0x54EFB0>(data);
+}
+
+void METHOD TestFixtures(void *dlg) {
+    patch::SetUShort(0x444C10, 0xA164);
+    patch::SetUInt(0x444C12, 0);
+    *raw_ptr<UInt>(dlg, 5452) = 1;
+    for (UInt i = 1; i <= 207; i++) {
+        for (UInt l = 0; l < 32; l++) {
+            void *league = CallAndReturn<void *, 0x4FE6E0>((i << 24) | 0x10000 | l);
+            if (league) {
+                *raw_ptr<UInt>(dlg, 5456) = UInt(league);
+                *raw_ptr<UInt>(dlg, 5464) = UInt(league) + 0x73C;
+                CallMethod<0x444C10>(dlg);
+            }
+        }
+    }
+    patch::RedirectJump(0x444C10, TestFixtures);
 }
 
 void PatchEditor(FM::Version v) {
@@ -908,6 +1215,31 @@ void PatchEditor(FM::Version v) {
         patch::SetPointer(0x59F2A9 + 1, &eyeColors[std::size(eyeColors)]);
         patch::SetPointer(0x59F2B8 + 1, &eyeColors[0]);
 
+        // skin types
+        patch::SetUInt(0x681C48, std::size(skinTypes));
+        patch::SetPointer(0x418755 + 2, skinTypes);
+        patch::SetPointer(0x41880C + 3, skinTypes);
+        patch::SetPointer(0x41FED5 + 3, skinTypes);
+        patch::SetPointer(0x486D81 + 3, skinTypes);
+        patch::SetPointer(0x486F3F + 3, skinTypes);
+        patch::SetPointer(0x4B6B8F + 3, skinTypes);
+        patch::SetPointer(0x6D0A78, skinTypes); // .data:006D0A78 dd offset gFifaVariationFaceTypes
+        patch::SetPointer(0x59F25C + 1, &skinTypes[0]);
+        patch::SetPointer(0x59F257 + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59F269 + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59F278 + 1, &skinTypes[0]);
+        patch::SetPointer(0x59FBD9 + 1, &skinTypes[0]);
+        patch::SetPointer(0x59FBD4 + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59FBEA + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59FBF5 + 1, &skinTypes[0]);
+        patch::SetPointer(0x59FE76 + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59FE8C + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59FE7B + 1, &skinTypes[0]);
+        patch::SetPointer(0x59FEA2 + 1, &skinTypes[0]);
+        patch::SetPointer(0x59FE9D + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59FEB3 + 1, &skinTypes[std::size(skinTypes)]);
+        patch::SetPointer(0x59FEBE + 1, &skinTypes[0]);
+
         patch::RedirectJump(0x4FB290, GetAppearanceAssetCount);
 
         // starheads eye colors
@@ -958,5 +1290,24 @@ void PatchEditor(FM::Version v) {
 
         patch::SetPointer(0x4FAE90 + 2, databaseRestoreFolders2);
         patch::SetUChar(0x4FAEBB + 2, UChar((std::size(databaseRestoreFolders2) - 1) * 4));
+
+        // New Languages
+        patch::RedirectJump(0x4FB6A5, CheckLanguageID_1);
+        patch::RedirectJump(0x413C74, CheckLanguageID_2);
+        patch::RedirectJump(0x48A1B9, CheckLanguageID_3);
+        memset(gLanguageNameHashes, 0, LANGUAGE_COUNT * 4);
+        patch::RedirectJump(0x4FB690, GetLanguageName);
+
+        // PNG badges
+        patch::RedirectJump(0x54F2C0, MyReadClubBadge);
+        patch::RedirectCall(0x5A5004, MyBadgeExists);
+        patch::RedirectCall(0x4BC6F9, BitmapFromPNGorTGA);
+        patch::RedirectCall(0x4BC6EB, OnBadgesBigGetFileData);
+        //patch::SetPointer(0x4BCB2E + 1, L"%08x.png");
+
+#ifdef EDITOR_TEST_FIXTURES
+        //patch::Nop(0x444FAB, 5);
+        patch::RedirectJump(0x444C10, TestFixtures);
+#endif
     }
 }

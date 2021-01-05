@@ -8,6 +8,7 @@
 #include "Random.h"
 #include "Settings.h"
 #include "FifamCompetition.h"
+#include "Competitions.h"
 
 using namespace plugin;
 using namespace std::filesystem;
@@ -116,6 +117,49 @@ String GetUserKitNumberTexturePath(String const &directory, UInt compId, UInt cl
             return result;
         if (FmFileImageExists(directory + L"\\" + clubIdStr, result)) // 002D000E
             return result;
+        if (compId != 0) {
+            CDBTeam* team = GetTeamByUniqueID(clubId);
+            if (team) {
+                UInt teamLeagueID = *raw_ptr<UInt>(team, 0x984);
+                if (teamLeagueID > 0) {
+                    CDBLeague* league = GetLeague(teamLeagueID);
+                    if (league && league->GetCompID().countryId >= 1 && league->GetCompID().countryId <= 207) {
+                        Bool canUseLeagueNumbers = false;
+                        UChar countryId = 0;
+                        if (compId < 0xFFFF)
+                            countryId = (compId >> 8) & 0xFF;
+                        else
+                            countryId = (compId >> 24) & 0xFF;
+                        if (countryId >= 249 && countryId <= 254)
+                            canUseLeagueNumbers = true;
+                        if (!canUseLeagueNumbers && countryId != 255) {
+                            UChar compType = 0;
+                            if (compId < 0xFFFF)
+                                compType = compId & 0xFF;
+                            else
+                                compType = (compId >> 16) & 0xFF;
+                            if (compType == COMP_FA_CUP || compType == COMP_LE_CUP || compType == COMP_SUPERCUP || compType == COMP_RELEGATION)
+                                canUseLeagueNumbers = true;
+                        }
+                        if (canUseLeagueNumbers) {
+                            if (league->GetLevel() == 0) {
+                                CCompID newTeamLeagueID = league->GetCompID();
+                                newTeamLeagueID.type = COMP_LEAGUE;
+                                newTeamLeagueID.index = 0;
+                                teamLeagueID = newTeamLeagueID.ToInt();
+                            }
+                            String compIdStr = Utils::Format(L"%08X", teamLeagueID);
+                            if (FmFileImageExists(directory + L"\\" + compIdStr + L"_" + clubIdStr + kitTypeStr, result)) // 2D010000_002D000E_h
+                                return result;
+                            if (FmFileImageExists(directory + L"\\" + compIdStr + L"_" + clubIdStr, result)) // 2D010000_002D000E
+                                return result;
+                            if (FmFileImageExists(directory + L"\\" + compIdStr + L"_" + Utils::Format(L"%d", colorId), result)) // 2D010000_1
+                                return result;
+                        }
+                    }
+                }
+            }
+        }
     }
     else if (compId != 0) {
         String compIdStr = Utils::Format(compId < 0xFFFF ? L"%04X_%d" : L"%08X_%d", compId, colorId); // 2D010000_1
@@ -227,10 +271,14 @@ void METHOD OnGenerateKit(void *kitGen, DUMMY_ARG, void *kitDesc, void *kitParam
     void *match = *(void **)0x3124748;
     if (match) {
         CallMethod<0xE80190>(match, &gCurrCompId);
-        if (gCurrCompId > 0xFFFF) {
-            UInt compRegion = (gCurrCompId >> 24) & 0xFF;
-            if (compRegion <= 0 || compRegion > 207)
-                gCurrCompId = (gCurrCompId >> 16) & 0xFFFF;
+        if (gCurrCompId != 0) {
+            if (IsCompetitionLeagueSplit_UInt(gCurrCompId))
+                gCurrCompId = GetCompetitionLeagueSplitMainLeague(gCurrCompId);
+            if (gCurrCompId > 0xFFFF) {
+                UInt compRegion = (gCurrCompId >> 24) & 0xFF;
+                if (compRegion <= 0 || compRegion > 207)
+                    gCurrCompId = (gCurrCompId >> 16) & 0xFFFF;
+            }
         }
         WriteToLog(Utils::Format(L"OnGenerateKit: gCurrCompId=%08X", gCurrCompId));
     }

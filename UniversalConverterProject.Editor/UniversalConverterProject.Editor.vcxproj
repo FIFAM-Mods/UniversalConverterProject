@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;E:\Projects\fifam\fmapi;E:\Projects\fifam\generic;E:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;E:\Projects\fifam\fmapi;E:\Projects\fifam\generic;E:\Projects\UniversalConverterProject\ScriptCompiler;E:\Projects\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -88,8 +88,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
-      <AdditionalLibraryDirectories>E:\Projects\fifam\output\libs;E:\Projects\UniversalConverterProject\ScriptCompiler;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>generic.lib;fmapi.lib;UCPCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Projects\fifam\output\libs;E:\Projects\UniversalConverterProject\ScriptCompiler;E:\Projects\shared\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>generic.lib;fmapi.lib;UCPCompiler.lib;zlib.lib;libpng.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent>
@@ -107,6 +107,7 @@
     <ClCompile Include="FemaleNames.cpp" />
     <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
     <ClCompile Include="Formations.cpp" />
+    <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ParameterFiles.cpp" />
@@ -125,6 +126,7 @@
     <ClInclude Include="FemaleNames.h" />
     <ClInclude Include="FixedArchivesReadingForEditor.h" />
     <ClInclude Include="Formations.h" />
+    <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="LowestLeagues.h" />
     <ClInclude Include="ParameterFiles.h" />
     <ClInclude Include="RendererHook.h" />

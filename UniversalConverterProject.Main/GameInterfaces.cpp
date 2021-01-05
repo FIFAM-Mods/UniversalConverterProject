@@ -236,7 +236,7 @@ void CDBCompetition::SortTeams(Function<Bool(CDBTeam *, CDBTeam *)> const &sorte
 void CDBCompetition::RandomlySortTeams(UInt startPos, UInt numTeams) {
     auto numRegisteredTeams = GetNumOfRegisteredTeams();
     if (numRegisteredTeams > 1 && startPos < numRegisteredTeams) {
-        if (numTeams == 0 || (numTeams - startPos) > numRegisteredTeams)
+        if (numTeams == 0 || ((startPos + numTeams) > numRegisteredTeams))
             numTeams = numRegisteredTeams - startPos;
         if (numTeams > 1) {
             if (numTeams == 2) {
@@ -315,6 +315,14 @@ CCompID CDBCompetition::GetSuccessor(Int index) {
 
 unsigned int CDBCompetition::GetLevel() {
     return plugin::CallVirtualMethodAndReturn<unsigned int, 18>(this);
+}
+
+unsigned int CDBCompetition::GetRoundType() {
+    return CallMethodAndReturn<unsigned int, 0xF81CF0>(this);
+}
+
+int CDBCompetition::GetTeamIndex(CTeamIndex const& teamId) {
+    return CallMethodAndReturn<int, 0xF85D40>(this, &teamId);
 }
 
 void CDBLeague::SetStartDate(CJDate date) {

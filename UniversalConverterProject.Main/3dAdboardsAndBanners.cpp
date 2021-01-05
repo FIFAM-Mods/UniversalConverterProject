@@ -5,6 +5,7 @@
 #include "shared.h"
 #include "Settings.h"
 #include "GfxCoreHook.h"
+#include "Competitions.h"
 
 using namespace plugin;
 
@@ -71,6 +72,8 @@ Bool GetAdboardsTextures() {
     String compIdStr;
     String compIdShortStr;
     if (compId != 0) {
+        if (IsCompetitionLeagueSplit_UInt(compId))
+            compId = GetCompetitionLeagueSplitMainLeague(compId);
         compIdStr = Format(L"%08X", compId);
         compIdShortStr = Format(L"%04X", (compId >> 16) & 0xFFFF);
     }
@@ -437,7 +440,7 @@ void InstallAdBoardsAndBanners3dPatches() {
     patch::SetPointer(GfxCoreAddress(0x42CF13 + 2), &NUM_ADBOARDS_DOUBLE);
     //static Double ADBOARDS_GENERIC_TIME = 60.0 * 3.0 / 16.0;
     //patch::SetPointer(GfxCoreAddress(0x42CE89 + 2), &ADBOARDS_GENERIC_TIME);
-    patch::SetPointer(GfxCoreAddress(0x55DD1C), OnUpdatePlacerInstance);
+    //patch::SetPointer(GfxCoreAddress(0x55DD1C), OnUpdatePlacerInstance);
 
     patch::SetUChar(GfxCoreAddress(0x42CE0D), 0xEB);
     patch::RedirectCall(GfxCoreAddress(0x20DA72), OnProcessRmAdboards);

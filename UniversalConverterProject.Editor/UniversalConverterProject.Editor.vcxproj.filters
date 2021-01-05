@@ -17,6 +17,7 @@
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
+    <ClCompile Include="GenerateBigIdx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -34,5 +35,6 @@
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />
+    <ClInclude Include="GenerateBigIdx.h" />
   </ItemGroup>
 </Project>
