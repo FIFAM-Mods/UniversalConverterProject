@@ -120,7 +120,7 @@ String GetUserKitNumberTexturePath(String const &directory, UInt compId, UInt cl
         if (compId != 0) {
             CDBTeam* team = GetTeamByUniqueID(clubId);
             if (team) {
-                UInt teamLeagueID = *raw_ptr<UInt>(team, 0x984);
+                UInt teamLeagueID = *raw_ptr<UInt>(team, 0x974);
                 if (teamLeagueID > 0) {
                     CDBLeague* league = GetLeague(teamLeagueID);
                     if (league && league->GetCompID().countryId >= 1 && league->GetCompID().countryId <= 207) {
@@ -138,7 +138,7 @@ String GetUserKitNumberTexturePath(String const &directory, UInt compId, UInt cl
                                 compType = compId & 0xFF;
                             else
                                 compType = (compId >> 16) & 0xFF;
-                            if (compType == COMP_FA_CUP || compType == COMP_LE_CUP || compType == COMP_SUPERCUP || compType == COMP_RELEGATION)
+                            if (compType == COMP_FA_CUP || compType == COMP_LE_CUP || compType == COMP_SUPERCUP || compType == COMP_RELEGATION || compType == COMP_FRIENDLY)
                                 canUseLeagueNumbers = true;
                         }
                         if (canUseLeagueNumbers) {
@@ -855,9 +855,12 @@ void METHOD OnGenerateDynamicTextures(void *dynTextures, DUMMY_ARG, void *genDat
         UInt teamId = (i == 0) ? homeTeamId : awayTeamId;
         UChar kitType = (i == 0) ? homeTeamKitType : awayTeamKitType;
         UChar kitNumberColor = gfxGetVarInt((i == 0) ? "HOME_JNUMCOLOR" : "AWAY_JNUMCOLOR", 1);
-        Bool disableName = gfxGetVarInt((i == 0) ? "HOME_YOUTH" : "AWAY_YOUTH", 0);
-        if (!disableName && isFriendly)
-            disableName = true;
+        Bool disableName = false;
+        if (!Settings::GetInstance().getJerseyNamesInAllMatches()) {
+            Bool disableName = gfxGetVarInt((i == 0) ? "HOME_YOUTH" : "AWAY_YOUTH", 0);
+            if (!disableName && isFriendly)
+                disableName = true;
+        }
         for (int k = 0; k < 2; k++) {
             team_kit_desc *desc = nullptr;
             if (teamId > 0)
@@ -1645,6 +1648,9 @@ void InstallKits_FM13() {
 
     // custom jersey number size and offset
     patch::RedirectCall(GfxCoreAddress(0x210065), SetupJerseyNumberHotspot);
+
+    // jersey name color 64 fix
+    patch::SetUChar(GfxCoreAddress(0x23F933 + 2), 65);
 
     // referee kits
     patch::RedirectCall(GfxCoreAddress(0x23FEA6), OnGetRefKitId);

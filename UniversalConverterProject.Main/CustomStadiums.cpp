@@ -4,16 +4,32 @@
 #include "3dAdboardsAndBanners.h"
 #include "Settings.h"
 #include "Utils.h"
+#include "Random.h"
 
 unsigned int gCustomStadiumTeamUID = 0;
 char const *gFifaTemplateFilename = "data\\stadium\\FIFA\\template.xml";
 bool gResourceCacheEnabled = true;
 UInt gCurrentLighting = 0;
 Float gStadiumScaling[3] = { 1.0f, 1.0f, 1.0f };
+UInt gStadiumIntroSceneId = 0;
+bool gTrainingStadium = false;
 
 void *shapeBannersHome = nullptr;
 void *shapeBannersAway = nullptr;
 void *modelShadow = nullptr;
+
+String &GetCustomStadiumFolder() {
+    static String stadiumFolder;
+    return stadiumFolder;
+}
+
+bool IsCustomStadiumLoaded() {
+    void *stadiumEngine = (void *)GfxCoreAddress(0xD49E78);
+    void *origStadium = raw_ptr<void>(stadiumEngine, 0x1008);
+    if (*raw_ptr<UChar>(origStadium, 4))
+        return true;
+    return false;
+}
 
 bool METHOD ReadXmlDataForStadium(void *orgStadScene, DUMMY_ARG, char (*outFileNames)[256], unsigned int stadiumId) {
     gCustomStadiumTeamUID = 0;
@@ -97,35 +113,21 @@ void **OnLoadEaglXSceneTexture(void **outRes, const WideChar *filename, void *re
 void GetStadiumExtraFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId,
     Char const *fifaStadFilenameFormat, Char const *fifaStadFilenameFormatDefault, Char const *extension = nullptr) {
     //Error(fifaStadFilenameFormat, stadiumId, gCurrentLighting);
-    if (stadiumId == 999) {
-        void *stadiumEngine = (void *)GfxCoreAddress(0xD49E78);
-        void *origStadium = raw_ptr<void>(stadiumEngine, 0x1008);
-        if (*raw_ptr<UChar>(origStadium, 4)) {
-            void *match = *(void **)0x3124748;
-            if (match) {
-                CTeamIndex hostTeamId;
-                CallMethod<0xE814C0>(match, &hostTeamId);
-                if (hostTeamId.countryId) {
-                    CDBTeam *hostTeam = GetTeam(hostTeamId);
-                    if (hostTeam) {
-                        bool exists = false;
-                        static Char tmpFilename[260];
-                        sprintf(tmpFilename, fifaStadFilenameFormat, hostTeam->GetTeamUniqueID(), gCurrentLighting);
-                        if (FmFileExists(tmpFilename))
-                            exists = true;
-                        else if (fifaStadFilenameFormatDefault) {
-                            sprintf(tmpFilename, fifaStadFilenameFormatDefault, hostTeam->GetTeamUniqueID());
-                            if (FmFileExists(tmpFilename))
-                                exists = true;
-                        }
-                        if (exists) {
-                            strcpy(dst, tmpFilename);
-                            return;
-                        }
-
-                    }
-                }
-            }
+    if (stadiumId == 999 && IsCustomStadiumLoaded()) {
+        bool exists = false;
+        static Char tmpFilename[260];
+        StringA stadiumFolder = Utils::WtoA(GetCustomStadiumFolder());
+        sprintf(tmpFilename, fifaStadFilenameFormat, stadiumFolder.c_str(), gCurrentLighting);
+        if (FmFileExists(tmpFilename))
+            exists = true;
+        else if (fifaStadFilenameFormatDefault) {
+            sprintf(tmpFilename, fifaStadFilenameFormatDefault, stadiumFolder.c_str());
+            if (FmFileExists(tmpFilename))
+                exists = true;
+        }
+        if (exists) {
+            strcpy(dst, tmpFilename);
+            return;
         }
     }
     if (extension)
@@ -135,33 +137,33 @@ void GetStadiumExtraFilenameFor3dMatch(Char *dst, Char const *format, UInt stadi
 }
 
 void OnGetFlagsFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
-    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\flags_%d.loc", "data\\stadium\\FIFA\\%08X\\flags.loc");
+    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\flags_%d.loc", "%s\\flags.loc");
 }
 
 void OnGetLightsFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
-    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\lights_%d.loc", "data\\stadium\\FIFA\\%08X\\lights.loc");
+    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\lights_%d.loc", "%s\\lights.loc");
 }
 
 void OnGetCollisionFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
-    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\collision_%d.bin", "data\\stadium\\FIFA\\%08X\\collision.bin");
+    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\collision_%d.bin", "%s\\collision.bin");
 }
 
 void OnGetEffectsFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
-    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\effects_%d.txt", "data\\stadium\\FIFA\\%08X\\effects.txt");
+    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\effects_%d.txt", "%s\\effects.txt");
 }
 
 Char gShadowFilename[256];
 
 void OnGetShadowFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
-    GetStadiumExtraFilenameFor3dMatch(gShadowFilename, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\shadow_%d.shd", "data\\stadium\\FIFA\\%08X\\shadow.shd");
+    GetStadiumExtraFilenameFor3dMatch(gShadowFilename, format, stadiumId, lightingId, "%s\\shadow_%d.shd", "%s\\shadow.shd");
 }
 
 void OnGetCovmapFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId, Char const *extension) {
-    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\covmap_%d.fsh", "data\\stadium\\FIFA\\%08X\\covmap.fsh", extension);
+    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\covmap_%d.fsh", "%s\\covmap.fsh", extension);
 }
 
 void OnGetFxFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
-    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "data\\stadium\\FIFA\\%08X\\fx_%d.big", "data\\stadium\\FIFA\\%08X\\fx.big");
+    GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\fx_%d.big", "%s\\fx.big");
 }
 
 void *METHOD OnSetupCustomStadiumCrowdEffects(CDBTeam *team, DUMMY_ARG, void *a2) {
@@ -174,6 +176,8 @@ void *METHOD OnSetupCustomStadiumCrowdEffects(CDBTeam *team, DUMMY_ARG, void *a2
 }
 
 void METHOD OnOrigStadiumLoad(void *origStadium, DUMMY_ARG, const WideChar *stadiumFolder, UChar lighting) {
+    GetCustomStadiumFolder() = stadiumFolder;
+    gTrainingStadium = wcsstr(stadiumFolder, L"\\FIFA\\00000000") != 0;
     gCurrentLighting = lighting;
     gStadiumScaling[0] = 1.0f;
     gStadiumScaling[1] = 1.0f;
@@ -219,6 +223,18 @@ void METHOD OnOrigStadiumLoad(void *origStadium, DUMMY_ARG, const WideChar *stad
                 }
             }
         }
+        WideChar introStr[512];
+        GetPrivateProfileStringW(L"MAIN", L"INTRO", L"", introStr, 512, filename);
+        if (introStr[0] != L'\0') {
+            String istr = introStr;
+            auto iparts = Utils::Split(istr, L',');
+            if (!iparts.empty()) {
+                if (iparts.size() == 1)
+                    gStadiumIntroSceneId = Utils::SafeConvertInt<Int>(iparts[0]);
+                else
+                    gStadiumIntroSceneId = Utils::SafeConvertInt<Int>(iparts[Random::Get(0, iparts.size() - 1)]);
+            }
+        }
     }
 
     _snwprintf(filename, std::size(filename), L"%s\\shadow_%d.o", stadiumFolder, lighting);
@@ -258,6 +274,9 @@ void METHOD OnOrigStadiumDestroy(void *origStadium) {
 }
 
 UInt METHOD OnGetTeamIdForStadium(CDBTeam *team) {
+    void *match = *(void **)0x3124748;
+    if (match && CallMethodAndReturn<int, 0xE81510>(match) == 2)
+        return 0;
     if (CallMethodAndReturn<Bool, 0xF705E0>(CallMethodAndReturn<void *, 0xECFFC0>(team))) {
         CDBGame *game = CDBGame::GetInstance();
         if (game) {
@@ -274,10 +293,25 @@ UInt METHOD OnGetTeamIdForStadium(CDBTeam *team) {
     return CallMethodAndReturn<UInt, 0xEC9440>(team);
 }
 
+UInt METHOD OnGetTeamIdForStadium2(CDBTeam *team) {
+    void *match = *(void **)0x3124748;
+    if (match && CallMethodAndReturn<int, 0xE81510>(match) == 2)
+        return 0;
+    return CallMethodAndReturn<UInt, 0xEC9440>(team);
+}
+
+void METHOD OnAddCustomStadiumPath(void *t, DUMMY_ARG, void *a, void *b) {
+    void *match = *(void **)0x3124748;
+    WideChar const *stadiumPath = (WideChar const *)(UInt(a) + 12);
+    if (!wcsstr(stadiumPath, L"FIFA\\00000000\\stadium_") || !match || CallMethodAndReturn<int, 0xE81510>(match) == 2)
+        CallMethod<0x441EE0>(t, a, b);
+}
+
 UInt METHOD OnGetMatchStadiumType(void *t) {
-    auto result = CallMethodAndReturn<UInt, 0xE7FDD0>(t);
-    Error("on_CDBOneMatch__GetFifaTeamType: %d", result);
-    return result;
+    void *match = *(void **)0x3124748;
+    if (match && CallMethodAndReturn<int, 0xE81510>(match) == 2)
+        return 0;
+    return CallMethodAndReturn<UInt, 0xE7FDD0>(t);
 }
 
 void METHOD OnReadFifaStadiumIdFromDb(void *t, DUMMY_ARG, unsigned int *out) {
@@ -320,7 +354,7 @@ void RenderStadiumShadow() {
                 CallDynGlobal(GfxCoreAddress(0x451540), GfxCoreAddress(0xABE9D4), 0.53f, 90.0f);
                 float transform[16];
                 CallMethodDynGlobal(GfxCoreAddress(0x2D8C50), transform, 1.0f, 1.0f, 1.0f, 1.0f);
-                transform[13] = 20.0f;
+                //transform[13] = 20.0f;
                 //*(UInt *)GfxCoreAddress(0x64C898) = 123;
                 CallMethodDynGlobal(GfxCoreAddress(0x41FB60), modelShadow, transform);
                 //CallMethodDynGlobal(GfxCoreAddress(0x2E2230), modelShadowModel, transform);
@@ -383,6 +417,89 @@ void METHOD OnSetCustomStadiumScale(void *m, DUMMY_ARG, float x, float y, float 
     CallMethodDynGlobal(GfxCoreAddress(0x2D8C50), m, gStadiumScaling[0], gStadiumScaling[1], gStadiumScaling[2], w);
 }
 
+Int METHOD OnGetStadiumIntroID(void *vars, DUMMY_ARG, Char const *varname, Int a3) {
+    Int stadiumId = gfxGetVarInt(varname, a3);
+    if (gStadiumIntroSceneId != 0) {
+        if (stadiumId == 999) {
+            void *stadiumEngine = (void *)GfxCoreAddress(0xD49E78);
+            void *origStadium = raw_ptr<void>(stadiumEngine, 0x1008);
+            if (*raw_ptr<UChar>(origStadium, 4))
+                stadiumId = gStadiumIntroSceneId;
+        }
+    }
+    return stadiumId;
+}
+
+int METHOD OnGetIntTrainingStadium(void *t, DUMMY_ARG, const char *varname, int varoption) {
+    Int stadiumId = gfxGetVarInt("STADIUM", 1);
+    if (stadiumId == 999) {
+        if (IsCustomStadiumLoaded()) {
+            if (gTrainingStadium)
+                return 39;
+        }
+    }
+    return stadiumId;
+}
+
+void OnSetupRenderCamera(float cameraLensAngle, float nearClip, float farClip) {
+    CallDynGlobal(GfxCoreAddress(0x453750), cameraLensAngle, nearClip, 150000.0f);
+}
+
+int METHOD OnGetDayOfTimeForStadium(void *t) {
+    void *match = *(void **)0x3124748;
+    if (match && CallMethodAndReturn<int, 0xE81510>(match) == 2) {
+        if (Random::Get(1, 100) > 50)
+            return 6;
+        return 0;
+    }
+    return CallMethodAndReturn<int, 0x1494FBA>(t);
+}
+
+char METHOD OnCheckStadiumWeatherForTeamType(void *t) {
+    void *match = *(void **)0x3124748;
+    if (match && CallMethodAndReturn<int, 0xE81510>(match) == 2)
+        return true;
+    return CallMethodAndReturn<char, 0xF72D70>(t);
+}
+
+bool gMatchPreviewSwapMatchHomeAway = false;
+
+void * METHOD OnGetMatchForPreview(void *matchList, DUMMY_ARG, unsigned int index) {
+    unsigned int numMatches = CallMethodAndReturn<unsigned int, 0xE884A0>(matchList);
+    if (index >= numMatches) {
+        index -= numMatches;
+        gMatchPreviewSwapMatchHomeAway = true;
+    }
+    else
+        gMatchPreviewSwapMatchHomeAway = false;
+    return CallMethodAndReturn<void *, 0xE884B0>(matchList, index);
+}
+
+unsigned int METHOD OnGetMatchPreviewNumMatches(void *matchList) {
+    return CallMethodAndReturn<unsigned int, 0xE884A0>(matchList) * 2;
+}
+
+CTeamIndex *METHOD OnGetMatchPreviewHomeTeamID(void *match, DUMMY_ARG, CTeamIndex *teamId) {
+    if (gMatchPreviewSwapMatchHomeAway)
+        return CallMethodAndReturn<CTeamIndex *, 0xE7FD00>(match, teamId);
+    else
+        return CallMethodAndReturn<CTeamIndex *, 0xE7FCF0>(match, teamId);
+}
+
+CTeamIndex *METHOD OnGetMatchPreviewAwayTeamID(void *match, DUMMY_ARG, CTeamIndex *teamId) {
+    if (gMatchPreviewSwapMatchHomeAway)
+        return CallMethodAndReturn<CTeamIndex *, 0xE7FCF0>(match, teamId);
+    else
+        return CallMethodAndReturn<CTeamIndex *, 0xE7FD00>(match, teamId);
+}
+
+void *METHOD OnCopyMatchForMatchPreview(void *matchList, DUMMY_ARG, unsigned int index, void *outMatch) {
+    unsigned int numMatches = CallMethodAndReturn<unsigned int, 0xE884A0>(matchList);
+    if (index >= numMatches)
+        index -= numMatches;
+    return CallMethodAndReturn<void *, 0xE8BB20>(matchList, index, outMatch);
+}
+
 void PatchCustomStadiums(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         // movzx   ebp, al  >>  mov ebp, eax
@@ -391,15 +508,28 @@ void PatchCustomStadiums(FM::Version v) {
         // fifa stadium check
         patch::RedirectCall(0x65D772, GetTeamStadiumId);
         // remove generic FIFA stadiums
-        patch::Nop(0x442BD3, 1);
-        patch::SetUChar(0x442BD3 + 1, 0xE9);
+        patch::RedirectJump(0x442B43, (void *)0x442D3F);
+        // default stadium
+        patch::RedirectCall(0x4422E3, OnAddCustomStadiumPath);
+        patch::RedirectCall(0x4422F9, OnGetMatchStadiumType);
+        // default stadium random time of day
+        patch::RedirectCall(0x442822, OnGetDayOfTimeForStadium);
+        patch::RedirectCall(0x44284D, OnCheckStadiumWeatherForTeamType);
         //
         patch::RedirectCall(0x442B25, OnSetupCustomStadiumCrowdEffects);
 
         patch::RedirectCall(0x4422B6, OnGetTeamIdForStadium);
+        patch::RedirectCall(0x4423F9, OnGetTeamIdForStadium2);
 
         // weather fix
         patch::SetUChar(0x44231D + 1, 0x97);
+
+        // weather fix for training ground matches
+        patch::RedirectCall(0xA942E6, OnGetMatchForPreview);
+        patch::RedirectCall(0xA94322, OnGetMatchPreviewNumMatches);
+        patch::RedirectCall(0xA942F4, OnGetMatchPreviewHomeTeamID);
+        patch::RedirectCall(0xA94304, OnGetMatchPreviewAwayTeamID);
+        patch::RedirectCall(0xA94340, OnCopyMatchForMatchPreview);
 
         if (!Settings::GetInstance().getEnableDefaultStadiums()) {
             patch::RedirectCall(0xF80AC7, OnReadFifaStadiumIdFromDb);
@@ -456,4 +586,14 @@ void InstallCustomStadiums3DPatches() {
     const float StadiumFarClip = 150000.0f;
     patch::SetFloat(GfxCoreAddress(0x630DE4), StadiumFarClip);
     patch::SetFloat(GfxCoreAddress(0x630DEC), StadiumFarClip);
+    patch::RedirectCall(GfxCoreAddress(0x1E833F), OnSetupRenderCamera);
+    patch::RedirectCall(GfxCoreAddress(0x1E837F), OnSetupRenderCamera);
+
+    patch::RedirectCall(GfxCoreAddress(0x21CF80), OnGetStadiumIntroID);
+
+    patch::RedirectCall(GfxCoreAddress(0x22BB2E), OnGetIntTrainingStadium);
+    patch::RedirectCall(GfxCoreAddress(0x22BB69), OnGetIntTrainingStadium);
+    patch::RedirectCall(GfxCoreAddress(0x22FEEB), OnGetIntTrainingStadium);
+    patch::RedirectCall(GfxCoreAddress(0x233CC9), OnGetIntTrainingStadium);
+    patch::RedirectCall(GfxCoreAddress(0x2356CB), OnGetIntTrainingStadium);
 }

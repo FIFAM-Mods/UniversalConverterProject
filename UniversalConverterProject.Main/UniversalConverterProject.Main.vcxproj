@@ -43,12 +43,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>E:\Games\FIFA Manager 13\plugins\</OutDir>
+    <OutDir>D:\Games\FIFA Manager 21\plugins\</OutDir>
     <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>E:\Games\FIFA Manager 13\plugins\</OutDir>
+    <OutDir>D:\Games\FIFA Manager 21\plugins\</OutDir>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -105,6 +105,7 @@
     <ClCompile Include="Balls.cpp" />
     <ClCompile Include="Beta.cpp" />
     <ClCompile Include="Competitions.cpp" />
+    <ClCompile Include="config\Config.cpp" />
     <ClCompile Include="CustomStadiums.cpp" />
     <ClCompile Include="EABFFixes.cpp" />
     <ClCompile Include="EasyEdit.cpp" />
@@ -160,6 +161,7 @@
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Beta.h" />
     <ClInclude Include="Competitions.h" />
+    <ClInclude Include="config\Config.h" />
     <ClInclude Include="CustomStadiums.h" />
     <ClInclude Include="EABFFixes.h" />
     <ClInclude Include="EasyEdit.h" />

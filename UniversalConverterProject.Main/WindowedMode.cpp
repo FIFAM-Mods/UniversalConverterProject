@@ -417,22 +417,37 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
                             UInt currentManagerId = managers->begin[currentManager];
                             void *manager = CallAndReturn<void *, 0xEA2A00>(currentManagerId);
                             if (manager) {
-                                WideChar buf[MAX_PATH + 1];
-                                CallMethod<0xEA57A0>(0, buf, currentManagerId, 0);
-                                if (buf[0]) {
-                                    String managerFileName = buf;
-                                    Path managerPicLocalPath;
-                                    if (Utils::StartsWith(managerFileName, L"Manager01_") || Utils::StartsWith(managerFileName, L"Manager02_")) {
-                                        managerPicLocalPath = L"portraits\\Manager\\160x160";
-                                        Path managerPicFullPath = gamePath / managerPicLocalPath / (managerFileName + L".tpi");
-                                        if (exists(managerPicFullPath, ec))
-                                            remove(managerPicFullPath, ec);
-                                    }
-                                    else
-                                        managerPicLocalPath = L"portraits\\club\\160x160";
-                                    managerPicLocalPath /= (managerFileName + L".png");
-                                    if (InstallPhoto(gamePath, managerPicLocalPath, fileName)) {
-                                        Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
+                                if (CallMethodAndReturn<bool, 0xEB1600>(manager)) {
+                                    //if (currentManagerId >= 1 && currentManagerId <= 18) {
+                                    //    if (currentManagerId <= 4) {
+                                    //        Path managerPicDir = L"portraits\\Manager\\160x160";
+                                    //        UInt managerPicIndex = 0;
+                                    //        for (UInt mi = 0; mi < 100; mi++) {
+                                    //            if (!exists(managerPicDir / Format(L"ManagerCustom_%02d.png", mi))) {
+                                    //                managerPicIndex = mi;
+                                    //                break;
+                                    //            }
+                                    //        }
+                                    //        String managerPicFilename = Format(L"ManagerCustom_%02d.png", managerPicIndex);
+                                    //        Path managerPicLocalPath = managerPicDir / managerPicFilename;
+                                    //        if (InstallPhoto(gamePath, managerPicLocalPath, fileName)) {
+                                    //
+                                    //            CallMethod<0x1506B69>(managerInfo);
+                                    //            CallMethod<0x1506BC6>(managerInfo, 0, managerPicFilename.c_str());
+                                    //            Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
+                                    //        }
+                                    //    }
+                                    //}
+                                }
+                                else {
+                                    WideChar buf[MAX_PATH + 1];
+                                    CallMethod<0xEA57A0>(0, buf, currentManagerId, 0);
+                                    if (buf[0]) {
+                                        String managerFileName = buf;
+                                        Path managerPicLocalPath = L"portraits\\club\\160x160";
+                                        managerPicLocalPath /= (managerFileName + L".png");
+                                        if (InstallPhoto(gamePath, managerPicLocalPath, fileName))
+                                            Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
                                     }
                                 }
                             }
@@ -453,9 +468,8 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
                                     Path staffPicLocalPath = L"portraits\\club\\160x160";
                                     staffPicLocalPath /= (String(buf) + L".png");
                                     if (InstallPhoto(gamePath, staffPicLocalPath, fileName)) {
-                                        if (CallMethodAndReturn<Bool, 0x1102980>(staff)) {
+                                        if (CallMethodAndReturn<Bool, 0x1102980>(staff))
                                             Call<0xD32860>(*raw_ptr<void *>(screen, 0x4F0), CallMethodAndReturn<WideChar const *, 0x1102970>(staff), 4, 4);
-                                        }
                                     }
                                 }
                             }

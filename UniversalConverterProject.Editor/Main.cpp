@@ -27,7 +27,7 @@ public:
         PatchTranslation(v);
         PatchClubIDs(v);
         PatchArchivesReadingForEditor(v);
-        PatchTalentStars(v);
+        //PatchTalentStars(v);
         PatchEditorChiefExecExport(v);
         PatchLowestLeagues(v);
         PatchStaffNames(v);

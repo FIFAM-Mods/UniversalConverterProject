@@ -5,7 +5,7 @@
 
 using namespace plugin;
 
-#define LOG_NAMES
+//#define LOG_NAMES
 
 enum eNameType {
     NAME_FIRST_FEMALE = 0,

@@ -73,7 +73,6 @@ struct StadiumData {
     Float pitchBrightnessOvercast = 0.0f;
     UInt pitchColorNight = 0;
     Float pitchBrightnessNight = 0.0f;
-    UInt venueId = 0; // TODO: remove this
     Bool enableTrack = false;
 };
 
@@ -549,11 +548,11 @@ UInt METHOD MyGetVenueId(void *stad, DUMMY_ARG, Int, Int) {
     // get CDBTeam* from CDBStadiumDevelopment
     CDBTeam *team = (CDBTeam *)(Int(stad) - 0x11F8);
     // validate CDBTeam*
-    if (*raw_ptr<UInt>(team) == 0x24A370C) {
-        auto customData = GetTeamStadiumData(team->GetTeamUniqueID(), 0);
-        if (customData)
-            return customData->venueId;
-    }
+   // if (*raw_ptr<UInt>(team) == 0x24A370C) {
+   //     auto customData = GetTeamStadiumData(team->GetTeamUniqueID(), 0);
+   //     if (customData)
+   //         return customData->venueId;
+   // }
     return 0;
 }
 

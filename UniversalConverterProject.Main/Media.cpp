@@ -550,19 +550,19 @@ void OnSetupNewspaper(UInt countryId, Char *dst) {
         break;
     case FifamCompRegion::England:
         metricId = METRIC_UNITED_KINGDOM;
-       break;
+        break;
     case FifamCompRegion::France:
         metricId = METRIC_FRANCE;
-       break;
+        break;
     case FifamCompRegion::Germany:
         metricId = METRIC_GERMANY;
-       break;
+        break;
     case FifamCompRegion::Italy:
         metricId = METRIC_ITALY;
-       break;
+        break;
     case FifamCompRegion::Spain:
         metricId = METRIC_SPAIN;
-       break;
+        break;
     case FifamCompRegion::Switzerland:
         metricId = METRIC_SWITHERLAND;
     }
@@ -652,6 +652,49 @@ Char *GetScreenNameWeekTransfers() {
     return buf;
 }
 
+void *g07MatchComment = nullptr;
+
+void *METHOD OnCreate07MatchCommentBadge(void *t, DUMMY_ARG, char const *name) {
+    *raw_ptr<void *>(t, 0xAB8) = CallMethodAndReturn<void *, 0xD44240>(t, "TbStadium");
+    return CallMethodAndReturn<void *, 0xD44240>(t, name);
+}
+
+void METHOD OnUpdate07MatchComment(void *t) {
+    g07MatchComment = t;
+    CallMethod<0xA8B2F0>(t);
+    g07MatchComment = nullptr;
+}
+
+CDBCompetition *On07MatchCommentGetCompetition(CCompID const &compId) {
+    Bool useGenericMediaImage = true;
+    String mediaPath;
+    mediaPath = L"art_fm\\lib\\Media\\DEF\\InterviewAfterTheMatch_" + Format(L"%08X", compId.ToInt()) + L".jpg";
+    if (MediaImageExists(mediaPath))
+        useGenericMediaImage = false;
+    else {
+        if (compId.countryId >= 0xF9 && compId.countryId <= 0xFF) {
+            mediaPath = L"art_fm\\lib\\Media\\DEF\\InterviewAfterTheMatch_" + Format(L"%04X", compId.ToInt() >> 16) + L".jpg";
+            if (MediaImageExists(mediaPath))
+                useGenericMediaImage = false;
+            else {
+                mediaPath = L"art_fm\\lib\\Media\\DEF\\InterviewAfterTheMatch_" + Format(L"%04X0000", compId.ToInt() >> 16) + L".jpg";
+                if (MediaImageExists(mediaPath))
+                    useGenericMediaImage = false;
+            }
+        }
+        if (useGenericMediaImage && g07MatchComment && compId.countryId >= 1 && compId.countryId <= 207) {
+            mediaPath = L"art_fm\\lib\\Media\\" + CountryName()[compId.countryId - 1].second + L"\\InterviewAfterTheMatch.jpg";
+            if (MediaImageExists(mediaPath))
+                useGenericMediaImage = false;
+        }
+    }
+    if (useGenericMediaImage)
+        Call<0xD32860>(*raw_ptr<void *>(g07MatchComment, 0xAB8), L"art_fm\\lib\\Media\\DEF\\InterviewAfterTheMatch.jpg", 4, 4);
+    else
+        Call<0xD32860>(*raw_ptr<void *>(g07MatchComment, 0xAB8), mediaPath.c_str(), 4, 4);
+    return GetCompetition(compId);
+}
+
 void PatchMedia(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadCountriesInfo();
@@ -666,5 +709,14 @@ void PatchMedia(FM::Version v) {
         patch::RedirectJump(0x938B10, GetScreenNameWeekTransfers<2>);
         patch::RedirectJump(0x939CC0, GetScreenNameWeekTransfers<3>);
         patch::RedirectJump(0x93CCA0, GetScreenNameWeekTransfers<4>);
+
+        // C07MatchComment - replace stadium picture with media picture
+        patch::SetUInt(0xAC5E14 + 1, 0xAB8 + 4);
+        patch::SetUInt(0xAC5E1B + 1, 0xAB8 + 4);
+        patch::RedirectCall(0xA8BBDD, OnCreate07MatchCommentBadge);
+        patch::RedirectCall(0xA8BB70, OnUpdate07MatchComment);
+        patch::RedirectCall(0xA8BBA6, OnUpdate07MatchComment);
+        patch::RedirectCall(0xA8BCC4, OnUpdate07MatchComment);
+        patch::RedirectCall(0xA8B5AC, On07MatchCommentGetCompetition);
     }
 }

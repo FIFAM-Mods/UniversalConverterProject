@@ -80,7 +80,18 @@ int OnPortraitTpiCheck(wchar_t const *str, wchar_t const *substr) {
 }
 
 BOOL PortraitDimensionsCheck(int width, int height) {
-    return width > 0 && height > 0 && width < 4096 && height < 4096;
+    return width > 0 && height > 0 && width <= 4096 && height <= 4096;
+}
+
+void METHOD OnShowPortraitFileDialogForMyCareer(void *t, DUMMY_ARG, int a2, int a3, int a4) {
+    *raw_ptr<int>(t, 0x5940) = 5; // images limit
+    CallMethod<0x9ACDF0>(t, a2, a3, a4);
+}
+
+bool BadgeDimensionsCheck(void *dynShape, wchar_t const *filename) {
+    int imageDesc[5];
+    CallVirtualMethod<5>(dynShape, imageDesc, filename, 0x400000, 0, 0);
+    return imageDesc[0] > 0 && imageDesc[1] > 0 && imageDesc[0] <= 4096 && imageDesc[1] <= 4096;
 }
 
 void PatchPortraitDialog(FM::Version v) {
@@ -93,5 +104,11 @@ void PatchPortraitDialog(FM::Version v) {
         patch::RedirectCall(0x9A9749, OnPortraitTpiCheck);
         patch::RedirectJump(0x9A7820, PortraitDimensionsCheck);
         patch::SetPointer(0x9A80BD + 1, L"*.tga;*.bmp;*.png");
+        // fix: set 5 images limit for MyCareer manager photos selection
+        patch::RedirectCall(0x7CF5FB, OnShowPortraitFileDialogForMyCareer);
+
+        // club badges
+        //patch::SetPointer(0x9A0AAE + 1, L"*.tga;*.bmp;*.png");
+        //patch::RedirectCall(0x9A0E2E, BadgeDimensionsCheck);
     }
 }

@@ -942,7 +942,150 @@ bool METHOD OnMotionMgrStartScript(void *m, DUMMY_ARG, int a) {
     return result;
 }
 
+BOOL OnAiPlayerProcessControl(void *player, int a2, int a3) {
+    return false;
+}
+
+BOOL OnAiPlayerProcessControl2(void *player, int a2) {
+    return false;
+}
+
+int OnAiPlayerPerformAction(void *player, void *actions, int a3, char a4) {
+    return 0;
+}
+
+struct CamSettings {
+    Bool TCM_CAM_ENABLED = false;
+    Float TCM_CAM_HEIGHT = 45.7f;
+    Float TCM_CAM_DEPTH_DIST = 111.0f;
+    Float TCM_CAM_LENSE_ANGLE = 14.4f;
+    Float TCM_CAM_HORIZONTAL_FOLLOWING = 1.0f;
+    Float TCM_CAM_HORIZONTAL_BOUNDS = 0.77f;
+    Float TCM_CAM_DEPTH_BOUNDS = 3.5f;
+    Float TCM_CAM_NEAR_CLIP = 86.0f;
+    Float TCM_CAM_TARGET_HORIZONTAL_BOUNDS = 0.77f;
+    Float TCM_CAM_TARGET_DEPTH_BOUNDS = 0.37f;
+};
+
+CamSettings &GetCamSettings(size_t camId) {
+    static CamSettings camSettings[10];
+    if (camId >= 1 && camId <= 10)
+        return camSettings[camId - 1];
+    return camSettings[0];
+}
+
+Int GetCameraSchemeIds(Int &outMatchCameraId) {
+    static Int camSchemeToId[] = { -1, 2, 4, 1, -1, 3, -1, 5, -1, 7, 6, 8, 9, 10, -1, -1 };
+    Int scheme = CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x40350));
+    outMatchCameraId = -1;
+    if (scheme >= 0 && scheme < std::size(camSchemeToId) && camSchemeToId[scheme] != -1 && GetCamSettings(camSchemeToId[scheme]).TCM_CAM_ENABLED)
+        outMatchCameraId = camSchemeToId[scheme];
+    return scheme;
+}
+
+template<Int resultId>
+Int GetCameraSchemeId() {
+    static Int camSchemeToId[] = { -1, 2, 4, 1, -1, 3, -1, 5, -1, 7, 6, 8, 9, 10, -1, -1 };
+    Int matchCameraId = -1;
+    Int scheme = GetCameraSchemeIds(matchCameraId);
+    if (matchCameraId != -1)
+        return resultId;
+    return scheme;
+}
+
+void METHOD GetCameraParameters(void *tcmCam, DUMMY_ARG, Int a2, Int a3, Int a4, float *a5, float *a6, float *a7, float *a8, float *a9, float *a10, float *a11) {
+    Int matchCameraId = -1;
+    Int scheme = GetCameraSchemeIds(matchCameraId);
+    Float saved_TCM_CAM_HEIGHT = 0.0f;
+    Float saved_TCM_CAM_DEPTH_DIST = 0.0f;
+    Float saved_TCM_CAM_LENSE_ANGLE = 0.0f;
+    Float saved_TCM_CAM_HORIZONTAL_FOLLOWING = 0.0f;
+    Float saved_TCM_CAM_HORIZONTAL_BOUNDS = 0.0f;
+    Float saved_TCM_CAM_DEPTH_BOUNDS = 0.0f;
+    Float saved_TCM_CAM_TARGET_HORIZONTAL_BOUNDS = 0.0f;
+    Float saved_TCM_CAM_TARGET_DEPTH_BOUNDS = 0.0f;
+    Float saved_TCM_CAM_NEAR_CLIP = 0.0f;
+    if (matchCameraId != -1) {
+        auto &camSettings = GetCamSettings(matchCameraId);
+        saved_TCM_CAM_HEIGHT = *raw_ptr<Float>(tcmCam, 0x08);
+        saved_TCM_CAM_DEPTH_DIST = *raw_ptr<Float>(tcmCam, 0x0C);
+        saved_TCM_CAM_LENSE_ANGLE = *raw_ptr<Float>(tcmCam, 0x10);
+        saved_TCM_CAM_HORIZONTAL_FOLLOWING = *raw_ptr<Float>(tcmCam, 0x14);
+        saved_TCM_CAM_HORIZONTAL_BOUNDS = *raw_ptr<Float>(tcmCam, 0x18);
+        saved_TCM_CAM_DEPTH_BOUNDS = *raw_ptr<Float>(tcmCam, 0x1C);
+        saved_TCM_CAM_TARGET_HORIZONTAL_BOUNDS = *raw_ptr<Float>(tcmCam, 0x20);
+        saved_TCM_CAM_TARGET_DEPTH_BOUNDS = *raw_ptr<Float>(tcmCam, 0x24);
+        saved_TCM_CAM_NEAR_CLIP = *raw_ptr<Float>(tcmCam, 0x28);
+        *raw_ptr<Float>(tcmCam, 0x08) = camSettings.TCM_CAM_HEIGHT * 52.0f;
+        *raw_ptr<Float>(tcmCam, 0x0C) = camSettings.TCM_CAM_DEPTH_DIST * 52.0f;
+        *raw_ptr<Float>(tcmCam, 0x10) = camSettings.TCM_CAM_LENSE_ANGLE / 180.0f * 3.141499996185303f;
+        *raw_ptr<Float>(tcmCam, 0x14) = camSettings.TCM_CAM_HORIZONTAL_FOLLOWING;
+        *raw_ptr<Float>(tcmCam, 0x18) = camSettings.TCM_CAM_HORIZONTAL_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x1C) = camSettings.TCM_CAM_DEPTH_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x20) = camSettings.TCM_CAM_TARGET_HORIZONTAL_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x24) = camSettings.TCM_CAM_TARGET_DEPTH_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x28) = camSettings.TCM_CAM_NEAR_CLIP * 52.0f;
+    }
+    CallMethodDynGlobal(GfxCoreAddress(0x24BD50), tcmCam, 1, a3, a4, a5, a6, a7, a8, a9, a10, a11);
+    if (matchCameraId != -1) {
+        *raw_ptr<Float>(tcmCam, 0x08) = saved_TCM_CAM_HEIGHT;
+        *raw_ptr<Float>(tcmCam, 0x0C) = saved_TCM_CAM_DEPTH_DIST;
+        *raw_ptr<Float>(tcmCam, 0x10) = saved_TCM_CAM_LENSE_ANGLE;
+        *raw_ptr<Float>(tcmCam, 0x14) = saved_TCM_CAM_HORIZONTAL_FOLLOWING;
+        *raw_ptr<Float>(tcmCam, 0x18) = saved_TCM_CAM_HORIZONTAL_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x1C) = saved_TCM_CAM_DEPTH_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x20) = saved_TCM_CAM_TARGET_HORIZONTAL_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x24) = saved_TCM_CAM_TARGET_DEPTH_BOUNDS;
+        *raw_ptr<Float>(tcmCam, 0x28) = saved_TCM_CAM_NEAR_CLIP;
+    }
+}
+
 void Install3dPatches_FM13() {
+
+    /*
+    WideChar const *camSettingsFilename = L".\\plugins\\ucp\\camera.ini";
+    auto ReadIniFloat = [](WideChar const *section, WideChar const *key, float &outValue, WideChar const *filename) {
+        WideChar resultStr[64];
+        GetPrivateProfileStringW(section, key, L"NA", resultStr, 64, filename);
+        if (wcscmp(resultStr, L"NA"))
+            outValue = Utils::SafeConvertFloat(resultStr);
+    };
+    for (UInt i = 1; i <= 10; i++) {
+        auto camName = Utils::Format(L"CAMERA_%d", i);
+        Int camUsed = GetPrivateProfileIntW(camName.c_str(), L"TCM_CAM_ENABLE", 0, camSettingsFilename);
+        if (camUsed != 0) {
+            auto &camSettings = GetCamSettings(i);
+            camSettings.TCM_CAM_ENABLED = true;
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_HEIGHT", camSettings.TCM_CAM_HEIGHT, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_DEPTH_DIST", camSettings.TCM_CAM_DEPTH_DIST, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_LENSE_ANGLE", camSettings.TCM_CAM_LENSE_ANGLE, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_HORIZONTAL_FOLLOWING", camSettings.TCM_CAM_HORIZONTAL_FOLLOWING, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_HORIZONTAL_BOUNDS", camSettings.TCM_CAM_HORIZONTAL_BOUNDS, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_DEPTH_BOUNDS", camSettings.TCM_CAM_DEPTH_BOUNDS, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_NEAR_CLIP", camSettings.TCM_CAM_NEAR_CLIP, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_TARGET_HORIZONTAL_BOUNDS", camSettings.TCM_CAM_TARGET_HORIZONTAL_BOUNDS, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_TARGET_DEPTH_BOUNDS", camSettings.TCM_CAM_TARGET_DEPTH_BOUNDS, camSettingsFilename);
+        }
+    }
+
+    patch::RedirectCall(GfxCoreAddress(0x4663F), GetCameraSchemeId<1>);
+    patch::RedirectCall(GfxCoreAddress(0x466CE), GetCameraSchemeId<3>);
+    patch::RedirectCall(GfxCoreAddress(0x466E7), GetCameraSchemeId<1>);
+    patch::RedirectCall(GfxCoreAddress(0x4673B), GetCameraParameters);
+    */
+
+    //patch::RedirectJump(GfxCoreAddress(0xD0520), OnAiPlayerProcessControl);
+    //patch::RedirectCall(GfxCoreAddress(0xD0656), OnAiPlayerProcessControl2);
+    //patch::RedirectCall(GfxCoreAddress(0xD0688), OnAiPlayerProcessControl2);
+   // patch::RedirectCall(GfxCoreAddress(0xCFC43), OnAiPlayerPerformAction); // Cross
+   // patch::RedirectCall(GfxCoreAddress(0xCFC10), OnAiPlayerPerformAction); // Shot
+   // patch::RedirectCall(GfxCoreAddress(0xCFBDF), OnAiPlayerPerformAction); // Clearance
+   // patch::RedirectCall(GfxCoreAddress(0xCFA7F), OnAiPlayerPerformAction); // Keep Away
+   // patch::RedirectCall(GfxCoreAddress(0xCFAA0), OnAiPlayerPerformAction); // Lob Pass
+   // patch::RedirectCall(GfxCoreAddress(0xCFABA), OnAiPlayerPerformAction); // Through Pass
+   // patch::RedirectCall(GfxCoreAddress(0xCFB44), OnAiPlayerPerformAction); // Dribble 1
+   // patch::RedirectCall(GfxCoreAddress(0xCFB5E), OnAiPlayerPerformAction); // Dribble 2
+
     //patch::RedirectCall(GfxCoreAddress(0x21CC6B), OnMotionMgrStartScript);
     //DumpChoreoEvents();
     //patch::RedirectCall(GfxCoreAddress(0x0018BA0 + 0x61), OnPostEvent);
@@ -1501,6 +1644,12 @@ void Install3dPatches_FM13() {
     static Float BallLDNear = 1.0f; // 4.7
     patch::SetPointer(GfxCoreAddress(0x24104A + 2), &BallHDFar);
     patch::SetPointer(GfxCoreAddress(0x241056 + 2), &BallLDNear);
+
+    // eye colors for starheads
+    patch::Nop(GfxCoreAddress(0x92259), 2);
+
+    //Float Unk1 = 576.0f * 2.0f;
+    //patch::SetPointer(GfxCoreAddress(0x12CB79 + 2), &Unk1);
 
    /// patch::SetUInt(GfxCoreAddress(0x1621A + 1), 0x6000000 * 4);
    //patch::SetUInt(GfxCoreAddress(0x1621F + 6), 0x18000000 * 2);

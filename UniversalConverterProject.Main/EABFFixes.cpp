@@ -858,6 +858,13 @@ void METHOD OnReadPlayerSpecialFaceId(void *reader, DUMMY_ARG, UInt *out) {
         *out = 0;
 }
 
+Int METHOD LeagueHistoryMatchEntryGetYear(void *t) {
+    Int year = CallMethodAndReturn<Int, 0x1212C20>(t);
+    if (year > 0)
+        year -= 1;
+    return year;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectJump(0x14C5E17, ConsolePrint<false>);
@@ -1230,5 +1237,10 @@ void PatchEABFFixes(FM::Version v) {
 
         //patch::RedirectJump(0xF985F0, OnGetPlayerSpecialFaceId);
         patch::RedirectCall(0xFD14E6, OnReadPlayerSpecialFaceId);
+
+        patch::RedirectCall(0x5F237C, LeagueHistoryMatchEntryGetYear);
+        patch::RedirectCall(0x5F238E, LeagueHistoryMatchEntryGetYear);
+        patch::RedirectCall(0x5F23CD, LeagueHistoryMatchEntryGetYear);
+        patch::RedirectCall(0x5F23DF, LeagueHistoryMatchEntryGetYear);
     }
 }

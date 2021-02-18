@@ -345,13 +345,13 @@ void OnSetCompetitionName(int compRegion, int compType, wchar_t const *name) {
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_SOUTHAM_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_SOUTHAM_CONTINENTAL_2"));
 
-    //Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_UEFA_CUP, GetTranslation("IDS_NAME_NORTHAM_2ND_CUP")); // remove later
+    Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_UEFA_CUP, GetTranslation("IDS_NAME_NORTHAM_2ND_CUP")); // remove later
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_NORTHAM_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_NORTHAM_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_NORTHAM_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_NORTHAM_CONTINENTAL_2"));
 
-    //Call<0xF904D0>(FifamCompRegion::Africa, COMP_UEFA_CUP, GetTranslation("IDS_NAME_AFRICA_2ND_CUP")); // remove later
+    Call<0xF904D0>(FifamCompRegion::Africa, COMP_UEFA_CUP, GetTranslation("IDS_NAME_AFRICA_2ND_CUP")); // remove later
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_AFRICA_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_AFRICA_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_AFRICA_CONTINENTAL_1"));
@@ -698,17 +698,9 @@ void METHOD ChampionsLeagueUniversalSort(CDBPool *comp, DUMMY_ARG, int numGroups
     }
     else if (comp->GetCompID().countryId == FifamCompRegion::International && comp->GetCompID().type == COMP_NAM_NL_Q && comp->GetCompID().index == 0) {
         //if (GetCurrentYear() > 2023) {
-            //Error("Dump 0");
-            //comp->DumpToFile();
             comp->RandomlySortTeams(0, 4);
-            //Error("Dump 1");
-            //comp->DumpToFile();
             comp->RandomlySortTeams(4, 4);
-            //Error("Dump 2");
-            //comp->DumpToFile();
             comp->RandomlySortTeams(8, 4);
-            //Error("Dump 3");
-            //comp->DumpToFile();
 
             comp->RandomlySortTeams(12, 4);
             comp->RandomlySortTeams(16, 4);
@@ -1578,7 +1570,7 @@ void METHOD OnGetCalendarMatchesBuffer(void *a, DUMMY_ARG, UInt b, void **c) {
 
 void METHOD OnSetupAssessmentEntry(CAssessmentTable *table, DUMMY_ARG, UChar countryIndex, UShort y1, UShort y2, UShort y3, UShort y4, UShort y5, UShort y6) {
     if (countryIndex == 207) // Kosovo
-        CallMethod<0x121D410>(table, countryIndex, 0, 0, 0, 0, 0, 250);
+        CallMethod<0x121D410>(table, countryIndex, 0, 0, 0, 0, 250, 150);
     else
         CallMethod<0x121D410>(table, countryIndex, y1, y2, y3, y4, y5, y6);
 }

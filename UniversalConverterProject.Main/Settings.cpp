@@ -41,6 +41,8 @@ int Settings::getAdboardDisplayDuration() { return mAdboardDisplayDuration.first
 void Settings::setAdboardDisplayDuration(int duration) { mAdboardDisplayDuration.first = duration; }
 bool Settings::getEnableDefaultStadiums() { return mEnableDefaultStadiums.first; }
 void Settings::setEnableDefaultStadiums(bool set) { mEnableDefaultStadiums.first = set; }
+bool Settings::getJerseyNamesInAllMatches() { return mJerseyNamesInAllMatches.first; }
+void Settings::setJerseyNamesInAllMatches(bool set) { mJerseyNamesInAllMatches.first = set; }
 
 bool Settings::getEnableCommentaryPatches() { return mEnableCommentaryPatches.first; }
 void Settings::setEnableCommentaryPatches(bool set) { mEnableCommentaryPatches.first = set; }
@@ -68,7 +70,7 @@ Settings::Settings() {
     setTeamControl(GetPrivateProfileIntW(mainSectionStr.c_str(), teamControlStr.c_str(), 0, fileName.c_str()));
     setManualPlayerSwitch(GetPrivateProfileIntW(mainSectionStr.c_str(), manualPlayerSwitchStr.c_str(), 0, fileName.c_str()));
     setTeamControlDifficulty(GetPrivateProfileIntW(mainSectionStr.c_str(), teamControlDifficultyStr.c_str(), 100, fileName.c_str()));
-    setNTBudgetMultiplier(GetPrivateProfileIntW(mainSectionStr.c_str(), ntBudgetMultiplierStr.c_str(), 6, fileName.c_str()));
+    setNTBudgetMultiplier(GetPrivateProfileIntW(mainSectionStr.c_str(), ntBudgetMultiplierStr.c_str(), 15, fileName.c_str()));
     setClubSponsorLogos(GetPrivateProfileIntW(mainSectionStr.c_str(), clubSponsorLogosStr.c_str(), 1, fileName.c_str()));
     setClubAdboards(GetPrivateProfileIntW(mainSectionStr.c_str(), clubAdboardsStr.c_str(), 1, fileName.c_str()));
     setTeamControlDisabled(GetPrivateProfileIntW(mainSectionStr.c_str(), disableTeamControlStr.c_str(), 1, fileName.c_str()));
@@ -82,8 +84,8 @@ Settings::Settings() {
     setAdboardTransitionDuration(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ADBOARD_TRANSITION_DURATION", 1, fileName.c_str()));
     setAdboardDisplayDuration(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ADBOARD_DISPLAY_DURATION", 15, fileName.c_str()));
     setEnableDefaultStadiums(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_DEFAULT_STADIUMS", 0, fileName.c_str()));
-
     setEnableCommentaryPatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", 0, fileName.c_str()));
+    setJerseyNamesInAllMatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"JERSEY_NAMES_IN_ALL_MATCHES", 0, fileName.c_str()));
 
     mExtendLoansLimit.second = mExtendLoansLimit.first;
     mTeamControl.second = mTeamControl.first;
@@ -102,8 +104,8 @@ Settings::Settings() {
     mAdboardTransitionDuration.second = mAdboardTransitionDuration.first;
     mAdboardDisplayDuration.second = mAdboardDisplayDuration.first;
     mEnableDefaultStadiums.second = mEnableDefaultStadiums.first;
-
     mEnableCommentaryPatches.second = mEnableCommentaryPatches.first;
+    mJerseyNamesInAllMatches.second = mJerseyNamesInAllMatches.first;
 }
 
 void Settings::save() {
@@ -156,7 +158,8 @@ void Settings::save() {
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ADBOARD_DISPLAY_DURATION", Utils::Format(L"%u", getAdboardDisplayDuration()).c_str(), fileName.c_str());
     if (mEnableDefaultStadiums.first != mEnableDefaultStadiums.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_DEFAULT_STADIUMS", Utils::Format(L"%u", getEnableDefaultStadiums()).c_str(), fileName.c_str());
-
     if (mEnableCommentaryPatches.first != mEnableCommentaryPatches.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", Utils::Format(L"%u", getEnableCommentaryPatches()).c_str(), fileName.c_str());
+    if (mJerseyNamesInAllMatches.first != mJerseyNamesInAllMatches.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"JERSEY_NAMES_IN_ALL_MATCHES", Utils::Format(L"%u", getJerseyNamesInAllMatches()).c_str(), fileName.c_str());
 }

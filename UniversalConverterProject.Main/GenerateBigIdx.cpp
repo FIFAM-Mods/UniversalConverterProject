@@ -5,14 +5,16 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <string>
+#include <set>
 #include "plugin-std.h"
 
 using namespace std;
 using namespace std::filesystem;
 
 vector<string> archiveNames13 = {
+    "update.big", "update_portraits.big",
     "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big",
-    /*"data\\zdata_00.big",*/ "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
+    "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
     "data\\zdata_05.big", "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_08.big", "data\\zdata_09.big",
     "data\\zdata_10.big", "data\\zdata_11.big", "data\\zdata_12.big", "data\\zdata_13.big", "data\\zdata_14.big",
     "data\\zdata_15.big", "data\\zdata_16.big", "data\\zdata_17.big", "data\\zdata_18.big", "data\\zdata_19.big",
@@ -20,15 +22,15 @@ vector<string> archiveNames13 = {
     "data\\zdata_25.big", "data\\zdata_26.big", "data\\zdata_27.big", "data\\zdata_28.big", "data\\zdata_29.big",
     "data\\zdata_30.big", "data\\zdata_31.big", "data\\zdata_32.big", "data\\zdata_33.big", "data\\zdata_34.big",
     "data\\zdata_35.big", "data\\zdata_36.big", "data\\zdata_37.big", "data\\zdata_38.big", "data\\zdata_39.big",
-    "data\\zdata_40.big", /*"data\\zdata_41.big", "data\\zdata_42.big", "data\\zdata_43.big", "data\\zdata_44.big",*/
-    "data\\zdata_45.big", "data\\zdata_46.big", "data\\zdata_47.big", "data\\zdata_48.big",
+    "data\\zdata_40.big", "data\\zdata_45.big", "data\\zdata_46.big",
     "badges.big", "badges_small.big", "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big",
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big"
 };
 
 vector<string> archiveNames14 = {
+    "update.big", "update_portraits.big",
     "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big",
-    /*"data\\zdata_00.big",*/ "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
+    "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
     "data\\zdata_05.big", "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_08.big", "data\\zdata_09.big",
     "data\\zdata_10.big", "data\\zdata_11.big", "data\\zdata_12.big", "data\\zdata_13.big", "data\\zdata_14.big",
     "data\\zdata_15.big", "data\\zdata_16.big", "data\\zdata_17.big", "data\\zdata_18.big", "data\\zdata_19.big",
@@ -36,8 +38,7 @@ vector<string> archiveNames14 = {
     "data\\zdata_25.big", "data\\zdata_26.big", "data\\zdata_27.big", "data\\zdata_28.big", "data\\zdata_29.big",
     "data\\zdata_30.big", "data\\zdata_31.big", "data\\zdata_32.big", "data\\zdata_33.big", "data\\zdata_34.big",
     "data\\zdata_35.big", "data\\zdata_36.big", "data\\zdata_37.big", "data\\zdata_38.big", "data\\zdata_39.big",
-    "data\\zdata_40.big", "data\\zdata_41.big", /*"data\\zdata_42.big", "data\\zdata_43.big", "data\\zdata_44.big",
-    "data\\zdata_45.big", "data\\zdata_46.big",*/ "data\\zdata_47.big", "data\\zdata_48.big",
+    "data\\zdata_40.big", "data\\zdata_41.big", "data\\zdata_47.big", "data\\zdata_48.big",
     "badges.big", "badges_small.big", "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big",
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big"
 };
@@ -106,6 +107,19 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
     map<unsigned int, vector<FileDesc>> filesMap;
     vector<unsigned int> archiveNamesOffsets;
     vector<string> fileNamesList;
+    set<string> updateFiles;
+    set<string> ignoreFiles = {
+        "data\\kitarmband\\00281006_a.tga",
+        "data\\kitarmband\\00281006_h.tga",
+        "data\\kitarmband\\00281006_g.tga",
+        "data\\kits\\00281006_a.tga",
+        "data\\kits\\00281006_h.tga",
+        "data\\kits\\00281006_g.tga",
+        "data\\minikits\\00281006_a.png",
+        "data\\minikits\\00281006_h.png",
+        "ucp_popups\\colors\\vert\\00281006_a.png",
+        "ucp_popups\\colors\\vert\\00281006_h.png"
+    };
     unsigned int archivesCount = 0;
     unsigned int filesCount = 0;
     unsigned int currentNamesListOffset = 0;
@@ -127,29 +141,33 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
                 if (fileSize >= 4) {
                     if (fileSize >= 16) {
                         if (data_at<unsigned int>(fileData) == 'FGIB') {
+                            bool isUpdate = archiveNames[i].starts_with("update");
                             unsigned int numFiles = _byteswap_ulong(data_at<unsigned int>(fileData, 8));
                             unsigned char* fileDesc = (unsigned char*)((unsigned int)fileData + 16);
                             for (unsigned int i = 0; i < numFiles; i++) {
                                 char* fileName = (char*)((unsigned int)fileDesc + 8);
                                 //if (IsFileIncludedToIndex(fileName)) {
+                                if (!updateFiles.contains(fileName) && !ignoreFiles.contains(fileName)) {
                                     unsigned int hash = FileNameHash(fileName);
                                     filesMap[hash].emplace_back(archiveId, -1, fileName);
                                     filesCount++;
+                                    if (isUpdate)
+                                        updateFiles.insert(fileName);
                                     totalFileSize += 8;
-                                    fileDesc = (unsigned char*)((unsigned int)fileDesc + 8 + strlen(fileName) + 1);
-                                //}
+                                }
+                                fileDesc = (unsigned char*)((unsigned int)fileDesc + 8 + strlen(fileName) + 1);
                             }
+                            archivesCount++;
+                            fileNamesList.emplace_back(archiveNames[i]);
+                            archiveNamesOffsets.emplace_back(currentNamesListOffset);
+                            unsigned int fileNameSize = archiveNames[i].size() + 1;
+                            currentNamesListOffset += fileNameSize;
+                            totalFileSize += 4 + fileNameSize;
+                            archiveId++;
                         }
                     }
                 }
                 delete[] fileData;
-                archivesCount++;
-                fileNamesList.emplace_back(archiveNames[i]);
-                archiveNamesOffsets.emplace_back(currentNamesListOffset);
-                unsigned int fileNameSize = archiveNames[i].size() + 1;
-                currentNamesListOffset += fileNameSize;
-                totalFileSize += 4 + fileNameSize;
-                archiveId++;
             }
         }
     }

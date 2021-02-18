@@ -14,8 +14,6 @@ using namespace plugin;
 #define EDITOR_WRITE_TEXT
 //#define UPDATE_CLUB_BUDGETS
 
-//#define EDITOR_TEST_FIXTURES
-
 enum FmLanguage {
     English,
     German,
@@ -863,6 +861,18 @@ void METHOD TestFixtures(void *dlg) {
     patch::RedirectJump(0x444C10, TestFixtures);
 }
 
+Bool METHOD OnEditorLessThanWarning(void *t, DUMMY_ARG, UShort, WideChar const *s) {
+    return CallMethodAndReturn<Bool, 0x438B00>(t, 1, s);
+}
+
+UChar METHOD OnGetPlayerLevelMul125(void *t) {
+    return UChar(Float(CallMethodAndReturn<UChar, 0x521800>(t)) * 1.25f);
+}
+
+UChar METHOD OnGetPlayerLevelMul12(void *t) {
+    return UChar(Float(CallMethodAndReturn<UChar, 0x521800>(t)) * 1.2f);
+}
+
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
 
@@ -873,6 +883,7 @@ void PatchEditor(FM::Version v) {
         Int bNamesForAllLanguages = GetPrivateProfileIntW(L"MAIN", L"EDITOR_NAMES_FOR_ALL_LANGUAGES", 0, L".\\ucp.ini");
         //Int bUseOriginalDocumentsFolder = GetPrivateProfileIntW(mainSectionStr.c_str(), useOriginalDocumentsFolder.c_str(), 0, fileName.c_str());
         //Int bNoEditorModalDialogsFix = GetPrivateProfileIntW(mainSectionStr.c_str(), noEditorModalDialogsFix.c_str(), 0, fileName.c_str());
+        Int bTestAllFixtures = GetPrivateProfileIntW(L"MAIN", L"EDITOR_TEST_ALL_FIXTURES", 0, L".\\ucp.ini");
 
         //if (bUseOriginalDocumentsFolder == 0)
         patch::SetPointer(0x6685BC, GetAppLocalizedName);
@@ -1305,9 +1316,33 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x4BC6EB, OnBadgesBigGetFileData);
         //patch::SetPointer(0x4BCB2E + 1, L"%08x.png");
 
-#ifdef EDITOR_TEST_FIXTURES
-        //patch::Nop(0x444FAB, 5);
-        patch::RedirectJump(0x444C10, TestFixtures);
-#endif
+        if (bTestAllFixtures) {
+            //patch::Nop(0x444FAB, 5);
+            patch::RedirectJump(0x444C10, TestFixtures);
+        }
+
+        // warnings
+        patch::SetUChar(0x4F97B9 + 1, 1);
+        patch::SetUChar(0x4F98F1 + 1, 1);
+        patch::SetUChar(0x4F9A11 + 1, 1);
+        patch::SetUChar(0x4F9B31 + 1, 1);
+        patch::SetUChar(0x4F9DD4 + 1, 1);
+        patch::SetUChar(0x4F7796 + 1, 1);
+        patch::SetUChar(0x4F7921 + 1, 1);
+        patch::RedirectCall(0x4F7954, OnEditorLessThanWarning);
+        patch::RedirectCall(0x4F7982, OnEditorLessThanWarning);
+        patch::RedirectCall(0x4F79B1, OnEditorLessThanWarning);
+        patch::SetUChar(0x4F83E1 + 1, 1);
+        patch::SetUChar(0x4F7AF8 + 1, 1);
+        patch::SetUChar(0x4F9408 + 1, 1);
+        patch::SetUChar(0x4F9448 + 1, 1);
+        patch::SetUChar(0x4F6F5B + 1, 1);
+        patch::SetUChar(0x4F8374 + 1, 1);
+        patch::SetUChar(0x4F7130 + 1, 1);
+        patch::SetUChar(0x4F9284 + 1, 1);
+        patch::SetUChar(0x4F92CF + 1, 1);
+        patch::SetUChar(0x4F710A + 1, 1);
+        patch::RedirectCall(0x4F81D1, OnGetPlayerLevelMul125);
+        patch::RedirectCall(0x4F81F9, OnGetPlayerLevelMul12);
     }
 }

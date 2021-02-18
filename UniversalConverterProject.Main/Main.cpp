@@ -64,14 +64,14 @@ public:
     }
 
     UniversalConverterProject() {
-        if (!CheckLicense(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','M','a','i','n','.','a','s','i'>(1583797143)))
-            return;
-    #ifdef DELETE_LOG
-        if (exists("ucp_safe.log"))
-            remove("ucp_safe.log");
-    #endif
         v = FM::GetAppVersion();
         if (v.id() == ID_FM_13_1030_RLD) {
+            if (!CheckLicense(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','M','a','i','n','.','a','s','i'>(1583797143)))
+                return;
+#ifdef DELETE_LOG
+            if (exists("ucp_safe.log"))
+                remove("ucp_safe.log");
+#endif
             GenerateBigIdx();
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
@@ -163,7 +163,7 @@ String GetPatchName() {
 }
 
 String GetPatchVersion() {
-    return L"1.0";
+    return L"1.1";
 }
 
 String GetFullAppName(Bool upperCase) {

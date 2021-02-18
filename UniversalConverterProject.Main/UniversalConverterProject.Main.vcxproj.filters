@@ -62,6 +62,9 @@
     <ClCompile Include="CustomStadiums.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="PortraitDialog.cpp" />
+    <ClCompile Include="config\Config.cpp">
+      <Filter>config</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -122,6 +125,9 @@
     <ClInclude Include="CustomStadiums.h" />
     <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="PortraitDialog.h" />
+    <ClInclude Include="config\Config.h">
+      <Filter>config</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">
@@ -129,6 +135,9 @@
     </Filter>
     <Filter Include="tinyxml">
       <UniqueIdentifier>{1164b2a0-d31c-469f-afd5-3f5ac999ab9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="config">
+      <UniqueIdentifier>{dc950ebd-7348-4775-b354-ecd28a15ec41}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

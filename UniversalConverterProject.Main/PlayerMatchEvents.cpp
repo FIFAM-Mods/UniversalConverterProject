@@ -140,13 +140,13 @@ void PatchPlayerMatchEvents(FM::Version v) {
         events[PLAYERID_BOX].posn[POS_LW] = 80;
         events[PLAYERID_BOX].posn[POS_RW] = 80;
 
-        events[PLAYERID_ATTACKER].posn[POS_LW] = 140;
-        events[PLAYERID_ATTACKER].posn[POS_RW] = 140;
+        events[PLAYERID_ATTACKER].posn[POS_LW] = 135;
+        events[PLAYERID_ATTACKER].posn[POS_RW] = 135;
         events[PLAYERID_ATTACKER].posn[POS_CF] = 135;
         events[PLAYERID_ATTACKER].posn[POS_ST] = 140;
 
-        events[PLAYERID_ATTACKER_2].posn[POS_LW] = 140;
-        events[PLAYERID_ATTACKER_2].posn[POS_RW] = 140;
+        events[PLAYERID_ATTACKER_2].posn[POS_LW] = 135;
+        events[PLAYERID_ATTACKER_2].posn[POS_RW] = 135;
         events[PLAYERID_ATTACKER_2].posn[POS_CF] = 135;
         events[PLAYERID_ATTACKER_2].posn[POS_ST] = 140;
 

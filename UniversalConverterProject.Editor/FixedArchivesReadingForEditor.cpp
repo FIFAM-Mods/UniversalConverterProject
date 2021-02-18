@@ -19,6 +19,26 @@ Int WAccessKitFile(WideChar const *filepath, Int mode) {
     return -1;
 }
 
+void OnGetPortraitsArtFilename(wchar_t *dst, wchar_t const *fmt, unsigned int archiveId) {
+    switch (archiveId) {
+    case 2:
+        wcscpy(dst, L"art_03.big");
+        break;
+    case 3:
+        wcscpy(dst, L"art_06.big");
+        break;
+    case 4:
+        wcscpy(dst, L"art_07.big");
+        break;
+    case 5:
+        wcscpy(dst, L"update_portraits.big");
+        break;
+    default:
+        wcscpy(dst, L"art_02.big");
+        break;
+    }
+}
+
 void PatchArchivesReadingForEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         patch::RedirectCall(0x435B0F, WAccessKitFile);
@@ -45,6 +65,7 @@ void PatchArchivesReadingForEditor(FM::Version v) {
             return 0;
         }));
         // add more archives for portraits
-        patch::SetUChar(0x4B916B + 2, 8);
+        patch::SetUChar(0x4B916B + 2, 6);
+        patch::RedirectCall(0x4B900E, OnGetPortraitsArtFilename);
     }
 }

@@ -37,7 +37,15 @@ void METHOD Render2dKit(void *t) {
     Bool customMinikit = false;
     CDBTeamKit *teamKit = club->GetKit();
     Bool homeGenericKit = (*raw_ptr<UInt>(teamKit, 4) & 0xC0000000) == 0;
-    if (!homeGenericKit || !gKitsInstalled) {
+    if (homeGenericKit) {
+        if (club->IsManagedByAI())
+            homeGenericKit = false;
+        else {
+            if (!gKitsInstalled)
+                homeGenericKit = false;
+        }
+    }
+    if (!homeGenericKit) {
         unsigned int teamId = *raw_ptr<unsigned int>(club, 0xF0);
         std::wstring teamIdStr = Utils::Format(L"%08X", teamId);
         std::wstring baseFileName = L"data\\minikits\\" + teamIdStr + L"_";

@@ -91,9 +91,6 @@ void ExportClubBudgets() {
 }
 
 void *METHOD OnCreateKeepOtherStadiumsCheckbox(void *screen, DUMMY_ARG, char const *name) {
-
-    ExportClubBudgets();
-
     void *originalChk = CallMethodAndReturn<void *, 0xD44260>(screen, name);
     void *teamControlChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEnableTeamControl");
     *raw_ptr<void *>(screen, 0xC30) = teamControlChk;

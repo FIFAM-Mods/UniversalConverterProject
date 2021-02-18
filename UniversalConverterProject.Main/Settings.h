@@ -6,7 +6,7 @@ class Settings {
     std::pair<bool, bool> mTeamControl = { false, false };
     std::pair<bool, bool> mManualPlayerSwitch = { false, false };
     std::pair<int, int> mTeamControlDifficulty = { 100, 100 };
-    std::pair<int, int> mNTBudgetMultiplier = { 6, 6 };
+    std::pair<int, int> mNTBudgetMultiplier = { 15, 15 };
     std::pair<bool, bool> mClubSponsorLogos = { true, true };
     std::pair<bool, bool> mClubAdboards = { true, true };
     std::pair<bool, bool> mDisableTeamControl = { true, true };
@@ -20,8 +20,8 @@ class Settings {
     std::pair<int, int> mAdboardTransitionDuration = { 1, 1 };
     std::pair<int, int> mAdboardDisplayDuration = { 15, 15 };
     std::pair<bool, bool> mEnableDefaultStadiums = { false, false };
-
     std::pair<bool, bool> mEnableCommentaryPatches = { false, false };
+    std::pair<bool, bool> mJerseyNamesInAllMatches = { false, false };
 
 public:
     bool getExtendLoansLimit();
@@ -61,6 +61,8 @@ public:
     void setAdboardDisplayDuration(int duration);
     bool getEnableDefaultStadiums();
     void setEnableDefaultStadiums(bool set);
+    bool getJerseyNamesInAllMatches();
+    void setJerseyNamesInAllMatches(bool set);
 
     bool getEnableCommentaryPatches();
     void setEnableCommentaryPatches(bool set);
