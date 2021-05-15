@@ -865,8 +865,87 @@ Int METHOD LeagueHistoryMatchEntryGetYear(void *t) {
     return year;
 }
 
+wchar_t *OnReadJukeBoxFileWcsnCat(wchar_t *dst, const wchar_t *what, unsigned int count) {
+    if (!what)
+        return nullptr;
+    return CallAndReturn<wchar_t *, 0x1493F69>(dst, what, count);
+}
+
+void *gNationalTeamScreen = nullptr;
+
+void METHOD OnNationalTeamSetupStaffScreen(void *t) {
+    gNationalTeamScreen = t;
+    CallMethod<0x5F5D00>(t);
+    gNationalTeamScreen = nullptr;
+}
+
+bool METHOD OnNationalTeamCheckPresidentName(void *t) {
+    bool result = CallMethodAndReturn<bool, 0x1499240>(t);
+    if (gNationalTeamScreen) {
+        void *pTbPicChairman = *raw_ptr<void *>(gNationalTeamScreen, 0xB9C);
+        auto teamID = CTeamIndex::make(*raw_ptr<UChar>(gNationalTeamScreen, 0x12FD), 0, 0xFFFF);
+        if (result) {
+            Call<0xD4FA50>(pTbPicChairman, &teamID, 1, 0);
+            CallVirtualMethod<11>(pTbPicChairman, 1);
+        }
+        else
+            Call<0xD32860>(pTbPicChairman, L"", 4, 4);
+    }
+    return result;
+}
+
+void METHOD Fix_11EBEB0(void *t, DUMMY_ARG, int a2, void *player) {
+    if (player)
+        CallMethod<0x11EBEB0>(t, a2, player);
+}
+
+int METHOD OnDraftPlayerGetPlayerId(void *t) {
+    int playerId = *raw_ptr<int>(t, 0);
+    void *player = CallAndReturn<void *, 0xF97C70>(playerId);
+    if (!player) {
+        unsigned int previousTeamId = *raw_ptr<unsigned int>(t, 4);
+        unsigned int newTeamId = *raw_ptr<unsigned int>(t, 8);
+        String previousTeamName, newTeamName;
+        previousTeamName = Format(L"%08X", previousTeamId);
+        newTeamName = Format(L"%08X", newTeamId);
+        CDBTeam *previousTeam = CallAndReturn<CDBTeam *, 0xEC8F70>(previousTeamId);
+        if (previousTeam)
+            previousTeamName += Format(L" (%s)", previousTeam->GetName());
+        CDBTeam *newTeam = CallAndReturn<CDBTeam *, 0xEC8F70>(newTeamId);
+        if (newTeam)
+            newTeamName += Format(L" (%s)", newTeam->GetName());
+        Warning(L"NULL Player:\nPlayer ID: %d\nPrevious team: %s\nNew team: %s\nContract offer ID: %d\nFlags: %d",
+            playerId,
+            previousTeamName.c_str(),
+            newTeamName.c_str(),
+            *raw_ptr<int>(t, 0xC),
+            *raw_ptr<unsigned char>(t, 0x18)
+            );
+    }
+    return playerId;
+}
+
+bool YouthContractPopUsesPerWeekSalary() {
+    return !CallAndReturn<Bool32, 0x14AC3F5>();
+}
+
+void *METHOD OnCreateYouthContractPopTbBasicWage(void *t, DUMMY_ARG, char const *name) {
+    void *tb = CallMethodAndReturn<void *, 0xD44240>(t, name);
+    if (tb) {
+        String tbName = GetTranslation("PC_BasicWage");
+        tbName += L" (";
+        tbName += GetTranslation(YouthContractPopUsesPerWeekSalary() ? "IDS_NOTEPAD_REPETITION_WEEKLY" : "IDS_NOTEPAD_REPETITION_YEARLY");
+        tbName += L")";
+        CallVirtualMethod<78>(tb, tbName.c_str());
+    }
+    return tb;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        //patch::RedirectCall(0x11EC204, Fix_11EBEB0);
+        //patch::RedirectCall(0x11EC1D1, OnDraftPlayerGetPlayerId);
+
         //patch::RedirectJump(0x14C5E17, ConsolePrint<false>);
         //patch::RedirectJump(0x14C5E2D, ConsolePrint<true>);
         //patch::RedirectJump(0x14C5E55, ConsolePrintTag);
@@ -1242,5 +1321,26 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x5F238E, LeagueHistoryMatchEntryGetYear);
         patch::RedirectCall(0x5F23CD, LeagueHistoryMatchEntryGetYear);
         patch::RedirectCall(0x5F23DF, LeagueHistoryMatchEntryGetYear);
+
+        // fix for wcsncat() in CJukeBoxMP3::ReadJukeBoxFile() when file is empty
+        patch::RedirectCall(0x493DB5, OnReadJukeBoxFileWcsnCat);
+
+        // loan players with level higher than 79
+        //static Float fMinLevelForLoan = 99.0f;
+        //patch::SetPointer(0xF0A63D + 2, &fMinLevelForLoan);
+
+        // remove random Canadian players
+        patch::Nop(0x108F2B8, 5);
+
+        // National Team president portrait
+        patch::RedirectCall(0x5F7B3A, OnNationalTeamSetupStaffScreen);
+        patch::RedirectCall(0x5F5F0E, OnNationalTeamCheckPresidentName);
+
+        // fix salary display in youth contract pop
+        patch::RedirectCall(0x9B43D7, OnCreateYouthContractPopTbBasicWage);
+        patch::RedirectCall(0x9B47A0, YouthContractPopUsesPerWeekSalary);
+        patch::RedirectCall(0x9B4C04, YouthContractPopUsesPerWeekSalary);
+        patch::RedirectCall(0x9B5C14, YouthContractPopUsesPerWeekSalary);
+        patch::RedirectCall(0x9B617B, YouthContractPopUsesPerWeekSalary);
     }
 }

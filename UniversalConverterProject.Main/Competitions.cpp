@@ -345,13 +345,13 @@ void OnSetCompetitionName(int compRegion, int compType, wchar_t const *name) {
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_SOUTHAM_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_SOUTHAM_CONTINENTAL_2"));
 
-    Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_UEFA_CUP, GetTranslation("IDS_NAME_NORTHAM_2ND_CUP")); // remove later
+    //Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_UEFA_CUP, GetTranslation("IDS_NAME_NORTHAM_2ND_CUP")); // remove later
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_NORTHAM_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_NORTHAM_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_NORTHAM_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_NORTHAM_CONTINENTAL_2"));
 
-    Call<0xF904D0>(FifamCompRegion::Africa, COMP_UEFA_CUP, GetTranslation("IDS_NAME_AFRICA_2ND_CUP")); // remove later
+    //Call<0xF904D0>(FifamCompRegion::Africa, COMP_UEFA_CUP, GetTranslation("IDS_NAME_AFRICA_2ND_CUP")); // remove later
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_AFRICA_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_AFRICA_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_AFRICA_CONTINENTAL_1"));
@@ -481,7 +481,8 @@ bool METHOD TakesPlaceInThisYear(CDBCompetition *comp, DUMMY_ARG, int) {
 }
 
 WideChar const * METHOD GetCompetitionShortName(CDBCompetition *comp) {
-    switch (comp->GetCompID().type) {
+    CCompID compId = comp->GetCompID();
+    switch (compId.type) {
     case COMP_WORLD_CLUB_CHAMP:
         return GetTranslation("IDS_FIFA_CLUB_WORLD_CUP_SHORTNAMES");
     case COMP_QUALI_WC:
@@ -541,8 +542,8 @@ WideChar const * METHOD GetCompetitionShortName(CDBCompetition *comp) {
     case COMP_OLYMPIC_Q:
         return GetTranslation("IDS_SHORTNAME_OLYMPIC_Q");
     }
-    if (CallMethodAndReturn<Bool, 0x12D4AA0>(&comp->GetCompID()) || CallMethodAndReturn<Bool, 0x12D4A40>(&comp->GetCompID())) {
-        CDBCompetition *baseComp = GetCompetition(comp->GetCompID().ToInt() & 0xFFFF0000);
+    if (CallMethodAndReturn<Bool, 0x12D4AA0>(&compId) || CallMethodAndReturn<Bool, 0x12D4A40>(&compId)) {
+        CDBCompetition *baseComp = GetCompetition(compId.ToInt() & 0xFFFF0000);
         if (baseComp)
             return raw_ptr<WideChar>(baseComp, 0x26);
     }
@@ -2118,6 +2119,8 @@ LeagueTableInfo *GetLeagueTableInfo(UInt leagueId) {
     return nullptr;
 }
 
+Array<UChar, 207> gCountryReserveLevelId = {};
+
 void ReadLeaguesConfig() {
     FifamReader leagueSplitReader(Magic<'p','l','u','g','i','n','s','\\','u','c','p','\\','l','e','a','g','u','e','_','s','p','l','i','t','.','c','s','v'>(830049359), 14);
     if (leagueSplitReader.Available()) {
@@ -2172,6 +2175,23 @@ void ReadLeaguesConfig() {
                 leagueTablesReader.SkipLine();
         }
         leagueTablesReader.Close();
+    }
+    for (UInt i = 0; i < std::size(gCountryReserveLevelId); i++)
+        gCountryReserveLevelId[i] = 0;
+    FifamReader leagueReserveReader(L"plugins\\ucp\\reserve_leagues.csv", 14);
+    if (leagueReserveReader.Available()) {
+        leagueReserveReader.SkipLine();
+        while (!leagueReserveReader.IsEof()) {
+            if (!leagueReserveReader.EmptyLine()) {
+                UChar countryId = 0, levelId = 0;
+                leagueReserveReader.ReadLine(countryId, levelId);
+                if (countryId >= 1 && countryId <= 207)
+                    gCountryReserveLevelId[countryId - 1] = levelId;
+            }
+            else
+                leagueReserveReader.SkipLine();
+        }
+        leagueReserveReader.Close();
     }
 }
 
@@ -2666,6 +2686,12 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
         return &dummyTeamIndex_getTabXToY;
     }
     return teamId;
+}
+
+UChar OnGetLevelWithReserveTeams(Int countryId) {
+    if (countryId >= 1 && countryId <= 207 && gCountryReserveLevelId[countryId - 1] != 0)
+        return gCountryReserveLevelId[countryId - 1] - 1;
+    return 255;
 }
 
 void PatchCompetitions(FM::Version v) {
@@ -3264,5 +3290,9 @@ void PatchCompetitions(FM::Version v) {
         //patch::RedirectCall(0x66138D, OnGetLeagueForClubTableDevelopment);
         patch::RedirectCall(0x139E81B, OnScriptGetTabXToY);
         patch::RedirectCall(0x139E852, OnGetTabXToYTeamLeaguePositionDataGetTeamID);
+
+        // reserve league levels
+        patch::Nop(0xFD6E19, 22);
+        patch::RedirectJump(0xFD6D70, OnGetLevelWithReserveTeams);
     }
 }

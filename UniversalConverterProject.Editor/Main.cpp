@@ -14,6 +14,7 @@
 #include "Translation.h"
 #include "RendererHook.h"
 #include "GenerateBigIdx.h"
+#include "ExtendedPlayerEditor.h"
 
 using namespace plugin;
 
@@ -21,8 +22,10 @@ class UniversalConverterProject {
 public:
     UniversalConverterProject() {
         auto v = FM::GetAppVersion();
-        if (v.id() == ID_ED_13_1000)
+        if (v.id() == ID_ED_13_1000) {
             GenerateBigIdx();
+            patch::SetUInt(0x5504D5 + 3, 0x2013000B); // binary database version
+        }
         PatchRendererHook(v);
         PatchTranslation(v);
         PatchClubIDs(v);
@@ -37,5 +40,6 @@ public:
         PatchFormations(v);
         PatchEditor(v);
         PatchParameterFiles(v);
+        PatchExtendedPlayer(v);
     }
 } universalConverterProject;

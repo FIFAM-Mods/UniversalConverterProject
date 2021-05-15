@@ -924,7 +924,7 @@ void METHOD OnGenerateDynamicTextures(void *dynTextures, DUMMY_ARG, void *genDat
                 WriteToLog(Utils::Format(L"%dx%d", img.width, img.height));
                 if (img.width == 1024 && img.height == 128) {
                     void *fs = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3859EA));
-                    WideChar *numbigname = nullptr;
+                    WideChar const *numbigname = nullptr;
                     UInt numid = 0;
                     if (i == 0) {
                         if (k == 0) {

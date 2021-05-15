@@ -18,6 +18,7 @@
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
+    <ClCompile Include="ExtendedPlayerEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -36,5 +37,6 @@
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />
     <ClInclude Include="GenerateBigIdx.h" />
+    <ClInclude Include="ExtendedPlayerEditor.h" />
   </ItemGroup>
 </Project>

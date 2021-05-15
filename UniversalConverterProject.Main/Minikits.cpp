@@ -10,7 +10,7 @@ bool ImgExistsAnyOrTpi(std::wstring const &filename) {
     return CallAndReturn<bool, 0xD2CBB0>(filename.c_str(), 0);
 }
 
-unsigned int KitFileExists(std::wstring &fileNameNoExtension) {
+unsigned int KitFileExists(std::wstring const &fileNameNoExtension) {
     if (ImgExistsAnyOrTpi(fileNameNoExtension + L".tga"))
         return 1;
     if (ImgExistsAnyOrTpi(fileNameNoExtension + L".png"))

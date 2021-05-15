@@ -1,3 +1,5 @@
+#include "WinHeader.h"
+#include <ShellAPI.h>
 #include "WindowedMode.h"
 #include "Utils.h"
 #include "FifamTypes.h"
@@ -17,6 +19,7 @@ Bool gWindowsMousePointer = false;
 Bool gWindowsMousePointerStartValue = false;
 Bool gDisableResourcePathsCaching = false;
 Bool gDisableResourcePathsCachingStartValue = false;
+UInt gOriginalWndProc = 0;
 
 enum WindowedModeWindowPosition {
     WINDOWED_MODE_DEFAULT = 0,
@@ -520,7 +523,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         SaveWindowedMode();
         Settings::GetInstance().save();
     }
-    return CallMethodAndReturnDynGlobal<Int>(GfxCoreAddress(0x6E00), 0, hWnd, uCmd, wParam, lParam);
+    return CallMethodAndReturnDynGlobal<Int>(gOriginalWndProc, 0, hWnd, uCmd, wParam, lParam);
 }
 
 void InstallWindowedMode_GfxCore() {
@@ -546,6 +549,7 @@ void InstallWindowedMode_GfxCore() {
         patch::RedirectCall(GfxCoreAddress(0x715E), MyCreateWindowExW);
         patch::Nop(GfxCoreAddress(0x715E) + 5, 1);
 
+        gOriginalWndProc = patch::GetUInt(GfxCoreAddress(0x7086) + 4);
         patch::SetPointer(GfxCoreAddress(0x7086) + 4, MyWndProc);
 
         if (gWindowPosition != WINDOWED_MODE_LEFT) {

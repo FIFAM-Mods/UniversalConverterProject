@@ -1,8 +1,9 @@
 #include "Talent6Stars.h"
-#include <Windows.h>
+//#include <Windows.h>
 
 using namespace plugin;
 
+/*
 template<unsigned int OpDelete, unsigned int OpNewArray, unsigned int BitmapFromTGA>
 void METHOD MySetTalentImages(int _this, DUMMY_ARG, const wchar_t *resType, const wchar_t **resNames, int resCount) {
     void *oldData = *(void **)(_this + 84);
@@ -39,15 +40,16 @@ void METHOD MySetTalentImages(int _this, DUMMY_ARG, const wchar_t *resType, cons
     if (*(BYTE *)(_this + 92))
         SendMessageW(*(HWND *)(_this + 132), 1135, 0, *(DWORD *)(_this + 88) - 1);
 }
+*/
 
 void PatchTalentStars(FM::Version v) {
     static const wchar_t *pStarsTextFmt = L"%d / 11";
 
     if (v.id() == ID_ED_13_1000) {
-        patch::SetUChar(0x46D166 + 1, 11);
-        patch::SetUChar(0x51C664 + 1, 10);
-        patch::SetUChar(0x51C66B + 1, 10);
-        patch::RedirectCall(0x46D17A, MySetTalentImages<0x5B04B9, 0x5B04AE, 0x54EFB0>);
-        patch::SetPointer(0x46D640 + 1, (void *)pStarsTextFmt);
+        //patch::SetUChar(0x46D166 + 1, 11);
+        //patch::SetUChar(0x51C664 + 1, 10);
+        //patch::SetUChar(0x51C66B + 1, 10);
+        //patch::RedirectCall(0x46D17A, MySetTalentImages<0x5B04B9, 0x5B04AE, 0x54EFB0>);
+        //patch::SetPointer(0x46D640 + 1, (void *)pStarsTextFmt);
     }
 }

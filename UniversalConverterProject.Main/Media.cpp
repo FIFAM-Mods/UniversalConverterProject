@@ -50,7 +50,7 @@ void ReadCountriesInfo() {
         }
     }
     if (!countriesRead) {
-        static WideChar *defaultCountryAbbr[207] = {
+        static WideChar const *defaultCountryAbbr[207] = {
             L"ALB",
             L"AND",
             L"ARM",
@@ -259,7 +259,7 @@ void ReadCountriesInfo() {
             L"MNE",
             L"XKX"
         };
-        static WideChar *defaultCountryNames[207] = {
+        static WideChar const *defaultCountryNames[207] = {
             L"Albania",
             L"Andorra",
             L"Armenia",

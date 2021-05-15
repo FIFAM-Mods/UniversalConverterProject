@@ -65,6 +65,10 @@
     <ClCompile Include="config\Config.cpp">
       <Filter>config</Filter>
     </ClCompile>
+    <ClCompile Include="PlayerTalks.cpp" />
+    <ClCompile Include="TheClubScreenExtended.cpp" />
+    <ClCompile Include="ExtendedPlayer.cpp" />
+    <ClCompile Include="PlayerNameEdit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -128,6 +132,11 @@
     <ClInclude Include="config\Config.h">
       <Filter>config</Filter>
     </ClInclude>
+    <ClInclude Include="PlayerTalks.h" />
+    <ClInclude Include="WinHeader.h" />
+    <ClInclude Include="TheClubScreenExtended.h" />
+    <ClInclude Include="ExtendedPlayer.h" />
+    <ClInclude Include="PlayerNameEdit.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

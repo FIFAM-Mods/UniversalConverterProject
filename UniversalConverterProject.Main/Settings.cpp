@@ -1,5 +1,5 @@
+#include "WinHeader.h"
 #include "Settings.h"
-#include <Windows.h>
 #include "license_check/license_check.h"
 #include "Utils.h"
 #include "Error.h"
@@ -43,6 +43,8 @@ bool Settings::getEnableDefaultStadiums() { return mEnableDefaultStadiums.first;
 void Settings::setEnableDefaultStadiums(bool set) { mEnableDefaultStadiums.first = set; }
 bool Settings::getJerseyNamesInAllMatches() { return mJerseyNamesInAllMatches.first; }
 void Settings::setJerseyNamesInAllMatches(bool set) { mJerseyNamesInAllMatches.first = set; }
+int Settings::getPlayerNameEditMode() { return mPlayerNameEditMode.first; }
+void Settings::setPlayerNameEditMode(int set) { mPlayerNameEditMode.first = set; }
 
 bool Settings::getEnableCommentaryPatches() { return mEnableCommentaryPatches.first; }
 void Settings::setEnableCommentaryPatches(bool set) { mEnableCommentaryPatches.first = set; }
@@ -86,6 +88,7 @@ Settings::Settings() {
     setEnableDefaultStadiums(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_DEFAULT_STADIUMS", 0, fileName.c_str()));
     setEnableCommentaryPatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", 0, fileName.c_str()));
     setJerseyNamesInAllMatches(GetPrivateProfileIntW(mainSectionStr.c_str(), L"JERSEY_NAMES_IN_ALL_MATCHES", 0, fileName.c_str()));
+    setPlayerNameEditMode(GetPrivateProfileIntW(mainSectionStr.c_str(), L"PLAYER_NAME_EDIT_MODE", 0, fileName.c_str()));
 
     mExtendLoansLimit.second = mExtendLoansLimit.first;
     mTeamControl.second = mTeamControl.first;
@@ -106,6 +109,7 @@ Settings::Settings() {
     mEnableDefaultStadiums.second = mEnableDefaultStadiums.first;
     mEnableCommentaryPatches.second = mEnableCommentaryPatches.first;
     mJerseyNamesInAllMatches.second = mJerseyNamesInAllMatches.first;
+    mPlayerNameEditMode.second = mPlayerNameEditMode.first;
 }
 
 void Settings::save() {
@@ -162,4 +166,6 @@ void Settings::save() {
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"ENABLE_COMMENTARY_PATCHES", Utils::Format(L"%u", getEnableCommentaryPatches()).c_str(), fileName.c_str());
     if (mJerseyNamesInAllMatches.first != mJerseyNamesInAllMatches.second)
         WritePrivateProfileStringW(mainSectionStr.c_str(), L"JERSEY_NAMES_IN_ALL_MATCHES", Utils::Format(L"%u", getJerseyNamesInAllMatches()).c_str(), fileName.c_str());
+    if (mPlayerNameEditMode.first != mPlayerNameEditMode.second)
+        WritePrivateProfileStringW(mainSectionStr.c_str(), L"PLAYER_NAME_EDIT_MODE", Utils::Format(L"%u", getPlayerNameEditMode()).c_str(), fileName.c_str());
 }

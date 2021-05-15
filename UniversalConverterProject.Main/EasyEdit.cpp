@@ -398,32 +398,32 @@ public:
 template<unsigned int ReadAddr, typename FieldType, bool IsArray = false, typename Reader = DefaultReader<FieldType>>
 class CountryEditor : public Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader> {
     ~CountryEditor() {
-        GetMap().clear();
-        GetMapArray().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMap().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMapArray().clear();
     }
 };
 
 template<unsigned int ReadAddr, typename FieldType, bool IsArray = false, typename Reader = DefaultReader<FieldType>>
 class TeamEditor : public Editor<TeamIdAccessor, ReadAddr, FieldType, IsArray, Reader> {
     ~TeamEditor() {
-        GetMap().clear();
-        GetMapArray().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMap().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMapArray().clear();
     }
 };
 
 template<unsigned int ReadAddr, typename FieldType, bool IsArray = false, typename Reader = DefaultReader<FieldType>>
 class PlayerEditor : public Editor<PlayerIdAccessor, ReadAddr, FieldType, IsArray, Reader> {
     ~PlayerEditor() {
-        GetMap().clear();
-        GetMapArray().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMap().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMapArray().clear();
     }
 };
 
 template<unsigned int ReadAddr, typename FieldType, bool IsArray = false, typename Reader = DefaultReader<FieldType>>
 class CompEditor : public Editor<CompIdAccessor, ReadAddr, FieldType, IsArray, Reader> {
     ~CompEditor() {
-        GetMap().clear();
-        GetMapArray().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMap().clear();
+        Editor<CountryIdAccessor, ReadAddr, FieldType, IsArray, Reader>::GetMapArray().clear();
     }
 };
 
@@ -455,7 +455,7 @@ public:
 template<typename T, T Min, T Max>
 class MinMaxReader : public CustomReader<T> {
 public:
-    static void Read(Type *dst, Type const &src) {
+    static void Read(T *dst, T const &src) {
         *dst = Utils::Clamp(src, Min, Max);
     }
 };
@@ -463,7 +463,7 @@ public:
 template<typename T, T Min, T Max>
 class MinMaxArrayReader : public CustomReader<T> {
 public:
-    static void ReadArray(Type *dst, UInt arySize, Vector<Type> const &src) {
+    static void ReadArray(T *dst, UInt arySize, Vector<T> const &src) {
         UInt size = Utils::Min(arySize, src.size());
         for (UInt i = 0; i < size; i++) {
             if (src[i] >= 0)

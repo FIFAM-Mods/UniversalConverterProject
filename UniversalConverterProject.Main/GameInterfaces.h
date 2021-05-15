@@ -458,3 +458,5 @@ struct FshWriterWriteInfo {
         Format8888 = 3,
     };
 };
+
+void *CreateTextBox(void *screen, char const *name);

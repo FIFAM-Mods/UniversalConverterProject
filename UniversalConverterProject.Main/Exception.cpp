@@ -1,5 +1,5 @@
+#include "WinHeader.h"
 #include "Exception.h"
-#include <Windows.h>
 #include "shared.h"
 #include "Utils.h"
 

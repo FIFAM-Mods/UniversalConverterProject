@@ -22,6 +22,7 @@ class Settings {
     std::pair<bool, bool> mEnableDefaultStadiums = { false, false };
     std::pair<bool, bool> mEnableCommentaryPatches = { false, false };
     std::pair<bool, bool> mJerseyNamesInAllMatches = { false, false };
+    std::pair<int, int> mPlayerNameEditMode = { 0, 0 };
 
 public:
     bool getExtendLoansLimit();
@@ -63,6 +64,8 @@ public:
     void setEnableDefaultStadiums(bool set);
     bool getJerseyNamesInAllMatches();
     void setJerseyNamesInAllMatches(bool set);
+    int getPlayerNameEditMode();
+    void setPlayerNameEditMode(int mode);
 
     bool getEnableCommentaryPatches();
     void setEnableCommentaryPatches(bool set);

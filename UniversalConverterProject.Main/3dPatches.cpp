@@ -15,6 +15,8 @@
 
 using namespace plugin;
 
+unsigned int gPortraitsStyle = 0;
+
 void OnCreateInputDevice() {
     SafeLog::Write(L"Initializing devices");
     CallMethodDynGlobal(GfxCoreAddress(0x309150), patch::GetUInt(GfxCoreAddress(0x6696DC), false));
@@ -44,10 +46,10 @@ void OnSetupManualPlayerSwitch() {
 
     CallDynGlobal(GfxCoreAddress(0x23B750));
 
-    if (doReset) {
-        SetHomeTeamControl(false);
-        SetAwayTeamControl(false);
-    }
+    //if (doReset) {
+    //    SetHomeTeamControl(false);
+    //    SetAwayTeamControl(false);
+    //}
 }
 
 void *OnSetupController(int deviceId, int infoType) {
@@ -1445,6 +1447,8 @@ void Install3dPatches_FM13() {
     //patch::SetPointer(GfxCoreAddress(0x4096B1 + 1), FshLoadCB);
     //patch::SetPointer(GfxCoreAddress(0x4096E6 + 1), FshLoadCB);
 
+    gPortraitsStyle = GetPrivateProfileIntW(L"MAIN", L"Portraits", 0, L".\\installer.ini");
+
     patch::RedirectCall(GfxCoreAddress(0x3791BE), OnLoadFifaPlayer1);
     patch::RedirectCall(GfxCoreAddress(0x379769), OnLoadFifaPlayer1);
     patch::RedirectCall(GfxCoreAddress(0x37A2C9), OnLoadFifaPlayer1);
@@ -1507,21 +1511,28 @@ void Install3dPatches_FM13() {
 
     patch::RedirectJump(GfxCoreAddress(0x4789EB), ShowExceptionError_GfxCore);
 
-    static Float NewDist = 8.3f;
     static Double NewAngleX = -1.0;
+    patch::SetDouble(GfxCoreAddress(0x549610), 90.0f);
+    patch::SetPointer(GfxCoreAddress(0x378DAC + 2), &NewAngleX);
+
+    static Float NewDist = 8.3f;
     static Float NewZ = -110.0f;
     static Float NewY = 101.4f;
  
-    patch::SetDouble(GfxCoreAddress(0x549610), 90.0f);
+    if (gPortraitsStyle == 2) {
+        NewDist = 9.0f;
+        NewZ = -110.0f;
+        NewY = 100.5f;
+    }
+    else {
+        // player head scene - remove kit
+        patch::SetUChar(GfxCoreAddress(0x379187 + 1), 0);
+        patch::RedirectCall(GfxCoreAddress(0x379170), LoadPlayerHeadKitTexture);
+    }
+
     patch::SetPointer(GfxCoreAddress(0x378D22 + 2), &NewDist);
-    patch::SetPointer(GfxCoreAddress(0x378DAC + 2), &NewAngleX);
- 
     patch::SetPointer(GfxCoreAddress(0x378D39 + 2), &NewZ);
     patch::SetPointer(GfxCoreAddress(0x378D30 + 2), &NewY);
- 
-    // player head scene - remove kit
-    patch::SetUChar(GfxCoreAddress(0x379187 + 1), 0);
-    patch::RedirectCall(GfxCoreAddress(0x379170), LoadPlayerHeadKitTexture);
 
     patch::SetUInt(GfxCoreAddress(0x20F780 + 4), 4); // 25
     patch::SetUInt(GfxCoreAddress(0x20F794 + 4), 0); // 4
@@ -1647,6 +1658,15 @@ void Install3dPatches_FM13() {
 
     // eye colors for starheads
     patch::Nop(GfxCoreAddress(0x92259), 2);
+
+    // fps fix - temporary ; TODO: remove or replace this
+    //patch::RedirectJump(GfxCoreAddress(0x3E035), (void *)GfxCoreAddress(0x3E0CE));
+
+    // fix hairlod for sub players
+    patch::RedirectCall(GfxCoreAddress(0x23D5B7), (void *)GfxCoreAddress(0x950B0));
+    patch::RedirectCall(GfxCoreAddress(0x23D5E4), (void *)GfxCoreAddress(0x950B0));
+    patch::SetUInt(GfxCoreAddress(0x23D582 + 2), 0x1044);
+    patch::SetUInt(GfxCoreAddress(0x23D5BC + 2), 0x1044);
 
     //Float Unk1 = 576.0f * 2.0f;
     //patch::SetPointer(GfxCoreAddress(0x12CB79 + 2), &Unk1);

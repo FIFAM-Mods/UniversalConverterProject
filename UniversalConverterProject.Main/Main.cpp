@@ -46,6 +46,10 @@
 #include "CustomStadiums.h"
 #include "GenerateBigIdx.h"
 #include "PortraitDialog.h"
+#include "PlayerTalks.h"
+#include "TheClubScreenExtended.h"
+#include "ExtendedPlayer.h"
+#include "PlayerNameEdit.h"
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitry/DK22");
 
@@ -76,6 +80,9 @@ public:
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
+            const UInt SaveGameVersion = 42;
+            patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
+            patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
 
             if (!exists("locale.ini"))
                 Warning("File \"locale.ini\" is not found. Make sure this file is present in the game folder.");
@@ -141,6 +148,10 @@ public:
         PatchGameStartTweaks(v);
         PatchCustomStadiums(v);
         PatchPortraitDialog(v);
+        //PatchPlayerTalks(v);
+        PatchTheClubScreenExtended(v);
+        PatchExtendedPlayer(v);
+        PatchPlayerNameEdit(v);
     #ifdef BETA
         DoBetaPatches(v);
     #endif

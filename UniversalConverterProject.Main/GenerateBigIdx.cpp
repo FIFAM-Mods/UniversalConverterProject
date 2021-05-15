@@ -1,9 +1,9 @@
+#include "WinHeader.h"
 #include "GenerateBigIdx.h"
 #include <vector>
 #include <map>
 #include <filesystem>
 #include <stdio.h>
-#include <Windows.h>
 #include <string>
 #include <set>
 #include "plugin-std.h"

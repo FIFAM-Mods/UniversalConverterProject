@@ -482,6 +482,10 @@ Bool FmFileRead(Path const &filepath, void *outData, UInt size) {
     return false;
 }
 
+void *CreateTextBox(void *screen, char const *name) {
+    return CallMethodAndReturn<void *, 0xD44240>(screen, name);
+}
+
 unsigned char CAssessmentTable::GetCountryIdAtPosition(int position) {
     return plugin::CallMethodAndReturn<unsigned char, 0x121D030>(this, position);
 }

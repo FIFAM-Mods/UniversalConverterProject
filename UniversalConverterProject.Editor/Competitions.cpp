@@ -291,7 +291,7 @@ void PatchCompetitions(FM::Version v) {
 
         // league levels fix
 
-        static Char *divNames[] = {
+        static Char const *divNames[] = {
             "Database.Division.01",
             "Database.Division.02",
             "Database.Division.03",

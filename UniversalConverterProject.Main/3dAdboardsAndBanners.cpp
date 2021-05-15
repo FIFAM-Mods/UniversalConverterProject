@@ -55,7 +55,7 @@ Int MySetupGeneratedGraphicsFor3dMatch(CDBTeam *homeTeam, CDBTeam *awayTeam, Int
     return result;
 }
 
-WideChar * METHOD GetAdboardImagePath(CAdbNameGen *gen, DUMMY_ARG, Int, Int, Int) {
+WideChar const * METHOD GetAdboardImagePath(CAdbNameGen *gen, DUMMY_ARG, Int, Int, Int) {
     if (gen->counter >= NUM_ADBOARDS + 2)
         return L"N/A";
     return gen->data->filenames[gen->counter++];

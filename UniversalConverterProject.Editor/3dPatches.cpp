@@ -78,7 +78,16 @@ Char const* METHOD OnGetHeadResourceName(void* t, DUMMY_ARG, Char *filename, Int
     return CallMethodAndReturnDynGlobal<Char const*>(RendererAddress(Func), pT, filename, a3, bExists);
 }
 
+int OnRenderModel() {
+    void *device = *(void **)(RendererAddress(0x38E3D8));
+    CallVirtualMethod<57>(device, device, 22, 3);
+    return CallAndReturnDynGlobal<int>(RendererAddress(0xFFE0));
+}
+
 void Install3dPatches() {
+
+    //patch::RedirectCall(RendererAddress(0x1E750), OnRenderModel);
+
     //Error("%X", RendererAddress(0));
     patch::RedirectCall(RendererAddress(0x92579), OnCreateFileIO);
 
