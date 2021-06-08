@@ -25,6 +25,18 @@ public:
         if (v.id() == ID_ED_13_1000) {
             GenerateBigIdx();
             patch::SetUInt(0x5504D5 + 3, 0x2013000B); // binary database version
+            // set version (0x2013)
+            patch::SetUChar(0x4C7ACA + 1, 0xB);
+            patch::SetUChar(0x4E4F66 + 1, 0xB);
+            patch::SetUChar(0x53AE37 + 1, 0xB);
+            patch::SetUChar(0x541565 + 1, 0xB);
+            // validate version (0x2013)
+            patch::SetUChar(0x545493 + 8, 0xB);
+            patch::SetUChar(0x4C527C + 1, 0xB);
+            patch::SetUChar(0x4C7B8C + 1, 0xB);
+            patch::SetUChar(0x4E9A1A + 1, 0xB);
+            patch::SetUChar(0x53B5B9 + 1, 0xB);
+            patch::SetUChar(0x541847 + 1, 0xB);
         }
         PatchRendererHook(v);
         PatchTranslation(v);

@@ -805,10 +805,9 @@ Bool METHOD OnFireEmployee(CDBEmployee *employee, DUMMY_ARG, UInt type, Bool fla
     CDBTeam *managerTeam = managerTeam = GetTeam(*raw_ptr<CTeamIndex>(employee, 0x20)); // GetTeam(employee->mTeamIndex)
     Bool result = CallMethodAndReturn<Bool, 0xEB6D70>(employee, type, flag); // employee->Fire(type, flag)
     if (!result && managerTeam) {
-
-        void *tasks = CallMethodAndReturn<void *, 0x1017380>(managerTeam); // managerTeam->GetTasks()
-        CallMethod<0xEC2BE0>(employee, tasks); // employee->RemoveFromTasks(tasks)
         if (CallMethodAndReturn<Bool, 0xEB1600>(employee)) { // employee->IsHumanManager()
+            void *tasks = CallMethodAndReturn<void *, 0x1017380>(managerTeam); // managerTeam->GetTasks()
+            CallMethod<0x11A0580>(tasks); // tasks->Clear() CallMethod<0x11A0580>(tasks); // tasks->Clear()
             CallMethod<0x11A1020>(tasks); // tasks->DelegateAll()
 
             //Error(L"Delegated all tasks for\nteam %s\nmanager: %s %s",

@@ -15,6 +15,10 @@ void BinaryFileWriteString(void *binaryFile, WideChar const *str) {
     CallMethod<0x550D10>(binaryFile, str);
 }
 
+bool ReaderIsVersionGreaterOrEqual(void *reader, UInt year, UShort build) {
+    return CallMethodAndReturn<bool, 0x511C70>(reader, year, build);
+}
+
 const UInt DEF_PLAYER_SZ = 0x2C0;
 const UShort PLAYER_EXT_VERSION = 0x1;
 
@@ -96,7 +100,7 @@ WideChar const *METHOD OnGetPlayerJerseyName(void *player) {
 UChar METHOD OnReadPlayerJerseyNameFromDatabase(void *file, DUMMY_ARG, WideChar *out, UInt maxSize, WideChar delim) {
     static WideChar jerseyName[20];
     UChar result = CallMethodAndReturn<UChar, 0x512400>(file, jerseyName, std::size(jerseyName), delim);
-    if (result)
+    if (ReaderIsVersionGreaterOrEqual(file, 0x2013, 0xB) && result)
         SetPlayerJerseyName((void *)(UInt(out) - 0x58), jerseyName);
     return result;
 }

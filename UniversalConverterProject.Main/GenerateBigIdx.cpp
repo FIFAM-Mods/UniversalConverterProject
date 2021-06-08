@@ -11,36 +11,28 @@
 using namespace std;
 using namespace std::filesystem;
 
-vector<string> archiveNames13 = {
-    "update.big", "update_portraits.big",
-    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big",
-    "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
-    "data\\zdata_05.big", "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_08.big", "data\\zdata_09.big",
-    "data\\zdata_10.big", "data\\zdata_11.big", "data\\zdata_12.big", "data\\zdata_13.big", "data\\zdata_14.big",
-    "data\\zdata_15.big", "data\\zdata_16.big", "data\\zdata_17.big", "data\\zdata_18.big", "data\\zdata_19.big",
-    "data\\zdata_20.big", "data\\zdata_21.big", "data\\zdata_22.big", "data\\zdata_23.big", "data\\zdata_24.big",
-    "data\\zdata_25.big", "data\\zdata_26.big", "data\\zdata_27.big", "data\\zdata_28.big", "data\\zdata_29.big",
-    "data\\zdata_30.big", "data\\zdata_31.big", "data\\zdata_32.big", "data\\zdata_33.big", "data\\zdata_34.big",
-    "data\\zdata_35.big", "data\\zdata_36.big", "data\\zdata_37.big", "data\\zdata_38.big", "data\\zdata_39.big",
-    "data\\zdata_40.big", "data\\zdata_45.big", "data\\zdata_46.big",
-    "badges.big", "badges_small.big", "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big",
-    "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big"
+vector<string> archiveNames13 = { // 39
+    "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
+    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big", // 9
+    "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
+    "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_32.big", "data\\zdata_33.big", // 5
+    "data\\zdata_34.big", "data\\zdata_36.big",  "data\\zdata_38.big", "data\\zdata_39.big", "data\\zdata_40.big", // 5
+    "data\\zdata_45.big", "data\\zdata_46.big", // 2
+    "badges.big", "badges_small.big", // 2
+    "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big", // 4
+    "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
 
-vector<string> archiveNames14 = {
-    "update.big", "update_portraits.big",
-    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big",
-    "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big",
-    "data\\zdata_05.big", "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_08.big", "data\\zdata_09.big",
-    "data\\zdata_10.big", "data\\zdata_11.big", "data\\zdata_12.big", "data\\zdata_13.big", "data\\zdata_14.big",
-    "data\\zdata_15.big", "data\\zdata_16.big", "data\\zdata_17.big", "data\\zdata_18.big", "data\\zdata_19.big",
-    "data\\zdata_20.big", "data\\zdata_21.big", "data\\zdata_22.big", "data\\zdata_23.big", "data\\zdata_24.big",
-    "data\\zdata_25.big", "data\\zdata_26.big", "data\\zdata_27.big", "data\\zdata_28.big", "data\\zdata_29.big",
-    "data\\zdata_30.big", "data\\zdata_31.big", "data\\zdata_32.big", "data\\zdata_33.big", "data\\zdata_34.big",
-    "data\\zdata_35.big", "data\\zdata_36.big", "data\\zdata_37.big", "data\\zdata_38.big", "data\\zdata_39.big",
-    "data\\zdata_40.big", "data\\zdata_41.big", "data\\zdata_47.big", "data\\zdata_48.big",
-    "badges.big", "badges_small.big", "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big",
-    "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big"
+vector<string> archiveNames14 = { // 39
+    "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
+    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big", // 9
+    "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
+    "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_33.big", "data\\zdata_34.big", // 5
+    "data\\zdata_35.big", "data\\zdata_37.big", "data\\zdata_39.big", "data\\zdata_40.big", "data\\zdata_41.big", // 5
+    "data\\zdata_47.big", "data\\zdata_48.big", // 2
+    "badges.big", "badges_small.big", // 2
+    "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big", // 4
+    "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
 
 bool IsFileIncludedToIndex(string const& fileName) {
