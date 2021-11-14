@@ -4,7 +4,7 @@
 #include "shared.h"
 #include "GameInterfaces.h"
 #include "Utils.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "Exception.h"
 #include "Translation.h"
 #include "license_check/license_check.h"
@@ -12,10 +12,23 @@
 #include "d3dx9.h"
 #include "FifamReadWrite.h"
 #include "Utils.h"
+#include "PlayerAccessories.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 using namespace plugin;
 
 unsigned int gPortraitsStyle = 0;
+
+const unsigned int NUM_PLAYERS = 25; // 11 * 2 players + 1 referee + 2 linesmen
+struct ResFormatArg { int *a; int b; };
+int PLAYER_HEADLOD1_ID[NUM_PLAYERS];
+int PLAYER_HEADLOD2_ID[NUM_PLAYERS];
+ResFormatArg PLAYER_HEADLOD1_ACCESSORS[NUM_PLAYERS];
+ResFormatArg PLAYER_HEADLOD2_ACCESSORS[NUM_PLAYERS];
+char HeadLodFormat1[64];
+char HeadLodFormat2[64];
+unsigned char NewModelCollections[0x120 * 1024];
 
 void OnCreateInputDevice() {
     SafeLog::Write(L"Initializing devices");
@@ -29,7 +42,7 @@ void OnSetupManualPlayerSwitch() {
 
     Bool doReset = false;
 
-    if (Settings::GetInstance().getTeamControl() && Settings::GetInstance().getManualPlayerSwitch()) {
+    if (Settings::GetInstance().TeamControl && Settings::GetInstance().ManualPlayerSwitch) {
         Int humanHome = gfxGetVarInt("HUMAN_HOME", 0);
         Int humanAway = gfxGetVarInt("HUMAN_AWAY", 0);
         if (humanHome && !humanAway) {
@@ -46,10 +59,10 @@ void OnSetupManualPlayerSwitch() {
 
     CallDynGlobal(GfxCoreAddress(0x23B750));
 
-    //if (doReset) {
-    //    SetHomeTeamControl(false);
-    //    SetAwayTeamControl(false);
-    //}
+    if (doReset) {
+        SetHomeTeamControl(false);
+        SetAwayTeamControl(false);
+    }
 }
 
 void *OnSetupController(int deviceId, int infoType) {
@@ -295,13 +308,13 @@ void *OnAllocateMemory(const char *name, size_t size, size_t alignment) {
     auto mem = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x30D130), name, size, alignment);
     if (!mem)
         Error("Unable to allocate memory for %s, size %d", name, size);
-    SafeLog::WriteToFile("memory.csv", Utils::Format(L"ALLOC,%X,%s,%d,%d", mem, Utils::AtoW(name), size, alignment));
+    //SafeLog::WriteToFile("memory.csv", Utils::Format(L"ALLOC,%X,%s,%d,%d", mem, Utils::AtoW(name), size, alignment));
     return mem;
 }
 
 void OnDeleteMemory(void *mem) {
     CallDynGlobal<void *>(GfxCoreAddress(0x30D230), mem);
-    SafeLog::WriteToFile("memory.csv", Utils::Format(L"DELETE,%X,,0,0", mem));
+    //SafeLog::WriteToFile("memory.csv", Utils::Format(L"DELETE,%X,,0,0", mem));
 }
 
 int METHOD OnLoadToPool(void *t, DUMMY_ARG, const char *memPoolName, const char *fileName, int flags, int alignment, void *callback, void *callbackData, int arg_18) {
@@ -393,8 +406,8 @@ void ReadPlayerCommentaryConfig() {
 Int GetCommentaryID(String const &firstName, String const &lastName, String const &commonName, UInt fifaId) {
     for (auto const &[id, entry] : GetPlayerCommentaryEntries()) {
         if (entry.firstName.empty() || entry.firstName == firstName) {
-            if (entry.lastName.empty() || entry.lastName == firstName) {
-                if (entry.commonName.empty() || entry.commonName == firstName) {
+            if (entry.lastName.empty() || entry.lastName == lastName) {
+                if (entry.commonName.empty() || entry.commonName == commonName) {
                     if (entry.fifaId == 0 || entry.fifaId == fifaId) {
                         return id;
                     }
@@ -850,7 +863,7 @@ int OnPostEvent(unsigned int eventId, unsigned char *data) {
     //        CallDynGlobal(GfxCoreAddress(0x1E79D0));
     //    }
     //    String result = Utils::AtoW(EVENT_NAMES[eventId]);
-    //    SafeLog::WriteToFile("Events.txt", result);
+    //    //SafeLog::WriteToFile("Events.txt", result);
     //}
     return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x9C9A0), eventId, data);
 }
@@ -919,7 +932,7 @@ void __cdecl LoadFshFifaM(const char *poolName, int numShapes, void *shapeStore,
             strncpy(texName, (char const *)texData, 4);
         str += Format(L" %08X (%s)", texData, Utils::AtoW(texName).c_str());
     }
-    SafeLog::WriteToFile("fsh.txt", str);
+    //SafeLog::WriteToFile("fsh.txt", str);
     CallDynGlobal(GfxCoreAddress(0x458180), poolName, numShapes, shapeStore, bReload, maxTextures, outNumTextures, a7, a8);
 }
 
@@ -929,7 +942,7 @@ void FshLoadCB(unsigned __int8 *data, int dataSize, int requestId, void *userDat
     void *tex = (void *)(*raw_ptr<UInt>(texBlock, 4) + 12 * *raw_ptr<UInt>(userData, 0));
     const char *name = *raw_ptr<const char *>(tex, 0);
     String str = Format(L"FshLoadCB: %s TexBlock: %s %08X Size: %d RequestId: %d ", Utils::AtoW(name).c_str(), Utils::AtoW(texBlockName).c_str(), data, dataSize, requestId);
-    SafeLog::WriteToFile("fsh.txt", str);
+    //SafeLog::WriteToFile("fsh.txt", str);
     CallDynGlobal(GfxCoreAddress(0x4093B0), data, dataSize, requestId, userData);
 }
 
@@ -980,7 +993,7 @@ Int GetCameraSchemeIds(Int &outMatchCameraId) {
     static Int camSchemeToId[] = { -1, 2, 4, 1, -1, 3, -1, 5, -1, 7, 6, 8, 9, 10, -1, -1 };
     Int scheme = CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x40350));
     outMatchCameraId = -1;
-    if (scheme >= 0 && scheme < std::size(camSchemeToId) && camSchemeToId[scheme] != -1 && GetCamSettings(camSchemeToId[scheme]).TCM_CAM_ENABLED)
+    if (scheme >= 0 && scheme < (Int)std::size(camSchemeToId) && camSchemeToId[scheme] != -1 && GetCamSettings(camSchemeToId[scheme]).TCM_CAM_ENABLED)
         outMatchCameraId = camSchemeToId[scheme];
     return scheme;
 }
@@ -1020,7 +1033,7 @@ void METHOD GetCameraParameters(void *tcmCam, DUMMY_ARG, Int a2, Int a3, Int a4,
         saved_TCM_CAM_NEAR_CLIP = *raw_ptr<Float>(tcmCam, 0x28);
         *raw_ptr<Float>(tcmCam, 0x08) = camSettings.TCM_CAM_HEIGHT * 52.0f;
         *raw_ptr<Float>(tcmCam, 0x0C) = camSettings.TCM_CAM_DEPTH_DIST * 52.0f;
-        *raw_ptr<Float>(tcmCam, 0x10) = camSettings.TCM_CAM_LENSE_ANGLE / 180.0f * 3.141499996185303f;
+        *raw_ptr<Float>(tcmCam, 0x10) = camSettings.TCM_CAM_LENSE_ANGLE / (Float)(180.0 * M_PI);
         *raw_ptr<Float>(tcmCam, 0x14) = camSettings.TCM_CAM_HORIZONTAL_FOLLOWING;
         *raw_ptr<Float>(tcmCam, 0x18) = camSettings.TCM_CAM_HORIZONTAL_BOUNDS;
         *raw_ptr<Float>(tcmCam, 0x1C) = camSettings.TCM_CAM_DEPTH_BOUNDS;
@@ -1042,6 +1055,184 @@ void METHOD GetCameraParameters(void *tcmCam, DUMMY_ARG, Int a2, Int a3, Int a4,
     }
 }
 
+void OnTextureCopyData(void *texInfo, unsigned char *newData, unsigned int newDataSize) {
+    unsigned char *currentData = *raw_ptr<unsigned char *>(texInfo, 0);
+    auto currentDataSize = 0;
+    unsigned char *currentSection = currentData;
+    if (*(unsigned int *)currentData & 0xFFFFFF00) {
+        do {
+            unsigned int nextOffset = *(unsigned int *)currentSection >> 8;
+            if (nextOffset)
+                currentSection += nextOffset;
+            else
+                currentSection = 0;
+        } while (*(unsigned int *)currentSection & 0xFFFFFF00);
+    }
+    currentDataSize = currentSection - currentData + CallAndReturnDynGlobal<unsigned int>(GfxCoreAddress(0x3226A6), currentSection); // GetFshSectionSize() // done
+    if (currentDataSize < newDataSize) { // if new data doesn't fit into previously allocated memory
+        // temporary remove tex info and clear its memory
+        CallDynGlobal(GfxCoreAddress(0x457F10), texInfo); // RemoveTexInfo() // done
+        // allocate memory for new texture
+        void *newMem = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x4569E0), newData); // TexPoolAllocate() // done
+        // re-activate tex info and store new memory
+        *raw_ptr<unsigned char>(texInfo, 281) = 1; // texInfo.active = true
+        *raw_ptr<void *>(texInfo, 0) = newMem; // texInfo.data = newMem
+    }
+    else // in other case just copy it
+        CallDynGlobal(GfxCoreAddress(0x3183A0), currentData, newData, newDataSize); // MemCpy() // done
+}
+
+void *OnNewModelUserData(bool isOrd, unsigned char zero, void *sceneEntry, void *block, unsigned int fileSize, const char *fileName) {
+    void *oldData = *raw_ptr<void *>(block, 0x50); // block.data
+    void *modelCollection = nullptr;
+    void *mc = NewModelCollections; // done
+    for (unsigned int i = 0; i < *(unsigned int *)GfxCoreAddress(0xD4C134); i++) { // NumModelCollections
+        if (*raw_ptr<void *>(mc, 0x8) == oldData) { // modelCollection.data
+            modelCollection = mc;
+            break;
+        }
+        mc = raw_ptr<void>(mc, 288); // mc++
+    }
+    if (modelCollection) {
+        unsigned int newFileSize = max(912u, fileSize);
+        if (*raw_ptr<unsigned int>(modelCollection, 0x10) < newFileSize) { // modelCollection.size
+            static char gMemName[16];
+            void *poolName = *raw_ptr<void *>(sceneEntry, 0x60); // sceneEntry.poolName
+            if (poolName)
+                sprintf(gMemName, "SGSM::%s", raw_ptr<char const>(poolName, 1));
+            else
+                strcpy(gMemName, "SGSM::none");
+            CallDynGlobal(GfxCoreAddress(0x30D230), oldData); // delete() // done
+            void *newData = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x1A0C0), gMemName, fileName, fileSize, 0x400, 16, 0); // FifaMemAllocate() // done
+            *raw_ptr<void *>(block, 0x50) = newData; // block.data = newData
+            *raw_ptr<void *>(modelCollection, 0x8) = newData; // modelCollection.data = newData
+            *raw_ptr<unsigned int>(modelCollection, 0x10) = newFileSize; // modelCollection.size = newFileSize
+            fileSize = newFileSize;
+        }
+    }
+    return CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x40B3D0), isOrd, zero, sceneEntry, block, fileSize, fileName); // NewModelUserData() // done
+}
+
+void *OnResolveScene(void *scene, void *attributeCallback) {
+    void *result = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x408C30), scene, attributeCallback); // done
+    void *sceneEntry = *raw_ptr<void *>(scene, 0x44);
+    unsigned int numSceneEntries = *raw_ptr<unsigned int>(scene, 0x40);
+    for (unsigned int i = 0; i < numSceneEntries; i++) {
+        char const *sceneEntryName = *raw_ptr<char const *>(sceneEntry, 0x64);
+        if (sceneEntryName) {
+            string sceneEntryNameStr = sceneEntryName;
+            if (sceneEntryNameStr.starts_with("Player(")) {
+                auto spacePos = sceneEntryNameStr.find(' ', 7);
+                if (spacePos != string::npos && spacePos != 7) {
+                    int playerIndex = -1;
+                    try {
+                        playerIndex = stoi(sceneEntryNameStr.substr(7, spacePos - 7));
+                    }
+                    catch (...) {}
+                    if (playerIndex >= 0 && playerIndex < NUM_PLAYERS) {
+                        void *modelBlock = *raw_ptr<void *>(sceneEntry, 0x44);
+                        unsigned int numModelBlocks = *raw_ptr<unsigned int>(sceneEntry, 0x40);
+                        for (unsigned int m = 0; m < numModelBlocks; m++) {
+                            char const *resNameFormat = *raw_ptr<char const *>(modelBlock, 0x4);
+                            if (resNameFormat) {
+                                string resNameFormatStr = resNameFormat;
+                                if (resNameFormatStr == "m46__.o") {
+                                    *raw_ptr<char const *>(modelBlock, 0x4) = HeadLodFormat1;
+                                    *raw_ptr<unsigned int>(modelBlock, 0x28) = 1;
+                                    PLAYER_HEADLOD1_ACCESSORS[playerIndex].a = &PLAYER_HEADLOD1_ID[playerIndex];
+                                    PLAYER_HEADLOD1_ACCESSORS[playerIndex].b = 0;
+                                    *raw_ptr<void *>(modelBlock, 0x2C) = &PLAYER_HEADLOD1_ACCESSORS[playerIndex];
+                                }
+                                else if (resNameFormatStr == "m47__.o") {
+                                    *raw_ptr<char const *>(modelBlock, 0x4) = HeadLodFormat2;
+                                    *raw_ptr<unsigned int>(modelBlock, 0x28) = 1;
+                                    PLAYER_HEADLOD2_ACCESSORS[playerIndex].a = &PLAYER_HEADLOD2_ID[playerIndex];
+                                    PLAYER_HEADLOD2_ACCESSORS[playerIndex].b = 0;
+                                    *raw_ptr<void *>(modelBlock, 0x2C) = &PLAYER_HEADLOD2_ACCESSORS[playerIndex];
+                                }
+                            }
+                            modelBlock = raw_ptr<void>(modelBlock, 0x58);
+                        }
+                    }
+                }
+            }
+        }
+        sceneEntry = raw_ptr<void>(sceneEntry, 0x6C);
+    }
+    return result;
+}
+
+int OnFormatModelName1Arg(char *dst, char const *format, int arg) {
+    if (arg == 0) {
+        if (!strcmp(format, "m46__%d.o")) {
+            strcpy(dst, "m46__.o");
+            return 1;
+        }
+        else if (!strcmp(format, "m47__%d.o")) {
+            strcpy(dst, "m47__.o");
+            return 1;
+        }
+    }
+    return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x473B06), dst, format, arg); // sprintf // done
+}
+
+void OnSetupPlayerModel(void *desc) {
+    int playerIndex = ((int)desc - GfxCoreAddress(0xABEDE0)) / 0x12E0; // done
+    if (playerIndex >= 0 && playerIndex < NUM_PLAYERS) {
+        PLAYER_HEADLOD1_ID[playerIndex] = 0;
+        PLAYER_HEADLOD2_ID[playerIndex] = 0;
+        bool hasheadlodid = false;
+        int headlodid = *raw_ptr<int>(desc, 0x105C);
+        if (headlodid > 0)
+            hasheadlodid = true;
+        if (hasheadlodid) {
+            int sizeHeadLod1 = CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x44C720), *(void **)GfxCoreAddress(0xD4BA94), Format(HeadLodFormat1, headlodid).c_str()); // done
+            if (sizeHeadLod1 > 0)
+                PLAYER_HEADLOD1_ID[playerIndex] = headlodid;
+            int sizeHeadLod2 = CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x44C720), *(void **)GfxCoreAddress(0xD4BA94), Format(HeadLodFormat2, headlodid).c_str()); // done
+            if (sizeHeadLod2 > 0)
+                PLAYER_HEADLOD2_ID[playerIndex] = headlodid;
+        }
+    }
+}
+
+void OnSetupPlayerModel_General(void *desc) { // gfxcore
+    SetupSleevesForPlayerModel(desc);
+    OnSetupPlayerModel(desc);
+    CallDynGlobal(GfxCoreAddress(0x209400), desc);
+}
+
+void OnSetupPlayerModel_Referee(void *desc) { // gfxcore
+    OnSetupPlayerModel(desc);
+    CallDynGlobal(GfxCoreAddress(0x209400), desc);
+}
+
+float gDefensiveFKShotPower = 0.0f;
+
+void OnDefensiveFK1(void *player, float shotPower) {
+    gDefensiveFKShotPower = shotPower;
+    CallDynGlobal(GfxCoreAddress(0x132F60), player, shotPower);
+}
+
+void OnDefensiveFK2(void *in, float power, float angle, void *out) {
+    CallDynGlobal(GfxCoreAddress(0x1DCB70), in, 1920.0f * gDefensiveFKShotPower + 480.0f, angle, out);
+}
+
+int OnGetTacticSettingTackles(void *player, int attribute) {
+    int result = CallAndReturnDynGlobal<int>(GfxCoreAddress(0x5610), player, attribute);
+    if (result == 1)
+        result = 3;
+    else if (result == 3)
+        result = 1;
+    return result;
+}
+
+int OnGetTacticSettingCrossHeight(void *player, int attribute) {
+    int result = CallAndReturnDynGlobal<int>(GfxCoreAddress(0x5610), player, attribute);
+    Message("%d", result);
+    return result;
+}
+
 void Install3dPatches_FM13() {
 
     /*
@@ -1057,16 +1248,16 @@ void Install3dPatches_FM13() {
         Int camUsed = GetPrivateProfileIntW(camName.c_str(), L"TCM_CAM_ENABLE", 0, camSettingsFilename);
         if (camUsed != 0) {
             auto &camSettings = GetCamSettings(i);
-            camSettings.TCM_CAM_ENABLED = true;
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_HEIGHT", camSettings.TCM_CAM_HEIGHT, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_DEPTH_DIST", camSettings.TCM_CAM_DEPTH_DIST, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_LENSE_ANGLE", camSettings.TCM_CAM_LENSE_ANGLE, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_HORIZONTAL_FOLLOWING", camSettings.TCM_CAM_HORIZONTAL_FOLLOWING, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_HORIZONTAL_BOUNDS", camSettings.TCM_CAM_HORIZONTAL_BOUNDS, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_DEPTH_BOUNDS", camSettings.TCM_CAM_DEPTH_BOUNDS, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_NEAR_CLIP", camSettings.TCM_CAM_NEAR_CLIP, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_TARGET_HORIZONTAL_BOUNDS", camSettings.TCM_CAM_TARGET_HORIZONTAL_BOUNDS, camSettingsFilename);
-            ReadIniFloat(camName.c_str(), L"TCM_CAM_TARGET_DEPTH_BOUNDS", camSettings.TCM_CAM_TARGET_DEPTH_BOUNDS, camSettingsFilename);
+            camSettings::GetInstance().TCM_CAM_ENABLED = true;
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_HEIGHT", camSettings::GetInstance().TCM_CAM_HEIGHT, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_DEPTH_DIST", camSettings::GetInstance().TCM_CAM_DEPTH_DIST, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_LENSE_ANGLE", camSettings::GetInstance().TCM_CAM_LENSE_ANGLE, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_HORIZONTAL_FOLLOWING", camSettings::GetInstance().TCM_CAM_HORIZONTAL_FOLLOWING, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_HORIZONTAL_BOUNDS", camSettings::GetInstance().TCM_CAM_HORIZONTAL_BOUNDS, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_DEPTH_BOUNDS", camSettings::GetInstance().TCM_CAM_DEPTH_BOUNDS, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_NEAR_CLIP", camSettings::GetInstance().TCM_CAM_NEAR_CLIP, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_TARGET_HORIZONTAL_BOUNDS", camSettings::GetInstance().TCM_CAM_TARGET_HORIZONTAL_BOUNDS, camSettingsFilename);
+            ReadIniFloat(camName.c_str(), L"TCM_CAM_TARGET_DEPTH_BOUNDS", camSettings::GetInstance().TCM_CAM_TARGET_DEPTH_BOUNDS, camSettingsFilename);
         }
     }
 
@@ -1489,7 +1680,7 @@ void Install3dPatches_FM13() {
     patch::SetPointer(GfxCoreAddress(0x5495DC), MyGeneratePlayerPortrait);
 
     // set 32-bit render mode for EAGL PC Rertrival
-    if (!Settings::GetInstance().getNoHardwareAccelerationFix()) {
+    if (!Settings::GetInstance().NoHardwareAccelerationFix) {
         patch::SetUInt(GfxCoreAddress(0x2D63C5 + 1), 32);
         //Error("Enabled Hardware Acceleration Fix");
     }
@@ -1503,6 +1694,32 @@ void Install3dPatches_FM13() {
     patch::Nop(GfxCoreAddress(0x44C621), 6);
     patch::Nop(GfxCoreAddress(0x44C761), 6);
     patch::Nop(GfxCoreAddress(0x44D86D), 2);
+
+    patch::RedirectCall(GfxCoreAddress(0x45868D), OnTextureCopyData); // done
+    patch::SetUShort(GfxCoreAddress(0x458688), 0xC68B); // mov eax, [esi] => mov eax, esi // done
+    patch::RedirectCall(GfxCoreAddress(0x40A431), OnNewModelUserData); // done
+    patch::RedirectCall(GfxCoreAddress(0x23DC9B), OnSetupPlayerModel_General);
+    patch::RedirectCall(GfxCoreAddress(0x23CE90), OnSetupPlayerModel_Referee);
+    patch::RedirectCall(GfxCoreAddress(0x1E7824), OnResolveScene); // done
+    patch::RedirectCall(GfxCoreAddress(0x40867D), OnFormatModelName1Arg); // done
+
+    patch::SetPointer(GfxCoreAddress(0x451102 + 1), NewModelCollections + 8); // done
+    patch::SetPointer(GfxCoreAddress(0x451112 + 1), NewModelCollections + std::size(NewModelCollections) + 8); // done
+    patch::SetPointer(GfxCoreAddress(0x451132 + 1), NewModelCollections); // done
+    patch::SetPointer(GfxCoreAddress(0x451DF4 + 1), NewModelCollections + 8); // done
+    patch::SetPointer(GfxCoreAddress(0x451E67 + 2), NewModelCollections); // done
+    patch::SetPointer(GfxCoreAddress(0x452A21 + 1), NewModelCollections + 8); // done
+    patch::SetPointer(GfxCoreAddress(0x452A66 + 1), NewModelCollections); // done
+    patch::SetPointer(GfxCoreAddress(0x45351D + 2), NewModelCollections); // done
+    patch::SetPointer(GfxCoreAddress(0x453644 + 2), NewModelCollections + 288); // done
+    patch::SetPointer(GfxCoreAddress(0x453652 + 2), NewModelCollections + 288); // done
+    patch::SetPointer(GfxCoreAddress(0x453683 + 2), NewModelCollections); // done
+    patch::SetPointer(GfxCoreAddress(0x45368B + 2), NewModelCollections); // done
+    patch::SetPointer(GfxCoreAddress(0x4542C4 + 1), NewModelCollections + 8); // done
+    patch::SetPointer(GfxCoreAddress(0x45431F + 2), NewModelCollections); // done
+
+    strcpy(HeadLodFormat1, "m46__%d.o");
+    strcpy(HeadLodFormat2, "m47__%d.o");
 
     // old fonts glyph buffer fix
     ///patch::RedirectCall(GfxCoreAddress(0x3CFE90), TTF_GetFontLineForFont<0>);
@@ -1592,12 +1809,12 @@ void Install3dPatches_FM13() {
     //patch::SetPointer(GfxCoreAddress(0x37C45C + 1), "Coordinate4::*::UVOffset0");
     //patch::SetPointer(GfxCoreAddress(0x37C4C6 + 1), "Coordinate4::*::UVOffset1");
 
-    if (Settings::GetInstance().getCrowdResolution() != 1024 && Settings::GetInstance().getCrowdResolution() >= 2) {
-        patch::SetUInt(GfxCoreAddress(0x412FF6 + 1), Settings::GetInstance().getCrowdResolution() / 4);
-        patch::SetUInt(GfxCoreAddress(0x412FFB + 1), Settings::GetInstance().getCrowdResolution());
+    if (Settings::GetInstance().CrowdResolution != 1024 && Settings::GetInstance().CrowdResolution >= 2) {
+        patch::SetUInt(GfxCoreAddress(0x412FF6 + 1), Settings::GetInstance().CrowdResolution / 4);
+        patch::SetUInt(GfxCoreAddress(0x412FFB + 1), Settings::GetInstance().CrowdResolution);
     }
 
-    if (!Settings::GetInstance().getTeamControlDisabledAtGameStart()) {
+    if (!Settings::GetInstance().TeamControlDisabledAtGameStart) {
         patch::RedirectCall(GfxCoreAddress(0x23E629), OnSetupManualPlayerSwitch);
         patch::RedirectCall(GfxCoreAddress(0x165C3), OnCreateInputDevice);
         patch::RedirectCall(GfxCoreAddress(0x18553), OnSetupController);
@@ -1633,7 +1850,7 @@ void Install3dPatches_FM13() {
     //patch::RedirectJump(GfxCoreAddress(0x19E60), CachedExists);
     //patch::RedirectJump(GfxCoreAddress(0x19E70), CachedSize);
 
-    if (Settings::GetInstance().getEnableCommentaryPatches()) {
+    if (Settings::GetInstance().EnableCommentaryPatches) {
         patch::SetUInt(GfxCoreAddress(0x231a0f + 1), GfxCoreAddress(0x51d0a8));
         patch::SetUInt(GfxCoreAddress(0x231a14 + 2), GfxCoreAddress(0x51d0ac));
         patch::SetUInt(GfxCoreAddress(0x231a1a + 2), GfxCoreAddress(0x51d0b0));
@@ -1696,4 +1913,15 @@ void Install3dPatches_FM13() {
    /// patch::SetUInt(GfxCoreAddress(0x384069 + 6), kitH);
    /// patch::SetUInt(GfxCoreAddress(0x3840D9 + 1), kitH);
    /// patch::SetUInt(GfxCoreAddress(0x3840DE + 1), kitW);
+   
+
+    // fix for defensive FK
+    patch::Nop(GfxCoreAddress(0x132FC2), 2);
+    patch::RedirectCall(GfxCoreAddress(0xFDF6D), OnDefensiveFK1);
+    patch::RedirectCall(GfxCoreAddress(0x1349C9), OnDefensiveFK1);
+    patch::RedirectCall(GfxCoreAddress(0x132FE0), OnDefensiveFK2);
+
+    // fix for tactic tackles in 3d match
+    patch::RedirectCall(GfxCoreAddress(0x484D), OnGetTacticSettingTackles);
+
 }

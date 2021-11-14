@@ -77,7 +77,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;E:\Projects\fifam\fmapi;E:\Projects\fifam\generic;E:\Projects\UniversalConverterProject\ScriptCompiler;E:\Projects\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
@@ -109,13 +109,17 @@
     <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
+    <ClCompile Include="GenericKits.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ParameterFiles.cpp" />
     <ClCompile Include="RendererHook.cpp" />
+    <ClCompile Include="settings\Settings.cpp" />
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="Talent6Stars.cpp" />
     <ClCompile Include="Translation.cpp" />
+    <ClCompile Include="UcpSettings.cpp" />
+    <ClCompile Include="WomensDatabase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3dPatches.h" />
@@ -129,12 +133,16 @@
     <ClInclude Include="FixedArchivesReadingForEditor.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="GenerateBigIdx.h" />
+    <ClInclude Include="GenericKits.h" />
     <ClInclude Include="LowestLeagues.h" />
     <ClInclude Include="ParameterFiles.h" />
     <ClInclude Include="RendererHook.h" />
+    <ClInclude Include="settings\Settings.h" />
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="Translation.h" />
+    <ClInclude Include="UcpSettings.h" />
+    <ClInclude Include="WomensDatabase.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

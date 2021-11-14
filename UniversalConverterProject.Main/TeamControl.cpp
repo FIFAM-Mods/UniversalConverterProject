@@ -1,6 +1,6 @@
 #include "TeamControl.h"
 #include "GameInterfaces.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "shared.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
@@ -22,7 +22,7 @@ bool METHOD GetIsHomeTeamManagerByAI(CDBTeam *team, DUMMY_ARG, bool a) {
     }
     else
         gHomeTeamAI = CallMethodAndReturn<bool, 0xECA230>(team, a);
-    SetVarInt("HUMAN_HOME", (Settings::GetInstance().getTeamControl() && gHomeTeamAI) ? 0 : 1);
+    SetVarInt("HUMAN_HOME", (Settings::GetInstance().TeamControl && gHomeTeamAI) ? 0 : 1);
     return gHomeTeamAI;
 }
 
@@ -38,13 +38,13 @@ bool METHOD GetIsAwayTeamManagerByAI(CDBTeam *team, DUMMY_ARG, bool a) {
     }
     else
         gAwayTeamAI = CallMethodAndReturn<bool, 0xECA230>(team, a);
-    SetVarInt("HUMAN_AWAY", (Settings::GetInstance().getTeamControl() && gAwayTeamAI) ? 0 : 1);
+    SetVarInt("HUMAN_AWAY", (Settings::GetInstance().TeamControl && gAwayTeamAI) ? 0 : 1);
     return gAwayTeamAI;
 }
 
 void OnSetup3dMatchAudio(void *match) {
     Call<0x43F340>(match);
-    bool teamControl = Settings::GetInstance().getTeamControl();
+    bool teamControl = Settings::GetInstance().TeamControl;
     if (teamControl && !gHomeTeamAI && gAwayTeamAI)
         SetVarString("SIDE_SELECT", "h");
     else if (teamControl && gHomeTeamAI && !gAwayTeamAI)
@@ -55,7 +55,7 @@ void OnSetup3dMatchAudio(void *match) {
 }
 
 bool METHOD GetManagerShoutsStatus(void *screen) {
-    if (Settings::GetInstance().getTeamControl())
+    if (Settings::GetInstance().TeamControl)
         return false;
     return CallMethodAndReturn<bool, 0xC10690>(screen);
 }
@@ -91,32 +91,58 @@ void ExportClubBudgets() {
 }
 
 void *METHOD OnCreateKeepOtherStadiumsCheckbox(void *screen, DUMMY_ARG, char const *name) {
+    //
+    //CDBRound *r = (CDBRound *)GetCompetition(0xF933000B);
+    //struct RoundPair {
+    //    CTeamIndex m_n1stTeam;
+    //    CTeamIndex m_n2ndTeam;
+    //    char result1[2];
+    //    char result2[2];
+    //    int field_C;
+    //    int m_nFlags;
+    //    int m_anMatchEventsStartIndex[3];
+    //};
+    //RoundPair *pairs = raw_ptr<RoundPair>(r, 0x2088);
+    //FifamWriter w("dump_pairs.txt");
+    //for (UInt i = 0; i < (r->GetNumOfTeams() / 2); i++) {
+    //    String team1name = L"N/A";
+    //    String team2name = L"N/A";
+    //    CDBTeam *team1 = GetTeam(pairs[i].m_n1stTeam);
+    //    CDBTeam *team2 = GetTeam(pairs[i].m_n2ndTeam);
+    //    if (team1)
+    //        team1name = team1->GetName();
+    //    if (team2)
+    //        team2name = team2->GetName();
+    //    w.WriteLine(i + 1, team1name, team2name, pairs[i].m_nFlags, pairs[i].result1[0], pairs[i].result1[1], pairs[i].result2[0], pairs[i].result2[1]);
+    //}
+
+    //
     void *originalChk = CallMethodAndReturn<void *, 0xD44260>(screen, name);
     void *teamControlChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEnableTeamControl");
     *raw_ptr<void *>(screen, 0xC30) = teamControlChk;
     Bool teamControlEnabled = false;
-    if (Settings::GetInstance().getTeamControlDisabledAtGameStart()) {
+    if (Settings::GetInstance().TeamControlDisabledAtGameStart) {
         CallVirtualMethod<84>(teamControlChk, false);
         CallVirtualMethod<9>(teamControlChk, false);
     }
     else {
-        teamControlEnabled = Settings::GetInstance().getTeamControl();
+        teamControlEnabled = Settings::GetInstance().TeamControl;
         CallVirtualMethod<84>(teamControlChk, teamControlEnabled);
     }
     SafeLog::Write(Utils::Format(L"Set : %d - %d", teamControlEnabled, CallVirtualMethodAndReturn<unsigned char, 85>(teamControlChk)));
     void *manualSwitchChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkManualPlayerSwitch");
     *raw_ptr<void *>(screen, 0xC34) = manualSwitchChk;
-    CallVirtualMethod<84>(manualSwitchChk, Settings::GetInstance().getManualPlayerSwitch());
+    CallVirtualMethod<84>(manualSwitchChk, Settings::GetInstance().ManualPlayerSwitch);
     CallVirtualMethod<9>(manualSwitchChk, teamControlEnabled);
     void *sponsorLogoChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkSponsorLogos");
     *raw_ptr<void *>(screen, 0xC38) = sponsorLogoChk;
-    CallVirtualMethod<84>(sponsorLogoChk, Settings::GetInstance().getClubSponsorLogos());
+    CallVirtualMethod<84>(sponsorLogoChk, Settings::GetInstance().ClubSponsorLogos);
     void *clubAdboardsChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkClubAdboards");
     *raw_ptr<void *>(screen, 0xC3C) = clubAdboardsChk;
-    CallVirtualMethod<84>(clubAdboardsChk, Settings::GetInstance().getClubAdboards());
+    CallVirtualMethod<84>(clubAdboardsChk, Settings::GetInstance().ClubAdboards);
     void *new3dPitchChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkUseNew3dPitch");
     *raw_ptr<void *>(screen, 0xC40) = new3dPitchChk;
-    CallVirtualMethod<84>(new3dPitchChk, Settings::GetInstance().getUseNew3dPitch());
+    CallVirtualMethod<84>(new3dPitchChk, Settings::GetInstance().UseNew3dPitch);
     return originalChk;
 }
 
@@ -129,29 +155,29 @@ void METHOD OnProcessOptions3DCheckboxes(void *screen, DUMMY_ARG, int *data, int
 
     if (*data == CallVirtualMethodAndReturn<int, 23>(teamControlChk)) {
         bool checked = CallVirtualMethodAndReturn<unsigned char, 85>(teamControlChk) != 0;
-        Settings::GetInstance().setTeamControl(checked);
+        Settings::GetInstance().TeamControl = checked;
         SafeLog::Write(Utils::Format(L"Process : %d ", checked));
         CallVirtualMethod<9>(manualSwitchChk, checked);
         return;
     }
     else if (*data == CallVirtualMethodAndReturn<int, 23>(manualSwitchChk)) {
         bool checked = CallVirtualMethodAndReturn<unsigned char, 85>(manualSwitchChk) != 0;
-        Settings::GetInstance().setManualPlayerSwitch(checked);
+        Settings::GetInstance().ManualPlayerSwitch = checked;
         return;
     }
     else if (*data == CallVirtualMethodAndReturn<int, 23>(sponsorLogoChk)) {
         bool checked = CallVirtualMethodAndReturn<unsigned char, 85>(sponsorLogoChk) != 0;
-        Settings::GetInstance().setClubSponsorLogos(checked);
+        Settings::GetInstance().ClubSponsorLogos = checked;
         return;
     }
     else if (*data == CallVirtualMethodAndReturn<int, 23>(clubAdboardsChk)) {
         bool checked = CallVirtualMethodAndReturn<unsigned char, 85>(clubAdboardsChk) != 0;
-        Settings::GetInstance().setClubAdboards(checked);
+        Settings::GetInstance().ClubAdboards = checked;
         return;
     }
     else if (*data == CallVirtualMethodAndReturn<int, 23>(new3dPitchChk)) {
         bool checked = CallVirtualMethodAndReturn<unsigned char, 85>(new3dPitchChk) != 0;
-        Settings::GetInstance().setUseNew3dPitch(checked);
+        Settings::GetInstance().UseNew3dPitch = checked;
         return;
     }
     CallMethod<0x7A81E0>(screen, data, unk);
@@ -159,7 +185,7 @@ void METHOD OnProcessOptions3DCheckboxes(void *screen, DUMMY_ARG, int *data, int
 
 void METHOD OnCreateMatch3DOptionsOverlayUI(void *screen) {
     CallMethod<0xB2B0A0>(screen);
-    if (Settings::GetInstance().getTeamControl()) {
+    if (Settings::GetInstance().TeamControl) {
         Int humanHome = gfxGetVarInt("HUMAN_HOME", 0);
         Int humanAway = gfxGetVarInt("HUMAN_AWAY", 0);
         if (humanHome != humanAway) {
@@ -329,7 +355,7 @@ CDBTeam *OnGetCurrentTeam3D(CTeamIndex teamIndex) {
     gTeamControlCurrentTeam = GetTeam(teamIndex);
     gTeamControlAttrModifier = 1.0f;
     gTeamControlForCurrentMatch = false;
-    if (Settings::GetInstance().getTeamControl()) {
+    if (Settings::GetInstance().TeamControl) {
         SafeLog::Write(Utils::Format(L"CurrentTeamIndex: %08X", teamIndex.ToInt()));
         if (gTeamControlCurrentTeam) {
             SafeLog::Write(Utils::Format(L"CurrentTeam: %s", gTeamControlCurrentTeam->GetName(true)));
@@ -372,7 +398,8 @@ CDBTeam *OnGetCurrentTeam3D(CTeamIndex teamIndex) {
                                 }
                                 if (teamSide != -1) {
                                     SafeLog::Write(Utils::Format(L"TeamSide: %d, ThisTeamIndex: %08X, OtherTeamIndex: %08X", teamSide, thisTeamIndex.ToInt(), otherTeamIndex.ToInt()));
-                                    SafeLog::Write(Utils::Format(L"ThisTeam: %s, OtherTeam: %s", thisTeam->GetName(true), thisTeam->GetName(true)));
+                                    if (thisTeam)
+                                        SafeLog::Write(Utils::Format(L"ThisTeam: %s, OtherTeam: %s", thisTeam->GetName(true), thisTeam->GetName(true)));
                                     Int thisTeamRating = CallMethodAndReturn<Int, 0xF2F290>(thisTeam, &thisTeamIndex, 1, 0);
                                     Int otherTeamRating = CallMethodAndReturn<Int, 0xF2F290>(otherTeam, &otherTeamIndex, 1, 0);
                                     if (thisTeamRating > 0 && otherTeamRating > 0) {
@@ -449,7 +476,7 @@ UChar METHOD OnGetPlayerAttribute3D(CDBPlayer *player, DUMMY_ARG, UInt attrId, U
         if (result == 0 && !isZero)
             result = 1;
     }
-    //SafeLog::Write(Utils::Format(L"Player: %s, AttrId: %d, OldValue: %d, NewValue: %d", CallMethodAndReturn<WideChar *, 0xFA2010>(player, 0), attrId, oldValue, result));
+    SafeLog::Write(Utils::Format(L"Player: %s, AttrId: %d, OldValue: %d, NewValue: %d", CallMethodAndReturn<WideChar *, 0xFA2010>(player, 0), attrId, oldValue, result));
     return result;
 }
 
@@ -461,7 +488,7 @@ void PatchTeamControl(FM::Version v) {
         patch::RedirectCall(0x7A8614, OnCreateKeepOtherStadiumsCheckbox);
         patch::SetPointer(0x24003BC, OnProcessOptions3DCheckboxes);
 
-        if (!Settings::GetInstance().getTeamControlDisabledAtGameStart()) {
+        if (!Settings::GetInstance().TeamControlDisabledAtGameStart) {
             ReadTeamControlConfig();
 
             patch::RedirectCall(0x44E5B3, GetIsHomeTeamManagerByAI);

@@ -53,16 +53,17 @@ enum eCompetitionType : unsigned char {
     COMP_OFC_CUP_Q = 48, // OFC Cup
     COMP_OFC_CUP = 49, // OFC Cup
     COMP_U20_WC_Q = 50, // U20 WC Quali
-    COMP_U17_WC_Q = 51, // U17 WC Quali
-    COMP_U17_WORLD_CUP = 52, // U17 WC
-    COMP_U21_EC_Q = 53, // U21 EC Quali
-    COMP_U21_EC = 54, // U21 EC
-    COMP_U19_EC_Q = 55, // U19 EC Quali
-    COMP_U19_EC = 56, // U19 EC
-    COMP_U17_EC_Q = 57, // U17 EC Quali
-    COMP_U17_EC = 58, // U17 EC
-    COMP_OLYMPIC_Q = 59, // Olympic Games Quali
-    COMP_OLYMPIC = 60, // Olympic Games
+    COMP_CONFERENCE_LEAGUE = 51, // Conference League
+    COMP_U17_WC_Q = 52, // U17 WC Quali
+    COMP_U17_WORLD_CUP = 53, // U17 WC
+    COMP_U21_EC_Q = 54, // U21 EC Quali
+    COMP_U21_EC = 55, // U21 EC
+    COMP_U19_EC_Q = 56, // U19 EC Quali
+    COMP_U19_EC = 57, // U19 EC
+    COMP_U17_EC_Q = 58, // U17 EC Quali
+    COMP_U17_EC = 59, // U17 EC
+    COMP_OLYMPIC_Q = 60, // Olympic Games Quali
+    COMP_OLYMPIC = 61, // Olympic Games
 };
 
 void PatchCompetitions(FM::Version v);

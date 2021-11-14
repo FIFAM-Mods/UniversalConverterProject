@@ -1,6 +1,7 @@
 #include "Competitions.h"
 #include "Utils.h"
 #include "FifamTypes.h"
+#include "UcpSettings.h"
 
 using namespace plugin;
 
@@ -48,7 +49,7 @@ CompTypeNameDesc gNewCompTypeNames[] = {
      { L"ASIA_CUP", 0, 47 }, // Asia Cup
      { L"Q_OFC_CUP", 0, 48 }, // OFC Cup Quali
      { L"OFC_CUP", 0, 49 }, // OFC Cup
-
+     { L"CONFERENCE_LEAGUE", 0, 51 }, // Conference League
      { nullptr, 0, 0 }
 };
 
@@ -221,6 +222,12 @@ void METHOD OnEnableLeagueCalendarButton(void *t, DUMMY_ARG, Bool32 enable) {
     CallMethod<0x5B9DAC>(t, finalEnable);
 }
 
+void METHOD MySetCompetitionName(void *t, DUMMY_ARG, int type, int index, int language, wchar_t const *name) {
+    if (!name || *name == 0)
+        return;
+    CallMethod<0x541EF0>(t, type, index, language, name);
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         patch::SetPointer(0x501DC5 + 1, gNewCompTypeNames);
@@ -313,10 +320,13 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x4E3B23 + 2, divNames);
 
         // Editor - disable calendar editing for countries with complex league system
-        Int bForceCalendar = GetPrivateProfileIntW(L"MAIN", L"FORCE_CALENDAR_EDITOR", 0, L".\\ucp.ini");
-        if (!bForceCalendar) {
+        if (!Settings::GetInstance().ForceCalendar) {
             patch::RedirectCall(0x44921D, OnGetCountryForComplexLeagueSystemCheck);
             patch::RedirectCall(0x449249, OnEnableLeagueCalendarButton);
         }
+
+        // fix continental cup names (empty names)
+        patch::RedirectCall(0x5421E1, MySetCompetitionName);
+        patch::SetUChar(0x43D2A8, 0x76); // jz > jbe
     }
 }

@@ -319,7 +319,7 @@ void SetupSleevesForPlayerModel(void *plmodel) { // gfxcore
                     auto currDate = game->GetCurrentDate();
                     auto currMonth = currDate.GetMonth();
                     if (currMonth >= 5 && currMonth <= 9)
-                        sleeves = false;
+                        sleeves = 0;
                 }
             }
         }
@@ -334,7 +334,6 @@ void SetupSleevesForPlayerModel(void *plmodel) { // gfxcore
         // gk gloves
 
     }
-    CallDynGlobal(GfxCoreAddress(0x209400), plmodel);
 }
 
 Bool METHOD OnParseTcmMatchInfo(void *io, DUMMY_ARG, wchar_t const *str) {
@@ -352,7 +351,6 @@ void InstallPlayerAccessoriesGfxPatches() {
     patch::Nop(GfxCoreAddress(0x23C10B), 2); // sleeveType = 0;
     patch::Nop(GfxCoreAddress(0x23C114), 5); // sleeveType = 2;
     patch::Nop(GfxCoreAddress(0x9257F), 45); // accessories
-    patch::RedirectCall(GfxCoreAddress(0x23DC9B), SetupSleevesForPlayerModel);
     patch::RedirectCall(GfxCoreAddress(0x23DC24), StoreGlobalParamsForPlayerModel);
     patch::RedirectCall(GfxCoreAddress(0x94A78), OnReadPlayerAttributesInGfxCore);
     patch::RedirectCall(GfxCoreAddress(0x922C4), ReadPlayerAccessoriesInGfxCore);

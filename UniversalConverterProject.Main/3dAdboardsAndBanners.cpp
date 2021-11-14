@@ -3,7 +3,7 @@
 #include "Utils.h"
 #include "FifamTypes.h"
 #include "shared.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "GfxCoreHook.h"
 #include "Competitions.h"
 
@@ -62,8 +62,8 @@ WideChar const * METHOD GetAdboardImagePath(CAdbNameGen *gen, DUMMY_ARG, Int, In
 }
 
 Bool GetAdboardsTextures() {
-    SetVarInt("ADBOARD_TRANSITION_DURATION", Settings::GetInstance().getAdboardTransitionDuration());
-    SetVarInt("ADBOARD_DISPLAY_DURATION", Settings::GetInstance().getAdboardDisplayDuration());
+    SetVarInt("ADBOARD_TRANSITION_DURATION", Settings::GetInstance().AdboardTransitionDuration);
+    SetVarInt("ADBOARD_DISPLAY_DURATION", Settings::GetInstance().AdboardDisplayDuration);
     CDBTeam *team = gAdboardsAndBannersHostTeam;
     String teamIdStr;
     if (team)
@@ -93,7 +93,7 @@ Bool GetAdboardsTextures() {
     };
 
     // 512x1024 (Adboards)
-    if (nullA && Settings::GetInstance().getClubAdboards() && team && compId != 0) {
+    if (nullA && Settings::GetInstance().ClubAdboards && team && compId != 0) {
         UInt compType = (compId >> 16) & 0xFF;
         if (compType == COMP_LEAGUE || compType == COMP_FRIENDLY) {
             SafeLog::Write(Utils::Format(L"team: %s", team->GetName()));
@@ -156,7 +156,7 @@ Bool GetAdboardsTextures() {
             }
         }
     }
-    if (nullA && !Settings::GetInstance().getClubAdboards() && team && compId != 0) {
+    if (nullA && !Settings::GetInstance().ClubAdboards && team && compId != 0) {
         if (!CheckFilename(L"sponsors\\512x1024", teamIdStr + L"_" + compIdStr, nullA))
             CheckFilename(L"sponsors\\512x1024", teamIdStr + L"_" + compIdShortStr, nullA);
     }
@@ -164,7 +164,7 @@ Bool GetAdboardsTextures() {
         if (!CheckFilename(L"sponsors\\512x1024", compIdStr, nullA))
             CheckFilename(L"sponsors\\512x1024", compIdShortStr, nullA);
     }
-    if (nullA && !Settings::GetInstance().getClubAdboards() && team)
+    if (nullA && !Settings::GetInstance().ClubAdboards && team)
         CheckFilename(L"sponsors\\512x1024", teamIdStr, nullA);
     if (nullA && !CheckFilename(L"sponsors\\512x1024", L"00000000", nullA))
         return false;

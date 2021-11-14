@@ -221,7 +221,7 @@ void GenerateBigIdx() {
                 gameId = 14;
             GenerateBigIdx(rootFolder, gameId == 14 ? archiveNames14 : archiveNames13, gameId);
         }
-        catch (exception e) {
+        catch (exception &e) {
             plugin::Error("An error occured during big.idx regeneration\n%s", e.what());
         }
     }

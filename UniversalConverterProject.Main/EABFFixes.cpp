@@ -4,7 +4,7 @@
 #include "Log.h"
 #include "shared.h"
 #include "Exception.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "FifamReadWrite.h"
 #include "FifamCompRegion.h"
 #include "Competitions.h"
@@ -19,7 +19,7 @@ public:
     static CDBTeam *GetPlayerTeam(CDBPlayer *player) { return GetTeamByIndex(GetPlayerTeamIndex(player)); }
     static UInt GetTeamUniqueId(CDBTeam *team) { return CallMethodAndReturn<UInt, 0xEC9490>(team); }
     static CTeamIndex GetTeamIndex(CDBTeam *team) { return CallMethodAndReturn<CTeamIndex, 0xEC9440>(team); }
-    static WideChar *GetTeamName(CDBTeam *team, Bool reserve = false) { return CallMethodAndReturn<WideChar *, 0xEEB670>(team, reserve); }
+    static WideChar *GetTeamName(CDBTeam *team, Bool firstTeam = true) { return CallMethodAndReturn<WideChar *, 0xEEB670>(team, firstTeam); }
     static WideChar *GetTeamName(CDBTeam *team, CTeamIndex index, Bool allowYouthTeamNames = true) { return CallMethodAndReturn<WideChar *, 0xEEB670>(team, index, allowYouthTeamNames); }
     static WideChar *GetPlayerName(CDBPlayer *player, WideChar *dst = nullptr) { return CallMethodAndReturn<WideChar *, 0xFA2010>(player, dst); }
 };
@@ -294,7 +294,7 @@ EAGMoney *SetBaseNationalTeamSalaryBudget2(EAGMoney *out, EAGMoney *base, EAGMon
                 UChar leagueAvg = store->m_aCountries[teamId.countryId].GetLeagueAverageLevel();
                 if (leagueAvg < 15)
                     leagueAvg = 15;
-                UInt64 newSalaries = leagueAvg * leagueAvg * leagueAvg * Settings::GetInstance().getNTBudgetMultiplier();
+                UInt64 newSalaries = leagueAvg * leagueAvg * leagueAvg * Settings::GetInstance().NTBudgetMultiplier;
                 EAGMoney newBase = 0;
                 CallMethod<0x149C282>(&newBase, newSalaries, 0);
                 Call<0x149D7D0>(out, &newBase, current);
@@ -317,7 +317,7 @@ EAGMoney *SetBaseNationalTeamSalaryBudget(EAGMoney *out, EAGMoney *base, EAGMone
                 UChar leagueAvg = store->m_aCountries[teamId.countryId].GetLeagueAverageLevel();
                 if (leagueAvg < 15)
                     leagueAvg = 15;
-                UInt64 newSalaries = leagueAvg * leagueAvg * leagueAvg * Settings::GetInstance().getNTBudgetMultiplier();
+                UInt64 newSalaries = leagueAvg * leagueAvg * leagueAvg * Settings::GetInstance().NTBudgetMultiplier;
                 CallMethod<0x149C282>(out, newSalaries, 0);
                 //void *finance = CallMethodAndReturn<void *, 0xED2810>(gCurrentNationalTeamForSalaries); // GetFinance
                 //EAGMoney *clubBudgets = CallVirtualMethodAndReturn<EAGMoney *, 0>(finance, 13);
@@ -560,7 +560,7 @@ Char METHOD GetPlayerTalentForSearch(CDBPlayer *player, DUMMY_ARG, CDBEmployee *
 
 EAGMoney *METHOD GetPlayerMarketValueForSearch(CDBPlayer *player, DUMMY_ARG, EAGMoney *out, CDBEmployee *manager) {
     EAGMoney *result = CallMethodAndReturn<EAGMoney *, 0xF9A980>(player, out, manager);
-    UInt64 moneyValue = CallMethodAndReturn<UInt64, 0x149C9D7>(result, 0);
+    Int64 moneyValue = CallMethodAndReturn<Int64, 0x149C9D7>(result, 0);
     if (moneyValue < 0)
         CallMethod<0x149C399>(result, 0, 0);
     return result;
@@ -802,7 +802,7 @@ UInt METHOD UserFormationsBugFix(void *t) {
 
 Bool METHOD OnFireEmployee(CDBEmployee *employee, DUMMY_ARG, UInt type, Bool flag) {
     
-    CDBTeam *managerTeam = managerTeam = GetTeam(*raw_ptr<CTeamIndex>(employee, 0x20)); // GetTeam(employee->mTeamIndex)
+    CDBTeam *managerTeam = GetTeam(*raw_ptr<CTeamIndex>(employee, 0x20)); // GetTeam(employee->mTeamIndex)
     Bool result = CallMethodAndReturn<Bool, 0xEB6D70>(employee, type, flag); // employee->Fire(type, flag)
     if (!result && managerTeam) {
         if (CallMethodAndReturn<Bool, 0xEB1600>(employee)) { // employee->IsHumanManager()
@@ -938,6 +938,70 @@ void *METHOD OnCreateYouthContractPopTbBasicWage(void *t, DUMMY_ARG, char const 
         CallVirtualMethod<78>(tb, tbName.c_str());
     }
     return tb;
+}
+
+void __declspec(naked) YouthPlayersAverageHeightFix() {
+    __asm {
+        cmp     al, 1
+        jz      AVERAGE_HEIGHT_GK
+        cmp     al, 4
+        jz      AVERAGE_HEIGHT_CD
+    JMP_FA7960:
+        mov     eax, 0xFA7960
+        jmp     eax
+    AVERAGE_HEIGHT_CD:
+        add     byte ptr[esp + 0xF], 5
+        jmp     JMP_FA7960
+    AVERAGE_HEIGHT_GK:
+        add     byte ptr[esp + 0xF], 10
+        jmp     JMP_FA7960
+    }
+}
+
+void MyLogUEFA5(char *dst, size_t count, char const *format, wchar_t const *date, float points, wchar_t const *country) {
+    snprintf(dst, count, format, WtoA(date).c_str(), points, WtoA(Utils::GetStringWithoutUnicodeChars(country)).c_str());
+}
+
+Bool METHOD OnCheckMatchFlagsFor3D(void *m, DUMMY_ARG, UInt flag) {
+    SetVarInt("HOMEAWAY_MODE", CallMethodAndReturn<bool, 0xE80230>(m, 0x8000000) ? 1 : 0);
+    return CallMethodAndReturn<bool, 0xE80230>(m, flag);
+}
+
+Int OnFormatBadgeNameAddSeasonYear(WideChar *dst, UInt maxLen, WideChar const *format, UInt dimX, UInt dimY, WideChar const *idstr) {
+    return CallAndReturn<Int, 0x1494153>(dst, maxLen, L"Clubs\\%dx%d\\%04d_%s", dimX, dimY, GetCurrentSeasonStartYear(), idstr);
+}
+
+#include "FifamNation.h"
+
+template<UInt addr>
+void METHOD OnAddClubFans(void *t, DUMMY_ARG, Int fans) {
+    //static FifamWriter w("test_fans.csv");
+    Int totalFansCount = *raw_ptr<Int>(t, 0x24);
+    if (totalFansCount < 30'000) {
+        Bool negative = fans < 0;
+        if (negative)
+            fans = -fans;
+        Float fansMp = fans / 3000.0f;
+        Float multiplier = 0.1f;
+        if (totalFansCount < 10'000) {
+            if (totalFansCount >= 5'000)
+                multiplier = 0.2f;
+            else if (totalFansCount >= 1'000)
+                multiplier = 0.3f;
+            else if (totalFansCount >= 50)
+                multiplier = 0.4f;
+            else
+                multiplier = 0.5f;
+        }
+        fans = (Int)((Float)totalFansCount * multiplier * fansMp);
+        if (!negative && totalFansCount < 50 && fans < 50)
+            fans = 50;
+        if (negative)
+            fans = -fans;
+    }
+    CallMethod<0x122DF30>(t, fans);
+    //CDBTeam *team = *raw_ptr<CDBTeam *>(t, 0);
+    //w.WriteLine(addr, Quoted(FmUtils::GetTeamName(team)), Quoted(FifamNation::MakeFromInt(team->GetTeamID().countryId).ToStr()), fans, *raw_ptr<int>(t, 0x24));
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -1270,14 +1334,14 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x13ED5CC, UserFormationsBugFix);
         patch::RedirectCall(0x1172FF7, UserFormationsBugFix);
         patch::RedirectCall(0x141558C, UserFormationsBugFix);
-
+        
         // manager fire - task delegation fix
-        patch::RedirectCall(0xEDCEDD, OnFireEmployee);
-        patch::RedirectCall(0xEDCFD3, OnFireEmployee);
-        patch::RedirectCall(0xF3BD47, OnFireEmployee);
-        patch::RedirectCall(0xF3BDEC, OnFireEmployee);
-        patch::RedirectCall(0xF3C02A, OnFireEmployee);
-        patch::RedirectCall(0xF3C173, OnFireEmployee);
+      // patch::RedirectCall(0xEDCEDD, OnFireEmployee);
+      // patch::RedirectCall(0xEDCFD3, OnFireEmployee);
+      // patch::RedirectCall(0xF3BD47, OnFireEmployee);
+      // patch::RedirectCall(0xF3BDEC, OnFireEmployee);
+      // patch::RedirectCall(0xF3C02A, OnFireEmployee);
+      // patch::RedirectCall(0xF3C173, OnFireEmployee);
 
         // temporary handler for 1010DAA
         patch::RedirectCall(0x5401D0 + 0x1DA, Handler_1010D90<0x5401D0 + 0x1DA>);
@@ -1300,7 +1364,7 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xF30AD9, MyCompareStringsPNG);
 
         // commentary
-        if (Settings::GetInstance().getEnableSpeechInAllMatches()) {
+        if (Settings::GetInstance().EnableSpeechInAllMatches) {
             patch::SetUChar(0x44E484, 0xEB);
             patch::SetUChar(0x44E54A, 0xEB);
         }
@@ -1341,5 +1405,33 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x9B4C04, YouthContractPopUsesPerWeekSalary);
         patch::RedirectCall(0x9B5C14, YouthContractPopUsesPerWeekSalary);
         patch::RedirectCall(0x9B617B, YouthContractPopUsesPerWeekSalary);
+
+        // youth players average height; TODO: enable this later
+        patch::RedirectJump(0xFA794C, YouthPlayersAverageHeightFix);
+
+        // Fix UEFA5 log
+        //patch::RedirectCall(0x121DF1A, MyLogUEFA5);
+
+        // away goals rule for 3d match
+        patch::RedirectCall(0x40D20D, OnCheckMatchFlagsFor3D);
+
+        // ClubId_year.tga for badges
+        patch::SetUInt(0x4DD1D6 + 1, 'UNIR');
+        patch::SetUInt(0x4DD25B + 1, 'UNIR');
+        patch::SetUInt(0x4DD2D4 + 1, 'UNIQ');
+        patch::SetUInt(0x4DD359 + 1, 'UNIQ');
+        patch::RedirectCall(0x4DD220, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DD28B, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DD31E, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DD389, OnFormatBadgeNameAddSeasonYear);
+
+        // fix for PASSING (Short/Long) in TextMode
+        patch::SetUChar(0x14038A0, 4); // default 3 (TP_PASSINGSTYLE), replaced by 4 (TP_PASSING)
+
+        patch::RedirectCall(0xF0D02B, OnAddClubFans<0xF0D02B>);
+        patch::RedirectCall(0xF0D0BD, OnAddClubFans<0xF0D0BD>);
+        patch::RedirectCall(0xF0D35D, OnAddClubFans<0xF0D35D>);
+        patch::RedirectCall(0xF0D3DC, OnAddClubFans<0xF0D3DC>);
+        patch::RedirectCall(0xF0D4C1, OnAddClubFans<0xF0D4C1>);
     }
 }

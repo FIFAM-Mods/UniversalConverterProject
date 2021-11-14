@@ -2,7 +2,7 @@
 #include "GfxCoreHook.h"
 #include "GameInterfaces.h"
 #include "3dAdboardsAndBanners.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "Utils.h"
 #include "Random.h"
 
@@ -35,7 +35,7 @@ bool METHOD ReadXmlDataForStadium(void *orgStadScene, DUMMY_ARG, char (*outFileN
     gCustomStadiumTeamUID = 0;
     //Error("ReadXmlDataForStadium: %X", stadiumId);
     if (stadiumId >= 0x00010000) {
-        static char customFifaTemplateFilename[260];
+        static char customFifaTemplateFilename[256];
         sprintf(customFifaTemplateFilename, "data\\stadium\\FIFA\\%08X\\template.xml", stadiumId);
         bool templateExists = false;
         if (FmFileExists(customFifaTemplateFilename)) {
@@ -182,6 +182,7 @@ void METHOD OnOrigStadiumLoad(void *origStadium, DUMMY_ARG, const WideChar *stad
     gStadiumScaling[0] = 1.0f;
     gStadiumScaling[1] = 1.0f;
     gStadiumScaling[2] = 1.0f;
+    gStadiumIntroSceneId = 0;
     void *stadiumEngine = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x4100B0));
     CallMethodDynGlobal(GfxCoreAddress(0x4211A0), origStadium, stadiumFolder, lighting);
     auto LoadShape = [&](WideChar const *fileName, Bool isGlobal, void *&outShape) {
@@ -393,7 +394,8 @@ Int OnShadowFilename3(Char const *dst, Char const *format, Int lighting) {
                     else {
                         if (hour >= 18 || hour <= 8)
                             lighting = 4;
-                        lighting = 1;
+                        else
+                            lighting = 1; // TODO: mistake was here?
                     }
                 }
             }
@@ -419,13 +421,11 @@ void METHOD OnSetCustomStadiumScale(void *m, DUMMY_ARG, float x, float y, float 
 
 Int METHOD OnGetStadiumIntroID(void *vars, DUMMY_ARG, Char const *varname, Int a3) {
     Int stadiumId = gfxGetVarInt(varname, a3);
-    if (gStadiumIntroSceneId != 0) {
-        if (stadiumId == 999) {
-            void *stadiumEngine = (void *)GfxCoreAddress(0xD49E78);
-            void *origStadium = raw_ptr<void>(stadiumEngine, 0x1008);
-            if (*raw_ptr<UChar>(origStadium, 4))
-                stadiumId = gStadiumIntroSceneId;
-        }
+    if (stadiumId == 999 && gStadiumIntroSceneId != 0) {
+        void *stadiumEngine = (void *)GfxCoreAddress(0xD49E78);
+        void *origStadium = raw_ptr<void>(stadiumEngine, 0x1008);
+        if (*raw_ptr<UChar>(origStadium, 4))
+            stadiumId = gStadiumIntroSceneId;
     }
     return stadiumId;
 }
@@ -531,7 +531,7 @@ void PatchCustomStadiums(FM::Version v) {
         patch::RedirectCall(0xA94304, OnGetMatchPreviewAwayTeamID);
         patch::RedirectCall(0xA94340, OnCopyMatchForMatchPreview);
 
-        if (!Settings::GetInstance().getEnableDefaultStadiums()) {
+        if (!Settings::GetInstance().EnableDefaultStadiums) {
             patch::RedirectCall(0xF80AC7, OnReadFifaStadiumIdFromDb);
             patch::RedirectCall(0xF77BCC, OnReadFifaStadiumIdFromSave);
         }

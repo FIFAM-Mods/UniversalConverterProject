@@ -57,20 +57,17 @@ bool RequiresAdditionalTeamNominationForContinentalComps(CDBCompetition **outCom
             CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 7),
             CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 8),
             CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 9),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 10),
             CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 1),
             CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 2),
-            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 3),
-            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 4),
-            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 5),
-            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 6),
-            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 7),
-            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 8),
+            CCompID::Make(FifamCompRegion::Europe, FifamCompType::UefaCup, 3)
         };
         for (auto const &id : compIDsAry) {
             CDBRound *round = GetRound(id.countryId, id.type, id.index);
             if (round && IsRoundPlayedToday(round) && round->IsTeamPresent(gTeamNominationTeam->GetTeamID())) {
                 SafeLog::Write(Utils::Format(L"found team %s in round %08X", gTeamNominationTeam->GetName(), id));
-                *outComp = round;
+                if (outComp)
+                    *outComp = round;
                 return true;
             }
         }
@@ -90,7 +87,7 @@ void __declspec(naked) TeamNominationForContinentalCompsCheck() {
         call RequiresTeamNominationForContinentalComps
         test eax, eax
         jz SKIP_NOMINATION
-    DO_NOMINATION:
+//  DO_NOMINATION:
         mov eax, 0xF23146
         jmp eax
     SKIP_NOMINATION:
@@ -129,5 +126,14 @@ void PatchForeignersLimit(FM::Version v) {
         //patch::RedirectCall(0xF233AE, GetTeamQualifiedForContinentalCompetition);
 
         patch::Nop(0xF2324E, 6);
+
+        // (Test limits)
+        //patch::SetUChar(0xF8D53B + 1, 1);
+        //patch::SetUChar(0xF8D53D + 2, FifamCompRegion::Russia);
+        //patch::SetUChar(0xF8D62E + 4, FifamCompRegion::Russia);
+        //patch::SetUChar(0xF8D672, 4); // default for Turkey
+        //patch::SetUChar(0xF8D66A, 3); // limit for Russia
+
+        patch::RedirectCall(0x13DF7F9, (void *)0x13D2CD0); // fix the bug with line-up filler
     }
 }

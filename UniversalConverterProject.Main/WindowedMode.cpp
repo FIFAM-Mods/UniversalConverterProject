@@ -9,16 +9,10 @@
 #include "license_check/license_check.h"
 #include <stack>
 #include "Magick++.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 
 using namespace plugin;
 
-Bool gWindowedMode = false;
-Bool gWindowedModeStartValue = false;
-Bool gWindowsMousePointer = false;
-Bool gWindowsMousePointerStartValue = false;
-Bool gDisableResourcePathsCaching = false;
-Bool gDisableResourcePathsCachingStartValue = false;
 UInt gOriginalWndProc = 0;
 
 enum WindowedModeWindowPosition {
@@ -26,9 +20,6 @@ enum WindowedModeWindowPosition {
     WINDOWED_MODE_CENTER = 1,
     WINDOWED_MODE_LEFT = 2
 };
-
-Int gWindowPosition = WINDOWED_MODE_DEFAULT;
-Int gWindowPositionStartValue = WINDOWED_MODE_DEFAULT;
 
 void EnableCursor(Bool enable) {
     if (enable) {
@@ -42,7 +33,7 @@ void EnableCursor(Bool enable) {
 }
 
 INT __stdcall MyShowCursor(BOOL show) {
-    if (!gWindowsMousePointer)
+    if (!Settings::GetInstance().WindowsMousePointer)
         EnableCursor(false);
     INT result = show ? 0 : -1;
     return result;
@@ -126,8 +117,8 @@ struct GameOptionsAdditionalData {
     void *chkWindowsMousePointer = nullptr;
     void *cbWindowPosition = nullptr;
     void *tbWindowPosition = nullptr;
-    void *chkDisableResourcePathsCaching = nullptr;
     void *chkTeamControl = nullptr;
+    void *cbTheme = nullptr;
 };
 
 void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
@@ -137,47 +128,43 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     data->chkWindowsMousePointer = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkWindowsMousePointer");
     data->cbWindowPosition = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbWindowPosition");
     data->tbWindowPosition = CallMethodAndReturn<void *, 0xD44240>(screen, "TbWindowPosition");
-    data->chkDisableResourcePathsCaching = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkDisableResourcePathsCaching");
     data->chkTeamControl = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkTeamControlCanBeEnabled");
+    data->cbTheme = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbTheme");
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_DEFAULT"), 0, 0);
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_CENTER"), 1, 0);
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_LEFT"), 2, 0);
-    CallVirtualMethod<70>(data->cbWindowPosition, gWindowPosition);
-    CallVirtualMethod<84>(data->chkWindowedMode, gWindowedMode);
-    CallVirtualMethod<84>(data->chkWindowsMousePointer, gWindowsMousePointer);
-    CallVirtualMethod<84>(data->chkDisableResourcePathsCaching, gDisableResourcePathsCaching);
-    CallVirtualMethod<84>(data->chkTeamControl, Settings::GetInstance().getTeamControlDisabled() == false);
-    CallVirtualMethod<9>(data->chkWindowsMousePointer, gWindowedMode);
-    CallVirtualMethod<9>(data->cbWindowPosition, gWindowedMode);
-    CallVirtualMethod<9>(data->tbWindowPosition, gWindowedMode);
+    CallVirtualMethod<70>(data->cbWindowPosition, Settings::GetInstance().WindowPosition);
+    CallVirtualMethod<84>(data->chkWindowedMode, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<84>(data->chkWindowsMousePointer, Settings::GetInstance().WindowsMousePointer);
+    CallVirtualMethod<84>(data->chkTeamControl, Settings::GetInstance().DisableTeamControl == false);
+    CallVirtualMethod<9>(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<9>(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<9>(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DEFAULT"), 0, 0);
+    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DARK"), 1, 0);
+    CallVirtualMethod<70>(data->cbTheme, ToLower(Settings::GetInstance().Theme) == "dark");
     return result;
 }
 
 void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int unk) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
     if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkWindowedMode)) {
-        gWindowedMode = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowedMode) != 0;
-        CallVirtualMethod<9>(data->chkWindowsMousePointer, gWindowedMode);
-        CallVirtualMethod<9>(data->cbWindowPosition, gWindowedMode);
-        CallVirtualMethod<9>(data->tbWindowPosition, gWindowedMode);
-        if (gWindowedMode != gWindowedModeStartValue)
+        Settings::GetInstance().WindowedMode = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowedMode) != 0;
+        CallVirtualMethod<9>(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
+        CallVirtualMethod<9>(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
+        CallVirtualMethod<9>(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
+        if (Settings::GetInstance().WindowedMode != Settings::GetInstance().WindowedModeStartValue)
             Call<0xD392F0>(GetTranslation("IDS_RESOLUTION_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
         return;
     }
     else if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkWindowsMousePointer)) {
-        gWindowsMousePointer = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowsMousePointer) != 0;
-        UpdateCursor(gWindowsMousePointer);
-        return;
-    }
-    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkDisableResourcePathsCaching)) {
-        gDisableResourcePathsCaching = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkDisableResourcePathsCaching) != 0;
-        if (gDisableResourcePathsCaching != gDisableResourcePathsCachingStartValue)
-            Call<0xD392F0>(GetTranslation("IDS_RES_CACHING_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+        Settings::GetInstance().WindowsMousePointer = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowsMousePointer) != 0;
+        UpdateCursor(Settings::GetInstance().WindowsMousePointer);
         return;
     }
     else if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkTeamControl)) {
-        Settings::GetInstance().setTeamControlDisabled(CallVirtualMethodAndReturn<unsigned char, 85>(data->chkTeamControl) == 0);
-        if (Settings::GetInstance().getTeamControlDisabled() != Settings::GetInstance().getTeamControlDisabledAtGameStart())
+        Settings::GetInstance().DisableTeamControl = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkTeamControl) == 0;
+        if (Settings::GetInstance().DisableTeamControl != Settings::GetInstance().TeamControlDisabledAtGameStart)
             Call<0xD392F0>(GetTranslation("IDS_TEAM_CONTROL_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
         return;
     }
@@ -187,14 +174,24 @@ void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int
 void METHOD OnProcessGameOptionsComboboxes(void *screen, DUMMY_ARG, int *id, int unk1, int unk2) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
     if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbWindowPosition)) {
-        gWindowPosition = CallVirtualMethodAndReturn<int, 94>(data->cbWindowPosition, 0, 0);
+        Settings::GetInstance().WindowPosition = CallVirtualMethodAndReturn<int, 94>(data->cbWindowPosition, 0, 0);
+        return;
+    }
+    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbTheme)) {
+        int themeId = CallVirtualMethodAndReturn<int, 94>(data->cbTheme, 0, 0);
+        if (themeId == 1)
+            Settings::GetInstance().Theme = "dark";
+        else
+            Settings::GetInstance().Theme = "";
+        if (Settings::GetInstance().Theme != ToLower(Settings::GetInstance().ThemeAtGameStart))
+            Call<0xD392F0>(GetTranslation("IDS_THEME_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
         return;
     }
     CallMethod<0x500B20>(screen, id, unk1, unk2);
 }
 
 void METHOD MyDrawCursor(void *c) {
-    if (!gWindowedModeStartValue || !gWindowsMousePointer)
+    if (!Settings::GetInstance().WindowedModeStartValue || !Settings::GetInstance().WindowsMousePointer)
         CallMethod<0x494A90>(c);
 }
 
@@ -204,11 +201,11 @@ BOOL __stdcall MySetWindowPosition(HWND hWnd, int X, int Y, int nWidth, int nHei
     auto screenW = GetSystemMetrics(SM_CXMAXIMIZED);
     auto screenH = GetSystemMetrics(SM_CYMAXIMIZED);
     if (nWidth <= screenW && nHeight <= screenH) {
-        if (gWindowPosition == WINDOWED_MODE_CENTER) {
+        if (Settings::GetInstance().WindowPosition == WINDOWED_MODE_CENTER) {
             newX = screenW / 2 - nWidth / 2;
             newY = screenH / 2 - nHeight / 2;
         }
-        else if (gWindowPosition == WINDOWED_MODE_DEFAULT) {
+        else if (Settings::GetInstance().WindowPosition == WINDOWED_MODE_DEFAULT) {
             newX = screenW / 2 - nWidth / 2;
             newY = screenH / 2 - nHeight / 2;
             if (screenW > 0) {
@@ -296,6 +293,7 @@ void RemoveTextureFromCache(WideChar const *texName) {
 }
 
 Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &src) {
+    //Error(L"InstallPhoto: %s / %s, from %s", gamePath.c_str(), dstLocalPath.c_str(), src.c_str());
     try {
         if (!exists(src))
             return false;
@@ -309,6 +307,7 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
             image.resize(Magick::Geometry(160, 160));
         }
         Path dst = gamePath / dstLocalPath;
+        //Error(L"dst path: %s", dst.c_str());
         auto parentDir = dst.parent_path();
         if (!exists(parentDir))
             create_directories(parentDir);
@@ -317,7 +316,6 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
         image.write(u8Dst);
     }
     catch(...) { // ignore any error
-        return false;
     }
     return true;
 }
@@ -357,6 +355,11 @@ Bool InstallBadge(Path const &gamePath, Path const &badgesDir, String const &bad
     return true;
 }
 
+void ClearPathCache() {
+    void *resolver = CallAndReturn<void *, 0x40BF10>();
+    CallMethod<0x4D8960>(resolver);
+}
+
 Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
     if (uCmd == WM_DROPFILES) {
         if (!GetScreens().empty()) {
@@ -365,151 +368,158 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             UInt filesCount = DragQueryFileW(hDrop, 0xFFFFFFFF, fileName, MAX_PATH + 1);
             if (filesCount == 1) {
                 if (DragQueryFileW(hDrop, 0, fileName, MAX_PATH) != 0) {
-                    WideChar gameDir[MAX_PATH + 1];
-                    GetModuleFileNameW(NULL, gameDir, MAX_PATH + 1);
-                    wcsrchr(gameDir, L'\\')[1] = L'\0';
-                    Path gamePath = gameDir;
-                    void *screen = GetScreens().top().first;
-                    FmEntityType entityType = GetScreens().top().second;
-                    std::error_code ec;
+                    static Path documentsPath = GetDocumentsPath();
+                    if (!documentsPath.empty()) {
+                        Path documentsGraphicsPath = documentsPath / "Graphics";
+                        void *screen = GetScreens().top().first;
+                        FmEntityType entityType = GetScreens().top().second;
+                        std::error_code ec;
 
-                    if (entityType == FmEntityType::Player || entityType == FmEntityType::YouthPlayer) {
-                        Int currentPlayer = *raw_ptr<Int>(screen, entityType == FmEntityType::Player ? 0x4A4 : 0x498);
-                        if (currentPlayer >= 0) {
-                            UInt *players = *raw_ptr<UInt *>(screen, entityType == FmEntityType::Player ? 0x49C : 0x490);
-                            if (players) {
-                                UInt currentPlayerId = players[currentPlayer];
-                                CDBPlayer *player = CallAndReturn<CDBPlayer *, 0xF97C70>(currentPlayerId);
-                                if (player) {
-                                    String playerPicFileName = CallMethodAndReturn<WideChar const *, 0xFA23F0>(player, false, nullptr);
-                                    Path playerPicLocalPath = L"portraits\\club\\160x160";
-                                    playerPicLocalPath /= (playerPicFileName + L".png");
-                                    if (InstallPhoto(gamePath, playerPicLocalPath, fileName)) {
-                                        if (entityType == FmEntityType::Player) {
-                                            CallMethod<0xD4EF50>(screen,
-                                                *raw_ptr<void *>(screen, 0x61C),
-                                                raw_ptr<void *>(screen, 0x770),
-                                                *raw_ptr<UInt>(player, 0xD8),
-                                                0);
-                                        }
-                                        else {
-                                            Call<0xD32860>(*raw_ptr<void *>(screen, 0x530),
-                                                CallMethodAndReturn<WideChar *, 0xFCEF40>(player),
-                                                4, 4);
-                                            Bool hasPhoto = CallMethodAndReturn<Bool, 0xFCEFE0>(player);
-                                            CallVirtualMethod<11>(*raw_ptr<void *>(screen, 0x530), hasPhoto);
-                                            Bool displayPotrait = false;
-                                            //if (player->GetAge() < 17)
-                                            //    displayPotrait = false;
-                                            void *unkPortrait = CallVirtualMethodAndReturn<void *, 30>(*raw_ptr<void *>(screen, 0x530));
-                                            UInt teamIndex;
-                                            teamIndex = *CallMethodAndReturn<UInt *, 0xFB5240>(player, &teamIndex) & 0xFFFFFF;
-                                            CallMethod<0xD39C00>(screen, raw_ptr<void *>(screen, 0x664), unkPortrait, currentPlayerId, &teamIndex, displayPotrait, hasPhoto);
+                        if (entityType == FmEntityType::Player || entityType == FmEntityType::YouthPlayer) {
+                            Int currentPlayer = *raw_ptr<Int>(screen, entityType == FmEntityType::Player ? 0x4A4 : 0x498);
+                            if (currentPlayer >= 0) {
+                                UInt *players = *raw_ptr<UInt *>(screen, entityType == FmEntityType::Player ? 0x49C : 0x490);
+                                if (players) {
+                                    UInt currentPlayerId = players[currentPlayer];
+                                    CDBPlayer *player = CallAndReturn<CDBPlayer *, 0xF97C70>(currentPlayerId);
+                                    if (player) {
+                                        String playerPicFileName = CallMethodAndReturn<WideChar const *, 0xFA23F0>(player, false, nullptr);
+                                        Path playerPicLocalPath = L"Portraits\\Players\\160x160";
+                                        playerPicLocalPath /= (playerPicFileName + L".png");
+                                        if (InstallPhoto(documentsGraphicsPath, playerPicLocalPath, fileName)) {
+                                            ClearPathCache();
+                                            if (entityType == FmEntityType::Player) {
+                                                CallMethod<0xD4EF50>(screen,
+                                                    *raw_ptr<void *>(screen, 0x61C),
+                                                    raw_ptr<void *>(screen, 0x770),
+                                                    *raw_ptr<UInt>(player, 0xD8),
+                                                    0);
+                                            }
+                                            else {
+                                                Call<0xD32860>(*raw_ptr<void *>(screen, 0x530),
+                                                    CallMethodAndReturn<WideChar *, 0xFCEF40>(player),
+                                                    4, 4);
+                                                Bool hasPhoto = CallMethodAndReturn<Bool, 0xFCEFE0>(player);
+                                                CallVirtualMethod<11>(*raw_ptr<void *>(screen, 0x530), hasPhoto);
+                                                Bool displayPotrait = false;
+                                                //if (player->GetAge() < 17)
+                                                //    displayPotrait = false;
+                                                void *unkPortrait = CallVirtualMethodAndReturn<void *, 30>(*raw_ptr<void *>(screen, 0x530));
+                                                UInt teamIndex;
+                                                teamIndex = *CallMethodAndReturn<UInt *, 0xFB5240>(player, &teamIndex) & 0xFFFFFF;
+                                                CallMethod<0xD39C00>(screen, raw_ptr<void *>(screen, 0x664), unkPortrait, currentPlayerId, &teamIndex, displayPotrait, hasPhoto);
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    else if (entityType == FmEntityType::Manager) {
-                        Int currentManager = *raw_ptr<Int>(screen, 0x4A8);
-                        if (currentManager >= 0) {
-                            FmVec<UInt> *managers = raw_ptr<FmVec<UInt>>(screen, 0x490);
-                            if ((UInt)currentManager >= (UInt)(managers->end - managers->begin))
-                                currentManager = 0;
-                            UInt currentManagerId = managers->begin[currentManager];
-                            void *manager = CallAndReturn<void *, 0xEA2A00>(currentManagerId);
-                            if (manager) {
-                                if (CallMethodAndReturn<bool, 0xEB1600>(manager)) {
-                                    //if (currentManagerId >= 1 && currentManagerId <= 18) {
-                                    //    if (currentManagerId <= 4) {
-                                    //        Path managerPicDir = L"portraits\\Manager\\160x160";
-                                    //        UInt managerPicIndex = 0;
-                                    //        for (UInt mi = 0; mi < 100; mi++) {
-                                    //            if (!exists(managerPicDir / Format(L"ManagerCustom_%02d.png", mi))) {
-                                    //                managerPicIndex = mi;
-                                    //                break;
-                                    //            }
-                                    //        }
-                                    //        String managerPicFilename = Format(L"ManagerCustom_%02d.png", managerPicIndex);
-                                    //        Path managerPicLocalPath = managerPicDir / managerPicFilename;
-                                    //        if (InstallPhoto(gamePath, managerPicLocalPath, fileName)) {
-                                    //
-                                    //            CallMethod<0x1506B69>(managerInfo);
-                                    //            CallMethod<0x1506BC6>(managerInfo, 0, managerPicFilename.c_str());
-                                    //            Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
-                                    //        }
-                                    //    }
-                                    //}
+                        else if (entityType == FmEntityType::Manager) {
+                            Int currentManager = *raw_ptr<Int>(screen, 0x4A8);
+                            if (currentManager >= 0) {
+                                FmVec<UInt> *managers = raw_ptr<FmVec<UInt>>(screen, 0x490);
+                                if ((UInt)currentManager >= (UInt)(managers->end - managers->begin))
+                                    currentManager = 0;
+                                UInt currentManagerId = managers->begin[currentManager];
+                                void *manager = CallAndReturn<void *, 0xEA2A00>(currentManagerId); // CDBEmployee
+                                if (manager) {
+                                    if (CallMethodAndReturn<bool, 0xEB1600>(manager)) {
+                                        //if (currentManagerId >= 1 && currentManagerId <= 18) {
+                                        //    if (currentManagerId <= 4) {
+                                        //        Path managerPicDir = L"portraits\\Manager\\160x160";
+                                        //        UInt managerPicIndex = 0;
+                                        //        for (UInt mi = 0; mi < 100; mi++) {
+                                        //            if (!exists(managerPicDir / Format(L"ManagerCustom_%02d.png", mi))) {
+                                        //                managerPicIndex = mi;
+                                        //                break;
+                                        //            }
+                                        //        }
+                                        //        String managerPicFilename = Format(L"ManagerCustom_%02d.png", managerPicIndex);
+                                        //        Path managerPicLocalPath = managerPicDir / managerPicFilename;
+                                        //        if (InstallPhoto(gamePath, managerPicLocalPath, fileName)) {
+                                        //            ClearPathCache();
+                                        //            CallMethod<0x1506B69>(managerInfo);
+                                        //            CallMethod<0x1506BC6>(managerInfo, 0, managerPicFilename.c_str());
+                                        //            Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
+                                        //        }
+                                        //    }
+                                        //}
+                                    }
+                                    else {
+                                        WideChar buf[MAX_PATH + 1];
+                                        CallMethod<0xEA57A0>(0, buf, currentManagerId, 0);
+                                        if (buf[0]) {
+                                            String managerFileName = buf;
+                                            Path managerPicLocalPath = L"Portraits\\Staff\\160x160";
+                                            managerPicLocalPath /= (managerFileName + L".png");
+                                            if (InstallPhoto(documentsGraphicsPath, managerPicLocalPath, fileName)) {
+                                                ClearPathCache();
+                                                Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
+                                            }
+                                        }
+                                    }
                                 }
-                                else {
+                            }
+                        }
+                        else if (entityType == FmEntityType::Staff) {
+                            Int currentStaff = *raw_ptr<Int>(screen, 0x4A4);
+                            if (currentStaff >= 0) {
+                                FmVec<UInt> *staffs = raw_ptr<FmVec<UInt>>(screen, 0x48C);
+                                if ((UInt)currentStaff >= (UInt)(staffs->end - staffs->begin))
+                                    currentStaff = 0;
+                                UInt currentStaffId = staffs->begin[currentStaff];
+                                void *staff = CallAndReturn<void *, 0x11027F0>(currentStaffId);
+                                if (staff) {
                                     WideChar buf[MAX_PATH + 1];
-                                    CallMethod<0xEA57A0>(0, buf, currentManagerId, 0);
+                                    CallMethod<0x1102DC0>(0, buf, currentStaffId, 0);
                                     if (buf[0]) {
-                                        String managerFileName = buf;
-                                        Path managerPicLocalPath = L"portraits\\club\\160x160";
-                                        managerPicLocalPath /= (managerFileName + L".png");
-                                        if (InstallPhoto(gamePath, managerPicLocalPath, fileName))
-                                            Call<0xD4F8E0>(*raw_ptr<void *>(screen, 0x4D0), manager, 3, 1);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (entityType == FmEntityType::Staff) {
-                        Int currentStaff = *raw_ptr<Int>(screen, 0x4A4);
-                        if (currentStaff >= 0) {
-                            FmVec<UInt> *staffs = raw_ptr<FmVec<UInt>>(screen, 0x48C);
-                            if ((UInt)currentStaff >= (UInt)(staffs->end - staffs->begin))
-                                currentStaff = 0;
-                            UInt currentStaffId = staffs->begin[currentStaff];
-                            void *staff = CallAndReturn<void *, 0x11027F0>(currentStaffId);
-                            if (staff) {
-                                WideChar buf[MAX_PATH + 1];
-                                CallMethod<0x1102DC0>(0, buf, currentStaffId, 0);
-                                if (buf[0]) {
-                                    Path staffPicLocalPath = L"portraits\\club\\160x160";
-                                    staffPicLocalPath /= (String(buf) + L".png");
-                                    if (InstallPhoto(gamePath, staffPicLocalPath, fileName)) {
-                                        if (CallMethodAndReturn<Bool, 0x1102980>(staff))
-                                            Call<0xD32860>(*raw_ptr<void *>(screen, 0x4F0), CallMethodAndReturn<WideChar const *, 0x1102970>(staff), 4, 4);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (entityType == FmEntityType::Club) {
-                        CTeamIndex teamIndex = *raw_ptr<CTeamIndex>(screen, 0x974);
-                        if (teamIndex.countryId != 0) {
-                            CDBTeam *team = GetTeam(teamIndex);
-                            if (team) {
-                                if (InstallBadge(gamePath, L"badges\\clubs", Utils::Format(L"%08X.tga", team->GetTeamUniqueID()), fileName)) {
-                                    UInt *teamIndex = raw_ptr<UInt>(screen, 0x974);
-                                    Int currentTab = *raw_ptr<Int>(screen, 0x978);
-                                    Call<0xD4F5F0>(*raw_ptr<Int>(screen, 0x908), teamIndex, 1, 0);
-                                    if (currentTab == 0) {
-                                        void *tab = *raw_ptr<void *>(screen, 0x970);
-                                        if (tab) {
-                                            WideChar teamBadgeFileName[MAX_PATH + 1];
-                                            Call<0xD32860>(*raw_ptr<void *>(tab, 0x216C), CallAndReturn<WideChar const *, 0xD2B550>(teamBadgeFileName, teamIndex, 3, 0), 4, 4);
+                                        Path staffPicLocalPath = L"Portraits\\Staff\\160x160";
+                                        staffPicLocalPath /= (String(buf) + L".png");
+                                        if (InstallPhoto(documentsGraphicsPath, staffPicLocalPath, fileName)) {
+                                            ClearPathCache();
+                                            if (CallMethodAndReturn<Bool, 0x1102980>(staff))
+                                                Call<0xD32860>(*raw_ptr<void *>(screen, 0x4F0), CallMethodAndReturn<WideChar const *, 0x1102970>(staff), 4, 4);
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    else if (entityType == FmEntityType::League) {
-                        UInt leagueId = *raw_ptr<UInt>(screen, 0x48C);
-                        if (leagueId != 0) {
-                            if (InstallBadge(gamePath, L"badges\\Leagues", Utils::Format(L"%08X.tga", leagueId), fileName)) {
-                                Path leagueLogoPath = L"badges\\Leagues\\256x256";
-                                leagueLogoPath /= Utils::Format(L"%08X.tga", leagueId);
-                                Call<0xD32860>(*raw_ptr<void *>(screen, 0x4E8), leagueLogoPath.c_str(), 4, 4);
+                        else if (entityType == FmEntityType::Club) {
+                            CTeamIndex teamIndex = *raw_ptr<CTeamIndex>(screen, 0x974);
+                            if (teamIndex.countryId != 0) {
+                                CDBTeam *team = GetTeam(teamIndex);
+                                if (team) {
+                                    if (InstallBadge(documentsGraphicsPath, L"Badges\\Clubs", Utils::Format(teamIndex.type == 1 ? L"%08X_2.tga" :
+                                        L"%08X.tga", team->GetTeamUniqueID()), fileName)) {
+                                        ClearPathCache();
+                                        UInt *teamIndex = raw_ptr<UInt>(screen, 0x974);
+                                        Int currentTab = *raw_ptr<Int>(screen, 0x978);
+                                        Call<0xD4F5F0>(*raw_ptr<Int>(screen, 0x908), teamIndex, 1, 0);
+                                        if (currentTab == 0) {
+                                            void *tab = *raw_ptr<void *>(screen, 0x970);
+                                            if (tab) {
+                                                WideChar teamBadgeFileName[MAX_PATH + 1];
+                                                Call<0xD32860>(*raw_ptr<void *>(tab, 0x216C), CallAndReturn<WideChar const *, 0xD2B550>(teamBadgeFileName, teamIndex, 3, 0), 4, 4);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
-                    else if (entityType == FmEntityType::Country) {
+                        else if (entityType == FmEntityType::League) {
+                            UInt leagueId = *raw_ptr<UInt>(screen, 0x48C);
+                            if (leagueId != 0) {
+                                if (InstallBadge(documentsGraphicsPath, L"Badges\\Leagues", Utils::Format(L"%08X.tga", leagueId), fileName)) {
+                                    ClearPathCache();
+                                    Path leagueLogoPath = documentsGraphicsPath / L"Badges\\Leagues\\256x256";
+                                    leagueLogoPath /= Utils::Format(L"%08X.tga", leagueId);
+                                    Call<0xD32860>(*raw_ptr<void *>(screen, 0x4E8), leagueLogoPath.c_str(), 4, 4);
+                                }
+                            }
+                        }
+                        else if (entityType == FmEntityType::Country) {
 
+                        }
                     }
                 }
                 DragFinish(hDrop);
@@ -520,14 +530,53 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         if (CallAndReturn<Bool, 0x4514F0>() != 1) {
             return 0;
         }
-        SaveWindowedMode();
-        Settings::GetInstance().save();
+        Settings::GetInstance().Save();
+        SaveTestFile();
     }
     return CallMethodAndReturnDynGlobal<Int>(gOriginalWndProc, 0, hWnd, uCmd, wParam, lParam);
 }
 
+void CachedPathsMapCallback(void *t) {
+    void *v = t;
+    for (void *i = t; !(*raw_ptr<UChar>(i, 0x3D)); v = i)
+    {
+        CachedPathsMapCallback(*raw_ptr<void *>(i, 8));
+        i = *raw_ptr<void *>(i, 0);
+        Int *params = raw_ptr<Int>(v, 0x10);
+        void *wstr = *raw_ptr<void *>(v, 0xC);
+        const WideChar *strdata = (*raw_ptr<UInt>(wstr, 0x18) < 8) ? raw_ptr<const WideChar>(wstr, 4) : *raw_ptr<const WideChar *>(wstr, 4);
+        SafeLog::WriteToFile("path_cached_map.txt", strdata);
+    }
+}
+
+const WideChar *METHOD OnAddPathToCache(void *t, DUMMY_ARG, Int *i, const WideChar *filePath, UInt type) {
+    //SafeLog::WriteToFile("path_cache.csv",
+    //    Format(L"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,\"%s\",%d",
+    //        i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], filePath, type));
+    const WideChar *result = CallMethodAndReturn<const WideChar *, 0x4DC060>(t, i, filePath, type);
+    void *cachedMap = raw_ptr<void>(t, 0x3C30);
+    UInt mapSize = *raw_ptr<UInt>(cachedMap, 0x1C);
+    void *n1 = *raw_ptr<void *>(cachedMap, 0x18);
+    void *n2 = *raw_ptr<void *>(n1, 4);
+    SafeLog::WriteToFile("path_cached_map.txt", Format(L"MAP size: %d ===========================================", mapSize));
+    CachedPathsMapCallback(n2);
+    return result;
+}
+
 void InstallWindowedMode_GfxCore() {
-    if (gWindowedMode) {
+    if (Settings::GetInstance().WindowedMode) {
+        patch::SetUChar(GfxCoreAddress(0xD1BE), 0xEB);
+        patch::Nop(GfxCoreAddress(0xD23B), 2);
+        patch::Nop(GfxCoreAddress(0x166B2), 2);
+        patch::Nop(GfxCoreAddress(0x16A0F), 1);
+        patch::SetUChar(GfxCoreAddress(0x16A0F + 1), 0xE9);
+        patch::Nop(GfxCoreAddress(0x18A6A), 7);
+        patch::SetUChar(GfxCoreAddress(0x18A7E), 0xB8);
+        patch::SetUInt(GfxCoreAddress(0x18A7E + 1), 1);
+        patch::SetUChar(GfxCoreAddress(0x28202F), 0xB8);
+        patch::SetUInt(GfxCoreAddress(0x28202F + 1), 1);
+        patch::Nop(GfxCoreAddress(0x282036), 2);
+
         patch::RedirectCall(GfxCoreAddress(0x3BB82C), ProcessMouse);
 
         //patch::RedirectCall(GfxCoreAddress(0x28212D), AppIdle);
@@ -552,7 +601,7 @@ void InstallWindowedMode_GfxCore() {
         gOriginalWndProc = patch::GetUInt(GfxCoreAddress(0x7086) + 4);
         patch::SetPointer(GfxCoreAddress(0x7086) + 4, MyWndProc);
 
-        if (gWindowPosition != WINDOWED_MODE_LEFT) {
+        if (Settings::GetInstance().WindowPosition != WINDOWED_MODE_LEFT) {
             patch::RedirectCall(GfxCoreAddress(0x6D7E), MySetWindowPosition);
             patch::Nop(GfxCoreAddress(0x6D7E) + 5, 1);
         }
@@ -561,17 +610,10 @@ void InstallWindowedMode_GfxCore() {
 
 void PatchWindowedMode(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        gWindowedMode = GetPrivateProfileIntW(L"", Magic<'W', 'I', 'N', 'D', 'O', 'W', 'E', 'D'>(1735279180).c_str(), 0, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
-        gWindowedModeStartValue = gWindowedMode;
-        gWindowsMousePointer = GetPrivateProfileIntW(L"", Magic<'W', 'I', 'N', 'D', 'O', 'W', 'S', '_', 'M', 'O', 'U', 'S', 'E', '_', 'P', 'O', 'I', 'N', 'T', 'E', 'R'>(2820247460).c_str(), 0, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
-        gWindowsMousePointerStartValue = gWindowsMousePointer;
-        gWindowPosition = GetPrivateProfileIntW(L"", Magic<'W', 'I', 'N', 'D', 'O', 'W', '_', 'P', 'O', 'S', 'I', 'T', 'I', 'O', 'N'>(3666493466).c_str(), 0, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
-        if (gWindowPosition < 0 || gWindowPosition > 2)
-            gWindowPosition = 0;
-        gWindowPositionStartValue = gWindowPosition;
-        gDisableResourcePathsCaching = GetPrivateProfileIntW(L"", Magic<'D','I','S','A','B','L','E','_','R','E','S','_','P','A','T','H','_','C','A','C','H','I','N','G'>(206041226).c_str(), 0, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
-        gDisableResourcePathsCachingStartValue = gDisableResourcePathsCaching;
-
+        if (IsFirstLaunch() && !Settings::GetInstance().WindowedMode) {
+            Settings::GetInstance().WindowedMode = GetPrivateProfileIntW(L"", L"WINDOWED", 0, L".\\locale.ini");
+            Settings::GetInstance().WindowedModeStartValue = Settings::GetInstance().WindowedMode;
+        }
         const UInt newStructSize = 0x504 + sizeof(GameOptionsAdditionalData);
         patch::SetUInt(0x52F1B4 + 1, newStructSize);
         patch::SetUInt(0x52F1BB + 1, newStructSize);
@@ -585,7 +627,7 @@ void PatchWindowedMode(FM::Version v) {
         patch::RedirectCall(0x4500B3, MyDrawCursor);
         patch::RedirectCall(0x451157, MyDrawCursor);
 
-        if (gWindowedMode) {
+        if (Settings::GetInstance().WindowedMode) {
             patch::SetUChar(0x45BEDD + 1, 0);
             patch::Nop(0x451B71, 7);
             patch::Nop(0x452430, 8);
@@ -609,18 +651,19 @@ void PatchWindowedMode(FM::Version v) {
             patch::RedirectCall(0x5F48C9, EntityScreenDestructor<FmEntityType::Country, 0xD54220>);
             patch::RedirectJump(0x5F43B6, EntityScreenDestructor<FmEntityType::Country, 0xD54220>);
         }
-        if (gDisableResourcePathsCaching)
-            patch::SetUChar(0x4DC38F + 6, 0); // disable resource caching
-    }
-}
+        //if (Settings::GetInstance().DisableResourcePathsCaching)
+        //    patch::SetUChar(0x4DC38F + 6, 0); // disable resource caching
 
-void SaveWindowedMode() {
-    if (gWindowedMode != gWindowedModeStartValue)
-        WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','E','D'>(1735279180).c_str(), Utils::Format(L"%u", gWindowedMode).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-    if (gWindowsMousePointer != gWindowsMousePointerStartValue)
-        WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','S','_','M','O','U','S','E','_','P','O','I','N','T','E','R'>(2820247460).c_str(), Utils::Format(L"%u", gWindowsMousePointer).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-    if (gWindowPosition != gWindowPositionStartValue)
-        WritePrivateProfileStringW(L"", Magic<'W','I','N','D','O','W','_','P','O','S','I','T','I','O','N'>(3666493466).c_str(), Utils::Format(L"%u", gWindowPosition).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
-    if (gDisableResourcePathsCaching != gDisableResourcePathsCachingStartValue)
-        WritePrivateProfileStringW(L"", Magic<'D','I','S','A','B','L','E','_','R','E','S','_','P','A','T','H','_','C','A','C','H','I','N','G'>(206041226).c_str(), Utils::Format(L"%u", gDisableResourcePathsCaching).c_str(), Magic<'.','\\','l','o','c','a','l','e','.','i','n','i'>(2393442148).c_str());
+        //patch::RedirectCall(0x4DC5C0 + 0x70B , OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x789 , OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x1341, OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x1640, OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x165E, OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x3500, OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x372D, OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x3BB4, OnAddPathToCache);
+        //patch::RedirectCall(0x4E0232         , OnAddPathToCache);
+        //patch::RedirectCall(0x4DC5C0 + 0x3CF0, OnAddPathToCache);
+
+    }
 }

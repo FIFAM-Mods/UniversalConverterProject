@@ -7,7 +7,7 @@
 #include "FifamNation.h"
 #include "Random.h"
 #include "shared.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 
 using namespace plugin;
 
@@ -112,47 +112,6 @@ void ReadStadiumDataFile() {
     }
 }
 
-Bool GetHour() {
-    void *match = *(void **)0x3124748;
-    if (match)
-        return CallMethodAndReturn<UChar, 0xE811C0>(match);
-    return 0;
-}
-
-Bool GetIsCloudy() {
-    void *match = *(void **)0x3124748;
-    if (match) {
-        UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
-        if (weather == 2 || weather == 3)
-            return true;
-    }
-    return false;
-}
-
-Bool GetIsRainy() {
-    void *match = *(void **)0x3124748;
-    if (match) {
-        UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
-        if (weather == 0)
-            return true;
-    }
-    return false;
-}
-
-Bool GetIsSnowy() {
-    void *match = *(void **)0x3124748;
-    if (match) {
-        UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
-        if (weather == 1)
-            return true;
-    }
-    return false;
-}
-
-UInt GetLighting() {
-    return gfxGetVarInt("LIGHTING", 1);
-}
-
 Int OnReadLightingFile(char const *filename) {
     Int result = CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x1EE710), filename);
 
@@ -219,6 +178,7 @@ Int OnReadLightingFile(char const *filename) {
         gUnkColor1->b = 0.0f;
         gUnkColor1->a = 0.0f;
         
+        // TODO: mistake? gUnkColor2 must be used?
         gUnkColor1->r = 0.0f;
         gUnkColor1->g = 0.0f;
         gUnkColor1->b = 0.0f;
@@ -235,7 +195,7 @@ Int OnReadLightingFile(char const *filename) {
         RGBAReal *gUnkColor1 = (RGBAReal *)GfxCoreAddress(0x711030);
         RGBAReal *gUnkColor2 = (RGBAReal *)GfxCoreAddress(0x711068);
 
-        if (Settings::GetInstance().getUseNew3dPitch()) {
+        if (Settings::GetInstance().UseNew3dPitch) {
             gSpecialVisibility->r = 1.0f; // unknown (default 1)
         }
 
@@ -289,7 +249,7 @@ Int OnReadLightingFile(char const *filename) {
         gGrassScale->b = 18.0f;
         gGrassScale->a = 0.0f;
 
-        if (Settings::GetInstance().getUseNew3dPitch() || stadiumData) {
+        if (Settings::GetInstance().UseNew3dPitch || stadiumData) {
 
             UInt customColor = 0;
             Float customBrightness = 0.0f;
@@ -354,7 +314,7 @@ Int OnReadLightingFile(char const *filename) {
             gBrightnessColor->b = customBrightness;
             gBrightnessColor->a = 1.0f;
 
-            if (Settings::GetInstance().getUseNew3dPitch()) {
+            if (Settings::GetInstance().UseNew3dPitch) {
                 gPatternColor2->r = 0.06f;
                 gPatternColor2->g = 0.108f;
                 gPatternColor2->b = 0.119f;
@@ -365,6 +325,7 @@ Int OnReadLightingFile(char const *filename) {
                 gUnkColor1->b = 0.0f;
                 gUnkColor1->a = 0.4f;
 
+                // TODO: mistake? Must be gUnkColor2?
                 gUnkColor1->r = 0.0f;
                 gUnkColor1->g = 0.0f;
                 gUnkColor1->b = 0.4f;

@@ -17,7 +17,7 @@ unsigned char euCountryFlags[] = {
 0 , // Cyprus
 0 , // Czech Republic
 0 , // Denmark
-0 , // England
+1 , // England
 0 , // Estonia
 0 , // Faroe Islands
 0 , // Finland
@@ -38,14 +38,14 @@ unsigned char euCountryFlags[] = {
 0 , // Malta
 1 , // Moldova
 0 , // Netherlands
-0 , // Northern Ireland
+1 , // Northern Ireland
 0 , // Norway
 0 , // Poland
 0 , // Portugal
 0 , // Romania
 1 , // Russia
 0 , // San Marino
-0 , // Scotland
+1 , // Scotland
 0 , // Slovakia
 0 , // Slovenia
 0 , // Spain
@@ -53,7 +53,7 @@ unsigned char euCountryFlags[] = {
 0 , // Switzerland
 1 , // Turkey
 1 , // Ukraine
-0 , // Wales
+1 , // Wales
 0 , // Serbia
 3 , // Argentina
 3 , // Bolivia

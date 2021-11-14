@@ -5,3 +5,4 @@ using namespace plugin;
 
 void PatchPlayerAccessories(FM::Version v);
 void InstallPlayerAccessoriesGfxPatches();
+void SetupSleevesForPlayerModel(void *plmodel);

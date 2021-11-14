@@ -1,5 +1,5 @@
 #include "LoansLimit.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 
 using namespace plugin;
 
@@ -8,7 +8,7 @@ int METHOD GetMaxLoans(int) {
 }
 
 void PatchLoansLimit(FM::Version v) {
-    if (Settings::GetInstance().getExtendLoansLimit()) {
+    if (Settings::GetInstance().ExtendLoansLimit) {
         if (v.id() == ID_FM_13_1030_RLD) {
             patch::RedirectJump(0x10CB820, GetMaxLoans);
             patch::RedirectJump(0x10CB8B0, GetMaxLoans);

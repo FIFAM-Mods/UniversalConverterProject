@@ -543,40 +543,40 @@ const WideChar *METHOD OnGetFolderNameForLocFiles(void *metric) {
 }
 
 void OnSetupNewspaper(UInt countryId, Char *dst) {
-    Int metricId = -1;
-    switch (countryId) {
-    case FifamCompRegion::Austria:
-        metricId = METRIC_AUSTRIA;
-        break;
-    case FifamCompRegion::England:
-        metricId = METRIC_UNITED_KINGDOM;
-        break;
-    case FifamCompRegion::France:
-        metricId = METRIC_FRANCE;
-        break;
-    case FifamCompRegion::Germany:
-        metricId = METRIC_GERMANY;
-        break;
-    case FifamCompRegion::Italy:
-        metricId = METRIC_ITALY;
-        break;
-    case FifamCompRegion::Spain:
-        metricId = METRIC_SPAIN;
-        break;
-    case FifamCompRegion::Switzerland:
-        metricId = METRIC_SWITHERLAND;
-    }
-    if (metricId != -1) {
-        void *metrics = CallAndReturn<void *, 0x14AC159>();
-        void *metricInfo = CallMethodAndReturn<void *, 0x14AC29A>(metrics, metricId);
-        WideChar const *metricShortName = CallMethodAndReturn<WideChar const *, 0x14ABAAB>(metricInfo);
-        dst[14] = Char(metricShortName[0]);
-        dst[15] = Char(metricShortName[1]);
-        dst[16] = Char(metricShortName[2]);
-        if (MediaImageExists(dst))
-            return;
-    }
-    else {
+    //Int metricId = -1;
+    //switch (countryId) {
+    //case FifamCompRegion::Austria:
+    //    metricId = METRIC_AUSTRIA;
+    //    break;
+    //case FifamCompRegion::England:
+    //    metricId = METRIC_UNITED_KINGDOM;
+    //    break;
+    //case FifamCompRegion::France:
+    //    metricId = METRIC_FRANCE;
+    //    break;
+    //case FifamCompRegion::Germany:
+    //    metricId = METRIC_GERMANY;
+    //    break;
+    //case FifamCompRegion::Italy:
+    //    metricId = METRIC_ITALY;
+    //    break;
+    //case FifamCompRegion::Spain:
+    //    metricId = METRIC_SPAIN;
+    //    break;
+    //case FifamCompRegion::Switzerland:
+    //    metricId = METRIC_SWITHERLAND;
+    //}
+    //if (metricId != -1) {
+    //    void *metrics = CallAndReturn<void *, 0x14AC159>();
+    //    void *metricInfo = CallMethodAndReturn<void *, 0x14AC29A>(metrics, metricId);
+    //    WideChar const *metricShortName = CallMethodAndReturn<WideChar const *, 0x14ABAAB>(metricInfo);
+    //    dst[14] = Char(metricShortName[0]);
+    //    dst[15] = Char(metricShortName[1]);
+    //    dst[16] = Char(metricShortName[2]);
+    //    if (MediaImageExists(dst))
+    //        return;
+    //}
+    //else {
         if (countryId >= 1 && countryId <= 207) {
             if (!CountryName()[countryId - 1].second.empty()) {
                 auto abbr = Utils::WtoA(CountryName()[countryId - 1].second);
@@ -589,7 +589,7 @@ void OnSetupNewspaper(UInt countryId, Char *dst) {
                 }
             }
         }
-    }
+    //}
     dst[14] = 'd';
     dst[15] = 'e';
     dst[16] = 'f';

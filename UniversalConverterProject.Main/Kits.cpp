@@ -6,12 +6,15 @@
 #include "GameInterfaces.h"
 #include "shared.h"
 #include "Random.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "FifamCompetition.h"
 #include "Competitions.h"
+#include "json/json.hpp"
+#include <fstream>
 
 using namespace plugin;
 using namespace std::filesystem;
+using namespace nlohmann;
 
 Char *gpUserKitName = nullptr;
 Bool gUsedCustomCaptainArmband = false;
@@ -169,45 +172,81 @@ String GetUserKitNumberTexturePath(String const &directory, UInt compId, UInt cl
     return String();
 }
 
-String GetUserCompBadgesTexturePath(String const &directory, UInt compId, Bool right, UInt clubId, String const &kitTypeStr, UInt lastSeasonYear, Bool isChampion, UInt numTitles, Bool has3inrow, Bool isELChampion) {
+String GetUserCompBadgesTexturePath(String const &directory, UInt compId, Bool right, UInt clubId, String const &kitTypeStr, UInt lastSeasonYear, Bool isChampion, UInt numTitles, Bool has3inrow, Bool isELChampion, Bool isConfChampion) {
     if (compId != 0) {
         String result;
         if (compId == 0xF909) {
-            // right: winner/EL winner
-            // left: titles
             if (right) {
                 if (isChampion) {
-                    if (FmFileImageExists(directory + L"\\ChampionsLeague_Winner_" + Utils::Format(L"%u", lastSeasonYear), result))
+                    if (numTitles >= 4) {
+                        if (FmFileImageExists(directory + L"\\F909_Winner_" + Utils::Format(L"%u", numTitles), result))
+                            return result;
+                    }
+                    if (FmFileImageExists(directory + L"\\F909_r_champion", result))
                         return result;
                 }
                 else if (isELChampion) {
-                    if (FmFileImageExists(directory + L"\\ChampionsLeague_EuropaLeagueWinner_" + Utils::Format(L"%u", lastSeasonYear), result))
+                    if (FmFileImageExists(directory + L"\\F909_F90A_Winner_" + Utils::Format(L"%u", lastSeasonYear), result))
                         return result;
                 }
-            }
-            else {
                 if (numTitles >= 4) {
-                    if (FmFileImageExists(directory + L"\\ChampionsLeague_Titles_" + Utils::Format(L"%u", numTitles), result))
+                    if (FmFileImageExists(directory + L"\\F909_Titles_" + Utils::Format(L"%u", numTitles), result))
                         return result;
                 }
                 else if (has3inrow) {
-                    if (FmFileImageExists(directory + L"\\ChampionsLeague_Titles_3", result))
+                    if (FmFileImageExists(directory + L"\\F909_Titles_3", result))
                         return result;
                 }
             }
         }
         else if (compId == 0xF90E) {
-            // right: winner
-            // left: titles
             if (right) {
                 if (isChampion) {
-                    if (FmFileImageExists(directory + L"\\EuropaLeague_Winner_" + Utils::Format(L"%u", lastSeasonYear), result))
+                    if (numTitles >= 1) {
+                        if (FmFileImageExists(directory + L"\\F90A_Winner_" + Utils::Format(L"%u", numTitles), result))
+                            return result;
+                    }
+                    if (FmFileImageExists(directory + L"\\F90A_r_champion", result))
+                        return result;
+                }
+                else if (isConfChampion) {
+                    if (FmFileImageExists(directory + L"\\F90A_F933_Winner_" + Utils::Format(L"%u", lastSeasonYear), result))
+                        return result;
+                }
+                if (numTitles >= 1) {
+                    if (FmFileImageExists(directory + L"\\F90A_Titles_" + Utils::Format(L"%u", numTitles), result))
                         return result;
                 }
             }
-            else {
-                if (numTitles >= 5) {
-                    if (FmFileImageExists(directory + L"\\EuropaLeague_Titles_" + Utils::Format(L"%u", numTitles), result))
+        }
+        else if (compId == 0xF933) {
+            if (right) {
+                if (isChampion) {
+                    if (numTitles >= 1) {
+                        if (FmFileImageExists(directory + L"\\F933_Winner_" + Utils::Format(L"%u", numTitles), result))
+                            return result;
+                    }
+                    if (FmFileImageExists(directory + L"\\F933_r_champion", result))
+                        return result;
+                }
+                if (numTitles >= 1) {
+                    if (FmFileImageExists(directory + L"\\F933_Titles_" + Utils::Format(L"%u", numTitles), result))
+                        return result;
+                }
+            }
+        }
+        else if (compId == 0x0E030000) {
+            if (right) {
+                if (numTitles >= 1) {
+                    if (FmFileImageExists(directory + L"\\0E030000_Titles_" + Utils::Format(L"%u", numTitles), result))
+                        return result;
+                }
+            }
+        }
+        else if (compId == 0x15030000) {
+            if (right) {
+                if (numTitles >= 1) {
+                    if (FmFileImageExists(directory + L"\\15030000_Titles_" + Utils::Format(L"%u", numTitles), result))
                         return result;
                 }
             }
@@ -506,6 +545,59 @@ int gfxOnSetupKitParametersTeam2(void *desc, int a2, int a3, int kitType) {
     return result;
 }
 
+void SetTeamKitConfig(UInt teamId, UInt kitType, UChar collar, UChar nameplacement, Bool frontnumber, Int jerseynumbercolor, Int jerseynamecolor, 
+    UChar jerseynumbersize, UChar jerseynumberoffset, Bool canusecompbadges, Bool canusesponsorlogo)
+{
+    if (teamId != 0 && kitType <= 3) {
+        auto &kits = GetTeamKitsMap()[teamId];
+        auto &kitDesc = kits[kitType];
+        kitDesc.used = true;
+        if (collar > 8)
+            collar = 0;
+        kitDesc.collar = collar;
+        if (nameplacement > 2)
+            nameplacement = 0;
+        kitDesc.nameplacement = nameplacement;
+        kitDesc.frontnumber = frontnumber;
+        if (jerseynumbercolor < 1 || jerseynumbercolor > 6)
+            jerseynumbercolor = 15;
+        kitDesc.jerseynumbercolor = jerseynumbercolor;
+        if (jerseynamecolor < 1 || jerseynamecolor > 64)
+            jerseynamecolor = 127;
+        if (jerseynamecolor == 127 && jerseynumbercolor != 15) {
+            switch (jerseynumbercolor) {
+            case 1:
+                jerseynamecolor = 1;
+                break;
+            case 2:
+                jerseynamecolor = 2;
+                break;
+            case 3:
+                jerseynamecolor = 5;
+                break;
+            case 4:
+                jerseynamecolor = 19;
+                break;
+            case 5:
+                jerseynamecolor = 47;
+                break;
+            case 6:
+                jerseynamecolor = 59;
+                break;
+            }
+        }
+        kitDesc.jerseynamecolor = jerseynamecolor;
+        if (jerseynumbersize > 10)
+            jerseynumbersize = 10;
+        kitDesc.jerseynumbersize = jerseynumbersize;
+        if (jerseynumberoffset > 15)
+            jerseynumberoffset = 15;
+        kitDesc.jerseynumberoffset = jerseynumberoffset;
+        kitDesc.canusecompbadges = canusecompbadges;
+        kitDesc.canusesponsorlogo = canusesponsorlogo;
+    }
+}
+
 void ReadKitsFile() {
     FifamReader reader(L"plugins\\ucp\\kits.csv", 14);
     if (reader.Available()) {
@@ -526,57 +618,62 @@ void ReadKitsFile() {
                 UChar jerseynumberoffset = 0;
                 reader.ReadLine(d, d, d, Hexadecimal(teamid), kittype, collar, nameplacement, frontnumber, jerseynumbercolor,
                     jerseynamecolor, jerseynumbersize, jerseynumberoffset, canusecompbadges, canusesponsorlogo);
-                if (teamid != 0 && kittype <= 3) {
-                    auto &kits = GetTeamKitsMap()[teamid];
-                    auto &kitDesc = kits[kittype];
-                    kitDesc.used = true;
-                    if (collar > 8)
-                        collar = 0;
-                    kitDesc.collar = collar;
-                    if (nameplacement > 2)
-                        nameplacement = 0;
-                    kitDesc.nameplacement = nameplacement;
-                    kitDesc.frontnumber = frontnumber;
-                    if (jerseynumbercolor < 1 || jerseynumbercolor > 6)
-                        jerseynumbercolor = 15;
-                    kitDesc.jerseynumbercolor = jerseynumbercolor;
-                    if (jerseynamecolor < 1 || jerseynamecolor > 64)
-                        jerseynamecolor = 127;
-                    if (jerseynamecolor == 127 && jerseynumbercolor != 15) {
-                        switch (jerseynumbercolor) {
-                        case 1:
-                            jerseynamecolor = 1;
-                            break;
-                        case 2:
-                            jerseynamecolor = 2;
-                            break;
-                        case 3:
-                            jerseynamecolor = 5;
-                            break;
-                        case 4:
-                            jerseynamecolor = 19;
-                            break;
-                        case 5:
-                            jerseynamecolor = 47;
-                            break;
-                        case 6:
-                            jerseynamecolor = 59;
-                            break;
-                        }
-                    }
-                    kitDesc.jerseynamecolor = jerseynamecolor;
-                    if (jerseynumbersize > 10)
-                        jerseynumbersize = 10;
-                    kitDesc.jerseynumbersize = jerseynumbersize;
-                    if (jerseynumberoffset > 15)
-                        jerseynumberoffset = 15;
-                    kitDesc.jerseynumberoffset = jerseynumberoffset;
-                    kitDesc.canusecompbadges = canusecompbadges;
-                    kitDesc.canusesponsorlogo = canusesponsorlogo;
-                }
+                SetTeamKitConfig(teamid, kittype, collar, nameplacement, frontnumber, jerseynumbercolor, jerseynamecolor,
+                    jerseynumbersize, jerseynumberoffset, canusecompbadges, canusesponsorlogo);
             }
             else
                 reader.SkipLine();
+        }
+    }
+
+    Path kitConfigDir = "data\\kitconfig";
+    auto jsonReadNumber = [](json const &node, StringA const &key, int defaultValue) {
+        auto it = node.find(key);
+        if (it == node.end() || !(*it).is_number())
+            return defaultValue;
+        return (*it).get<int>();
+    };
+    if (exists(kitConfigDir) && is_directory(kitConfigDir)) {
+        for (auto const &i : directory_iterator(kitConfigDir)) {
+            auto const &p = i.path();
+            if (is_regular_file(p) && ToLower(p.extension().string()) == ".json") {
+                auto filename = p.stem().string();
+                UInt teamid = 0;
+                Char kittype = 0;
+                if (sscanf(filename.c_str(), "%X_%c", &teamid, &kittype) && teamid != 0) {
+                    Int kitTypeId = -1;
+                    if (kittype == 'h')
+                        kitTypeId = 0;
+                    else if (kittype == 'a')
+                        kitTypeId = 1;
+                    else if (kittype == 'g')
+                        kitTypeId = 2;
+                    else if (kittype == 't')
+                        kitTypeId = 3;
+                    if (kitTypeId != -1) {
+                        try {
+                            std::ifstream s(p);
+                            json j;
+                            s >> j;
+                            Bool isNationalTeam = (teamid & 0xFFFF) == 0xFFFF;
+                            SetTeamKitConfig(teamid, kitTypeId,
+                                jsonReadNumber(j, "collar", 0),
+                                jsonReadNumber(j, "nameplacement", 1),
+                                jsonReadNumber(j, "frontnumber", isNationalTeam),
+                                jsonReadNumber(j, "jerseynumbercolor", 0),
+                                jsonReadNumber(j, "jerseynamecolor", 0),
+                                jsonReadNumber(j, "jerseynumbersize", 0),
+                                jsonReadNumber(j, "jerseynumberoffset", 0),
+                                jsonReadNumber(j, "canusecompbadges", 1),
+                                jsonReadNumber(j, "canusesponsorlogo", 0)
+                            );
+                        }
+                        catch (...) {
+
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -856,8 +953,8 @@ void METHOD OnGenerateDynamicTextures(void *dynTextures, DUMMY_ARG, void *genDat
         UChar kitType = (i == 0) ? homeTeamKitType : awayTeamKitType;
         UChar kitNumberColor = gfxGetVarInt((i == 0) ? "HOME_JNUMCOLOR" : "AWAY_JNUMCOLOR", 1);
         Bool disableName = false;
-        if (!Settings::GetInstance().getJerseyNamesInAllMatches()) {
-            Bool disableName = gfxGetVarInt((i == 0) ? "HOME_YOUTH" : "AWAY_YOUTH", 0);
+        if (!Settings::GetInstance().JerseyNamesInAllMatches) {
+            disableName = gfxGetVarInt((i == 0) ? "HOME_YOUTH" : "AWAY_YOUTH", 0);
             if (!disableName && isFriendly)
                 disableName = true;
         }
@@ -1135,16 +1232,51 @@ void METHOD OnGetRefKitId(void *, DUMMY_ARG, const char *, int *outId, int) {
             *outId = Random::SelectFromArray(refKitIdsEFL);
             return;
         }
-        else if (compId == 0x0E030000) {
+        else if (compId == 0x0E030000 || compId == 0x0E040000 || compId == 0x0E070000) {
             static Array<UInt, 4> refKitIdsFA = { 6110, 6111, 6112, 6113 };
             *outId = Random::SelectFromArray(refKitIdsFA);
             return;
         }
         else {
             compId = (compId >> 16) & 0xFFFF;
-            if (compId == 0xF909 || compId == 0xF90A || compId == 0xF90C || compId == 0xF909 || compId == 0xF90E || compId == 0xF926) {
-                static Array<UInt, 4> refKitIdsFA = { 6019, 6020, 6021, 6022 };
-                *outId = Random::SelectFromArray(refKitIdsFA);
+            if (compId == 0xF909 || compId == 0xF90A || compId == 0xF90C || compId == 0xF933 || compId == 0xF90E || compId == 0xF926 || compId == 0xF924 || compId == 0xF925) {
+                static Array<UInt, 4> refKitIdsEurope = { 6019, 6020, 6021, 6022 };
+                *outId = Random::SelectFromArray(refKitIdsEurope);
+                return;
+            }
+            else if (compId == 0xFA09 || compId == 0xFA0A || compId == 0xFA0C) {
+                static Array<UInt, 4> refKitIdsSA = { 6040, 6041, 6042, 6043 };
+                *outId = Random::SelectFromArray(refKitIdsSA);
+                return;
+            }
+            else if (compId == 0xFF21) {
+                static Array<UInt, 4> refKitIdsSA2 = { 6045, 6046, 6047, 6048 };
+                *outId = Random::SelectFromArray(refKitIdsSA2);
+                return;
+            }
+            else if (compId == 0x1B01 || compId == 0x1B03 || compId == 0x1B07) {
+                static Array<UInt, 4> refKitIdsItaly = { 6101, 6102, 6103, 6104 };
+                *outId = Random::SelectFromArray(refKitIdsItaly);
+                return;
+            }
+            else if (compId == 0x1201 || compId == 0x1203 || compId == 0x1207) {
+                static Array<UInt, 4> refKitIdsFrance = { 6050, 6052, 6053, 6054 };
+                *outId = Random::SelectFromArray(refKitIdsFrance);
+                return;
+            }
+            else if (compId == 0x1501 || compId == 0x1503 || compId == 0x1507) {
+                static Array<UInt, 4> refKitIdsGermany = { 6055, 6057, 6058, 6059 };
+                *outId = Random::SelectFromArray(refKitIdsGermany);
+                return;
+            }
+            else if (compId == 0x2D01 || compId == 0x2D03 || compId == 0x2D07) {
+                static Array<UInt, 4> refKitIdsSpain = { 6060, 6062, 6063, 6064 };
+                *outId = Random::SelectFromArray(refKitIdsSpain);
+                return;
+            }
+            else if (compId == 0x2201 || compId == 0x2203 || compId == 0x2207) {
+                static Array<UInt, 4> refKitIdsNetherlands = { 6065, 6067, 6068, 6069 };
+                *outId = Random::SelectFromArray(refKitIdsNetherlands);
                 return;
             }
         }
@@ -1258,6 +1390,7 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
             UInt numTitles = 0;
             Bool has3inrow = false;
             Bool isELChampion = false;
+            Bool isConfChampion = false;
             if (team) {
                 CDBCompetition *currComp = GetCompetition((gCurrCompId > 0xFFFF) ? gCurrCompId : ((gCurrCompId << 16) & 0xFFFF0000));
                 if (currComp) {
@@ -1274,7 +1407,7 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
                                 isChampion = true;
                         }
                     }
-                    if (gCurrCompId == 0xF909 || gCurrCompId == 0xF90A) {
+                    if (gCurrCompId == 0xF909 || gCurrCompId == 0xF90A || gCurrCompId == 0xF933) {
                         lastSeasonYear = CDBGame::GetInstance()->GetCurrentSeasonStartDate().GetYear();
                         struct CompWinYear {
                             CCompID id;
@@ -1315,14 +1448,19 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
                             CDBRound *ELFinalRound = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::UefaCup, 15);
                             if (ELFinalRound && ELFinalRound->GetChampion().ToInt() == team->GetTeamID().ToInt())
                                 isELChampion = true;
+                            else {
+                                CDBRound *ConfFinalRound = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::ConferenceLeague, 15);
+                                if (ConfFinalRound && ConfFinalRound->GetChampion().ToInt() == team->GetTeamID().ToInt())
+                                    isConfChampion = true;
+                            }
                         }
                     }
                 }
             }
             Path badgeLeft = GetUserCompBadgesTexturePath(L"data\\kitcompbadges", gCurrCompId, false, teamId, kitTypeStr,
-                lastSeasonYear, isChampion, numTitles, has3inrow, isELChampion);
+                lastSeasonYear, isChampion, numTitles, has3inrow, isELChampion, isConfChampion);
             Path badgeRight = GetUserCompBadgesTexturePath(L"data\\kitcompbadges", gCurrCompId, true, teamId, kitTypeStr,
-                lastSeasonYear, isChampion, numTitles, has3inrow, isELChampion);
+                lastSeasonYear, isChampion, numTitles, has3inrow, isELChampion, isConfChampion);
 
             PutOverlay(shapeGen, dstImg, badgeLeft, 64, 64, 330, 34, 56, 56);
             PutOverlay(shapeGen, dstImg, badgeRight, 64, 64, 115, 34, 56, 56);
@@ -1364,7 +1502,7 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
             //}
 
         }
-        if (Settings::GetInstance().getClubSponsorLogos() && team && ((teamId & 0xFFFF) != 0xFFFF) && canUseSponsorLogo) {
+        if (Settings::GetInstance().ClubSponsorLogos && team && ((teamId & 0xFFFF) != 0xFFFF) && canUseSponsorLogo) {
             SafeLog::Write(Utils::Format(L"team_uid %08X", team->GetTeamUniqueID()));
             auto &sponsor = team->GetSponsor();
             SafeLog::Write(Utils::Format(L"sponsor %p", &sponsor));
@@ -1463,8 +1601,8 @@ void METHOD OnClubShirtDesignSetupKit(void *screen) {
                 SetVarInt("HOME_JNUMCOLOR", color);
                 SetVarInt("HOME_TEAMID", team->GetTeamUniqueID());
                 SetVarInt("HOME_KITTYPE", (bHomeKit == 0) ? 1 : 0);
-                SetVarInt("HOME_USERKIT", false);
-                SetVarInt("HOME_YOUTH", false);
+                SetVarInt("HOME_USERKIT", 0);
+                SetVarInt("HOME_YOUTH", 0);
                 dataWasPassed = true;
             }
         }
@@ -1487,8 +1625,8 @@ CDBTeam *OnGetTeamForTeamPhoto(CTeamIndex teamIndex) {
         SetVarInt("HOME_JNUMCOLOR", color);
         SetVarInt("HOME_TEAMID", team->GetTeamUniqueID());
         SetVarInt("HOME_KITTYPE", 0);
-        SetVarInt("HOME_USERKIT", false);
-        SetVarInt("HOME_YOUTH", false);
+        SetVarInt("HOME_USERKIT", 0);
+        SetVarInt("HOME_YOUTH", 0);
     }
     return team;
 }

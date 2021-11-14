@@ -14,7 +14,7 @@ struct PlayerTalkResult {
 
 class CPlayerTalk {
 public:
-    char data[0x3C];
+    char _data[0x3C];
     CDBPlayer *player;
     CDBLeague *teamLeague;
     int field_48;
@@ -72,7 +72,7 @@ public:
 
 void METHOD OnRegisterTalk(void *t, DUMMY_ARG, void *vec) {
     CallMethod<0x1099830>(t, vec);
-    char data[0x44];
+    //char data[0x44];
     //CallMethod<0x1093C40>();
     auto RegisterTalk = [&](CPlayerTalk *talk) {
         if (talk->IsAvailable())

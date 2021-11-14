@@ -22,7 +22,7 @@ void METHOD OnRegisterLeagueFacts1(void *t, DUMMY_ARG, int id, int compId, int a
 
 void METHOD OnRegisterLeagueFacts2(void *t) {
     if (GetCurrentYear() != CURRENT_YEAR)
-        CallMethod<0x111F730>(t);
+        CallMethod<0x111F730>(t); // TODO: incorrect address
 }
 
 void DoBetaPatches(FM::Version v) {
@@ -32,6 +32,6 @@ void DoBetaPatches(FM::Version v) {
         patch::RedirectCall(0xF6F274, OnRegisterBigSpenders2);
         // League Facts screen
         patch::RedirectCall(0xFF6224, OnRegisterLeagueFacts1);
-        patch::RedirectCall(0xFF622E, OnRegisterLeagueFacts2);
+        //patch::RedirectCall(0xFF622E, OnRegisterLeagueFacts2);
     }
 }

@@ -7,6 +7,7 @@
 #include "GenericHeads.h"
 #include "3dAdboardsAndBanners.h"
 #include "CustomStadiums.h"
+#include "3dModels.h"
 
 unsigned int gOriginalLoadGfxCore = 0;
 unsigned int hLibrary = 0;
@@ -31,6 +32,7 @@ bool METHOD OnLoadGfxCore(void **info, DUMMY_ARG, const wchar_t *libFileName, co
             InstallGenericHeads_GfxCore();
             InstallAdBoardsAndBanners3dPatches();
             InstallCustomStadiums3DPatches();
+            Install3DModelPatches();
         }
     }
     return result;

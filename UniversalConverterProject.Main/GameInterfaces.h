@@ -13,6 +13,7 @@ public:
     void GetYMD(unsigned int *outY, unsigned int *outM, unsigned int *outD);
     void Set(unsigned short year, unsigned char month, unsigned char day);
     UInt Value();
+    UInt GetDayOfWeek();
 };
 
 using EAGMoney = UInt64;
@@ -87,6 +88,7 @@ public:
     CJDate GetStartDate();
     CJDate GetCurrentDate();
     CJDate GetCurrentSeasonStartDate();
+    CJDate GetCurrentSeasonEndDate();
     unsigned short GetCurrentYear();
     bool GetIsWorldCupMode();
     bool TestFlag(unsigned int flag);
@@ -101,8 +103,12 @@ struct CTeamIndex {
 
     unsigned int ToInt() const;
     CTeamIndex firstTeam() const;
+    bool isNull() const;
     static CTeamIndex make(unsigned char CountryId, unsigned char Type, unsigned short Index);
+    static CTeamIndex null();
 };
+
+bool operator==(CTeamIndex const &a, CTeamIndex const &b);
 
 class CDBTeam;
 class CDBEmployee;
@@ -171,16 +177,17 @@ enum eCompetitionType : unsigned char {
     COMP_OFC_CUP_Q = 48, // OFC Cup Quali
     COMP_OFC_CUP = 49, // OFC Cup
     COMP_U20_WC_Q = 50, // U20 WC Quali
-    COMP_U17_WC_Q = 51, // U17 WC Quali
-    COMP_U17_WORLD_CUP = 52, // U17 WC
-    COMP_U21_EC_Q = 53, // U21 EC Quali
-    COMP_U21_EC = 54, // U21 EC
-    COMP_U19_EC_Q = 55, // U19 EC Quali
-    COMP_U19_EC = 56, // U19 EC
-    COMP_U17_EC_Q = 57, // U17 EC Quali
-    COMP_U17_EC = 58, // U17 EC
-    COMP_OLYMPIC_Q = 59, // Olympic Games Quali
-    COMP_OLYMPIC = 60, // Olympic Games
+    COMP_CONFERENCE_LEAGUE = 51, // Conference League
+    COMP_U17_WC_Q = 52, // U17 WC Quali
+    COMP_U17_WORLD_CUP = 53, // U17 WC
+    COMP_U21_EC_Q = 54, // U21 EC Quali
+    COMP_U21_EC = 55, // U21 EC
+    COMP_U19_EC_Q = 56, // U19 EC Quali
+    COMP_U19_EC = 57, // U19 EC
+    COMP_U17_EC_Q = 58, // U17 EC Quali
+    COMP_U17_EC = 59, // U17 EC
+    COMP_OLYMPIC_Q = 60, // Olympic Games Quali
+    COMP_OLYMPIC = 61, // Olympic Games
 };
 
 struct CCompID {
@@ -223,6 +230,8 @@ public:
     bool IsTeamPresent(CTeamIndex const &teamIndex);
     unsigned int GetNumMatchdays();
     bool SwapTeams(int oldIndex, int newIndex);
+    void SortTeamIDs(unsigned int startPos, unsigned int numTeams, Function<Bool(CTeamIndex const &, CTeamIndex const &)> const &sorter);
+    void SortTeams(unsigned int startPos, unsigned int numTeams, Function<Bool(CDBTeam *, CDBTeam *)> const &sorter);
     void SortTeamIDs(Function<Bool(CTeamIndex const &, CTeamIndex const &)> const &sorter);
     void SortTeams(Function<Bool(CDBTeam *, CDBTeam *)> const &sorter);
     void RandomlySortTeams(UInt startPos = 0, UInt numTeams = 0);
@@ -234,6 +243,8 @@ public:
     unsigned int GetLevel();
     unsigned int GetRoundType();
     int GetTeamIndex(CTeamIndex const& teamId);
+    bool Finish();
+    void Launch();
 };
 
 enum CompDbType {
@@ -245,6 +256,24 @@ enum CompDbType {
     DB_POOL = 5,
     DB_FRIENDLY = 6,
     DB_CUSTOM = 7
+};
+
+enum eRoundType {
+    ROUND_QUALI = 1,
+    ROUND_QUALI2 = 2,
+    ROUND_QUALI3 = 3,
+    ROUND_PREROUND1 = 4,
+    ROUND_1 = 5,
+    ROUND_2 = 6,
+    ROUND_3 = 7,
+    ROUND_4 = 8,
+    ROUND_5 = 9,
+    ROUND_GROUP1 = 10,
+    ROUND_GROUP2 = 11,
+    ROUND_LAST_16 = 12,
+    ROUND_QUARTERFINAL = 13,
+    ROUND_SEMIFINAL = 14,
+    ROUND_FINAL = 15,
 };
 
 struct TeamLeaguePositionData {
@@ -263,6 +292,25 @@ struct TeamLeaguePositionData {
     TeamLeaguePositionData();
 };
 
+struct RoundPair {
+    CTeamIndex m_n1stTeam;
+    CTeamIndex m_n2ndTeam;
+    char result1[2];
+    char result2[2];
+    char field_C[2];
+    char field_E[2];
+    unsigned int m_nFlags;
+    int m_anMatchEventsStartIndex[3];
+};
+
+struct MatchGoalInfo {
+    Int scorer;
+    UChar teamSide;
+    UChar minute;
+    Char field_6;
+    Bool isOwnGoal;
+};
+
 class CDBRoot : public CDBCompetition {};
 class CDBPool : public CDBCompetition {};
 class CDBRound : public CDBCompetition {};
@@ -277,6 +325,7 @@ public:
     void SetStartDate(CJDate date);
     int GetEqualPointsSorting();
     void SortTeams(TeamLeaguePositionData *infos, int sortingFlags, int goalsMinMinute, int goalsMaxMinute, int minMatchday, int maxMatchday);
+    unsigned int GetCurrentMatchday();
 };
 
 struct SponsorPlacement {
@@ -339,10 +388,11 @@ public:
     bool IsRivalWith(CTeamIndex const &teamIndex);
     CDBTeamKit *GetKit();
     bool IsManagedByAI(bool flag = true);
+    UChar GetColor(UChar index);
 };
 
 struct CAssessmentInfo {
-    char m_nCountryIndex;
+    unsigned char m_nCountryIndex;
     char m_nIndex1;
     char field_2;
     unsigned char m_nPositionIndex;
@@ -354,6 +404,8 @@ struct CAssessmentInfo {
     float m_fLastYear;
     float m_fCurrent;
     int m_date;
+
+    void AddPoints(float points);
 };
 
 class CAssessmentTable {
@@ -411,6 +463,7 @@ CDBLeague *GetLeague(unsigned int *id);
 CDBLeague *GetLeague(unsigned int id);
 CDBRound *GetRound(unsigned char region, unsigned char type, unsigned short index);
 CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType);
+CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index);
 
 CDBTeam *GetTeam(CTeamIndex teamId);
 CDBTeam *GetTeamByUniqueID(unsigned int uniqueID);
@@ -419,6 +472,10 @@ CCountryStore *GetCountryStore();
 
 wchar_t const *GetTranslation(const char *key);
 unsigned short GetCurrentYear();
+unsigned char GetCurrentMonth();
+unsigned short GetStartingYear();
+unsigned short GetCurrentSeasonStartYear();
+unsigned short GetCurrentSeasonEndYear();
 
 int gfxGetVarInt(char const *varName, int defaultValue);
 char const *gfxGetVarString(char const *varName);
@@ -460,3 +517,42 @@ struct FshWriterWriteInfo {
 };
 
 void *CreateTextBox(void *screen, char const *name);
+void SetTextBoxColorRGBA(void *tb, UChar r, UChar g, UChar b, UChar a);
+void SetTextBoxColorRGB(void *tb, UChar r, UChar g, UChar b);
+void SetTextBoxColorRGBA(void *tb, UInt clr);
+void SetTextBoxColorRGB(void *tb, UInt clr);
+void SetImageColorRGBA(void *img, UChar r, UChar g, UChar b, UChar a);
+void SetImageColorRGB(void *img, UChar r, UChar g, UChar b);
+void SetImageColorRGBA(void *img, UInt clr);
+void SetImageColorRGB(void *img, UInt clr);
+void SetTextBoxColors(void *tb, UInt clr);
+
+class CRandom {
+public:
+    static Int GetRandomInt(Int maxExclusive);
+};
+
+String TeamName(CTeamIndex const &teamId);;
+String TeamNameWithCountry(CTeamIndex const &teamId);
+
+Bool GetHour();
+Bool GetIsCloudy();
+Bool GetIsRainy();
+Bool GetIsSnowy();
+UInt GetLighting();
+
+class CDBOneMatch {
+public:
+    CTeamIndex GetHostTeamID();
+    CDBTeam *GetHostTeam();
+    CCompID GetCompID();
+    UInt GetCompIDInt();
+    CTeamIndex GetTeamID(Bool home);
+    CDBTeam *GetTeam(Bool home);
+    CTeamIndex GetHomeTeamID();
+    CDBTeam *GetHomeTeam();
+    CTeamIndex GetAwayTeamID();
+    CDBTeam *GetAwayTeam();
+};
+
+CDBOneMatch *GetCurrentMatch();

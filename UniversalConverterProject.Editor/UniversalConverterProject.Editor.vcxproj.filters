@@ -19,6 +19,12 @@
     <ClCompile Include="Translation.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="ExtendedPlayerEditor.cpp" />
+    <ClCompile Include="WomensDatabase.cpp" />
+    <ClCompile Include="settings\Settings.cpp">
+      <Filter>settings</Filter>
+    </ClCompile>
+    <ClCompile Include="UcpSettings.cpp" />
+    <ClCompile Include="GenericKits.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -38,5 +44,16 @@
     <ClInclude Include="Translation.h" />
     <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="ExtendedPlayerEditor.h" />
+    <ClInclude Include="WomensDatabase.h" />
+    <ClInclude Include="settings\Settings.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="UcpSettings.h" />
+    <ClInclude Include="GenericKits.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="settings">
+      <UniqueIdentifier>{450feb4b-4971-4113-be63-8d0f5fe4c063}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

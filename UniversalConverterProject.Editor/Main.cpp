@@ -15,28 +15,34 @@
 #include "RendererHook.h"
 #include "GenerateBigIdx.h"
 #include "ExtendedPlayerEditor.h"
+#include "UcpSettings.h"
+#include "GenericKits.h"
 
 using namespace plugin;
+
+bool IsWomensDatabase = false;
 
 class UniversalConverterProject {
 public:
     UniversalConverterProject() {
         auto v = FM::GetAppVersion();
         if (v.id() == ID_ED_13_1000) {
+            Settings::GetInstance().Load();
+            IsWomensDatabase = patch::GetUShort(0x66E7A8) == L'W';
             GenerateBigIdx();
-            patch::SetUInt(0x5504D5 + 3, 0x2013000B); // binary database version
+            patch::SetUInt(0x5504D5 + 3, 0x2013000C); // binary database version
             // set version (0x2013)
-            patch::SetUChar(0x4C7ACA + 1, 0xB);
-            patch::SetUChar(0x4E4F66 + 1, 0xB);
-            patch::SetUChar(0x53AE37 + 1, 0xB);
-            patch::SetUChar(0x541565 + 1, 0xB);
+            patch::SetUChar(0x4C7ACA + 1, 0xC);
+            patch::SetUChar(0x4E4F66 + 1, 0xC);
+            patch::SetUChar(0x53AE37 + 1, 0xC);
+            patch::SetUChar(0x541565 + 1, 0xC);
             // validate version (0x2013)
-            patch::SetUChar(0x545493 + 8, 0xB);
-            patch::SetUChar(0x4C527C + 1, 0xB);
-            patch::SetUChar(0x4C7B8C + 1, 0xB);
-            patch::SetUChar(0x4E9A1A + 1, 0xB);
-            patch::SetUChar(0x53B5B9 + 1, 0xB);
-            patch::SetUChar(0x541847 + 1, 0xB);
+            patch::SetUChar(0x545493 + 8, 0xC);
+            patch::SetUChar(0x4C527C + 1, 0xC);
+            patch::SetUChar(0x4C7B8C + 1, 0xC);
+            patch::SetUChar(0x4E9A1A + 1, 0xC);
+            patch::SetUChar(0x53B5B9 + 1, 0xC);
+            patch::SetUChar(0x541847 + 1, 0xC);
         }
         PatchRendererHook(v);
         PatchTranslation(v);
@@ -53,5 +59,6 @@ public:
         PatchEditor(v);
         PatchParameterFiles(v);
         PatchExtendedPlayer(v);
+        //PatchGenericKits(v);
     }
 } universalConverterProject;

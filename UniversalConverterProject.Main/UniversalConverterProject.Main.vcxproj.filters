@@ -23,7 +23,6 @@
     <ClCompile Include="EABFFixes.cpp" />
     <ClCompile Include="SpareEmployeeFix.cpp" />
     <ClCompile Include="LoansLimit.cpp" />
-    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="EuCountries.cpp" />
     <ClCompile Include="FemaleNames.cpp" />
     <ClCompile Include="Minikits.cpp" />
@@ -62,13 +61,17 @@
     <ClCompile Include="CustomStadiums.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="PortraitDialog.cpp" />
-    <ClCompile Include="config\Config.cpp">
-      <Filter>config</Filter>
-    </ClCompile>
     <ClCompile Include="PlayerTalks.cpp" />
     <ClCompile Include="TheClubScreenExtended.cpp" />
     <ClCompile Include="ExtendedPlayer.cpp" />
     <ClCompile Include="PlayerNameEdit.cpp" />
+    <ClCompile Include="WomensDatabase.cpp" />
+    <ClCompile Include="3dModels.cpp" />
+    <ClCompile Include="InterfaceTheme.cpp" />
+    <ClCompile Include="settings\Settings.cpp">
+      <Filter>settings</Filter>
+    </ClCompile>
+    <ClCompile Include="UcpSettings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -93,7 +96,6 @@
     <ClInclude Include="EABFFixes.h" />
     <ClInclude Include="SpareEmployeeFix.h" />
     <ClInclude Include="LoansLimit.h" />
-    <ClInclude Include="Settings.h" />
     <ClInclude Include="EuCountries.h" />
     <ClInclude Include="FemaleNames.h" />
     <ClInclude Include="Minikits.h" />
@@ -129,14 +131,18 @@
     <ClInclude Include="CustomStadiums.h" />
     <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="PortraitDialog.h" />
-    <ClInclude Include="config\Config.h">
-      <Filter>config</Filter>
-    </ClInclude>
     <ClInclude Include="PlayerTalks.h" />
     <ClInclude Include="WinHeader.h" />
     <ClInclude Include="TheClubScreenExtended.h" />
     <ClInclude Include="ExtendedPlayer.h" />
     <ClInclude Include="PlayerNameEdit.h" />
+    <ClInclude Include="WomensDatabase.h" />
+    <ClInclude Include="3dModels.h" />
+    <ClInclude Include="InterfaceTheme.h" />
+    <ClInclude Include="settings\Settings.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="UcpSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">
@@ -145,8 +151,8 @@
     <Filter Include="tinyxml">
       <UniqueIdentifier>{1164b2a0-d31c-469f-afd5-3f5ac999ab9e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="config">
-      <UniqueIdentifier>{dc950ebd-7348-4775-b354-ecd28a15ec41}</UniqueIdentifier>
+    <Filter Include="settings">
+      <UniqueIdentifier>{408a07f3-2779-4693-ae85-94632ad2bd04}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 #include "plugin-std.h"
 #include "license_check/license_check.h"
 #include "shared.h"
-#include "Settings.h"
+#include "UcpSettings.h"
 #include "InternationalCupsFix.h"
 #include "WorldCup.h"
 #include "LeagueSelection.h"
@@ -50,6 +50,9 @@
 #include "TheClubScreenExtended.h"
 #include "ExtendedPlayer.h"
 #include "PlayerNameEdit.h"
+#include "WomensDatabase.h"
+#include "InterfaceTheme.h"
+#include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitry/DK22");
 
@@ -60,11 +63,9 @@ public:
     static FM::Version v;
 
     static void OnCloseGame() {
-        //Error("On close game");
         Call<0xF61490>();
-        SaveWindowedMode();
-        Settings::GetInstance().save();
-        //Error("Settings wrote");
+        Settings::GetInstance().Save();
+        SaveTestFile();
     }
 
     UniversalConverterProject() {
@@ -72,6 +73,7 @@ public:
         if (v.id() == ID_FM_13_1030_RLD) {
             if (!CheckLicense(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','M','a','i','n','.','a','s','i'>(1583797143)))
                 return;
+            Settings::GetInstance().Load();
 #ifdef DELETE_LOG
             if (exists("ucp_safe.log"))
                 remove("ucp_safe.log");
@@ -89,23 +91,21 @@ public:
 
             PatchTranslation(v);
 
-            static std::wstring gameVersionStr = GetPatchNameWithVersion(true);
+            static std::wstring gameVersionStr = GetPatchNameWithVersion(false);
             patch::SetPointer(0x4D2880 + 1, (void *)gameVersionStr.c_str());
 
             patch::RedirectCall(0x45BFB5, OnCloseGame);
-        }
-        const wchar_t *testFileName = L"plugins\\ucp\\ucp-launched";
-        FILE *testFile = _wfopen(testFileName, L"rb");
-        if (!testFile) {
-            testFile = _wfopen(testFileName, L"wb");
-            if (testFile)
-                fclose(testFile);
-        }
-        else {
-            fclose(testFile);
-            if (v.id() == ID_FM_13_1030_RLD) {
-                patch::RedirectJump(0x4B43BD, (void *)0x4B4420);
-                patch::RedirectJump(0x4B4405, (void *)0x4B4420);
+
+            path documentsPath = GetDocumentsPath();
+            if (!documentsPath.empty()) {
+                path testFileName = GetDocumentsPath() / "Config" / "ucp-launched";
+                FILE *testFile = _wfopen(testFileName.c_str(), L"rb");
+                if (testFile) {
+                    fclose(testFile);
+                    patch::RedirectJump(0x4B43BD, (void *)0x4B4420);
+                    patch::RedirectJump(0x4B4405, (void *)0x4B4420);
+                    IsFirstLaunch() = false;
+                }
             }
         }
         PatchInternationalCups(v);
@@ -151,7 +151,9 @@ public:
         //PatchPlayerTalks(v);
         PatchTheClubScreenExtended(v);
         PatchExtendedPlayer(v);
-        //PatchPlayerNameEdit(v);
+        PatchPlayerNameEdit(v);
+        PatchWomensDatabase(v);
+        PatchInterfaceTheme(v);
     #ifdef BETA
         DoBetaPatches(v);
     #endif
@@ -170,11 +172,11 @@ String GetAppName() {
 }
 
 String GetPatchName() {
-    return L"2021";
+    return L"2022";
 }
 
 String GetPatchVersion() {
-    return L"1.2";
+    return L"Alpha September";
 }
 
 String GetFullAppName(Bool upperCase) {
@@ -193,4 +195,29 @@ String GetPatchNameWithVersion(Bool upperCase) {
 
 String GetFMDocumentsFolderName() {
     return L"FM";
+}
+
+path GetDocumentsPath() {
+    wchar_t documentsDir[MAX_PATH];
+    bool foundDocuments = SHGetSpecialFolderPathW(NULL, documentsDir, CSIDL_MYDOCUMENTS, FALSE);
+    if (foundDocuments)
+        return path(documentsDir) / GetFMDocumentsFolderName();
+    return path();
+}
+
+void SaveTestFile() {
+    path documentsPath = GetDocumentsPath();
+    if (!documentsPath.empty()) {
+        path testFileName = documentsPath / "Config" / "ucp-launched";
+        if (!exists(testFileName)) {
+            FILE *testFile = _wfopen(testFileName.c_str(), L"wb");
+            if (testFile)
+                fclose(testFile);
+        }
+    }
+}
+
+Bool &IsFirstLaunch() {
+    static Bool isFirstLaunch = true;
+    return isFirstLaunch;
 }

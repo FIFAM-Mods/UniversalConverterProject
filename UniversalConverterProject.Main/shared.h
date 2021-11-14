@@ -12,6 +12,10 @@ String GetPatchVersion();
 String GetFullAppName(Bool upperCase = false);
 String GetPatchNameWithVersion(Bool upperCase = false);
 String GetFMDocumentsFolderName();
+Bool &IsWomensDatabase();
+Bool &IsFirstLaunch();
+path GetDocumentsPath();
+void SaveTestFile();
 
 const Bool ENABLE_LOG = false;
 
@@ -31,7 +35,7 @@ public:
     static void WriteToFile(Path const &fileName, String const &msg) {
         static Map<Path, bool> fileCreated;
         FILE *file = nullptr;
-        if (!fileCreated[fileName]) {
+        if (!fileCreated.contains(fileName)) {
             file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
             fileCreated[fileName] = true;
         }

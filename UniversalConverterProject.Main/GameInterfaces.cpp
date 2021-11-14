@@ -35,6 +35,10 @@ void CJDate::Set(unsigned short year, unsigned char month, unsigned char day) {
 
 UInt CJDate::Value() { return value; }
 
+UInt CJDate::GetDayOfWeek() {
+    return CallMethodAndReturn<UInt, 0x1494FBA>(this);
+}
+
 CDBGame *CDBGame::GetInstance() {
     return plugin::CallAndReturn<CDBGame *, 0xF61410>();
 }
@@ -54,6 +58,12 @@ CJDate CDBGame::GetCurrentDate() {
 CJDate CDBGame::GetCurrentSeasonStartDate() {
     CJDate result;
     plugin::CallMethod<0xF499A0>(this, &result);
+    return result;
+}
+
+CJDate CDBGame::GetCurrentSeasonEndDate() {
+    CJDate result;
+    plugin::CallMethod<0xF49A00>(this, &result);
     return result;
 }
 
@@ -214,6 +224,24 @@ bool CDBCompetition::SwapTeams(int oldIndex, int newIndex) {
     return plugin::CallMethodAndReturn<bool, 0xF85E00>(this, oldIndex, newIndex);
 }
 
+void CDBCompetition::SortTeamIDs(unsigned int startPos, unsigned int numTeams, Function<Bool(CTeamIndex const &, CTeamIndex const &)> const &sorter) {
+    if (GetNumOfRegisteredTeams() > 1 && numTeams > 1 && (startPos + numTeams) <= GetNumOfTeams()) {
+        CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(this, 0xA0);
+        std::sort(pTeamIDs + startPos, pTeamIDs + startPos + numTeams, sorter);
+    }
+}
+
+void CDBCompetition::SortTeams(unsigned int startPos, unsigned int numTeams, Function<Bool(CDBTeam *, CDBTeam *)> const &sorter) {
+    if (GetNumOfRegisteredTeams() > 1 && numTeams > 1 && (startPos + numTeams) <= GetNumOfTeams()) {
+        CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(this, 0xA0);
+        std::sort(pTeamIDs + startPos, pTeamIDs + startPos + numTeams, [&](CTeamIndex const &teamIndexA, CTeamIndex const &teamIndexB) {
+            CDBTeam *teamA = GetTeam(teamIndexA.firstTeam());
+            CDBTeam *teamB = GetTeam(teamIndexB.firstTeam());
+            return sorter(teamA, teamB);
+        });
+    }
+}
+
 void CDBCompetition::SortTeamIDs(Function<Bool(CTeamIndex const &, CTeamIndex const &)> const &sorter) {
     CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(this, 0xA0);
     auto numTeams = GetNumOfRegisteredTeams();
@@ -325,6 +353,14 @@ int CDBCompetition::GetTeamIndex(CTeamIndex const& teamId) {
     return CallMethodAndReturn<int, 0xF85D40>(this, &teamId);
 }
 
+bool CDBCompetition::Finish() {
+    return plugin::CallVirtualMethodAndReturn<bool, 6>(this);
+}
+
+void CDBCompetition::Launch() {
+    plugin::CallVirtualMethod<4>(this);
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -335,6 +371,10 @@ int CDBLeague::GetEqualPointsSorting() {
 
 void CDBLeague::SortTeams(TeamLeaguePositionData *infos, int sortingFlags, int goalsMinMinute, int goalsMaxMinute, int minMatchday, int maxMatchday) {
     plugin::CallVirtualMethod<40>(this, infos, sortingFlags, goalsMinMinute, goalsMaxMinute, minMatchday, maxMatchday);
+}
+
+unsigned int CDBLeague::GetCurrentMatchday() {
+    return plugin::CallMethodAndReturn<int, 0x1050310>(this);
 }
 
 CAssessmentTable *GetAssesmentTable() {
@@ -381,6 +421,10 @@ CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned
     return plugin::CallAndReturn<CDBRound *, 0xF8B190>(region, type, roundType);
 }
 
+CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index) {
+    return plugin::CallAndReturn<CDBPool *, 0xF8C5C0>(region, type, index);
+}
+
 CDBTeam *GetTeam(CTeamIndex teamId) {
     return plugin::CallAndReturn<CDBTeam *, 0xEC8F70>(teamId);
 }
@@ -404,6 +448,34 @@ unsigned short GetCurrentYear() {
     return 0;
 }
 
+unsigned char GetCurrentMonth() {
+    auto game = CDBGame::GetInstance();
+    if (game)
+        return game->GetCurrentDate().GetMonth();
+    return 0;
+}
+
+unsigned short GetStartingYear() {
+    auto game = CDBGame::GetInstance();
+    if (game)
+        return game->GetStartDate().GetYear();
+    return 0;
+}
+
+unsigned short GetCurrentSeasonStartYear() {
+    auto game = CDBGame::GetInstance();
+    if (game)
+        return game->GetCurrentSeasonStartDate().GetYear();
+    return 0;
+}
+
+unsigned short GetCurrentSeasonEndYear() {
+    auto game = CDBGame::GetInstance();
+    if (game)
+        return game->GetCurrentSeasonEndDate().GetYear();
+    return 0;
+}
+
 int gfxGetVarInt(char const *varName, int defaultValue) {
     void *expVars = plugin::CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x239120));
     return plugin::CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x239370), expVars, varName, defaultValue);
@@ -415,11 +487,15 @@ char const *gfxGetVarString(char const *varName) {
 }
 
 void SetVarInt(char const *varName, int value) {
-    plugin::CallVirtualMethod<1>(*(void **)0x30ABBC4, varName, value);
+    void *varFM = *(void **)0x30ABBC4;
+    if (varFM)
+        plugin::CallVirtualMethod<1>(varFM, varName, value);
 }
 
 void SetVarString(char const *varName, char const *value) {
-    plugin::CallVirtualMethod<0>(*(void **)0x30ABBC4, varName, value);
+    void *varFM = *(void **)0x30ABBC4;
+    if (varFM)
+        plugin::CallVirtualMethod<0>(varFM, varName, value);
 }
 
 int GetRandomInt(int endValue) {
@@ -469,7 +545,7 @@ UInt FmFileGetSize(Path const &filepath) {
     void *fmFs = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x3859EA));
     if (fmFs)
         return CallVirtualMethodAndReturn<UInt, 0>(fmFs, filepath.c_str());
-    return false;
+    return 0;
 }
 
 Bool FmFileRead(Path const &filepath, void *outData, UInt size) {
@@ -484,6 +560,122 @@ Bool FmFileRead(Path const &filepath, void *outData, UInt size) {
 
 void *CreateTextBox(void *screen, char const *name) {
     return CallMethodAndReturn<void *, 0xD44240>(screen, name);
+}
+
+void SetTextBoxColorRGBA(void *tb, UChar r, UChar g, UChar b, UChar a) {
+    UInt clr = (a << 24) | (r << 16) | (g << 8) | b;
+    for (UInt i = 0; i < 4; i++)
+        CallMethod<0x144888F>(tb, i, clr);
+}
+
+void SetTextBoxColorRGB(void *tb, UChar r, UChar g, UChar b) {
+    UInt clr = (r << 16) | (g << 8) | b;
+    for (UInt i = 0; i < 4; i++) {
+        UInt oldClr = CallMethodAndReturn<UInt, 0x14488CB>(tb, i);
+        CallMethod<0x144888F>(tb, i, (oldClr & 0xFF000000) | clr);
+    }
+}
+
+void SetTextBoxColorRGBA(void *tb, UInt clr) {
+    for (UInt i = 0; i < 4; i++)
+        CallMethod<0x144888F>(tb, i, clr);
+}
+
+void SetTextBoxColorRGB(void *tb, UInt clr) {
+    for (UInt i = 0; i < 4; i++) {
+        UInt oldClr = CallMethodAndReturn<UInt, 0x14488CB>(tb, i);
+        CallMethod<0x144888F>(tb, i, (oldClr & 0xFF000000) | clr);
+    }
+}
+
+void SetImageColorRGBA(void *img, UChar r, UChar g, UChar b, UChar a) {
+    void *baseImage = *raw_ptr<void *>(img, 0x60);
+    if (baseImage) {
+        UInt clr = (a << 24) | (r << 16) | (g << 8) | b;
+        CallVirtualMethod<7>(baseImage, clr);
+    }
+}
+
+void SetImageColorRGB(void *img, UChar r, UChar g, UChar b) {
+    void *baseImage = *raw_ptr<void *>(img, 0x60);
+    if (baseImage) {
+        UInt clr = (r << 16) | (g << 8) | b;
+        UInt oldClr = CallVirtualMethodAndReturn<UInt, 8>(baseImage);
+        CallVirtualMethod<7>(baseImage, (oldClr & 0xFF000000) | clr);
+    }
+}
+
+void SetImageColorRGBA(void *img, UInt clr) {
+    void *baseImage = *raw_ptr<void *>(img, 0x60);
+    if (baseImage)
+        CallVirtualMethod<7>(baseImage, clr);
+}
+
+void SetImageColorRGB(void *img, UInt clr) {
+    void *baseImage = *raw_ptr<void *>(img, 0x60);
+    if (baseImage) {
+        UInt oldClr = CallVirtualMethodAndReturn<UInt, 8>(baseImage);
+        CallVirtualMethod<7>(baseImage, (oldClr & 0xFF000000) | clr);
+    }
+}
+
+void SetTextBoxColors(void *tb, UInt clr) {
+    Call<0xD32810>(tb, clr);
+}
+
+String TeamName(CTeamIndex const &teamId) {
+    auto team = GetTeam(teamId);
+    if (team)
+        return team->GetName();
+    return L"n/a";
+}
+
+String TeamNameWithCountry(CTeamIndex const &teamId) {
+    auto team = GetTeam(teamId);
+    if (team)
+        return Format(L"%s (%s)", team->GetName(), GetCountryStore()->m_aCountries[teamId.countryId].GetName());
+    return L"n/a";
+}
+
+Bool GetHour() {
+    void *match = *(void **)0x3124748;
+    if (match)
+        return CallMethodAndReturn<UChar, 0xE811C0>(match);
+    return 0;
+}
+
+Bool GetIsCloudy() {
+    void *match = *(void **)0x3124748;
+    if (match) {
+        UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
+        if (weather == 2 || weather == 3)
+            return true;
+    }
+    return false;
+}
+
+Bool GetIsRainy() {
+    void *match = *(void **)0x3124748;
+    if (match) {
+        UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
+        if (weather == 0)
+            return true;
+    }
+    return false;
+}
+
+Bool GetIsSnowy() {
+    void *match = *(void **)0x3124748;
+    if (match) {
+        UChar weather = CallMethodAndReturn<UChar, 0xE81160>(match);
+        if (weather == 1)
+            return true;
+    }
+    return false;
+}
+
+UInt GetLighting() {
+    return gfxGetVarInt("LIGHTING", 1);
 }
 
 unsigned char CAssessmentTable::GetCountryIdAtPosition(int position) {
@@ -548,6 +740,10 @@ bool CDBTeam::IsManagedByAI(bool flag) {
     return CallMethodAndReturn<bool, 0xECA230>(this, flag);
 }
 
+UChar CDBTeam::GetColor(UChar index) {
+    return *raw_ptr<UChar>(this, 0xFD + index);
+}
+
 CTeamIndex &CDBLeagueBase::GetTeamAtPosition(int position) {
     return plugin::CallMethodAndReturn<CTeamIndex &, 0x10CBE20>(this, position);
 }
@@ -564,12 +760,28 @@ CTeamIndex CTeamIndex::firstTeam() const {
     return result;
 }
 
+bool CTeamIndex::isNull() const {
+    return countryId == 0;
+}
+
 CTeamIndex CTeamIndex::make(unsigned char CountryId, unsigned char Type, unsigned short Index) {
     CTeamIndex result;
     result.countryId = CountryId;
     result.index = Index;
     result.type = Type;
     return result;
+}
+
+CTeamIndex CTeamIndex::null() {
+    CTeamIndex result;
+    result.countryId = 0;
+    result.index = 0;
+    result.type = 0;
+    return result;
+}
+
+bool operator==(CTeamIndex const &a, CTeamIndex const &b) {
+    return a.index == b.index && a.countryId == b.countryId && a.type == b.type;
 }
 
 UChar CDBCountry::GetLeagueAverageLevel() {
@@ -649,4 +861,83 @@ UInt CDBTeamKit::GetPartType(UChar kitType, UChar shirtPart) {
 
 UChar CDBTeamKit::GetPartColor(UChar kitType, UChar shirtPart, UChar colorIndex) {
     return CallMethodAndReturn<UInt, 0xFFCC20>(this, kitType, shirtPart, colorIndex);
+}
+
+void CAssessmentInfo::AddPoints(float points) {
+    CallMethod<0x121DE60>(this, points);
+}
+
+Int CRandom::GetRandomInt(Int maxExclusive) {
+    return CallAndReturn<Int, 0x149E320>(maxExclusive);
+}
+
+CTeamIndex CDBOneMatch::GetHostTeamID() {
+    CTeamIndex teamID;
+    CallMethod<0xE814C0>(this, &teamID);
+    return teamID;
+}
+
+CDBTeam *CDBOneMatch::GetHostTeam() {
+    CTeamIndex id = GetHostTeamID();
+    if (id.countryId)
+        return ::GetTeam(id);
+    return nullptr;
+}
+
+CCompID CDBOneMatch::GetCompID() {
+    CCompID compId;
+    CallMethod<0xE80190>(this, &compId);
+    return compId;
+}
+
+UInt CDBOneMatch::GetCompIDInt() {
+    UInt compId = 0;
+    CallMethod<0xE80190>(this, &compId);
+    return compId;
+}
+
+CTeamIndex CDBOneMatch::GetTeamID(Bool home) {
+    CTeamIndex teamID;
+    CallMethod<0xE7FD30>(this, &teamID, home);
+    return teamID;
+}
+
+CDBTeam *CDBOneMatch::GetTeam(Bool home) {
+    CTeamIndex teamID;
+    CallMethod<0xE7FD30>(this, &teamID, home);
+    if (teamID.countryId != 0)
+        return ::GetTeam(teamID);
+    return nullptr;
+}
+
+CTeamIndex CDBOneMatch::GetHomeTeamID() {
+    CTeamIndex teamID;
+    CallMethod<0xE7FCF0>(this, &teamID);
+    return teamID;
+}
+
+CDBTeam *CDBOneMatch::GetHomeTeam() {
+    CTeamIndex teamID;
+    CallMethod<0xE7FCF0>(this, &teamID);
+    if (teamID.countryId != 0)
+        return ::GetTeam(teamID);
+    return nullptr;
+}
+
+CTeamIndex CDBOneMatch::GetAwayTeamID() {
+    CTeamIndex teamID;
+    CallMethod<0xE7FD00>(this, &teamID);
+    return teamID;
+}
+
+CDBTeam *CDBOneMatch::GetAwayTeam() {
+    CTeamIndex teamID;
+    CallMethod<0xE7FD00>(this, &teamID);
+    if (teamID.countryId != 0)
+        return ::GetTeam(teamID);
+    return nullptr;
+}
+
+CDBOneMatch *GetCurrentMatch() {
+    return *(CDBOneMatch **)0x3124748;
 }
