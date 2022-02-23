@@ -35,8 +35,18 @@ void CJDate::Set(unsigned short year, unsigned char month, unsigned char day) {
 
 UInt CJDate::Value() { return value; }
 
+void CJDate::Set(UInt _value) {
+    value = _value;
+}
+
 UInt CJDate::GetDayOfWeek() {
     return CallMethodAndReturn<UInt, 0x1494FBA>(this);
+}
+
+CJDate CJDate::DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year) {
+    CJDate date;
+    Call<0x14966C4>(&date, dayOfWeek, month, year);
+    return date;
 }
 
 CDBGame *CDBGame::GetInstance() {
@@ -138,8 +148,8 @@ CCompID CCompID::Make(unsigned char _country, unsigned char _type, unsigned shor
     return result;
 }
 
-unsigned char CDBCompetition::GetCompetitionType() {
-    return plugin::CallMethodAndReturn<unsigned char, 0xF81C50>(this);
+unsigned int CDBCompetition::GetCompetitionType() {
+    return plugin::CallMethodAndReturn<unsigned int, 0xF81C50>(this);
 }
 
 unsigned int CDBCompetition::GetDbType() {
@@ -361,6 +371,10 @@ void CDBCompetition::Launch() {
     plugin::CallVirtualMethod<4>(this);
 }
 
+Bool CDBCompetition::IsContinental() {
+    return CallMethodAndReturn<Bool, 0x11F0370>(this);
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -431,6 +445,10 @@ CDBTeam *GetTeam(CTeamIndex teamId) {
 
 CDBTeam *GetTeamByUniqueID(unsigned int uniqueID) {
     return plugin::CallAndReturn<CDBTeam *, 0xF0CCA0>(uniqueID);
+}
+
+CDBPlayer *GetPlayer(Int playerId) {
+    return CallAndReturn<CDBPlayer *, 0xF97C70>(playerId);
 }
 
 CCountryStore *GetCountryStore() {
@@ -744,6 +762,14 @@ UChar CDBTeam::GetColor(UChar index) {
     return *raw_ptr<UChar>(this, 0xFD + index);
 }
 
+UInt CDBTeam::GetNumPlayers() {
+    return CallMethodAndReturn<UInt, 0xEC9820>(this);
+}
+
+UInt CDBTeam::GetPlayer(UChar index) {
+    return CallMethodAndReturn<UInt, 0xEC9950>(this, index);
+}
+
 CTeamIndex &CDBLeagueBase::GetTeamAtPosition(int position) {
     return plugin::CallMethodAndReturn<CTeamIndex &, 0x10CBE20>(this, position);
 }
@@ -772,6 +798,12 @@ CTeamIndex CTeamIndex::make(unsigned char CountryId, unsigned char Type, unsigne
     return result;
 }
 
+CTeamIndex CTeamIndex::make(unsigned int value) {
+    CTeamIndex result;
+    *(unsigned int *)(&result) = value;
+    return result;
+}
+
 CTeamIndex CTeamIndex::null() {
     CTeamIndex result;
     result.countryId = 0;
@@ -788,6 +820,10 @@ UChar CDBCountry::GetLeagueAverageLevel() {
     return plugin::CallMethodAndReturn<UChar, 0xFD6FA0>(this);
 }
 
+UChar CDBCountry::GetCountryId() {
+    return plugin::CallMethodAndReturn<UChar, 0xFD6410>(this);
+}
+
 UInt CDBCountry::GetContinent() {
     return plugin::CallMethodAndReturn<UInt, 0xFD6830>(this);
 }
@@ -802,6 +838,10 @@ const WideChar *CDBCountry::GetAbbr() {
 
 const WideChar *CDBCountry::GetContinentName() {
     return plugin::CallMethodAndReturn<const WideChar *, 0xFD68D0>(this);
+}
+
+const Int CDBCountry::GetLastTeamIndex() {
+    return CallMethodAndReturn<Int, 0xFD6910>(this);
 }
 
 TeamLeaguePositionData::TeamLeaguePositionData() {
@@ -837,6 +877,38 @@ Char CDBPlayer::GetMainPosition() {
 
 UChar CDBPlayer::GetLevel(Char position, Bool special) {
     return CallMethodAndReturn<unsigned char, 0xFAAD60>(this, position, special);
+}
+
+CTeamIndex CDBPlayer::GetCurrentTeam() {
+    CTeamIndex result;
+    CallMethod<0xFB5240>(this, &result);
+    return result;
+}
+
+EAGMoney CDBPlayer::GetMarketValue(CDBEmployee *employee) {
+    EAGMoney result;
+    CallMethod<0xF9A980>(this, &result, employee);
+    return result;
+}
+
+EAGMoney CDBPlayer::GetDemandValue() {
+    EAGMoney result;
+    CallMethod<0xF9B6A0>(this, &result);
+    return result;
+}
+
+EAGMoney CDBPlayer::GetMinRelFee() {
+    EAGMoney result;
+    CallMethod<0xF9B6E0>(this, &result);
+    return result;
+}
+
+void CDBPlayer::SetDemandValue(EAGMoney const &money) {
+    CallMethod<0xFC2670>(this, &money);
+}
+
+void CDBPlayer::SetMinRelFee(EAGMoney const &money) {
+    CallMethod<0xFC27A0>(this, &money);
 }
 
 FmVec<CDBSponsorContractAdBoards> &CTeamSponsor::GetAdBoardSponsors() {
@@ -940,4 +1012,68 @@ CDBTeam *CDBOneMatch::GetAwayTeam() {
 
 CDBOneMatch *GetCurrentMatch() {
     return *(CDBOneMatch **)0x3124748;
+}
+
+UInt GetGuiColor(UInt colorId) {
+    return CallAndReturn<UInt, 0x4E8C10>(colorId);
+}
+
+Bool IsEuropeanCountry(Int countryId) {
+    return CallAndReturn<Bool, 0xFF8020>(countryId);
+}
+
+Bool IsNonEuropeanCountry(Int countryId) {
+    return CallAndReturn<Bool, 0xFD8A60>(countryId);
+}
+
+Bool IsEuropeanUnion(Int countryId) {
+    return CallAndReturn<Bool, 0xFD8A30>(countryId);
+}
+
+Bool IsAfricanCaribbeanAndPacificGroupOfStates(Int countryId) {
+    return CallAndReturn<Bool, 0xFD8BD0>(countryId);
+}
+
+Bool IsPlayerForeignerForCompetition(CDBPlayer *player, CCompID const &compID) {
+    return CallAndReturn<Bool, 0x13D2510>(player, &compID);
+}
+
+void *FmNew(UInt size) {
+    return CallAndReturn<void *, 0x15738F3>(size);
+}
+
+void FmDelete(void *data) {
+    Call<0x157347A>(data);
+}
+
+bool BinaryReaderIsVersionGreaterOrEqual(void *reader, UInt year, UInt build) {
+    return CallMethodAndReturn<bool, 0x1338EA0>(reader, year, build);
+}
+
+void BinaryReaderReadString(void *reader, WideChar *out, UInt maxLen) {
+    CallMethod<0x1338700>(reader, out, maxLen);
+}
+
+void SaveGameReadString(void *save, WideChar *out, UInt maxLen) {
+    CallMethod<0x1080EB0>(save, out, maxLen);
+}
+
+void SaveGameWriteString(void *save, WideChar const *str) {
+    CallMethod<0x1080130>(save, str);
+}
+
+void SaveGameReadInt8(void *save, UChar &out) {
+    CallMethod<0x1080390>(save, &out);
+}
+
+void SaveGameWriteInt8(void *save, UChar value) {
+    CallMethod<0x107F400>(save, value);
+}
+
+UInt SaveGameLoadGetVersion(void *save) {
+    return CallMethodAndReturn<UInt, 0x107F730>(save);
+}
+
+CDBPlayer *FindPlayerByStringID(WideChar const *stringID) {
+    return CallAndReturn<CDBPlayer *, 0xFAF750>(stringID);
 }

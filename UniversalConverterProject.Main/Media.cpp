@@ -4,6 +4,7 @@
 #include "FifamReadWrite.h"
 #include "FifamCompRegion.h"
 #include "Translation.h"
+#include "InterfaceTheme.h"
 
 using namespace plugin;
 
@@ -496,7 +497,10 @@ UShort METHOD OnGetTeamCountryForMediaScreen(CDBTeam *team) {
     auto id = team->GetTeamID().countryId;
     if (id != COUNTRY_ID_OK && id >= 1 && id <= 207) {
         if (!CountryName()[id - 1].second.empty()) {
-            String basePath = String(L"art_fm\\lib\\Media\\") + CountryName()[id - 1].second + L"\\";
+            String basePath;
+            if (!GetCustomInterfaceFolderW().empty())
+                basePath = GetCustomInterfaceFolderW() + L"\\";
+            basePath += String(L"art_fm\\lib\\Media\\") + CountryName()[id - 1].second + L"\\";
             if (MediaImageExists(basePath + L"InterviewAfterTheMatch.jpg") &&
                 MediaImageExists(basePath + L"InterviewBeforeMatch.jpg") &&
                 MediaImageExists(basePath + L"Newspaper.jpg") &&
@@ -527,6 +531,13 @@ Char *OnStoreLocFilePath(Char const *str, Char const *substr) {
     gLocFilenamePath = str;
     gLocFilenameSubstr = CallAndReturn<Char *, 0x1577960>(str, substr);
     return gLocFilenameSubstr;
+}
+
+Char const *gNewspaperFilenamePath = nullptr;
+
+Char *OnStoreNewspaperFilePath(Char const *str, Char const *substr) {
+    gNewspaperFilenamePath = str;
+    return CallAndReturn<Char *, 0x1577960>(str, substr);
 }
 
 const WideChar *METHOD OnGetFolderNameForLocFiles(void *metric) {
@@ -577,18 +588,18 @@ void OnSetupNewspaper(UInt countryId, Char *dst) {
     //        return;
     //}
     //else {
-        if (countryId >= 1 && countryId <= 207) {
-            if (!CountryName()[countryId - 1].second.empty()) {
-                auto abbr = Utils::WtoA(CountryName()[countryId - 1].second);
-                if (abbr.size() == 3) {
-                    dst[14] = abbr[0];
-                    dst[15] = abbr[1];
-                    dst[16] = abbr[2];
-                    if (MediaImageExists(dst))
-                        return;
-                }
+    if (countryId >= 1 && countryId <= 207) {
+        if (!CountryName()[countryId - 1].second.empty()) {
+            auto abbr = Utils::WtoA(CountryName()[countryId - 1].second);
+            if (abbr.size() == 3) {
+                dst[14] = abbr[0];
+                dst[15] = abbr[1];
+                dst[16] = abbr[2];
+                if (MediaImageExists(gNewspaperFilenamePath))
+                    return;
             }
         }
+    }
     //}
     dst[14] = 'd';
     dst[15] = 'e';
@@ -702,6 +713,7 @@ void PatchMedia(FM::Version v) {
         patch::RedirectCall(0xA32755, OnConstructMediaFolderNameForMediaScreen);
         patch::RedirectCall(0x4F16C2, OnGetFolderNameForLocFiles);
         patch::RedirectCall(0x4F169C, OnStoreLocFilePath);
+        patch::RedirectCall(0x4F1720, OnStoreNewspaperFilePath);
         patch::RedirectJump(0x4F17FF, OnSetupNewspaperExe);
         patch::RedirectJump(0x97E050, GetWebsiteScreenFileName);
         patch::RedirectJump(0x9348B0, GetScreenNameWeekTransfers<0>);
@@ -718,5 +730,8 @@ void PatchMedia(FM::Version v) {
         patch::RedirectCall(0xA8BBA6, OnUpdate07MatchComment);
         patch::RedirectCall(0xA8BCC4, OnUpdate07MatchComment);
         patch::RedirectCall(0xA8B5AC, On07MatchCommentGetCompetition);
+
+        patch::SetPointer(0xA325E4 + 1, L"ESP/");
+        patch::SetPointer(0xA32750 + 1, L"SUI/");
     }
 }

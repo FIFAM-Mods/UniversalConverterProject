@@ -1380,7 +1380,6 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
                 }
             };
 
-            // TODO: enable this
             String kitOverlayPath = GetUserTexturePath(L"data\\kitoverlay", gCurrCompId, teamId, kitTypeStr);
             if (!kitOverlayPath.empty())
                 PutOverlay(shapeGen, dstImg, kitOverlayPath, 512, 1024, 0, 0, 512, 1024);
@@ -1830,7 +1829,9 @@ void PatchKits(FM::Version v) {
         // kit clashing file
         patch::RedirectCall(0x4409E8, CheckKitSelection);
         patch::RedirectCall(0x440A35, CheckKitSelection);
-        //patch::SetUChar(0xADB245 + 6, 0);
-        //patch::SetUInt(0x43FDD7 + 3, 0);
+        patch::Nop(0x440601, 1);             // remove generic fantasy kit
+        patch::SetUChar(0x440601 + 1, 0xE9); // remove generic fantasy kit
+        patch::SetUChar(0xADB245 + 6, 0);
+        patch::SetUInt(0x43FDD7 + 3, 0);
     }
 }

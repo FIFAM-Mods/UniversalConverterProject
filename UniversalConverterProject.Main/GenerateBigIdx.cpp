@@ -11,9 +11,9 @@
 using namespace std;
 using namespace std::filesystem;
 
-vector<string> archiveNames13 = { // 39
+vector<string> archiveNames13 = { // 42
     "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
-    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big", // 9
+    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big", "art_10.big", "art_11.big", "art_12.big", // 12
     "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
     "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_32.big", "data\\zdata_33.big", // 5
     "data\\zdata_34.big", "data\\zdata_36.big",  "data\\zdata_38.big", "data\\zdata_39.big", "data\\zdata_40.big", // 5
@@ -23,9 +23,9 @@ vector<string> archiveNames13 = { // 39
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
 
-vector<string> archiveNames14 = { // 39
+vector<string> archiveNames14 = { // 42
     "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
-    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big", // 9
+    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big", "art_09.big", "art_10.big", "art_11.big", "art_12.big", // 12
     "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
     "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_33.big", "data\\zdata_34.big", // 5
     "data\\zdata_35.big", "data\\zdata_37.big", "data\\zdata_39.big", "data\\zdata_40.big", "data\\zdata_41.big", // 5

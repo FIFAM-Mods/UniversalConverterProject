@@ -1233,7 +1233,77 @@ int OnGetTacticSettingCrossHeight(void *player, int attribute) {
     return result;
 }
 
+bool gShowInfo = false;
+
+void METHOD OnReadSequenceType(void *t, DUMMY_ARG, UInt *out) {
+    CallMethodDynGlobal(GfxCoreAddress(0xA7A50), t, out);
+    if (gShowInfo)
+        ::Message("Sequence type: %d", *out);
+}
+
+void METHOD OnReadSequenceNumTags(void *t, DUMMY_ARG, UChar *out) {
+    CallMethodDynGlobal(GfxCoreAddress(0xA79B0), t, out);
+    if (gShowInfo)
+        ::Message("Sequence num tags: %d", *out);
+}
+
+void METHOD OnPeekSequenceTag(void *t, DUMMY_ARG, UShort *out) {
+    CallMethodDynGlobal(GfxCoreAddress(0xA7A30), t, out);
+    if (gShowInfo)
+        ::Message("Sequence tag: %d", *out);
+}
+
+void AnimataionBankLoadBegin(char const *animName) {
+    CallDynGlobal(GfxCoreAddress(0x248E00), animName);
+    auto a = Utils::ToUpper(animName);
+    ::Message(animName);
+    if (a == "07_THROW_GLORY_01.BNK")
+        gShowInfo = true;
+}
+
+void AnimationBankLoadEnd() {
+    CallDynGlobal(GfxCoreAddress(0x248DF0));
+    gShowInfo = false;
+}
+
+struct GameLoopConfig {
+    UInt fpsLimit;
+    UInt maxFramesInOneLoop;
+    UInt unk6;
+    UInt unk10;
+    UInt numFramesDelay;
+    UChar bEnableFpsLimit;
+    UChar field_15;
+    UChar bTrue;
+    UChar unk;
+};
+
+
+GameLoopConfig *OnGetBeLoopTimers(GameLoopConfig *config) {
+    CallDynGlobal(GfxCoreAddress(0x3B4A0), config);
+    for (UInt i = 0; i < 2; i++) {
+        config[i].fpsLimit = 60;
+        config[i].maxFramesInOneLoop = 1;
+        config[i].unk6 = 3;
+        config[i].unk10 = 5;
+        config[i].numFramesDelay = 1;
+        config[i].bEnableFpsLimit = 1;
+    }
+    return config;
+}
+
+void OnGetResolution(UInt *x, UInt *y) {
+    *x = Settings::GetInstance().ResolutionX;
+    *y = Settings::GetInstance().ResolutionY;
+}
+
 void Install3dPatches_FM13() {
+
+    //patch::RedirectCall(GfxCoreAddress(0x220D04), AnimataionBankLoadBegin);
+    //patch::RedirectCall(GfxCoreAddress(0x220D64), AnimationBankLoadEnd);
+    //patch::RedirectCall(GfxCoreAddress(0xA5879), OnReadSequenceType);
+    //patch::RedirectCall(GfxCoreAddress(0xA4AFD), OnReadSequenceNumTags);
+    //patch::RedirectCall(GfxCoreAddress(0xA4C05), OnPeekSequenceTag);
 
     /*
     WideChar const *camSettingsFilename = L".\\plugins\\ucp\\camera.ini";
@@ -1924,4 +1994,10 @@ void Install3dPatches_FM13() {
     // fix for tactic tackles in 3d match
     patch::RedirectCall(GfxCoreAddress(0x484D), OnGetTacticSettingTackles);
 
+    // fps
+    patch::RedirectCall(GfxCoreAddress(0x3B9CE), OnGetBeLoopTimers);
+
+    // resolution
+    if (Settings::GetInstance().ResolutionX != 0 && Settings::GetInstance().ResolutionY != 0)
+        patch::RedirectCall(GfxCoreAddress(0x3ABC8), OnGetResolution);
 }

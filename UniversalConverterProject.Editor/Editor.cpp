@@ -8,12 +8,13 @@
 #include "Competitions.h"
 #include "libpng/png.h"
 #include "UcpSettings.h"
+#include "ExtendedPlayerEditor.h"
 
 using namespace plugin;
 
 //#define EDITOR_READ_TEXT
 #define EDITOR_WRITE_TEXT
-//#define UPDATE_CLUB_BUDGETS
+#define UPDATE_CLUB_BUDGETS
 
 enum FmLanguage {
     English,
@@ -26,6 +27,11 @@ enum FmLanguage {
 };
 
 FmLanguage gCurrentLanguage;
+
+Set<String> &GetSponsorNames() {
+    static Set<String> SponsorNames;
+    return SponsorNames;
+}
 
 int METHOD RetMinOne(void *, DUMMY_ARG, void *) {
     return -1;
@@ -874,9 +880,11 @@ UChar METHOD OnGetPlayerLevelMul12(void *t) {
     return UChar(Float(CallMethodAndReturn<UChar, 0x521800>(t)) * 1.2f);
 }
 
-void METHOD OnReadReferee(void *t, DUMMY_ARG, void *reader) {
-    *raw_ptr<Int>(t, 0x4A) = -1;
-    CallMethod<0x53FDC0>(t, reader);
+void *OnAllocReferee(UInt size) {
+    void *result = CallAndReturn<void *, 0x5B0474>(size + 4);
+    if (result)
+        *raw_ptr<Int>(result, 0x4A) = -1;
+    return result;
 }
 
 void METHOD OnReadRefereeType(void *t, DUMMY_ARG, UChar *out) {
@@ -890,8 +898,213 @@ void METHOD OnWriteRefereeType(void *t, DUMMY_ARG, UChar *in) {
     CallMethod<0x514510>(t, in + 2);
 }
 
+WideChar const * METHOD PlayerFoomID_GetFirstname(void *p) {
+    WideChar const *result = CallMethodAndReturn<WideChar const *, 0x51CB60>(p);
+    Int foomId = GetPlayerExtension(p)->footballManagerId;
+    if (foomId >= 0) {
+        static WideChar buf[128];
+        swprintf(buf, L"%s (%d)", result, foomId);
+        return buf;
+    }
+    return result;
+}
+
+WideChar const *METHOD PlayerFoomID_GetNickname(void *p) {
+    WideChar const *result = CallMethodAndReturn<WideChar const *, 0x51CC00>(p);
+    Int foomId = GetPlayerExtension(p)->footballManagerId;
+    if (foomId >= 0) {
+        static WideChar buf[128];
+        swprintf(buf, L"%s (%d)", result, foomId);
+        return buf;
+    }
+    return result;
+}
+
+WideChar const *METHOD PlayerFoomID_ShortName1(void *p) {
+    Int foomId = GetPlayerExtension(p)->footballManagerId;
+    if (foomId >= 0) {
+        static WideChar buf[128];
+        swprintf(buf, L"%s (%d)", CallMethodAndReturn<WideChar const *, 0x51CCA0>(p), foomId);
+        return buf;
+    }
+    else
+        return CallMethodAndReturn<WideChar const *, 0x51CCA0>(p);
+}
+
+WideChar const *METHOD PlayerFoomID_ShortName2(void *p) {
+    Int foomId = GetPlayerExtension(p)->footballManagerId;
+    if (foomId >= 0) {
+        static WideChar buf[128];
+        swprintf(buf, L"%s (%d)", CallMethodAndReturn<WideChar const *, 0x51B450>(p), foomId);
+        return buf;
+    }
+    else
+        return CallMethodAndReturn<WideChar const *, 0x51B450>(p);
+}
+
+WideChar const * METHOD RefereeFoomID_ShortName(void *r) {
+    Int foomId = *raw_ptr<UInt>(r, 0x4A);
+    if (foomId >= 0) {
+        static WideChar buf[128];
+        swprintf(buf, L"%s (%d)", CallMethodAndReturn<WideChar const *, 0x53FE80>(r), foomId);
+        return buf;
+    }
+    else
+        return CallMethodAndReturn<WideChar const *, 0x53FE80>(r);
+}
+
+void DDX_Control(void *pDX, int nIDC, void *rControl) {
+    CallMethod<0x5B13D5>(0, pDX, nIDC, rControl);
+}
+
+void *ComboBoxConstruct(void *t) {
+    return CallMethodAndReturn<void *, 0x402710>(t);
+}
+
+void ComboBoxDestruct(void *t) {
+    CallMethod<0x5BDD37>(t);
+}
+
+HWND ComboBoxHWND(void *t) {
+    return *raw_ptr<HWND>(t, 0x20);
+}
+
+LRESULT ComboBoxAddItem(void *t, const WideChar *itemName, LPARAM itemIndex) {
+    return CallMethodAndReturn<LRESULT, 0x4138A0>(0, t, itemName, itemIndex);
+}
+
+LRESULT ComboBoxSetCurrentItem(void *t, Int itemIndex) {
+    return CallMethodAndReturn<LRESULT, 0x4138E0>(0, t, itemIndex);
+}
+
+Int ComboBoxGetCurrentItem(void *t, Int defaultValue = 0) {
+    return CallMethodAndReturn<Int, 0x413990>(0, t, defaultValue);
+}
+
+void ReadSponsorNames() {
+    FifamReader r(L"fmdata\\ParameterFiles\\Sponsor List.txt");
+    if (r.Available()) {
+        while (!r.IsEof()) {
+            if (!r.EmptyLine()) {
+                auto l = r.ReadFullLine();
+                if (l.find(L"NAME = ") != String::npos) {
+                    auto p1 = l.find(L'"');
+                    if (p1 != String::npos) {
+                        auto p2 = l.find(L'"', p1 + 1);
+                        if (p2 != String::npos && (p2 - p1) > 1)
+                            GetSponsorNames().insert(l.substr(p1 + 1, p2 - p1 - 1));
+                    }
+                }
+            }
+            else
+                r.SkipLine();
+        }
+    }
+}
+
+#define SSIZE_COMBOBOX 0x54
+
+unsigned char CbSponsorName[SSIZE_COMBOBOX];
+
+void *METHOD OnDlgClubStadiumConstruct(void *t, DUMMY_ARG, void *a) {
+    void *result = CallMethodAndReturn<void *, 0x437FF0>(t, a);
+    ComboBoxConstruct(CbSponsorName);
+    return result;
+}
+
+void METHOD OnDlgClubStadiumDestruct(void *t) {
+    ComboBoxDestruct(CbSponsorName);
+    CallMethod<0x401380>(t);
+}
+
+void METHOD OnDlgClubStadiumDDX(void *t, DUMMY_ARG, void *pDX) {
+    CallMethod<0x437340>(t, pDX);
+    DDX_Control(pDX, 1302, raw_ptr<void *>(t, 0xA84));
+    DDX_Control(pDX, 30000, CbSponsorName);
+}
+
+Int METHOD OnDlgClubStadiumInit(void *t) {
+    Int result = CallMethodAndReturn<Int, 0x4377B0>(t);
+    SendMessageW(ComboBoxHWND(CbSponsorName), CB_RESETCONTENT, 0, 0);
+    ComboBoxAddItem(CbSponsorName, L"-", 0);
+    UInt counter = 1;
+    for (auto const &s : GetSponsorNames())
+        ComboBoxAddItem(CbSponsorName, s.c_str(), counter++);
+    ComboBoxSetCurrentItem(CbSponsorName, 0);
+    return result;
+}
+
+void METHOD OnDlgClubStadiumSave(void *t) {
+    CallMethod<0x437C90>(t);
+    void *club = *raw_ptr<void *>(t, 0x2364);
+    if (club) {
+        SendMessageW(ComboBoxHWND(CbSponsorName), CB_GETCURSEL, 0, 0);
+        Int sponsorIndex = ComboBoxGetCurrentItem(CbSponsorName, 0);
+        if (sponsorIndex > 0 && sponsorIndex <= GetSponsorNames().size()) {
+            auto it = GetSponsorNames().begin();
+            advance(it, sponsorIndex - 1);
+            Call<0x54B310>(raw_ptr<const WideChar>(club, 0x1124), (*it).c_str(), 29);
+        }
+    }
+}
+
+void METHOD OnDlgClubStadiumLoad(void *t, DUMMY_ARG, void *club) {
+    CallMethod<0x438400>(t, club);
+    Bool set = false;
+    if (club) {
+        String sponsorName = raw_ptr<const WideChar>(club, 0x1124);
+        if (!sponsorName.empty()) {
+            auto it = GetSponsorNames().find(sponsorName);
+            if (it != GetSponsorNames().end()) {
+                ComboBoxSetCurrentItem(CbSponsorName, std::distance(GetSponsorNames().begin(), it) + 1);
+                set = true;
+            }
+        }
+    }
+    if (!set)
+        ComboBoxSetCurrentItem(CbSponsorName, 0);
+}
+
+void METHOD OnWriteClubSponsorAmountToMaster(void *writer, DUMMY_ARG, UInt value) {
+    void *club = *raw_ptr<void *>(writer, 0x28);
+    CallMethod<0x550D10>(writer, raw_ptr<const WideChar>(club, 0x1124));
+    CallMethod<0x551060>(writer, value);
+}
+
+LRESULT METHOD OnU24ComboBoxGetCurrentIndex(void *t) {
+    return CallMethodAndReturn<LRESULT, 0x57F2A0>(raw_ptr<void>(t, 0x54));
+}
+
+void METHOD OnReadLeagueLoanAndOtherFlags(void *t, DUMMY_ARG, UInt *out) {
+    CallMethod<0x513700>(t, out);
+    UInt minDomesticPlayerCount = ((*out) >> 16) & 0x1F;
+    if (minDomesticPlayerCount > 18)
+        (*out) &= 0xFFE0FFFF;
+    UInt minU21PlayerCount = ((*out) >> 21) & 0x1F;
+    if (minU21PlayerCount > 28)
+        (*out) &= 0xFC1FFFFF;
+    UInt minU24PlayerCount = ((*out) >> 26) & 0x1F;
+    if (minDomesticPlayerCount > 30)
+        (*out) &= 0x83FFFFFF;
+}
+
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
+
+        GetSponsorNames() = {
+            L"Amazon", L"Intersport", L"Vodafone", L"Burger King", L"Nike", L"Hyundai", L"Santander Bank", L"Coca-Cola", L"Adidas", L"Evonik Industries", L"AIA Group", L"IKEA", L"Huawei", L"Visa", L"DHL", L"Ziggo", L"Nivea", L"Pepsi", L"Mapei", L"Pirelli", L"Qatar Airways", L"Volkswagen", L"bwin", L"LG Electronics", L"Rakuten", L"Emirates Airlines", L"Puma", L"Grupo Bimbo", L"Youtube TV", L"Carlsberg", L"Microsoft Xbox", L"Acqua Lete", L"Sony", L"MEO", L"Kia Motors", L"Otto GmbH"
+        };
+        ReadSponsorNames();
+
+        // DlgClubStadium extension
+        patch::RedirectCall(0x43493E, OnDlgClubStadiumConstruct);
+        patch::RedirectCall(0x433C98, OnDlgClubStadiumDestruct);
+        patch::SetPointer(0x652E18, OnDlgClubStadiumDDX);
+        patch::SetPointer(0x652E6C, OnDlgClubStadiumInit);
+        patch::RedirectCall(0x433093, OnDlgClubStadiumSave);
+        patch::RedirectCall(0x437FB3, OnDlgClubStadiumSave);
+        patch::RedirectCall(0x432FFB, OnDlgClubStadiumLoad);
+        patch::RedirectCall(0x4C4CBF, OnWriteClubSponsorAmountToMaster);
 
         //patch::RedirectCall(0x4D9868, ShowErr);
         
@@ -1045,7 +1258,7 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x4C5571, OnReadClubTransferBudget);
 
         for (int i = 1; i < 100; i++) {
-            FifamReader reader(Utils::Format(L"E:\\Games\\FIFA Manager 13\\ClubBudgets%d.csv", i), 13);
+            FifamReader reader(Utils::Format(L"E:\\Games\\FIFA Manager 22\\ClubBudgets%d.csv", i), 13);
             if (reader.Available()) {
                 //Error("Reading");
                 reader.SkipLine();
@@ -1395,9 +1608,143 @@ void PatchEditor(FM::Version v) {
         }
 
         // foom id - referee
-        patch::SetUChar(0x4E9840, 0x4A + 4);
-        patch::RedirectCall(0x4E9868, OnReadReferee);
+        patch::RedirectCall(0x492126, OnAllocReferee);
+        patch::RedirectCall(0x49218E, OnAllocReferee);
+        patch::RedirectCall(0x4E9842, OnAllocReferee);
         patch::RedirectCall(0x53FDF5, OnReadRefereeType);
         patch::RedirectCall(0x53FDA1, OnWriteRefereeType);
+
+        // fix club writing (club name usage field offset)
+        patch::SetUInt(0x4C5BC4 + 2, 0x412);
+
+        // remove deprecated team IDs
+        patch::SetUChar(0x54353C, 0xEB);
+
+        // increase years for naturalisation
+        patch::SetUChar(0x446D59 + 1, 30);
+
+        // fix U24 limit
+        patch::RedirectCall(0x453FCD, OnU24ComboBoxGetCurrentIndex);
+
+        // new values for limits
+        static Char const *ForeignersForField[] = {
+            "Competition.ForeignerRule.No", "Competition.ForeignerRule.NonEU1", "Competition.ForeignerRule.NonEU2",
+            "Competition.ForeignerRule.NonEU3", "Competition.ForeignerRule.NonEU4", "Competition.ForeignerRule.NonEU5",
+            "Competition.ForeignerRule.NonEU6", "Competition.ForeignerRule.NonEU7", "Competition.ForeignerRule.NonEU8",
+            "Competition.ForeignerRule.NonEU9", "Competition.ForeignerRule.NonEU10", "Competition.ForeignerRule.NonEU0", nullptr
+        };
+        static WideChar const *ForeignersForGame[] = {
+            L"-",L"0",L"1",L"2",L"3",L"4",L"5",L"6",L"7",L"8",L"9",L"10",L"11",L"12",L"13",L"14",L"15",L"16",L"17",nullptr
+        };
+        static WideChar const *SeasonSquadSize[] = {
+            L"-",L"18",L"19",L"20",L"21",L"22",L"23",L"24",L"25",L"26",L"27",L"28",L"29",L"30",L"31",L"32",L"33",L"34",L"35",L"36",L"37",L"38",L"39",L"40",L"41",L"42",L"43",L"44",L"45",nullptr
+        };
+        static WideChar const *ForeignersForSeasonSquad[] = {
+            L"-",L"0",L"1",L"2",L"3",L"4",L"5",L"6",L"7",L"8",L"9",L"10",L"11",L"12",L"13",L"14",L"15",L"16",L"17",L"18",L"19",L"20",L"21",L"22",L"23",L"24",L"25",L"26",L"27",L"28",L"29",nullptr
+        };
+        patch::SetPointer(0x454CBE + 1, ForeignersForField);
+        patch::SetPointer(0x454CF5 + 1, ForeignersForGame);
+        patch::SetPointer(0x454D17 + 1, SeasonSquadSize);
+        patch::SetPointer(0x454D39 + 1, ForeignersForSeasonSquad);
+        // fix wrong values
+        patch::RedirectCall(0x505424, OnReadLeagueLoanAndOtherFlags);
+
+        if (Settings::GetInstance().DisplayFoomID) {
+            patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);
+            patch::RedirectCall(0x473280, PlayerFoomID_GetFirstname);
+            patch::RedirectCall(0x47321F, PlayerFoomID_GetNickname);
+            patch::RedirectCall(0x473268, PlayerFoomID_GetNickname);
+            
+            patch::RedirectCall(0x49EFA0 + 0xD4, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x49FC40 + 0xB9, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A0950 + 0x47, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A09D0 + 0x31, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A2BC0 + 0x12B, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A2F40 + 0x76, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A2F40 + 0x99, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A3090 + 0x33, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A3090 + 0x3B, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A7503 + 0x0, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A7596 + 0x0, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A8650 + 0x147, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A8B70 + 0x12B, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A8B70 + 0x22B, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A8B70 + 0x336, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A93A0 + 0x120, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4A9A90 + 0x8A, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4B99E0 + 0x30, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4B99E0 + 0x61, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4B9B70 + 0x4E, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4B9B70 + 0x56, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4B9B70 + 0x8C, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4B9B70 + 0xDE, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4D31B0 + 0x5B, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4F7740 + 0x7F9, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4F7740 + 0x813, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4F7FE0 + 0x1330, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x4FA350 + 0x364, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x5200F0 + 0x17F, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x5269E0 + 0xAB5, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x559DD0 + 0x100, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x559EF0 + 0x1A8, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x559EF0 + 0x206, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55A120 + 0xFB, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55A240 + 0xFB, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55A360 + 0xE4, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55A360 + 0x131, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55AB00 + 0x7A, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55AC60 + 0xF1, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55AFA0 + 0x25D, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55B240 + 0x104, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x55C970 + 0x83, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x562CD0 + 0x18B, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x562CD0 + 0x299, PlayerFoomID_ShortName1);
+            patch::RedirectCall(0x562CD0 + 0x317, PlayerFoomID_ShortName1);
+            patch::RedirectJump(0x4A3060 + 0x17, PlayerFoomID_ShortName1);
+            patch::RedirectJump(0x51CEE0 + 0x22, PlayerFoomID_ShortName1);
+
+            patch::RedirectCall(0x493F02 + 0x0, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x47B990 + 0x2E, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x47B540 + 0xD0, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x47A300 + 0x1F, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x47A300 + 0x29, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x443110 + 0x128, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x44B870 + 0x211, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x466050 + 0x141, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x466050 + 0x14B, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x466430 + 0x3EF, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x466430 + 0x516, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x467700 + 0x92, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x467700 + 0xA7, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x468790 + 0x1AC, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x47ACC0 + 0xA7, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x480860 + 0xBD, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x480E90 + 0x503, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x480E90 + 0x50B, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x483930 + 0xF, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x484490 + 0x5D, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x48CA80 - 0x130A, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x48CA80 - 0x1598, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x48F630 + 0xA8, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x4936C0 + 0x21B, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x4F7740 + 0x375, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x4F7740 + 0x380, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x50BCA0 + 0x2DB, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x50BCA0 + 0x331, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x5221B0 + 0xA0, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x5221B0 + 0xB5, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x53D540 + 0x2A1, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x557D90 + 0x699, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x557D90 + 0x8E8, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x557D90 + 0x91C, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x5594A0 + 0x212, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x55A4D0 + 0x138, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x55AC60 + 0xAE, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x55D490 + 0xCD, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x568160 + 0x356, PlayerFoomID_ShortName2);
+            patch::RedirectCall(0x568160 + 0x712, PlayerFoomID_ShortName2);
+
+            patch::RedirectCall(0x49136C, RefereeFoomID_ShortName);
+        }
     }
 }

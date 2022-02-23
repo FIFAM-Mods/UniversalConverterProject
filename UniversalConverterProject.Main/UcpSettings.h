@@ -35,6 +35,9 @@ public:
     SETTINGS_PARAMETER(bool,   NamesForAllLanguages,        "EDITOR_NAMES_FOR_ALL_LANGUAGES", false);
     SETTINGS_PARAMETER(bool,   TestAllFixtures,             "EDITOR_TEST_ALL_FIXTURES",       false);
     SETTINGS_PARAMETER(bool,   ForceCalendar,               "FORCE_CALENDAR_EDITOR",          false);
+    SETTINGS_PARAMETER(bool,   DisplayFoomID,               "DISPLAY_FOOM_ID",                false);
+    SETTINGS_PARAMETER(int,    ResolutionX,                 "RESOLUTION_X",                   0);
+    SETTINGS_PARAMETER(int,    ResolutionY,                 "RESOLUTION_Y",                   0);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

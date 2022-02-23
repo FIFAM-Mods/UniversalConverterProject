@@ -82,9 +82,10 @@ public:
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
-            const UInt SaveGameVersion = 42;
+            const UInt SaveGameVersion = 42; // 43
+            const UInt SaveGameVersionMin = 42;
             patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
-            patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
+            patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersionMin)); // remake the code if version >= 128 is needed
 
             if (!exists("locale.ini"))
                 Warning("File \"locale.ini\" is not found. Make sure this file is present in the game folder.");
@@ -124,7 +125,7 @@ public:
         PatchStaffNames(v);
         PatchForeignersLimit(v);
         PatchTeamControl(v);
-        InstallEasyEdit(v);
+        //InstallEasyEdit(v); -- deprecated since version 2022.1. do not enable
         PatchCompetitions(v);
         PatchSpareEmployeeFix(v);
         PatchEABFFixes(v);
@@ -176,7 +177,7 @@ String GetPatchName() {
 }
 
 String GetPatchVersion() {
-    return L"Alpha September";
+    return L"1.0";
 }
 
 String GetFullAppName(Bool upperCase) {

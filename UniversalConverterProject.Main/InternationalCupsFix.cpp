@@ -8,6 +8,7 @@
 using namespace plugin;
 
 CDBLeague *gCompLeague = nullptr;
+CDBRound *gCompRound = nullptr;
 uintptr_t gOriginal_117C830 = 0;
 
 Bool IsStartingSeason() {
@@ -32,15 +33,12 @@ void METHOD OnLeagueLaunch(CDBLeague *league) {
 void *MyFixInternationalQuali_Fix() {
     CJDate startDate = CDBGame::GetInstance()->GetStartDate();
     if ((gCompLeague->GetCompetitionType() == COMP_QUALI_WC || gCompLeague->GetCompetitionType() == COMP_QUALI_EC) && (startDate.GetYear() % 2) == 1) {
-        if (IsStartingSeason()) {
-            CJDate oneYearDecreased = startDate.GetTranslated(-1);
-            gCompLeague->SetStartDate(oneYearDecreased);
-        }
+        if (IsStartingSeason())
+            gCompLeague->SetStartDate(CJDate::DateFromDayOfWeek(6, 7, startDate.GetYear() - 1));
     }
     return CallAndReturnDynGlobal<void *>(gOriginal_117C830);
 }
 
-CDBRound *gCompRound = nullptr;
 uintptr_t gOriginal_FixRound = 0;
 
 Bool gRoundLaunchRegisterFirst = false;
@@ -210,8 +208,7 @@ void *MyFixInternationalQuali_FixRound() {
     CJDate startDate = CDBGame::GetInstance()->GetStartDate();
     if ((gCompRound->GetCompetitionType() == COMP_QUALI_WC || gCompRound->GetCompetitionType() == COMP_QUALI_EC) && (startDate.GetYear() % 2) == 1) {
         if (IsStartingSeason()) {
-            CJDate oneYearDecreased = startDate.GetTranslated(-1);
-            CallMethod<0x10429E0>(gCompRound, oneYearDecreased);
+            CallMethod<0x10429E0>(gCompRound, CJDate::DateFromDayOfWeek(6, 7, startDate.GetYear() - 1));
             //CJDate *dates = raw_ptr<CJDate>(gCompRound, 0x2070);
             //for (UInt i = 0; i < gCompRound->GetNumMatchdays(); i++) {
             //    SafeLog::WriteToFile("round_dates_fix.log", Utils::Format(L"(launch) %s - %02d.%02d.%02d",
@@ -234,8 +231,7 @@ UInt METHOD MyGetRoundMatchDate(CDBRound *comp, DUMMY_ARG, UInt matchId) {
     CJDate startDate = CDBGame::GetInstance()->GetStartDate();
     if ((comp->GetCompetitionType() == COMP_QUALI_WC || comp->GetCompetitionType() == COMP_QUALI_EC) && (startDate.GetYear() % 2) == 1) {
         if (IsStartingSeason()) {
-            CJDate oneYearDecreased = startDate.GetTranslated(-1);
-            CallMethod<0x10429E0>(comp, oneYearDecreased);
+            CallMethod<0x10429E0>(comp, CJDate::DateFromDayOfWeek(6, 7, startDate.GetYear() - 1));
             //CJDate *dates = raw_ptr<CJDate>(comp, 0x2070);
             //for (UInt i = 0; i < comp->GetNumMatchdays(); i++) {
             //    SafeLog::Write(Utils::Format(L"%s - %02d.%02d.%02d",

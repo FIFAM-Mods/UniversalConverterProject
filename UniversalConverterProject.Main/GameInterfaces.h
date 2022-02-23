@@ -12,11 +12,13 @@ public:
     void GetYMD(unsigned short *outY, unsigned char *outM, unsigned char *outD);
     void GetYMD(unsigned int *outY, unsigned int *outM, unsigned int *outD);
     void Set(unsigned short year, unsigned char month, unsigned char day);
+    void Set(UInt _value);
     UInt Value();
     UInt GetDayOfWeek();
+    static CJDate DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year);
 };
 
-using EAGMoney = UInt64;
+using EAGMoney = Int64;
 
 enum eMetricCode {
     METRIC_NONE = 0,
@@ -105,6 +107,7 @@ struct CTeamIndex {
     CTeamIndex firstTeam() const;
     bool isNull() const;
     static CTeamIndex make(unsigned char CountryId, unsigned char Type, unsigned short Index);
+    static CTeamIndex make(unsigned int value);
     static CTeamIndex null();
 };
 
@@ -121,6 +124,12 @@ public:
     Char GetTalent(CDBEmployee *employee = nullptr);
     Char GetMainPosition();
     UChar GetLevel(Char position, Bool special = false);
+    CTeamIndex GetCurrentTeam();
+    EAGMoney GetMarketValue(CDBEmployee *employee = nullptr);
+    EAGMoney GetDemandValue();
+    EAGMoney GetMinRelFee();
+    void SetDemandValue(EAGMoney const &money);
+    void SetMinRelFee(EAGMoney const &money);
 };
 
 class CDBCountry;
@@ -209,7 +218,7 @@ struct CScriptCommand {
 
 class CDBCompetition {
 public:
-    unsigned char GetCompetitionType();
+    unsigned int GetCompetitionType();
     unsigned int GetDbType();
     wchar_t const *GetName();
     CCompID GetCompID();
@@ -245,6 +254,7 @@ public:
     int GetTeamIndex(CTeamIndex const& teamId);
     bool Finish();
     void Launch();
+    Bool IsContinental();
 };
 
 enum CompDbType {
@@ -389,6 +399,8 @@ public:
     CDBTeamKit *GetKit();
     bool IsManagedByAI(bool flag = true);
     UChar GetColor(UChar index);
+    UInt GetNumPlayers();
+    UInt GetPlayer(UChar index);
 };
 
 struct CAssessmentInfo {
@@ -440,10 +452,12 @@ class CDBCountry {
     UChar data[0x10C8];
 public:
     UChar GetLeagueAverageLevel();
+    UChar GetCountryId();
     UInt GetContinent();
     const WideChar *GetName();
     const WideChar *GetAbbr();
     const WideChar *GetContinentName();
+    const Int GetLastTeamIndex();
 };
 
 class CCountryStore {
@@ -467,6 +481,7 @@ CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index)
 
 CDBTeam *GetTeam(CTeamIndex teamId);
 CDBTeam *GetTeamByUniqueID(unsigned int uniqueID);
+CDBPlayer *GetPlayer(Int playerId);
 
 CCountryStore *GetCountryStore();
 
@@ -556,3 +571,22 @@ public:
 };
 
 CDBOneMatch *GetCurrentMatch();
+
+UInt GetGuiColor(UInt colorId);
+
+Bool IsEuropeanCountry(Int countryId);
+Bool IsNonEuropeanCountry(Int countryId);
+Bool IsEuropeanUnion(Int countryId);
+Bool IsAfricanCaribbeanAndPacificGroupOfStates(Int countryId);
+Bool IsPlayerForeignerForCompetition(CDBPlayer *player, CCompID const &compID);
+
+void *FmNew(UInt size);
+void FmDelete(void *data);
+bool BinaryReaderIsVersionGreaterOrEqual(void *reader, UInt year, UInt build);
+void BinaryReaderReadString(void *reader, WideChar *out, UInt maxLen);
+void SaveGameReadString(void *save, WideChar *out, UInt maxLen);
+void SaveGameWriteString(void *save, WideChar const *str);
+void SaveGameReadInt8(void *save, UChar &out);
+void SaveGameWriteInt8(void *save, UChar value);
+UInt SaveGameLoadGetVersion(void *save);
+CDBPlayer *FindPlayerByStringID(WideChar const *stringID);

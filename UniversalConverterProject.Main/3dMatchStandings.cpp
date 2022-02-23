@@ -633,9 +633,9 @@ void METHOD OnSetupMatch3DSubstitution(void *screen, DUMMY_ARG, void *data) {
             CTeamIndex teamID = CTeamIndex::null();
             CallVirtualMethod<57>(matchController, &teamID, *raw_ptr<UInt>(data, 0x18));
             if (*raw_ptr<UInt>(data, 0x14) == 1)
-                Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, "TbClubName", nullptr, nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, true);
+                Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
             else if (*raw_ptr<UInt>(data, 0x14) > 1)
-                Process3dMatchScreenExtensions(screen, "TbBadgeSmall", nullptr, "TbClubName", nullptr, nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, true);
+                Process3dMatchScreenExtensions(screen, "TbBadgeSmall", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
         }
     }
 }
@@ -659,8 +659,18 @@ void METHOD OnSetupMatch3DManagerSentOff(void *screen, DUMMY_ARG, void *data) {
 
 void METHOD OnSetuMatch3DHalfTimeStats(void *screen, DUMMY_ARG, void *data) {
     CallMethod<0xBF4A80>(screen, data);
-    if (*raw_ptr<UInt>(data, 0x10) & 0x10000)
-        Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", "TbHomeTeam", "TbAwayTeam", nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    if (*raw_ptr<UInt>(data, 0x10) & 0x10000) {
+        Bool process = true;
+        Char const *screenName = *raw_ptr<Char const *>(screen, 0x28);
+        if (screenName) {
+            //Error(screenName);
+            StringA screenNameStr = screenName;
+            if (screenNameStr.ends_with("_00000000.xml"))
+                process = false;
+        }
+        if (process)
+            Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", "TbHomeTeam", "TbAwayTeam", nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    }
 }
 
 void METHOD OnCreateStandingsUI(void *standingsInterface) {
@@ -823,8 +833,8 @@ void METHOD OnRead3dMatchOverlaysConfig(void *t, DUMMY_ARG, Int unk, WideChar co
 void METHOD OnCreateMatch3DPlayerIndicatorUI(void *t) {
     CallMethod<0xC01780>(t);
     if (GetIsSnowy()) {
-        SetTextBoxColorRGB(*raw_ptr<void *>(t, 0x52C), 255, 255, 0);
-        SetTextBoxColorRGB(*raw_ptr<void *>(t, 0x530), 255, 255, 0);
+        SetTextBoxColorRGB(*raw_ptr<void *>(t, 0x52C), 0, 102, 0);
+        SetTextBoxColorRGB(*raw_ptr<void *>(t, 0x530), 0, 102, 0);
     }
 }
 

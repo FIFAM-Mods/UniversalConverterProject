@@ -9,6 +9,7 @@
 #include "FifamCompRegion.h"
 #include "Competitions.h"
 #include "Translation.h"
+#include "Random.h"
 
 using namespace plugin;
 
@@ -1004,8 +1005,275 @@ void METHOD OnAddClubFans(void *t, DUMMY_ARG, Int fans) {
     //w.WriteLine(addr, Quoted(FmUtils::GetTeamName(team)), Quoted(FifamNation::MakeFromInt(team->GetTeamID().countryId).ToStr()), fans, *raw_ptr<int>(t, 0x24));
 }
 
+//void *METHOD OnGetSubsList(void *) {
+//    void *def = CallAndReturn<void *, 0x11D1F90>();
+//    return def;
+//}
+
+WideChar gSponsorName[29];
+
+void METHOD OnReadClubSponsorAmount(void *reader, DUMMY_ARG, UInt *amount) {
+    gSponsorName[0] = 0;
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0D)) {
+        BinaryReaderReadString(reader, gSponsorName, std::size(gSponsorName));
+    }
+    CallMethod<0x1338AB0>(reader, amount);
+}
+
+void METHOD OnSetupSponsorClub(void *contract, DUMMY_ARG, UChar isSpecial) {
+    CallMethod<0x1275DD0>(contract, isSpecial);
+    CTeamIndex teamID = *raw_ptr<CTeamIndex>(contract, 0x24);
+    void *list = CallAndReturn<void *, 0x69E9E0>();
+    Bool found = false;
+    if (gSponsorName[0]) {
+        auto CheckCountry = [&](UChar countryId) {
+            FmVec<Char[84]> *v = CallMethodAndReturn<FmVec<Char[84]> *, 0x126E9D0>(list, countryId);
+            if (v && !v->empty()) {
+                for (UInt i = 0; i < v->size(); i++) {
+                    void *sponsor = &v->begin[i];
+                    auto sponsorName = CallMethodAndReturn<WideChar const *, 0x126D490>(sponsor);
+                    if (!wcscmp(gSponsorName, sponsorName)) {
+                        UInt placement[2] = { i, countryId };
+                        CallMethod<0x11B8540>(contract, placement);
+                        found = true;
+                        break;
+                    }
+                }
+
+            }
+        };
+        CheckCountry(teamID.countryId);
+        if (!found) {
+            for (UInt i = 1; i < 207; i++) {
+                if (i != teamID.countryId) {
+                    CheckCountry(i);
+                    if (found)
+                        break;
+                }
+            }
+        }
+        gSponsorName[0] = 0;
+    }
+    if (!found) {
+        FmVec<Char[84]> *v = CallMethodAndReturn<FmVec<Char[84]> *, 0x126E9D0>(list, teamID.countryId);
+        if (v && !v->empty()) {
+            UInt placement[2] = { 0, 0 };
+            if (v->size() == 1)
+                placement[0] = 0;
+            else
+                placement[0] = Random::Get(0, v->size() - 1);
+            placement[1] = teamID.countryId;
+            CallMethod<0x11B8540>(contract, placement);
+        }
+    }
+}
+
+void METHOD OnOpenTactics(void *t, DUMMY_ARG, Int lineupId, UInt teamID) {
+    CallMethod<0xC2D4E0>(t, lineupId, teamID);
+    ::Error("%08X %d", teamID, lineupId);
+}
+
+template <UInt Addr>
+void METHOD OnOpenBeforeTactics(void *t, DUMMY_ARG, Int flag) {
+    CallMethod<0xC45DC0>(t, flag);
+    ::Error("OnOpenBeforeTactics 0x%X %d", Addr, flag);
+}
+
+struct TacticsParameter {
+    UInt type;
+    UChar value;
+    Char _pad[3];
+};
+
+Bool gTest = false;
+
+UChar METHOD SetTacticsParameter(void *t, DUMMY_ARG, TacticsParameter *p) {
+    if (p->type == 18) {
+        ::Error("Set %p %d", t, p->value);
+        gTest = true;
+    }
+    return CallMethodAndReturn<UChar, 0x13A73C0>(t, p);
+}
+
+UChar METHOD SetValueFromEnum(TacticsParameter *p, DUMMY_ARG, Int enumValue) {
+    auto result = CallMethodAndReturn<UChar, 0x10732E0>(p, enumValue);
+    ::Error("Get %p %d", p, p->value);
+    return result;
+}
+
+void * METHOD FindUserFormation(void *t, DUMMY_ARG, Int formationId) {
+    return nullptr;
+    void *result = CallMethodAndReturn<void *, 0x11711C0>(t, formationId);
+    if (gTest)
+        ::Error("%p / %p - %d", t, result, formationId);
+    return result;
+}
+
+void *METHOD OnGetGameStartSelectClubTbManagerName(void *t, DUMMY_ARG, Char const *name) {
+    void *result = CallMethodAndReturn<void *, 0xD44240>(t, name);
+    *raw_ptr<void *>(t, 0x1FBC) = CallMethodAndReturn<void *, 0xD44260>(t, "ChkNoClub");
+    return result;
+}
+
+void METHOD GameStartSelectClubProcessCheckboxes(void *t, DUMMY_ARG, Int *pId, Int) {
+    void *chkNoClub = *raw_ptr<void *>(t, 0x1FBC);
+    if (CallVirtualMethodAndReturn<Int, 23>(chkNoClub) == *pId) {
+        if (CallVirtualMethodAndReturn<UChar, 85>(chkNoClub)) {
+            Call<0xD32860>(*raw_ptr<void *>(t, 0x199C), L"", 4, 4);
+            CallMethod<0xD19A60>(raw_ptr<void>(t, 0x48C), -1);
+            CallMethod<0xD19A60>(raw_ptr<void>(t, 0xB90), -1);
+            CallMethod<0xD19A60>(raw_ptr<void>(t, 0x1294), -1);
+            CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19A0), 0);
+            CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19A8), 0);
+            CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19AC), 0);
+            UInt nullTeamId = 0;
+            CallVirtualMethod<89>(*raw_ptr<void *>(t, 0x19A4), &nullTeamId);
+            CallMethod<0xD2D3A0>(t, 0x3121270, 1); // EnableNextButton(true)
+        }
+        else {
+            CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19A0), 1);
+            CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19A8), 1);
+            CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19AC), 1);
+            CallMethod<0xD2D3A0>(t, 0x3121270, 0); // EnableNextButton(false)
+        }
+    }
+}
+
+void METHOD OnGameStartSelectClubSelectedClub(void *t) {
+    void *chkNoClub = *raw_ptr<void *>(t, 0x1FBC);
+    CallVirtualMethod<84>(chkNoClub, 0);
+    CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19A0), 1);
+    CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19A8), 1);
+    CallVirtualMethod<9>(*raw_ptr<void *>(t, 0x19AC), 1);
+    CallMethod<0x53D7A0>(t);
+}
+
+void OnGetGameStartSelectClubCheck1(CTeamIndex *a, Int b) {
+    if (GetTeam(*a))
+        Call<0xEB96B0>(a, b);
+}
+
+void METHOD OnGetGameStartSelectClubCheck2(void *t, DUMMY_ARG, Int a, void *b, Int c) {
+    if (t)
+        CallMethod<0xECA910>(t, a, b, c);
+}
+
+void METHOD OnGetGameStartSelectClubCheck3(void *t) {
+    if (t)
+        CallMethod<0xEED9C0>(t);
+}
+
+UChar METHOD MySetTransferDemandsTaskProcess(void *task, DUMMY_ARG, void *staff) {
+    UChar result = CallMethodAndReturn<UChar, 0x133BF90>(task, staff);
+    CTeamIndex teamIndex = *raw_ptr<CTeamIndex>(task, 8);
+    CDBTeam *team = GetTeam(teamIndex);
+    if (team) {
+        for (UInt i = 0; i < team->GetNumPlayers(); i++) {
+            if (i >= 99)
+                break;
+            CDBPlayer *player = GetPlayer(team->GetPlayer(i));
+            if (player && player->GetCurrentTeam() == teamIndex) {
+                auto currMV = player->GetMarketValue();
+                if (currMV > 0) {
+                    auto currDemand = player->GetDemandValue();
+                    auto currFee = player->GetMinRelFee();
+                    const Int64 ValueMin = 70'000'000'000;
+                    const Int64 ValueMax = 150'000'000'000;
+                    const Int64 ValueDiff = ValueMax - ValueMin;
+                    if (ValueDiff > 0 && currMV > ValueMin && (currDemand > currMV || currFee > currMV)) {
+                        Double coeff = 1.0 - (Double)(std::clamp(currMV, ValueMin, ValueMax) - ValueMin) / (Double)ValueDiff;
+                        if (coeff < 0.1)
+                            coeff = 0.1;
+                        if (currDemand > currMV) {
+                            Int64 newValue = currMV + (Double)(currDemand - currMV) * coeff;
+                            if (newValue < currDemand)
+                                player->SetDemandValue(currMV + (Double)(currDemand - currMV) * coeff);
+                        }
+                        if (currFee > currMV) {
+                            Int64 newValue = currMV + (Double)(currFee - currMV) * coeff;
+                            if (newValue < currFee)
+                                player->SetMinRelFee(currMV + (Double)(currFee - currMV) * coeff);
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+void OnPrintHallOfFamePlayerName(WideChar *dst, WideChar const *format, WideChar const *lastName, WideChar firstName) {
+    if (firstName == L' ')
+        wcscpy(dst, lastName);
+    else
+        swprintf(dst, format, lastName, firstName);
+}
+
+Bool METHOD OnPlayQuickMatch(void *t, DUMMY_ARG, CDBOneMatch *m) {
+    Bool result = CallMethodAndReturn<Bool, 0x1395930>(t, m);
+    if (result) {
+        CCompID compId = m->GetCompID();
+        String compName;
+        CDBCompetition *comp = GetCompetition(compId);
+        if (comp)
+            compName = comp->GetName();
+        SafeLog::WriteToFile("quick_matches.txt", Utils::Format(L"%s (%08X): %s (%08X) - %s (%08X)",
+            compName, compId.ToInt(), m->GetHomeTeam()->GetName(), m->GetHomeTeamID().ToInt(),
+            m->GetAwayTeam()->GetName(), m->GetAwayTeamID().ToInt()));
+    }
+    return result;
+}
+
+Int OnFormatLocaleUpper(Int ch) {
+    if (IsRussianLanguage) {
+        if ((ch >= 0x410 && ch <= 0x415) || (ch >= 0x416 && ch <= 0x42F) || ch == 0x401)
+            return ch;
+        if ((ch >= 0x430 && ch <= 0x435) || (ch >= 0x436 && ch <= 0x44F))
+            return ch - 0x20;
+        if (ch == 0x451)
+            return 0x401;
+    }
+    Int result = CallAndReturn<Int, 0x157BED8>(ch);
+    return result;
+}
+
+Int OnFormatLocaleLower(Int ch) {
+    if (IsRussianLanguage) {
+        if ((ch >= 0x430 && ch <= 0x435) || (ch >= 0x436 && ch <= 0x44F) || ch == 0x451)
+            return ch;
+        if ((ch >= 0x410 && ch <= 0x415) || (ch >= 0x416 && ch <= 0x42F))
+            return ch + 0x20;
+        if (ch == 0x401)
+            return 0x451;
+    }
+    Int result = CallAndReturn<Int, 0x157C91E>(ch);
+    return result;
+}
+
+void *OnFormatAssists(void *t, Float value, Int, Int) {
+    CallMethod<0x14978B3>(t, Format(L"%d", (Int)value).c_str());
+    return t;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        //patch::RedirectCall(0x101BB90, OnPlayQuickMatch);
+        //patch::RedirectCall(0x1027310, OnPlayQuickMatch);
+        //patch::SetPointer(0x24DFA2C, SetTacticsParameter);
+        //patch::RedirectCall(0x13D160B, SetValueFromEnum);
+
+        //patch::RedirectCall(0xA1171F, OnOpenTactics);
+
+        //patch::RedirectCall(0x57B600 + 0xADB, OnOpenBeforeTactics<0x57B600>);
+        //patch::RedirectCall(0x57B600 + 0xDEA, OnOpenBeforeTactics<0x57B600>);
+        //patch::RedirectCall(0xC43E00 + 0x5A6, OnOpenBeforeTactics<0xC43E00>);
+        //patch::RedirectCall(0xC45F70 + 0x36,  OnOpenBeforeTactics<0xC45F70>);
+        //patch::RedirectCall(0xC46000 + 0x1D,  OnOpenBeforeTactics<0xC46000>);
+        //patch::RedirectCall(0xC46000 + 0x3C,  OnOpenBeforeTactics<0xC46000>);
+        //patch::RedirectCall(0xC46050 + 0x2B,  OnOpenBeforeTactics<0xC46050>);
+
+
         //patch::RedirectCall(0x11EC204, Fix_11EBEB0);
         //patch::RedirectCall(0x11EC1D1, OnDraftPlayerGetPlayerId);
 
@@ -1405,8 +1673,10 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x9B4C04, YouthContractPopUsesPerWeekSalary);
         patch::RedirectCall(0x9B5C14, YouthContractPopUsesPerWeekSalary);
         patch::RedirectCall(0x9B617B, YouthContractPopUsesPerWeekSalary);
+        // youth contract pop - fix wrong text
+        patch::SetPointer(0x9B481A + 1, (char const *)0x24257F0);
 
-        // youth players average height; TODO: enable this later
+        // youth players average height
         patch::RedirectJump(0xFA794C, YouthPlayersAverageHeightFix);
 
         // Fix UEFA5 log
@@ -1426,12 +1696,51 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x4DD389, OnFormatBadgeNameAddSeasonYear);
 
         // fix for PASSING (Short/Long) in TextMode
-        patch::SetUChar(0x14038A0, 4); // default 3 (TP_PASSINGSTYLE), replaced by 4 (TP_PASSING)
+        patch::SetUChar(0x14038A0 + 1, 4); // default 3 (TP_PASSINGSTYLE), replaced by 4 (TP_PASSING)
 
         patch::RedirectCall(0xF0D02B, OnAddClubFans<0xF0D02B>);
         patch::RedirectCall(0xF0D0BD, OnAddClubFans<0xF0D0BD>);
         patch::RedirectCall(0xF0D35D, OnAddClubFans<0xF0D35D>);
         patch::RedirectCall(0xF0D3DC, OnAddClubFans<0xF0D3DC>);
         patch::RedirectCall(0xF0D4C1, OnAddClubFans<0xF0D4C1>);
+
+        // initial sponsor
+        patch::RedirectCall(0xF334A7, OnReadClubSponsorAmount);
+        patch::RedirectCall(0xF33512, OnSetupSponsorClub);
+
+        // auto-substitutions test - TODO: remove
+        //patch::RedirectCall(0x59037E, OnGetSubsList);
+        //patch::Nop(0x5929D8, 6);
+
+        patch::Nop(0x582592, 5); // Remove NT tactics reset
+
+        // GameStartSelectClub
+        patch::SetUInt(0x480134 + 1, 0x1FBC + 4);
+        patch::SetUInt(0x48013B + 1, 0x1FBC + 4);
+        patch::RedirectCall(0x540C92, OnGetGameStartSelectClubTbManagerName);
+        patch::SetPointer(0x23BDC64, GameStartSelectClubProcessCheckboxes);
+        patch::RedirectCall(0x5413F9, OnGameStartSelectClubSelectedClub);
+        patch::SetUChar(0x540287 + 4, 1);
+        patch::RedirectCall(0x13AE930, OnGetGameStartSelectClubCheck1);
+        patch::RedirectCall(0x13AEDD9, OnGetGameStartSelectClubCheck2);
+        patch::RedirectCall(0x13AEDE0, OnGetGameStartSelectClubCheck3);
+
+        patch::SetUInt(0x55EBBC + 1, 64); // home screen badge resolution
+
+        // CSetTransferDemandsTask::Process
+        patch::RedirectCall(0xEB8B30, MySetTransferDemandsTaskProcess);
+        patch::RedirectCall(0xEB8B65, MySetTransferDemandsTaskProcess);
+        patch::RedirectCall(0xF2CDD5, MySetTransferDemandsTaskProcess);
+        patch::RedirectCall(0xF2CE20, MySetTransferDemandsTaskProcess);
+        patch::SetPointer(0x24DDF10, MySetTransferDemandsTaskProcess);
+
+        //HallOfFame
+        patch::RedirectCall(0x643A70, OnPrintHallOfFamePlayerName);
+
+        patch::RedirectCall(0x153B59B, OnFormatLocaleUpper);
+        patch::RedirectCall(0x153B5B0, OnFormatLocaleLower);
+
+        patch::Nop(0x5CDE07, 2);
+        patch::RedirectCall(0x5CDE70, OnFormatAssists);
     }
 }

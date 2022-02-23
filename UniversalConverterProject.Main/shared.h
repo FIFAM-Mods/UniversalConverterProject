@@ -33,18 +33,20 @@ public:
     }
 
     static void WriteToFile(Path const &fileName, String const &msg) {
-        static Map<Path, bool> fileCreated;
-        FILE *file = nullptr;
-        if (!fileCreated.contains(fileName)) {
-            file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
-            fileCreated[fileName] = true;
-        }
-        else
-            file = _wfopen(fileName.c_str(), L"at,ccs=UTF-8");
-        if (file) {
-            fputws(msg.c_str(), file);
-            fputws(L"\n", file);
-            fclose(file);
-        }
+        //if (ENABLE_LOG) {
+            static Map<Path, bool> fileCreated;
+            FILE *file = nullptr;
+            if (!fileCreated.contains(fileName)) {
+                file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
+                fileCreated[fileName] = true;
+            }
+            else
+                file = _wfopen(fileName.c_str(), L"at,ccs=UTF-8");
+            if (file) {
+                fputws(msg.c_str(), file);
+                fputws(L"\n", file);
+                fclose(file);
+            }
+        //}
     }
 };

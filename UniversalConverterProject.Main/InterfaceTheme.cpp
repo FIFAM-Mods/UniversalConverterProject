@@ -264,6 +264,16 @@ UInt OnGetTeamInterfaceColor(UInt tableId, UInt colorId) {
     return color;
 }
 
+UInt OnGetHalftimeStatsEventsTextColor(UInt colorId) {
+    if (colorId == 1)
+        return 0xFF1A1A1A;
+    return CallAndReturn<UInt, 0x4E8C10>(colorId);
+}
+
+UInt OnGetNewspaperRankingOfPlayersTextBgColor(UInt colorId) {
+    return 0xFF1F1F1F;
+}
+
 void METHOD OnSetWidgetBrowseArrow(void *t, DUMMY_ARG, Int a2, Int a3, const WideChar *a4) {
     if (!GetCustomInterfaceFolderW().empty()) {
         CallMethod<0xD833B0>(t, a2, a3, (GetCustomInterfaceFolderW() + L"\\" + a4).c_str());
@@ -316,8 +326,15 @@ void OnCopyUpcomingEventsIconPath(WideChar const *a1, WideChar const *a2) {
         Call<0x1494136>(a1, a2);
 }
 
+
 UChar OnSetWidgetIcoPyramid(WideChar const *dst, WideChar const *filepath, UInt scaleX, UInt scaleY) {
     if (!GetCustomInterfaceFolderW().empty() && wcslen(filepath) != 0)
+        return CallAndReturn<UChar, 0xD32860>(dst, (GetCustomInterfaceFolderW() + L"\\" + filepath).c_str(), scaleX, scaleY);
+    return CallAndReturn<UChar, 0xD32860>(dst, filepath, scaleX, scaleY);
+}
+
+UChar OnSetWidgetProgressBar08(WideChar const *dst, WideChar const *filepath, UInt scaleX, UInt scaleY) {
+    if (!GetCustomInterfaceFolderW().empty())
         return CallAndReturn<UChar, 0xD32860>(dst, (GetCustomInterfaceFolderW() + L"\\" + filepath).c_str(), scaleX, scaleY);
     return CallAndReturn<UChar, 0xD32860>(dst, filepath, scaleX, scaleY);
 }
@@ -327,6 +344,35 @@ void METHOD MyCreateUI(void *t) {
     void *lb = raw_ptr<void>(t, 0x58C);
     void *unk = *raw_ptr<void *>(lb, 8);
     Error("%X", *raw_ptr<void *>(unk, 0));
+}
+
+void MyGetTrainingIconPath(WideChar const *dst, WideChar const *format, WideChar const *fileName) {
+    if (!GetCustomInterfaceFolderW().empty())
+        Call<0x1494136>(dst, (GetCustomInterfaceFolderW() + L"\\" + format).c_str(), fileName);
+    else
+        Call<0x1494136>(dst, format, fileName);
+}
+
+void METHOD MySetLbItemYouthTeamSquad(void *t, DUMMY_ARG, Int a2, Int a3, const WideChar *fileName, Int a5, Int a6) {
+    if (!GetCustomInterfaceFolderW().empty())
+        CallMethod<0xD199A0>(t, a2, a3, (GetCustomInterfaceFolderW() + L"\\" + fileName).c_str(), a5, a6);
+    else
+        CallMethod<0xD199A0>(t, a2, a3, fileName, a5, a6);
+}
+
+void METHOD MyConstructArtFmLibMediaString(void *t, DUMMY_ARG, const WideChar *fileName) {
+    if (!GetCustomInterfaceFolderW().empty())
+        CallMethod<0x14978B3>(t, (GetCustomInterfaceFolderW() + L"\\" + fileName).c_str());
+    else
+        CallMethod<0x14978B3>(t, fileName);
+}
+
+void * METHOD OnConstructEmployeeOffice(void *office, DUMMY_ARG, CDBEmployee *employee) {
+    void *result = CallMethodAndReturn<void *, 0x12F22B0>(office, employee);
+    *raw_ptr<UInt>(office, 4) = 100000;
+    *raw_ptr<UInt>(office, 12) = 0;
+    *raw_ptr<UInt>(office, 16) = 0;
+    return result;
 }
 
 void PatchInterfaceTheme(FM::Version v) {
@@ -371,6 +417,37 @@ void PatchInterfaceTheme(FM::Version v) {
                 patch::SetUInt(0xC95817 + 1, tableRowColor);
                 patch::SetUInt(0xCA08B1 + 1, tableRowColor);
                 patch::SetUInt(0xCA584B + 1, tableRowColor);
+                patch::RedirectCall(0xD26340, OnGetHalftimeStatsEventsTextColor);
+                patch::RedirectCall(0xEB4781, OnConstructEmployeeOffice);
+                patch::RedirectCall(0xEB6125, OnConstructEmployeeOffice);
+                patch::RedirectCall(0xEB82A6, OnConstructEmployeeOffice);
+                patch::SetUInt(0x9D9D8E + 1, 0xFFF1F1F1);
+                patch::SetUInt(0x9D9E2E + 1, 0xFFF1F1F1);
+                patch::SetPointer(0x50BF22 + 1, L"<CREF 0xFF8ab4f8>");
+                patch::SetPointer(0x50BF2E + 1, L"<CREF 0xFF6ae46a>");
+                patch::SetPointer(0x50BF38 + 1, L"<CREF 0xFFff7769>");
+                patch::SetPointer(0x50BF3F + 1, L"<CREF 0xffff7769>");
+                patch::SetPointer(0x50BF16 + 1, L"<CREF 0xFFf1f1f1>");
+                patch::RedirectCall(0xA605CE, OnGetNewspaperRankingOfPlayersTextBgColor);
+                patch::RedirectCall(0xA60716, OnGetNewspaperRankingOfPlayersTextBgColor);
+                patch::RedirectCall(0xA60866, OnGetNewspaperRankingOfPlayersTextBgColor);
+                patch::RedirectCall(0xA609B6, OnGetNewspaperRankingOfPlayersTextBgColor);
+                patch::RedirectCall(0xA60AC6, OnGetNewspaperRankingOfPlayersTextBgColor);
+                patch::RedirectCall(0xA60BED, OnGetNewspaperRankingOfPlayersTextBgColor);
+                patch::SetUInt(0x8EE320 + 1, 0xFF144B25);
+                patch::SetUInt(0x8EE4E0 + 1, 0xFF144B25);
+                // merchandise graph
+                patch::SetUInt(0x6CA3A8 + 2, 1240);
+                patch::SetUInt(0x6CA3C6 + 2, 10352);
+                patch::SetUChar(0x6CA3C4 + 1, 22);
+                patch::SetUInt(0x6CA3D5 + 2, 1244);
+                patch::SetUInt(0x6CA3EE + 2, 10380);
+                patch::SetUChar(0x6CA3EC + 1, 27);
+                // badge dark mode
+                patch::Nop(0xD2B5B0, 3);
+                patch::Nop(0xD2B5A6, 1);
+                patch::SetUChar(0xD2B5A6 + 1, 0xBB);
+                patch::SetUInt(0xD2B5A6 + 2, 1);
             }
 
             patch::RedirectCall(0x1126190 + 0x47, MyGetCalendarIconPathPositive);
@@ -525,7 +602,7 @@ void PatchInterfaceTheme(FM::Version v) {
             patch::RedirectCall(0xD2BB80 + 0x379, OnCopyCharacterIconDirName);
             patch::RedirectCall(0xD2BB80 + 0x38F, OnCopyCharacterIconDirName);
 
-            patch::RedirectCall(0x9588D2, OnFormatTalentStarPath);
+            patch::RedirectCall(0x9588D8, OnFormatTalentStarPath);
             patch::RedirectCall(0xA58E31, OnFormatTalentStarPath);
             patch::RedirectCall(0xA5A1FD, OnFormatTalentStarPath);
             patch::RedirectCall(0xD2B5FB, OnFormatTalentStarPath);
@@ -572,6 +649,19 @@ void PatchInterfaceTheme(FM::Version v) {
 
             patch::Nop(0x5A9E00, 8); // 13TeamLineUpAssistancePop hardcoded color
             patch::Nop(0x5A9E50, 8); // 13TeamLineUpAssistancePop hardcoded color
+
+            patch::RedirectCall(0x129FAC1, MyGetTrainingIconPath);
+
+            patch::RedirectCall(0xC3FD95, MySetLbItemYouthTeamSquad);
+            patch::RedirectCall(0xC3FE04, MySetLbItemYouthTeamSquad);
+            patch::RedirectCall(0xC3FE5D, MySetLbItemYouthTeamSquad);
+            patch::RedirectCall(0xC3FD42, MySetLbItemYouthTeamSquad);
+            patch::RedirectCall(0xC3FF13, MySetLbItemYouthTeamSquad);
+            patch::RedirectCall(0xC3FF48, MySetLbItemYouthTeamSquad);
+
+            patch::RedirectCall(0xA32512, MyConstructArtFmLibMediaString);
+
+            patch::RedirectCall(0xD19C75, OnSetWidgetProgressBar08);
         }
     }
 }

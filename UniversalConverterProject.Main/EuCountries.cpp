@@ -4,14 +4,14 @@ using namespace plugin;
 
 unsigned char euCountryFlags[] = {
 3 , // 
-0 , // Albania
-0 , // Andorra
+1 , // Albania
+1 , // Andorra
 1 , // Armenia
 0 , // Austria
 1 , // Azerbaijan
 1 , // Belarus
 0 , // Belgium
-0 , // Bosnia-Herzegovina
+1 , // Bosnia-Herzegovina
 0 , // Bulgaria
 0 , // Croatia
 0 , // Cyprus
@@ -19,7 +19,7 @@ unsigned char euCountryFlags[] = {
 0 , // Denmark
 1 , // England
 0 , // Estonia
-0 , // Faroe Islands
+1 , // Faroe Islands
 0 , // Finland
 0 , // France
 1 , // FYR Macedonia
@@ -27,34 +27,34 @@ unsigned char euCountryFlags[] = {
 0 , // Germany
 0 , // Greece
 0 , // Hungary
-0 , // Iceland
+1 , // Iceland
 0 , // Ireland
 1 , // Israel
 0 , // Italy
 0 , // Latvia
-0 , // Liechtenstein
+1 , // Liechtenstein
 0 , // Lithuania
 0 , // Luxembourg
 0 , // Malta
 1 , // Moldova
 0 , // Netherlands
 1 , // Northern Ireland
-0 , // Norway
+1 , // Norway
 0 , // Poland
 0 , // Portugal
 0 , // Romania
 1 , // Russia
-0 , // San Marino
+1 , // San Marino
 1 , // Scotland
 0 , // Slovakia
 0 , // Slovenia
 0 , // Spain
 0 , // Sweden
-0 , // Switzerland
+1 , // Switzerland
 1 , // Turkey
 1 , // Ukraine
 1 , // Wales
-0 , // Serbia
+1 , // Serbia
 3 , // Argentina
 3 , // Bolivia
 3 , // Brazil
@@ -208,8 +208,8 @@ unsigned char euCountryFlags[] = {
 3 , // Tahiti
 3 , // Tonga
 3 , // Vanuatu
-0 , // Gibraltar
-0 , // Montenegro
+1 , // Gibraltar
+1 , // Montenegro
 1   // Kosovo
 };
 

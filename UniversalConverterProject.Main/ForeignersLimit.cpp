@@ -1,6 +1,9 @@
 #include "ForeignersLimit.h"
 #include "GameInterfaces.h"
 #include "FifamCompID.h"
+#include "FifamNation.h"
+#include "FifamContinent.h"
+#include "FifamCompDbType.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -105,8 +108,305 @@ Int METHOD GetTeamQualifiedForContinentalCompetition(CDBTeam *team, DUMMY_ARG, i
     return CallMethodAndReturn<Int, 0xEFE330>(team, unk, outCompId);
 }
 
+Bool IsUnitedKingdom(Int countryId) {
+    return countryId == FifamNation::England || countryId == FifamNation::Scotland || countryId == FifamNation::Wales || countryId == FifamNation::Northern_Ireland;
+}
+
+Bool IsEurasianCustomsUnion(Int countryId) {
+    return countryId == FifamNation::Russia || countryId == FifamNation::Kazakhstan || countryId == FifamNation::Belarus || countryId == FifamNation::Armenia || countryId == FifamNation::Kyrgyzstan;
+}
+
+Bool IsEuropeanFreeTradeAssociation(Int countryId) {
+    return countryId == FifamNation::Iceland || countryId == FifamNation::Liechtenstein || countryId == FifamNation::Norway || countryId == FifamNation::Switzerland;
+}
+
+Bool IsOrganizationOfTurkicStates(Int countryId) {
+    return countryId == FifamNation::Azerbaijan || countryId == FifamNation::Kazakhstan || countryId == FifamNation::Kyrgyzstan || countryId == FifamNation::Turkey || countryId == FifamNation::Uzbekistan;
+}
+
+Bool METHOD IsForeignNationForCompetition(CDBCompetition *comp, DUMMY_ARG, Int teamCountryId, Int playerNation) {
+    if (comp) {
+        CCompID *rootId = raw_ptr<CCompID>(comp, 0x1C);
+        auto root = GetCompetition(*rootId);
+        if (root && root->GetDbType() == FifamCompDbType::Root && root->IsContinental()) {
+            if (!IsEuropeanCountry(teamCountryId))
+                return false;
+            return IsNonEuropeanCountry(playerNation);
+        }
+    }
+    Bool isEuTeam = IsEuropeanUnion(teamCountryId);
+    if (isEuTeam && IsEuropeanUnion(playerNation))
+        return false;
+    if (IsUnitedKingdom(teamCountryId) && IsUnitedKingdom(playerNation))
+        return false;
+    if (IsEuropeanFreeTradeAssociation(teamCountryId) && IsEuropeanFreeTradeAssociation(playerNation))
+        return false;
+    if (IsEurasianCustomsUnion(teamCountryId) && IsEurasianCustomsUnion(playerNation))
+        return false;
+    switch (teamCountryId) {
+    case FifamNation::Czech_Republic:
+        if (IsEuropeanFreeTradeAssociation(playerNation)
+            || IsOrganizationOfTurkicStates(playerNation)
+            || IsEurasianCustomsUnion(playerNation)
+            || playerNation == FifamNation::Albania
+            || playerNation == FifamNation::FYR_Macedonia
+            || playerNation == FifamNation::Montenegro
+            || playerNation == FifamNation::Serbia
+            || playerNation == FifamNation::Turkey
+            )
+        {
+            return false;
+        }
+        break;
+    case FifamNation::Croatia:
+    case FifamNation::Poland:
+        if (IsEuropeanFreeTradeAssociation(playerNation))
+            return false;
+        break;
+    case FifamNation::France:
+        if (IsAfricanCaribbeanAndPacificGroupOfStates(playerNation)
+            || IsEuropeanFreeTradeAssociation(playerNation)
+            || IsOrganizationOfTurkicStates(playerNation)
+            || IsEurasianCustomsUnion(playerNation)
+            || playerNation == FifamNation::Albania
+            || playerNation == FifamNation::Andorra
+            || playerNation == FifamNation::Bosnia_Herzegovina
+            || playerNation == FifamNation::FYR_Macedonia
+            || playerNation == FifamNation::Georgia
+            || playerNation == FifamNation::Moldova
+            || playerNation == FifamNation::Montenegro
+            || playerNation == FifamNation::Serbia
+            || playerNation == FifamNation::Ukraine
+            || playerNation == FifamNation::Algeria
+            || playerNation == FifamNation::Morocco
+            || playerNation == FifamNation::Tunisia
+            || (GetCountryStore()->m_aCountries[playerNation].GetContinent() == FifamContinent::Oceania && playerNation != FifamNation::New_Zealand)
+            )
+        {
+            return false;
+        }
+        break;
+    case FifamNation::Germany:
+        if (IsEuropeanFreeTradeAssociation(playerNation)
+            || playerNation == FifamNation::Andorra
+            || playerNation == FifamNation::Israel
+            || playerNation == FifamNation::San_Marino
+            || playerNation == FifamNation::Canada
+            || playerNation == FifamNation::United_States
+            || playerNation == FifamNation::Australia
+            || playerNation == FifamNation::Japan
+            || playerNation == FifamNation::Korea_Republic
+            || playerNation == FifamNation::New_Zealand
+            )
+        {
+            return false;
+        }
+        break;
+    case FifamNation::Greece:
+        if (IsEuropeanFreeTradeAssociation(playerNation)
+            || playerNation == FifamNation::Albania
+            || playerNation == FifamNation::Bosnia_Herzegovina
+            || playerNation == FifamNation::Russia
+            || playerNation == FifamNation::Serbia
+            || playerNation == FifamNation::Turkey
+            || playerNation == FifamNation::Algeria
+            || playerNation == FifamNation::Morocco
+            || playerNation == FifamNation::Tunisia
+            )
+        {
+            return false;
+        }
+        break;
+    case FifamNation::Hungary:
+    case FifamNation::Romania:
+        if (IsAfricanCaribbeanAndPacificGroupOfStates(playerNation)
+            || IsEuropeanFreeTradeAssociation(playerNation))
+        {
+            return false;
+        }
+        break;
+    case FifamNation::Spain:
+        if (IsAfricanCaribbeanAndPacificGroupOfStates(playerNation)
+            || IsEuropeanFreeTradeAssociation(playerNation)
+            || IsOrganizationOfTurkicStates(playerNation)
+            || playerNation == FifamNation::Albania
+            || playerNation == FifamNation::Andorra
+            || playerNation == FifamNation::Armenia
+            || playerNation == FifamNation::Bosnia_Herzegovina
+            || playerNation == FifamNation::FYR_Macedonia
+            || playerNation == FifamNation::Georgia
+            || playerNation == FifamNation::Moldova
+            || playerNation == FifamNation::Montenegro
+            || playerNation == FifamNation::Russia
+            || playerNation == FifamNation::Serbia
+            || playerNation == FifamNation::Ukraine
+            || playerNation == FifamNation::Algeria
+            || playerNation == FifamNation::Morocco
+            || playerNation == FifamNation::Tunisia
+            )
+        {
+            return false;
+        }
+        break;
+    }
+    if (isEuTeam)
+        return true;
+    return teamCountryId != playerNation;   
+}
+
+Bool METHOD OnIsPlayerNonEuropean(CDBPlayer *player) {
+    CTeamIndex teamId = *raw_ptr<CTeamIndex>(player, 0xE8);
+    if (teamId.countryId != 0) {
+        auto team = GetTeam(teamId);
+        if (team) {
+            UInt teamLeagueID = *raw_ptr<UInt>(team, 0x974);
+            if (teamLeagueID > 0) {
+                CDBLeague *league = GetLeague(teamLeagueID);
+                if (league && league->GetCompID().countryId >= 1 && league->GetCompID().countryId <= 207)
+                    return IsPlayerForeignerForCompetition(player, league->GetCompID());
+            }
+        }
+    }
+    return false;
+}
+
+void METHOD TestX(void *t, DUMMY_ARG, UShort *out, UInt count) {
+    CallMethod<0x1338A70>(t, out, count);
+    for (UInt i = 0; i < count; i++) {
+        if (out[i] != 0)
+            ::Message("%d", out[i]);
+    }
+}
+
+UInt METHOD OnGetIsCountryWithSimplerNaturalisationForSpain(CDBCountry *country) {
+    if (country->GetCountryId() == FifamNation::Andorra
+        || country->GetCountryId() == FifamNation::Portugal
+        || country->GetCountryId() == FifamNation::Equatorial_Guinea
+        || country->GetCountryId() == FifamNation::Philippines
+        )
+    {
+        return CONTINENT_SOUTH_AMERICA;
+    }
+    return country->GetContinent();
+}
+
+void METHOD OnConstructLeagueDetails(void *t, DUMMY_ARG, Int a) {
+    CallMethod<0xD527C0>(t, a);
+    CallMethod<0xD1AC00>(raw_ptr<void>(t, 0x548));
+}
+
+void METHOD OnDestructLeagueDetails(void *t) {
+    CallMethod<0xD182F0>(raw_ptr<void>(t, 0x548));
+    CallMethod<0xD54220>(t);
+}
+
+void METHOD OnLeagueDetailsCreateUI(void *t) {
+    CallMethod<0xD4F110>(t);
+    void *lb = raw_ptr<void>(t, 0x548);
+    CallMethod<0xD1EEE0>(lb, t, "LbCountries");
+    Call<0xD19660>(lb, 4, 4, 63);
+    Call<0xD196A0>(lb, 210, 204, 228);
+}
+
+CDBLeague *OnGetLeagueDetailsLeague(CCompID const *compId) {
+    void *lb = raw_ptr<void>(compId, 0x548 - 0x48C);
+    CDBLeague *league = GetLeague(*compId);
+    if (false)
+        CallVirtualMethod<11>(lb, false);
+    else {
+        CallVirtualMethod<11>(lb, true);
+        CallMethod<0xD1AF40>(lb);
+        //CallMethod<0xD186C0>(lb, 0);
+        //CallMethod<0xD18510>(lb, 4, 0);
+        for (UInt i = 1; i <= 207; i++) {
+            if (!IsForeignNationForCompetition(league, 0, compId->countryId, i)) {
+                CTeamIndex teamId = CTeamIndex::make(i, 0, 0xFFFF);
+                CallMethod<0xD1E620>(lb, &teamId);
+                CallMethod<0xD1F060>(lb, &teamId, 0xFF1A1A1A, 0);
+                CallMethod<0xD18920>(lb, 0);
+            }
+        }
+        //CallMethod<0xD184E0>(lb);
+    }
+    return league;
+}
+
+UInt METHOD GetMaxForeignersForGame(CDBLeagueBase *league) {
+    UInt value = (*raw_ptr<UInt>(league, 0x2120) >> 16) & 0x1F;
+    if (value == 0 || value > 18)
+        return 18;
+    else
+        return value - 1;
+}
+
+UInt METHOD GetIsUnlimitedMaxForeignersForGame(CDBLeagueBase *league) {
+    return GetMaxForeignersForGame(league) >= 18;
+}
+
+UInt METHOD GetIsNotUnlimitedMaxForeignersForGame(CDBLeagueBase *league) {
+    return !GetIsUnlimitedMaxForeignersForGame(league);
+}
+
+UInt METHOD GetMaxPlayersForSeason(CDBLeagueBase *league) {
+    UInt value = (*raw_ptr<UInt>(league, 0x2120) >> 21) & 0x1F;
+    if (value == 0 || value > 28)
+        return 99;
+    else
+        return value + 17;
+}
+
+UInt METHOD GetIsUnlimitedMaxPlayersForSeason(CDBLeagueBase *league) {
+    return GetMaxPlayersForSeason(league) >= 99;
+}
+
+UInt METHOD GetIsNotUnlimitedMaxPlayersForSeason(CDBLeagueBase *league) {
+    return !GetIsUnlimitedMaxPlayersForSeason(league);
+}
+
+UInt METHOD GetMaxForeignersForSeason(CDBLeagueBase *league) {
+    UInt value = (*raw_ptr<UInt>(league, 0x2120) >> 26) & 0x1F;
+    if (value == 0 || value > 30)
+        return 99;
+    else
+        return value - 1;
+}
+
+UInt METHOD GetIsUnlimitedMaxForeignersForSeason(CDBLeagueBase *league) {
+    return GetMaxForeignersForSeason(league) >= 99;
+}
+
+UInt METHOD GetIsNotUnlimitedMaxForeignersForSeason(CDBLeagueBase *league) {
+    return !GetIsUnlimitedMaxForeignersForSeason(league);
+}
+
+UInt METHOD LeagueDetailsGetNoOfNonEUPlayers(CDBCompetition *comp) {
+    UInt value = CallMethodAndReturn<UInt, 0xF81970>(comp);
+    return (value == 11) ? 0 : value;
+}
+
+void OnLeagueDeatilsCopyNonEuUnlimited(WideChar const *dst, WideChar const *src) {
+    Call<0x1493F2F>(dst, GetTranslation("IDS_DETAILS_LEAGUE_NO_MIN"));
+}
+
+UInt METHOD OnLeagueDetaulsGetNumYearsToBeNaturalized(CDBCountry *country) {
+    UInt value = CallMethodAndReturn<UChar, 0xFD8870>(country);
+    return value | (country->GetCountryId() << 16);
+}
+
+void *OnLeagueDetailsFormatNumYearsToBeNaturalized(void *t, UInt number, Int a, Int b) {
+    UInt years = number & 0xFFFF;
+    UInt countryId = (number >> 16) & 0xFFFF;
+    if (countryId == FifamNation::Spain)
+        CallMethod<0x14978B3>(t, FormatStatic(L"%d (%s)", years, GetTranslation("IDS_DETAILS_LEAGUE_YEARS_SPAIN")));
+    else
+        Call<0x14AD026>(t, years, a, b);
+    return t;
+}
+
 void PatchForeignersLimit(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        //patch::RedirectCall(0xF3377D, TestX);
+
         patch::SetUChar(0xF8D672, 4); // default for Turkey
         patch::Nop(0xF8D540, 2);
 
@@ -134,6 +434,36 @@ void PatchForeignersLimit(FM::Version v) {
         //patch::SetUChar(0xF8D672, 4); // default for Turkey
         //patch::SetUChar(0xF8D66A, 3); // limit for Russia
 
-        patch::RedirectCall(0x13DF7F9, (void *)0x13D2CD0); // fix the bug with line-up filler
+        //patch::RedirectCall(0x13DF7F9, (void *)0x13D2CD0); // fix the bug with line-up filler; THIS cause problem with Spain 3 non-eu limit
+
+        patch::RedirectJump(0xF8D550, IsForeignNationForCompetition);
+        patch::SetUChar(0xFBB342, 0xEB);
+        patch::RedirectCall(0xFBB316, OnIsPlayerNonEuropean);
+
+        patch::RedirectCall(0xFB44DC, OnGetIsCountryWithSimplerNaturalisationForSpain);
+
+        // league details screen
+        patch::SetUInt(0x673F44 + 1, 0x548 + 0x704);
+        patch::SetUInt(0x673F4B + 1, 0x548 + 0x704);
+        patch::RedirectCall(0x5EF356, OnConstructLeagueDetails);
+        patch::RedirectJump(0x5EF1CC, OnDestructLeagueDetails);
+        patch::RedirectCall(0x5EDDD3, OnLeagueDetailsCreateUI);
+        patch::RedirectCall(0x5EE1B7, OnGetLeagueDetailsLeague);
+
+        patch::RedirectJump(0x10CB940, GetMaxForeignersForGame);
+        patch::RedirectJump(0x10CB970, GetMaxPlayersForSeason);
+        patch::RedirectJump(0x10CB9A0, GetMaxForeignersForSeason);
+        patch::RedirectCall(0x5EE444, GetIsNotUnlimitedMaxForeignersForGame);
+        patch::RedirectCall(0x5EE4D0, GetIsNotUnlimitedMaxPlayersForSeason);
+        patch::RedirectCall(0x5EE557, GetIsNotUnlimitedMaxForeignersForSeason);
+        patch::RedirectCall(0x5EE3EA, (void *)0xF81970);
+        patch::RedirectCall(0x5EE3F5, LeagueDetailsGetNoOfNonEUPlayers);
+        patch::RedirectCall(0x5EE422, OnLeagueDeatilsCopyNonEuUnlimited);
+        patch::RedirectCall(0x5EE61A, OnLeagueDetaulsGetNumYearsToBeNaturalized);
+        patch::Nop(0x5EE61F, 3);
+        patch::RedirectCall(0x5EE62A, OnLeagueDetailsFormatNumYearsToBeNaturalized);
+        patch::SetUChar(0xF8D4D1 + 2, 11);
+        patch::SetUChar(0x13D2D4D + 1, 11);
+        patch::SetUChar(0x13D2DF2 + 2, 11);
     }
 }

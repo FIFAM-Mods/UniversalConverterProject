@@ -10,6 +10,8 @@ String &GameLanguage() {
     return gameLanguage;
 }
 
+Bool IsRussianLanguage = false;
+
 Array<String, 207> &CountryNames() {
     static Array<String, 207> countryNames;
     return countryNames;
@@ -56,6 +58,7 @@ void PatchTranslation(FM::Version v) {
         GetPrivateProfileStringW(Magic<'O', 'P', 'T', 'I', 'O', 'N', 'S'>(1224534890).c_str(), Magic<'T', 'E', 'X', 'T', '_', 'L', 'A', 'N', 'G', 'U', 'A', 'G', 'E'>(3562105574).c_str(), Magic<'e', 'n', 'g'>(3703889367).c_str(), gameLanguageStr, MAX_PATH, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
         GameLanguage() = Utils::ToLower(gameLanguageStr);
         if (!GameLanguage().empty()) {
+            IsRussianLanguage = GameLanguage() == L"rus";
             auto countryNamesFile = path(L"fmdata") / GameLanguage() / L"CountryNames.txt";
             if (exists(countryNamesFile)) {
                 FifamReader countryNamesReader(countryNamesFile, 14);
