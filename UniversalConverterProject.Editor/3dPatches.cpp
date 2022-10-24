@@ -3,6 +3,7 @@
 #include "Patch.h"
 #include "Utils.h"
 #include "FifamTypes.h"
+#include "Kits.h"
 
 void *METHOD OnCreateFileIO(void *fileIO) {
     CallMethodDynGlobal(RendererAddress(0x108230), fileIO);
@@ -48,6 +49,7 @@ void METHOD OnLoadFifaPlayer(void *player, DUMMY_ARG, void *playerInfo, void *re
     //*raw_ptr<unsigned int>(player, 0x74) = 0;
     //CallMethodDynGlobal(RendererAddress(0xA09DC), textures, 16); // init loaded textures
     CallMethodDynGlobal(RendererAddress(0x9E6CA), player, playerInfo, resource, loadBody, resMan);
+    UpdateKitCollar(player);
     gCurrentPlayerLoadPlayerId = 0;
 }
 

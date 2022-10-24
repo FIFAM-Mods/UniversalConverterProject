@@ -17,6 +17,7 @@
 #include "ExtendedPlayerEditor.h"
 #include "UcpSettings.h"
 #include "GenericKits.h"
+#include "Kits.h"
 
 using namespace plugin;
 
@@ -60,5 +61,6 @@ public:
         PatchParameterFiles(v);
         PatchExtendedPlayer(v);
         //PatchGenericKits(v);
+        PatchKits(v);
     }
 } universalConverterProject;

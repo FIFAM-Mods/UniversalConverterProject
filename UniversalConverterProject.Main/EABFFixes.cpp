@@ -114,10 +114,6 @@ char METHOD TeamGetStatus_SpectatorsCheckFix(void *team) {
     return CallMethodAndReturn<char, 0xECC130>(team);
 }
 
-unsigned char METHOD GetFACompCountryId_SkipReserveTeams(void *comp) {
-    return 45;
-}
-
 template<UInt Addr>
 void METHOD OnSetPlayerSalary(void *contract, DUMMY_ARG, UInt64 money, UChar flag) {
     UInt64 currentSalary = 0;
@@ -1337,9 +1333,6 @@ void PatchEABFFixes(FM::Version v) {
 
         // spectators fix
         patch::RedirectCall(0x1519BD6, TeamGetStatus_SpectatorsCheckFix);
-
-        // skip reserve teams for FA_CUP
-        patch::RedirectCall(0x1049924, GetFACompCountryId_SkipReserveTeams);
 
         //patch::RedirectCall(0x1068FA2, UnknownLeaguePlayerCheck);
         //patch::RedirectCall(0x12822C5, UnknownLeaguePlayerCheck);

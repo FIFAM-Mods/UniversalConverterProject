@@ -7,8 +7,9 @@
 #include "shared.h"
 #include "Random.h"
 #include "UcpSettings.h"
-#include "FifamCompetition.h"
+#include "FifamCompLeague.h"
 #include "Competitions.h"
+#include "3dPatches.h"
 #include "json/json.hpp"
 #include <fstream>
 
@@ -28,6 +29,34 @@ Bool gWritingKitNumbers = false;
 void *gKitGen = nullptr;
 Bool gbUserKit = false;
 void *gKitFileDesc = nullptr;
+
+UInt gShirtNumberColors[] = { 0, 0xFFFFFFFF, 0xFF000000, 0xFFFFFF00, 0xFFFF0000, 0xFF00FF00, 0xFF0000FF };
+UChar gShirtNameColors[] = { 0xF1,0xF5,0xF2,0x14,0x17,0x13,0xF0,0xCD,0xF0,0xF0,0x80,0xF0,0xF2,0x3D,0xEF,0xF0,0x40,0xEF,0xF1,0x36,0xDF,0xEA,0x43,0xC5,0xCC,0x2F,0xA8,0xF1,0x2E,0xB0,0xF0,0x89,0xD2,0xF3,0x51,0xA9,0xDE,0x3B,0x7F,0xE3,0x2F,0x6C,0xC5,0x17,0x4C,0xDD,0x40,0x4E,0xC4,0x29,0x39,0x96,0x2C,0x17,0xEE,0x31,0x3C,0xDC,0x2A,0x2A,0xBD,0x37,0x1C,0xB5,0x37,0x1B,0xDA,0x48,0x31,0xB0,0x43,0x2C,0x96,0x28,0x12,0x9C,0x4E,0x17,0xE6,0xED,0xEA,0xFE,0xDC,0xD5,0xCC,0x67,0xCC,0x02,0x02,0x7C,0x77,0x03,0x0D,0x74,0x8B,0x45,0x00,0x00,0x00,0xFF,0x00,0xFF,0xC4,0x92,0xAC,0xC4,0x90,0x99,0xA8,0x72,0x85,0x85,0x4B,0x49,0x6E,0x3A,0x38,0x4E,0x25,0x24,0x9E,0xC5,0xEA,0x60,0x84,0xBC,0x01,0xA9,0x99,0x3A,0x88,0x8F,0x34,0x77,0x78,0x91,0x3C,0x93,0x32,0x23,0x94,0x46,0x39,0x80,0x1B,0x3A,0x4D,0xDB,0xFA,0xE3,0xB5,0xCD,0xBE,0xA0,0xB0,0xAA,0x00,0xB6,0x47,0x9D,0x4E,0x88,0x01,0x51,0x02,0xF0,0x27,0xD9,0x00,0x00,0x7B,0x7D,0xD3,0xB1,0x00,0x52,0x13,0x3C,0xB9,0x5C,0x2C,0x8F,0x41,0x21,0x60,0x31,0xA6,0x04,0x00,0x0F,0x4D,0x1F };
+
+struct BodyPart {
+    Char const *name;
+    Bool32 status;
+};
+
+BodyPart gBodyPartsCollar[] = {
+    { "enable_body_RCollar" , false },
+    { "enable_body_TCollar" , false },
+    { "enable_body_ACollar" , false },
+    { "enable_body_NCollar" , false },
+    { "enable_body_NPCollar", false },
+    { "enable_body_PCollar" , false },
+    { "enable_body_VCollar" , false },
+    { "enable_body_SCollar" , false },
+};
+
+void SetCollar(UInt collarType) {
+    if (collarType > std::size(gBodyPartsCollar))
+        collarType = 0;
+    else if (collarType > 1)
+        collarType -= 1;
+    for (UInt i = 0; i < std::size(gBodyPartsCollar); i++)
+        gBodyPartsCollar[i].status = i == collarType;
+}
 
 //#define KITS_DEBUG
 
@@ -178,7 +207,7 @@ String GetUserCompBadgesTexturePath(String const &directory, UInt compId, Bool r
         if (compId == 0xF909) {
             if (right) {
                 if (isChampion) {
-                    if (numTitles >= 4) {
+                    if (numTitles >= 5 || has3inrow) {
                         if (FmFileImageExists(directory + L"\\F909_Winner_" + Utils::Format(L"%u", numTitles), result))
                             return result;
                     }
@@ -189,20 +218,16 @@ String GetUserCompBadgesTexturePath(String const &directory, UInt compId, Bool r
                     if (FmFileImageExists(directory + L"\\F909_F90A_Winner_" + Utils::Format(L"%u", lastSeasonYear), result))
                         return result;
                 }
-                if (numTitles >= 4) {
+                if (numTitles >= 5 || has3inrow) {
                     if (FmFileImageExists(directory + L"\\F909_Titles_" + Utils::Format(L"%u", numTitles), result))
-                        return result;
-                }
-                else if (has3inrow) {
-                    if (FmFileImageExists(directory + L"\\F909_Titles_3", result))
                         return result;
                 }
             }
         }
-        else if (compId == 0xF90E) {
+        else if (compId == 0xF90A) {
             if (right) {
                 if (isChampion) {
-                    if (numTitles >= 1) {
+                    if (numTitles >= 5) {
                         if (FmFileImageExists(directory + L"\\F90A_Winner_" + Utils::Format(L"%u", numTitles), result))
                             return result;
                     }
@@ -213,7 +238,7 @@ String GetUserCompBadgesTexturePath(String const &directory, UInt compId, Bool r
                     if (FmFileImageExists(directory + L"\\F90A_F933_Winner_" + Utils::Format(L"%u", lastSeasonYear), result))
                         return result;
                 }
-                if (numTitles >= 1) {
+                if (numTitles >= 5) {
                     if (FmFileImageExists(directory + L"\\F90A_Titles_" + Utils::Format(L"%u", numTitles), result))
                         return result;
                 }
@@ -222,15 +247,23 @@ String GetUserCompBadgesTexturePath(String const &directory, UInt compId, Bool r
         else if (compId == 0xF933) {
             if (right) {
                 if (isChampion) {
-                    if (numTitles >= 1) {
+                    if (numTitles >= 5) {
                         if (FmFileImageExists(directory + L"\\F933_Winner_" + Utils::Format(L"%u", numTitles), result))
                             return result;
                     }
                     if (FmFileImageExists(directory + L"\\F933_r_champion", result))
                         return result;
                 }
-                if (numTitles >= 1) {
+                if (numTitles >= 5) {
                     if (FmFileImageExists(directory + L"\\F933_Titles_" + Utils::Format(L"%u", numTitles), result))
+                        return result;
+                }
+            }
+        }
+        else if (compId == 0xFA09) {
+            if (!right) {
+                if (numTitles >= 1) {
+                    if (FmFileImageExists(directory + L"\\FA09_Titles_" + Utils::Format(L"%u", numTitles), result))
                         return result;
                 }
             }
@@ -612,7 +645,7 @@ void ReadKitsFile() {
                 Bool frontnumber = false;
                 Int jerseynumbercolor = -1;
                 Int jerseynamecolor = -1;
-                Bool canusecompbadges = false;
+                Bool canusecompbadges = true;
                 Bool canusesponsorlogo = false;
                 UChar jerseynumbersize = 0;
                 UChar jerseynumberoffset = 0;
@@ -676,6 +709,37 @@ void ReadKitsFile() {
             }
         }
     }
+}
+
+Map<UInt, Vector<Int>> &GetRefereeKits() {
+    static Map<UInt, Vector<Int>> refereeKits;
+    return refereeKits;
+}
+
+void ReadRefereeKitsFile() {
+    FifamReader reader(L"plugins\\ucp\\referee_kits.csv", 14);
+    if (reader.Available()) {
+        reader.SkipLine();
+        while (!reader.IsEof()) {
+            if (!reader.EmptyLine()) {
+                UInt compid = 0;
+                String teamids;
+                reader.ReadLine(Hexadecimal(compid), teamids);
+                if (!teamids.empty()) {
+                    Vector<String> vecTeams = Utils::Split(teamids, L',');
+                    Vector<Int> vecTeamIds(vecTeams.size());
+                    for (UInt i = 0; i < vecTeams.size(); i++)
+                        vecTeamIds[i] = Utils::SafeConvertInt<Int>(vecTeams[i]);
+                    if (!vecTeamIds.empty())
+                        GetRefereeKits()[compid] = vecTeamIds;
+                }
+            }
+            else
+                reader.SkipLine();
+        }
+    }
+    if (GetRefereeKits().empty())
+        GetRefereeKits()[0] = { 6004, 6005, 6006, 6007, 6009 };
 }
 
 wchar_t const *gDynamicTextures[] = {
@@ -1141,10 +1205,14 @@ UChar SetupPlayerAndKitForRender(Int playerId, Bool bHomeKit, void *teamIndex, P
 PlayerRenderData *gRenderPlayerDataForGkKit = nullptr;
 DefaultKitRenderData *gRenderKitDataForGkKit = nullptr;
 
-void *OnGenerateKitResourceForScenes(void *out, PlayerRenderData *kitParams, DefaultKitRenderData *data, void *resMan) {
-    gRenderPlayerDataForGkKit = kitParams;
-    gRenderKitDataForGkKit = data;
-    return CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x38FAEE), out, kitParams, data, resMan);
+void *OnGenerateKitResourceForScenes(UInt *out, PlayerRenderData *kitParams, DefaultKitRenderData *data, void *resMan) {
+    if (gPortraitsStyle == 2) {
+        gRenderPlayerDataForGkKit = kitParams;
+        gRenderKitDataForGkKit = data;
+        return CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x38FAEE), out, kitParams, data, resMan);
+    }
+    *out = 0;
+    return 0;
 }
 
 Bool UseGenericKit() {
@@ -1222,63 +1290,19 @@ void METHOD OnGetRefKitId(void *, DUMMY_ARG, const char *, int *outId, int) {
     void *match = *(void **)0x3124748;
     if (match) {
         CallMethod<0xE80190>(match, &compId);
-        if (compId == 0x0E010000) {
-            static Array<UInt, 4> refKitIdsEPL = { 6105, 6106, 6108, 6109 };
-            *outId = Random::SelectFromArray(refKitIdsEPL);
-            return;
-        }
-        else if (compId >= 0x0E010001 && compId <= 0x0E010003) {
-            static Array<UInt, 4> refKitIdsEFL = { 6114, 6115, 6116, 6117 };
-            *outId = Random::SelectFromArray(refKitIdsEFL);
-            return;
-        }
-        else if (compId == 0x0E030000 || compId == 0x0E040000 || compId == 0x0E070000) {
-            static Array<UInt, 4> refKitIdsFA = { 6110, 6111, 6112, 6113 };
-            *outId = Random::SelectFromArray(refKitIdsFA);
-            return;
-        }
+        Vector<Int> kitIds;
+        if (GetRefereeKits().contains(compId))
+            kitIds = GetRefereeKits()[compId];
         else {
-            compId = (compId >> 16) & 0xFFFF;
-            if (compId == 0xF909 || compId == 0xF90A || compId == 0xF90C || compId == 0xF933 || compId == 0xF90E || compId == 0xF926 || compId == 0xF924 || compId == 0xF925) {
-                static Array<UInt, 4> refKitIdsEurope = { 6019, 6020, 6021, 6022 };
-                *outId = Random::SelectFromArray(refKitIdsEurope);
-                return;
-            }
-            else if (compId == 0xFA09 || compId == 0xFA0A || compId == 0xFA0C) {
-                static Array<UInt, 4> refKitIdsSA = { 6040, 6041, 6042, 6043 };
-                *outId = Random::SelectFromArray(refKitIdsSA);
-                return;
-            }
-            else if (compId == 0xFF21) {
-                static Array<UInt, 4> refKitIdsSA2 = { 6045, 6046, 6047, 6048 };
-                *outId = Random::SelectFromArray(refKitIdsSA2);
-                return;
-            }
-            else if (compId == 0x1B01 || compId == 0x1B03 || compId == 0x1B07) {
-                static Array<UInt, 4> refKitIdsItaly = { 6101, 6102, 6103, 6104 };
-                *outId = Random::SelectFromArray(refKitIdsItaly);
-                return;
-            }
-            else if (compId == 0x1201 || compId == 0x1203 || compId == 0x1207) {
-                static Array<UInt, 4> refKitIdsFrance = { 6050, 6052, 6053, 6054 };
-                *outId = Random::SelectFromArray(refKitIdsFrance);
-                return;
-            }
-            else if (compId == 0x1501 || compId == 0x1503 || compId == 0x1507) {
-                static Array<UInt, 4> refKitIdsGermany = { 6055, 6057, 6058, 6059 };
-                *outId = Random::SelectFromArray(refKitIdsGermany);
-                return;
-            }
-            else if (compId == 0x2D01 || compId == 0x2D03 || compId == 0x2D07) {
-                static Array<UInt, 4> refKitIdsSpain = { 6060, 6062, 6063, 6064 };
-                *outId = Random::SelectFromArray(refKitIdsSpain);
-                return;
-            }
-            else if (compId == 0x2201 || compId == 0x2203 || compId == 0x2207) {
-                static Array<UInt, 4> refKitIdsNetherlands = { 6065, 6067, 6068, 6069 };
-                *outId = Random::SelectFromArray(refKitIdsNetherlands);
-                return;
-            }
+            UInt smallCompId = (compId >> 16) & 0xFFFF;
+            if (GetRefereeKits().contains(smallCompId))
+                kitIds = GetRefereeKits()[smallCompId];
+            else if (GetRefereeKits().contains(0))
+                kitIds = GetRefereeKits()[0];
+        }
+        if (!kitIds.empty()) {
+            *outId = Random::Select(kitIds);
+            return;
         }
     }
     static Array<UInt, 5> refKitIdsDefault = { 6004, 6005, 6006, 6007, 6009 };
@@ -1290,7 +1314,7 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
     if (gKitGen && gKitFileDesc) {
         team_kit_desc *kitDesc = nullptr;
         SafeLog::Write(Utils::Format(L"userKit %d", gbUserKit));
-        Bool canUseCompBadges = gbUserKit == false;
+        Bool canUseCompBadges = true;
         Bool canUseSponsorLogo = gbUserKit == false;
         UInt kitId = *raw_ptr<UInt>(gKitFileDesc, 0);
         UInt teamId = 0;
@@ -1719,6 +1743,15 @@ void CheckKitSelection(const CTeamIndex &homeTeamIndex, const CTeamIndex &awayTe
     Call<0x43FCB0>(&homeTeamIndex, &awayTeamIndex, outputData, resultKits, bFalse);
 }
 
+//void UpdateKitCollar(void *fifaPlayer) {
+//    void *bodyRes = *raw_ptr<void *>(fifaPlayer, 0x40);
+//    unsigned int buf[2] = {};
+//    void **pBuf = CallVirtualMethodAndReturn<void **, 7>(bodyRes, &buf);
+//    void *model = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x37C1A5), *pBuf);
+//    SetCollar(gKitDesc ? gKitDesc->collar : 0);
+//    CallDynGlobal(GfxCoreAddress(0x38FA92), model, gBodyPartsCollar, std::size(gBodyPartsCollar));
+//}
+
 void InstallKits_FM13() {
 
     // custom captain armband
@@ -1774,7 +1807,7 @@ void InstallKits_FM13() {
     patch::SetUChar(GfxCoreAddress(0x23F491), 0x50); // push eax
 
     // other scenes (not 3d-match)
-    //patch::RedirectCall(GfxCoreAddress(0x379170), OnGenerateKitResourceForScenes);
+    patch::RedirectCall(GfxCoreAddress(0x379170), OnGenerateKitResourceForScenes);
     patch::RedirectCall(GfxCoreAddress(0x37968A), OnGenerateKitResourceForScenes);
     patch::RedirectCall(GfxCoreAddress(0x37974F), OnGenerateKitResourceForScenes);
     patch::RedirectCall(GfxCoreAddress(0x37A26C), OnGenerateKitResourceForScenes);
@@ -1794,6 +1827,9 @@ void InstallKits_FM13() {
 
     // kit overlay
     patch::RedirectCall(GfxCoreAddress(0x384E15), OnWriteKitShape);
+
+    // fix jersey name colors in preview scene
+    patch::SetPointer(GfxCoreAddress(0x3851BA + 2), gShirtNameColors);
 }
 
 void PatchKits(FM::Version v) {

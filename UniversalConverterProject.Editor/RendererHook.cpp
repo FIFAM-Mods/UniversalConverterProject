@@ -1,5 +1,6 @@
 #include "RendererHook.h"
 #include "3dPatches.h"
+#include "Kits.h"
 
 unsigned int gOriginalLoadRenderer = 0;
 unsigned int hLibrary = 0;
@@ -17,6 +18,7 @@ bool METHOD OnLoadRenderer(void **info, DUMMY_ARG, const wchar_t *libFileName, c
             hLibrary = (unsigned int)info[1];
 
             Install3dPatches();
+            InstallKits_Renderer();
 
         }
     }

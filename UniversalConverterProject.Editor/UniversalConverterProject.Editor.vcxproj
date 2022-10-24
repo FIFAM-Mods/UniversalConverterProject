@@ -43,7 +43,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>E:\Games\FIFA Manager 22\plugins\</OutDir>
+    <OutDir>D:\Games\FIFA Manager 22\plugins\</OutDir>
     <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -56,7 +56,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>E:\Projects\fifam-api\include\;E:\Projects\fifam\fmapi;E:\Projects\fifam\generic;E:\Projects\UniversalConverterProject\ScriptCompiler;E:\Projects\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv\src\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -87,7 +87,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\Projects\fifam\output\libs;E:\Projects\UniversalConverterProject\ScriptCompiler;E:\Projects\shared\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv\build\3rdparty\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>generic.lib;fmapi.lib;UCPCompiler.lib;zlib.lib;libpng.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
@@ -110,6 +110,7 @@
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="GenericKits.cpp" />
+    <ClCompile Include="Kits.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ParameterFiles.cpp" />
@@ -134,6 +135,7 @@
     <ClInclude Include="Formations.h" />
     <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="GenericKits.h" />
+    <ClInclude Include="Kits.h" />
     <ClInclude Include="LowestLeagues.h" />
     <ClInclude Include="ParameterFiles.h" />
     <ClInclude Include="RendererHook.h" />

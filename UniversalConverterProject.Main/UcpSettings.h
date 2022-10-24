@@ -38,6 +38,8 @@ public:
     SETTINGS_PARAMETER(bool,   DisplayFoomID,               "DISPLAY_FOOM_ID",                false);
     SETTINGS_PARAMETER(int,    ResolutionX,                 "RESOLUTION_X",                   0);
     SETTINGS_PARAMETER(int,    ResolutionY,                 "RESOLUTION_Y",                   0);
+    SETTINGS_PARAMETER(bool,   EditorKitExtensions,         "EDITOR_KIT_EXTENSIONS",          true);
+    SETTINGS_PARAMETER(bool,   ReloadKitConfig,             "RELOAD_KIT_CONFIG",              false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

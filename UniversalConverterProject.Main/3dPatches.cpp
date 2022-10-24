@@ -190,10 +190,6 @@ char const *GetAppDocumentsDir() {
     return result.c_str();
 }
 
-void LoadPlayerHeadKitTexture(UInt *out, Int, Int, Int) {
-    *out = 0;
-}
-
 Bool gRenderPlayerHead = false;
 
 void METHOD MyRenderFifaPlayer(void *t, DUMMY_ARG, void *d) {
@@ -1297,7 +1293,47 @@ void OnGetResolution(UInt *x, UInt *y) {
     *y = Settings::GetInstance().ResolutionY;
 }
 
+string gDumpTexName;
+
+void METHOD OnTarSetData(void *tar, DUMMY_ARG, void *data) {
+    CallMethodDynGlobal(GfxCoreAddress(0x2DB8F0), tar, data);
+    if (!gDumpTexName.empty()) {
+        void* desc = *raw_ptr<void*>(tar, 0x24);
+        if (desc) {
+            IDirect3DTexture9* d3dtex = *raw_ptr<IDirect3DTexture9*>(desc, 0x18);
+            if (d3dtex)
+                D3DXSaveTextureToFileA(gDumpTexName.c_str(), D3DXIFF_PNG, d3dtex, NULL);
+        }
+        gDumpTexName.clear();
+    }
+}
+
+void OnSetTextureAtId(void* g, UInt id, void* tex) {
+    gDumpTexName.clear();
+    if (tex) {
+        char str[5];
+        memcpy(str, &id, 4);
+        str[4] = 0;
+        string s = str;
+        std::reverse(s.begin(), s.end());
+        static Map<string, UInt> texid;
+        gDumpTexName = s + to_string(++texid[s]) + ".png";
+    }
+    CallDynGlobal(GfxCoreAddress(0x453CF0), g, id, tex);
+    gDumpTexName.clear();
+}
+
 void Install3dPatches_FM13() {
+
+    //patch::RedirectCall(GfxCoreAddress(0x20484F), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x20486B), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x204889), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x2048A7), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x2048C5), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x2048E3), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x204CA2), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x204CD4), OnSetTextureAtId);
+    //patch::RedirectCall(GfxCoreAddress(0x2E209C), OnTarSetData);
 
     //patch::RedirectCall(GfxCoreAddress(0x220D04), AnimataionBankLoadBegin);
     //patch::RedirectCall(GfxCoreAddress(0x220D64), AnimationBankLoadEnd);
@@ -1814,7 +1850,6 @@ void Install3dPatches_FM13() {
     else {
         // player head scene - remove kit
         patch::SetUChar(GfxCoreAddress(0x379187 + 1), 0);
-        patch::RedirectCall(GfxCoreAddress(0x379170), LoadPlayerHeadKitTexture);
     }
 
     patch::SetPointer(GfxCoreAddress(0x378D22 + 2), &NewDist);

@@ -185,7 +185,7 @@ void METHOD OnSetupTopMenuCalendarDays_DarkTheme(void *t) {
     auto currDate = CDBGame::GetInstance()->GetCurrentDate();
     auto dayOfWeek = currDate.GetDayOfWeek();
     for (UInt i = 0; i < 7; i++) {
-        UInt color = (i == dayOfWeek) ? 0xff21252e : 0xfff1f1f1;
+        UInt color = (i == dayOfWeek) ? 0xff0e2535 : 0xfff1f1f1;
         SetTextBoxColors(*raw_ptr<void *>(t, 0x4B8 + i * 4), color);
         SetTextBoxColors(*raw_ptr<void *>(t, 0x4D4 + i * 4), color);
         SetTextBoxColors(*raw_ptr<void *>(t, 0x4F4 + i * 4), color);
@@ -198,7 +198,7 @@ void METHOD OnSetupTopMenuCalendarDays_DarkTheme(void *t) {
             if (baseImage && baseImage != CallAndReturn<void *, 0x1440F4D>()) {
                 String filename = ToLower(*raw_ptr<WideChar *>(baseImage, 0x24));
                 if (filename.find(L"icons\\calendar") != String::npos) {
-                    SetImageColorRGBA(*raw_ptr<void *>(t, 0x564 + i * 4), 0xff21252e);
+                    SetImageColorRGBA(*raw_ptr<void *>(t, 0x564 + i * 4), 0xff0e2535);
                     imageColorSet = true;
                 }
             }
@@ -213,7 +213,7 @@ void METHOD OnSetupWeeklyProgressCalendarDays_DarkTheme(void *t) {
     auto currDate = CDBGame::GetInstance()->GetCurrentDate();
     auto dayOfWeek = currDate.GetDayOfWeek();
     for (UInt i = 0; i < 7; i++) {
-        UInt color = (i == dayOfWeek) ? 0xff21252e : 0xfff1f1f1;
+        UInt color = (i == dayOfWeek) ? 0xff0e2535 : 0xfff1f1f1;
         SetTextBoxColors(*raw_ptr<void *>(t, 0x4C8 + i * 4), color);
         SetTextBoxColors(*raw_ptr<void *>(t, 0x4E4 + i * 4), color);
         SetTextBoxColors(*raw_ptr<void *>(t, 0x500 + i * 4), color);
@@ -225,7 +225,7 @@ void METHOD OnSetupWeeklyProgressCalendarDays_DarkTheme(void *t) {
             if (baseImage && baseImage != CallAndReturn<void *, 0x1440F4D>()) {
                 String filename = ToLower(*raw_ptr<WideChar *>(baseImage, 0x24));
                 if (filename.find(L"icons\\calendar") != String::npos) {
-                    SetImageColorRGBA(*raw_ptr<void *>(t, 0x4AC + i * 4), 0xff21252e);
+                    SetImageColorRGBA(*raw_ptr<void *>(t, 0x4AC + i * 4), 0xff0e2535);
                     imageColorSet = true;
                 }
             }
@@ -326,7 +326,6 @@ void OnCopyUpcomingEventsIconPath(WideChar const *a1, WideChar const *a2) {
         Call<0x1494136>(a1, a2);
 }
 
-
 UChar OnSetWidgetIcoPyramid(WideChar const *dst, WideChar const *filepath, UInt scaleX, UInt scaleY) {
     if (!GetCustomInterfaceFolderW().empty() && wcslen(filepath) != 0)
         return CallAndReturn<UChar, 0xD32860>(dst, (GetCustomInterfaceFolderW() + L"\\" + filepath).c_str(), scaleX, scaleY);
@@ -373,6 +372,13 @@ void * METHOD OnConstructEmployeeOffice(void *office, DUMMY_ARG, CDBEmployee *em
     *raw_ptr<UInt>(office, 12) = 0;
     *raw_ptr<UInt>(office, 16) = 0;
     return result;
+}
+
+void OnFormatLoadAnimPath(WideChar const *a1, WideChar const *a2, Int a3) {
+    if (!GetCustomInterfaceFolderW().empty())
+        Call<0x1494136>(a1, (GetCustomInterfaceFolderW() + L"/" + a2).c_str(), a3);
+    else
+        Call<0x1494136>(a1, a2, a3);
 }
 
 void PatchInterfaceTheme(FM::Version v) {
@@ -662,6 +668,10 @@ void PatchInterfaceTheme(FM::Version v) {
             patch::RedirectCall(0xA32512, MyConstructArtFmLibMediaString);
 
             patch::RedirectCall(0xD19C75, OnSetWidgetProgressBar08);
+
+            patch::RedirectCall(0x5880B9, OnFormatLoadAnimPath);
+            patch::RedirectCall(0x7B52BF, OnFormatLoadAnimPath);
+            patch::RedirectCall(0x8845AB, OnFormatLoadAnimPath);
         }
     }
 }

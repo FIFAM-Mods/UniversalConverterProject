@@ -301,6 +301,7 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
         Magick::Image image(u8Src);
         if (!image.isValid())
             return false;
+        image.autoOrient();
         if (image.rows() != 160 || image.columns() != 160) {
             UInt maxSide = Utils::Max(image.rows(), image.columns());
             image.extent(Magick::Geometry(maxSide, maxSide), Magick::Color(0, 0, 0, 0), MagickCore::GravityType::CenterGravity);
@@ -328,6 +329,7 @@ Bool InstallBadge(Path const &gamePath, Path const &badgesDir, String const &bad
         Magick::Image image(u8Src);
         if (!image.isValid())
             return false;
+        image.autoOrient();
         UInt resolution[] = { 256, 128, 64, 32 };
         for (UInt i = 0; i < std::size(resolution); i++) {
             if (resolution[i] == 256) {
@@ -628,6 +630,9 @@ void PatchWindowedMode(FM::Version v) {
         patch::RedirectCall(0x451157, MyDrawCursor);
 
         if (Settings::GetInstance().WindowedMode) {
+
+            Magick::InitializeMagick(NULL);
+
             patch::SetUChar(0x45BEDD + 1, 0);
             patch::Nop(0x451B71, 7);
             patch::Nop(0x452430, 8);

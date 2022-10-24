@@ -17,7 +17,7 @@ Bool &IsFirstLaunch();
 path GetDocumentsPath();
 void SaveTestFile();
 
-const Bool ENABLE_LOG = false;
+const Bool ENABLE_LOG = true;
 
 class SafeLog {
 public:

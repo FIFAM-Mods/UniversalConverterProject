@@ -110,9 +110,18 @@ void *METHOD StoreCurrentScout2_ScoutingPlayers(void *team) {
 }
 
 CTeamIndex *METHOD StoreCurrentPlayerCountry_ScoutingPlayers(CDBPlayer *player, DUMMY_ARG, CTeamIndex *out) {
-    CallMethod<0xFB5240>(player, out);
+    *out = player->GetCurrentTeam();
+    if (!GetTeam(*out))
+        *out = player->GetNationalTeam();
     gCurrentPlayerCountry_ScoutingPlayers = out->countryId;
     gCurrentPlayerGk_ScoutingPlayers = player->GetMainPosition() == 1;
+    return out;
+}
+
+CTeamIndex* METHOD GetCurrentPlayerTeam_ScoutingPlayers(CDBPlayer* player, DUMMY_ARG, CTeamIndex* out) {
+    *out = player->GetCurrentTeam();
+    if (!GetTeam(*out))
+        *out = player->GetNationalTeam();
     return out;
 }
 
@@ -175,7 +184,9 @@ UChar GetPlayerResearchSpeed(UInt speed) {
         CTeamIndex staffTeam = CTeamIndex::make(0, 0, 0);
         CallMethod<0xEA2C10>(gPlayerResearchEmployee, &staffTeam);
         if (staffTeam.countryId >= 1 && staffTeam.countryId <= 207) {
-            CTeamIndex playerTeam = CTeamIndex::make(0, 0, 0);
+            CTeamIndex playerTeam = gPlayerResearchPlayer->GetCurrentTeam();
+            if (!GetTeam(playerTeam))
+                playerTeam = gPlayerResearchPlayer->GetNationalTeam();
             CallMethod<0xFB5240>(gPlayerResearchPlayer, &playerTeam);
             if (playerTeam.countryId >= 1 && playerTeam.countryId <= 207 && ScoutKnowsCountry(gPlayerResearchScout, playerTeam.countryId)) {
                 if (staffTeam.countryId == playerTeam.countryId) {
@@ -275,6 +286,9 @@ void PatchScouting(FM::Version v) {
         patch::RedirectCall(0x60E475, StoreCurrentScout2_ScoutingPlayers);
 
         patch::RedirectCall(0x60E734, StoreCurrentPlayerCountry_ScoutingPlayers);
+        patch::RedirectCall(0x60E748, GetCurrentPlayerTeam_ScoutingPlayers);
+        patch::RedirectCall(0x60E76A, GetCurrentPlayerTeam_ScoutingPlayers);
+        patch::RedirectCall(0x134E280, GetCurrentPlayerTeam_ScoutingPlayers);
 
         patch::RedirectCall(0x60E7C3, SetScoutingTaskDuration_ScoutingPlayers);
 

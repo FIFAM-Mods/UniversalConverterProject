@@ -130,6 +130,8 @@ public:
     EAGMoney GetMinRelFee();
     void SetDemandValue(EAGMoney const &money);
     void SetMinRelFee(EAGMoney const &money);
+    UChar GetNationality(UChar number = 0);
+    CTeamIndex GetNationalTeam();
 };
 
 class CDBCountry;
@@ -223,6 +225,7 @@ public:
     wchar_t const *GetName();
     CCompID GetCompID();
     unsigned int GetNumOfRegisteredTeams();
+    void SetNumOfRegisteredTeams(unsigned int number);
     unsigned int GetNumOfTeams();
     unsigned char GetFlags();
     void DumpToFile();
@@ -255,6 +258,7 @@ public:
     bool Finish();
     void Launch();
     Bool IsContinental();
+    Bool IsLaunched();
 };
 
 enum CompDbType {
@@ -433,6 +437,7 @@ public:
     int GetCountryPosition(int countryId);
     CAssessmentInfo *GetInfoForCountry(unsigned char countryId);
     int GetCountryPositionLastYear(unsigned char countryId);
+    float GetTotalPointsForCountry(unsigned char countryId);
 };
 
 CAssessmentTable *GetAssesmentTable();
@@ -541,6 +546,9 @@ void SetImageColorRGB(void *img, UChar r, UChar g, UChar b);
 void SetImageColorRGBA(void *img, UInt clr);
 void SetImageColorRGB(void *img, UInt clr);
 void SetTextBoxColors(void *tb, UInt clr);
+void SetVisible(void* widget, bool visible);
+void SetText(void* widget, WideChar const* text);
+unsigned char SetImageFilename(void* widget, std::wstring const& path);
 
 class CRandom {
 public:
@@ -549,6 +557,12 @@ public:
 
 String TeamName(CTeamIndex const &teamId);;
 String TeamNameWithCountry(CTeamIndex const &teamId);
+String TeamTag(CTeamIndex const& teamId);
+String TeamTagWithCountry(CTeamIndex const& teamId);
+String CompetitionTag(CDBCompetition* comp);
+String CompetitionTag(CCompID const& compId);
+String CountryName(UChar countryId);
+String CountryTag(UChar countryId);
 
 Bool GetHour();
 Bool GetIsCloudy();

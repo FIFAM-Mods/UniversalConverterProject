@@ -6,7 +6,7 @@
 #include "Compiler.h"
 #include "FifamReadWrite.h"
 #include "Competitions.h"
-#include "libpng/png.h"
+#include "libpng\png.h"
 #include "UcpSettings.h"
 #include "ExtendedPlayerEditor.h"
 
@@ -14,7 +14,7 @@ using namespace plugin;
 
 //#define EDITOR_READ_TEXT
 #define EDITOR_WRITE_TEXT
-#define UPDATE_CLUB_BUDGETS
+//#define UPDATE_CLUB_BUDGETS
 
 enum FmLanguage {
     English,
@@ -1084,8 +1084,13 @@ void METHOD OnReadLeagueLoanAndOtherFlags(void *t, DUMMY_ARG, UInt *out) {
     if (minU21PlayerCount > 28)
         (*out) &= 0xFC1FFFFF;
     UInt minU24PlayerCount = ((*out) >> 26) & 0x1F;
-    if (minDomesticPlayerCount > 30)
+    if (minU24PlayerCount > 30)
         (*out) &= 0x83FFFFFF;
+}
+
+void __stdcall OnCountryLeagueLevelChangeDDXText(void* a, int b, void *c) {
+    CallMethod<0x5B1C39>(0, a, b, c); // DDX_Text
+    CallMethod<0x5B1A9B>(0, a, c, 28); // DDV_MaxChars
 }
 
 void PatchEditor(FM::Version v) {
@@ -1648,6 +1653,15 @@ void PatchEditor(FM::Version v) {
         patch::SetPointer(0x454D39 + 1, ForeignersForSeasonSquad);
         // fix wrong values
         patch::RedirectCall(0x505424, OnReadLeagueLoanAndOtherFlags);
+        // fix league/level name length
+        patch::RedirectCall(0x440D1B, OnCountryLeagueLevelChangeDDXText);
+        patch::SetUInt(0x448BEE + 1, 316); // header column width
+        patch::SetUChar(0x456F51 + 1, 28); // localisation>league level name length
+        //patch::SetUChar(0x456EAE + 1, 63); // localisation>cup name length
+        //patch::SetUChar(0x456EC7 + 1, 63); // localisation>supercup name length
+        //patch::SetUChar(0x456F07 + 1, 63); // localisation>league cup name length
+        //patch::SetUChar(0x456F9F + 1, 63); // localisation>league name length
+        //patch::SetUChar(0x456FE8 + 1, 63); // localisation>relegation name length
 
         if (Settings::GetInstance().DisplayFoomID) {
             patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);

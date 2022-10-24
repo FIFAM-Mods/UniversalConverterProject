@@ -173,7 +173,7 @@ String GetAppName() {
 }
 
 String GetPatchName() {
-    return L"2022";
+    return L"2023";
 }
 
 String GetPatchVersion() {

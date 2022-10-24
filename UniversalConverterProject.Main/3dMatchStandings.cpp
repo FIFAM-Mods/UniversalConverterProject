@@ -113,22 +113,6 @@ void *GetOptionalComponent(void *panelInterface, char const *componentName) {
     return CallMethodAndReturn<void *, 0xD34CE0>(panelInterface, componentName);
 }
 
-void SetVisible(void *widget, bool visible) {
-    if (widget)
-        CallVirtualMethod<11>(widget, visible);
-}
-
-void SetText(void *widget, WideChar const *text) {
-    if (widget)
-        CallVirtualMethod<78>(widget, text);
-}
-
-unsigned char SetImageFilename(void *widget, std::wstring const &path) {
-    if (widget)
-        return CallAndReturn<unsigned char, 0xD32860>(widget, path.c_str(), 0, 0);
-    return 0;
-}
-
 Bool FileExists(String const &filename, Bool makeAbsolutePath = true) {
     void *iSystem = *reinterpret_cast<void **>(0x30ABBC0);
     return CallVirtualMethodAndReturn<Bool, 0>(iSystem, filename.c_str(), makeAbsolutePath);

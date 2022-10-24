@@ -25,6 +25,7 @@
     </ClCompile>
     <ClCompile Include="UcpSettings.cpp" />
     <ClCompile Include="GenericKits.cpp" />
+    <ClCompile Include="Kits.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -50,6 +51,7 @@
     </ClInclude>
     <ClInclude Include="UcpSettings.h" />
     <ClInclude Include="GenericKits.h" />
+    <ClInclude Include="Kits.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

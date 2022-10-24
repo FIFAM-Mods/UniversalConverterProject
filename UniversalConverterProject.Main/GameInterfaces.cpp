@@ -170,6 +170,10 @@ unsigned int CDBCompetition::GetNumOfRegisteredTeams() {
     return plugin::CallMethodAndReturn<unsigned int, 0xF82510>(this);
 }
 
+void CDBCompetition::SetNumOfRegisteredTeams(unsigned int number) {
+    *raw_ptr<unsigned int>(this, 0xA4) = number;
+}
+
 unsigned int CDBCompetition::GetNumOfTeams() {
     return plugin::CallMethodAndReturn<unsigned int, 0xF82520>(this);
 }
@@ -375,6 +379,10 @@ Bool CDBCompetition::IsContinental() {
     return CallMethodAndReturn<Bool, 0x11F0370>(this);
 }
 
+Bool CDBCompetition::IsLaunched() {
+    return CallMethodAndReturn<Bool, 0xF81B30>(this);
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -540,13 +548,6 @@ Bool FmFileImageExists(String const &filepathWithoutExtension, String &resultPat
             resultPath = fpstr;
             return true;
         }
-        else {
-            fpstr = filepathWithoutExtension + L".kit";
-            if (CallVirtualMethodAndReturn<Bool, 9>(fmFs, fpstr.c_str())) {
-                resultPath = fpstr;
-                return true;
-            }
-        }
     }
     resultPath.clear();
     return false;
@@ -641,6 +642,22 @@ void SetTextBoxColors(void *tb, UInt clr) {
     Call<0xD32810>(tb, clr);
 }
 
+void SetVisible(void* widget, bool visible) {
+    if (widget)
+        CallVirtualMethod<11>(widget, visible);
+}
+
+void SetText(void* widget, WideChar const* text) {
+    if (widget)
+        CallVirtualMethod<78>(widget, text);
+}
+
+unsigned char SetImageFilename(void* widget, std::wstring const& path) {
+    if (widget)
+        return CallAndReturn<unsigned char, 0xD32860>(widget, path.c_str(), 0, 0);
+    return 0;
+}
+
 String TeamName(CTeamIndex const &teamId) {
     auto team = GetTeam(teamId);
     if (team)
@@ -652,6 +669,42 @@ String TeamNameWithCountry(CTeamIndex const &teamId) {
     auto team = GetTeam(teamId);
     if (team)
         return Format(L"%s (%s)", team->GetName(), GetCountryStore()->m_aCountries[teamId.countryId].GetName());
+    return L"n/a";
+}
+
+String TeamTag(CTeamIndex const& teamId) {
+    auto team = GetTeam(teamId);
+    if (team)
+        return Utils::Format(L"%08X %s", teamId.ToInt(), team->GetName());
+    return L"n/a";
+}
+
+String TeamTagWithCountry(CTeamIndex const& teamId) {
+    auto team = GetTeam(teamId);
+    if (team)
+        return Utils::Format(L"%08X %s (%s)", teamId.ToInt(), team->GetName(), GetCountryStore()->m_aCountries[teamId.countryId].GetName());
+    return L"n/a";
+}
+
+String CompetitionTag(CDBCompetition* comp) {
+    if (comp)
+        return Utils::Format(L"%s %s", comp->GetCompID().ToStr(), comp->GetName());
+    return L"n/a";
+}
+
+String CompetitionTag(CCompID const& compId) {
+    return CompetitionTag(GetCompetition(compId));
+}
+
+String CountryName(UChar countryId) {
+    if (countryId >= 1 && countryId <= 207)
+        return GetCountryStore()->m_aCountries[countryId].GetName();
+    return L"n/a";
+}
+
+String CountryTag(UChar countryId) {
+    if (countryId >= 1 && countryId <= 207)
+        return Utils::Format(L"%d %s", countryId, GetCountryStore()->m_aCountries[countryId].GetName());
     return L"n/a";
 }
 
@@ -714,6 +767,10 @@ CAssessmentInfo *CAssessmentTable::GetInfoForCountry(unsigned char countryId) {
 
 int CAssessmentTable::GetCountryPositionLastYear(unsigned char countryId) {
     return GetInfoForCountry(countryId)->m_nPositionIndex;
+}
+
+float CAssessmentTable::GetTotalPointsForCountry(unsigned char countryId) {
+    return plugin::CallMethodAndReturn<float, 0x121D500>(this, countryId);
 }
 
 void CCompID::SetFromInt(unsigned int value) {
@@ -909,6 +966,16 @@ void CDBPlayer::SetDemandValue(EAGMoney const &money) {
 
 void CDBPlayer::SetMinRelFee(EAGMoney const &money) {
     CallMethod<0xFC27A0>(this, &money);
+}
+
+UChar CDBPlayer::GetNationality(UChar number) {
+    return CallMethodAndReturn<UChar, 0xF9AF10>(this, number);
+}
+
+CTeamIndex CDBPlayer::GetNationalTeam() {
+    CTeamIndex result;
+    CallMethod<0xF9AF60>(this, &result);
+    return result;
 }
 
 FmVec<CDBSponsorContractAdBoards> &CTeamSponsor::GetAdBoardSponsors() {
