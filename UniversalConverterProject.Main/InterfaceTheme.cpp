@@ -454,6 +454,8 @@ void PatchInterfaceTheme(FM::Version v) {
                 patch::Nop(0xD2B5A6, 1);
                 patch::SetUChar(0xD2B5A6 + 1, 0xBB);
                 patch::SetUInt(0xD2B5A6 + 2, 1);
+                // fix player attribute
+                patch::SetUChar(0x4E8D4C + 1, 8); // 22
             }
 
             patch::RedirectCall(0x1126190 + 0x47, MyGetCalendarIconPathPositive);
@@ -673,5 +675,6 @@ void PatchInterfaceTheme(FM::Version v) {
             patch::RedirectCall(0x7B52BF, OnFormatLoadAnimPath);
             patch::RedirectCall(0x8845AB, OnFormatLoadAnimPath);
         }
+        patch::RedirectJump(0x4E8D2D, (void *)0x4E8D5E);
     }
 }

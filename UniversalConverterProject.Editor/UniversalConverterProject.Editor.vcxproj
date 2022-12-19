@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv\src\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv2\src\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -87,7 +87,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv\build\3rdparty\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv2\build\3rdparty\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>generic.lib;fmapi.lib;UCPCompiler.lib;zlib.lib;libpng.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>

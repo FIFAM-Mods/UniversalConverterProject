@@ -17,7 +17,7 @@ Bool &IsFirstLaunch();
 path GetDocumentsPath();
 void SaveTestFile();
 
-const Bool ENABLE_LOG = true;
+const Bool ENABLE_LOG = false;
 
 class SafeLog {
 public:
@@ -33,7 +33,7 @@ public:
     }
 
     static void WriteToFile(Path const &fileName, String const &msg) {
-        //if (ENABLE_LOG) {
+        if (ENABLE_LOG) {
             static Map<Path, bool> fileCreated;
             FILE *file = nullptr;
             if (!fileCreated.contains(fileName)) {
@@ -47,6 +47,6 @@ public:
                 fputws(L"\n", file);
                 fclose(file);
             }
-        //}
+        }
     }
 };

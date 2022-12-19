@@ -1,4 +1,5 @@
-#include "Translation.h"
+﻿#include "Translation.h"
+#include "GameInterfaces.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
 #include "license_check/license_check.h"
@@ -11,6 +12,7 @@ String &GameLanguage() {
 }
 
 Bool IsRussianLanguage = false;
+Bool IsUkrainianLanguage = false;
 
 Array<String, 207> &CountryNames() {
     static Array<String, 207> countryNames;
@@ -52,6 +54,68 @@ void METHOD OnReadAdditionalTranslationFile(void *t, DUMMY_ARG, const WideChar *
     CallMethod<Addr>(t, filepath);
 }
 
+void *FormatNumberTh(void *t, UInt value, Bool masculine) {
+    String s;
+    if (value) {
+        s = Format(L"%d", value);
+        if (IsRussianLanguage) {
+            if (masculine)
+                s += L"-й";
+            else
+                s += L"-я";
+        }
+        else if (IsUkrainianLanguage) {
+            if (masculine)
+                s += L"-й";
+            else {
+                UInt m10 = value % 10;
+                UInt m100 = value % 100;
+                if (m10 == 3 && m100 != 13)
+                    s += L"-я";
+                else
+                    s += L"-а";
+            }
+        }
+        else {
+            UInt metric = GetCurrentMetric();
+            if (metric == METRIC_FRANCE) {
+                if (value == 1) {
+                    if (masculine)
+                        s += L"er";
+                    else
+                        s += L"re";
+                }
+                else
+                    s += L"e";
+            }
+            else if (metric == METRIC_SPAIN || metric == METRIC_ITALY) {
+                if (masculine)
+                    s += L"º";
+                else
+                    s += L"ª";
+            }
+            else if (metric == METRIC_UNITED_KINGDOM) {
+                UInt m10 = value % 10;
+                UInt m100 = value % 100;
+                if (m10 == 1 && m100 != 11)
+                    s += L"st";
+                else if (m10 == 2 && m100 != 12)
+                    s += L"nd";
+                else if (m10 == 3 && m100 != 13)
+                    s += L"rd";
+                else
+                    s += L"th";
+            }
+            else
+                s += L".";
+        }
+    }
+    else
+        s = L"-";
+    CallMethod<0x14978B3>(t, s.c_str());
+    return t;
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         wchar_t gameLanguageStr[MAX_PATH];
@@ -59,6 +123,7 @@ void PatchTranslation(FM::Version v) {
         GameLanguage() = Utils::ToLower(gameLanguageStr);
         if (!GameLanguage().empty()) {
             IsRussianLanguage = GameLanguage() == L"rus";
+            IsUkrainianLanguage = GameLanguage() == L"ukr";
             auto countryNamesFile = path(L"fmdata") / GameLanguage() / L"CountryNames.txt";
             if (exists(countryNamesFile)) {
                 FifamReader countryNamesReader(countryNamesFile, 14);
@@ -79,5 +144,7 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x111920A, OnReadAdditionalTranslationFile<0x13B5820>);
         patch::RedirectCall(0x111924A, OnReadAdditionalTranslationFile<0x13B6C90>);
         patch::SetPointer(0x23AB37C, GetCurrentLocaleShortName);
+
+        patch::RedirectJump(0x14AD82F, FormatNumberTh);
     }
 }

@@ -35,6 +35,8 @@ enum eMetricCode {
     METRIC_SOUTH_KOREA = 82
 };
 
+UInt GetCurrentMetric();
+
 struct RGBAReal {
     Float r, g, b, a;
 

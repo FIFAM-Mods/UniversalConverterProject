@@ -302,6 +302,7 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
         if (!image.isValid())
             return false;
         image.autoOrient();
+        image.filterType(MagickCore::HermiteFilter);
         if (image.rows() != 160 || image.columns() != 160) {
             UInt maxSide = Utils::Max(image.rows(), image.columns());
             image.extent(Magick::Geometry(maxSide, maxSide), Magick::Color(0, 0, 0, 0), MagickCore::GravityType::CenterGravity);
@@ -330,6 +331,7 @@ Bool InstallBadge(Path const &gamePath, Path const &badgesDir, String const &bad
         if (!image.isValid())
             return false;
         image.autoOrient();
+        image.filterType(MagickCore::HermiteFilter);
         UInt resolution[] = { 256, 128, 64, 32 };
         for (UInt i = 0; i < std::size(resolution); i++) {
             if (resolution[i] == 256) {
@@ -547,7 +549,7 @@ void CachedPathsMapCallback(void *t) {
         Int *params = raw_ptr<Int>(v, 0x10);
         void *wstr = *raw_ptr<void *>(v, 0xC);
         const WideChar *strdata = (*raw_ptr<UInt>(wstr, 0x18) < 8) ? raw_ptr<const WideChar>(wstr, 4) : *raw_ptr<const WideChar *>(wstr, 4);
-        SafeLog::WriteToFile("path_cached_map.txt", strdata);
+        //SafeLog::WriteToFile("path_cached_map.txt", strdata);
     }
 }
 
@@ -560,7 +562,7 @@ const WideChar *METHOD OnAddPathToCache(void *t, DUMMY_ARG, Int *i, const WideCh
     UInt mapSize = *raw_ptr<UInt>(cachedMap, 0x1C);
     void *n1 = *raw_ptr<void *>(cachedMap, 0x18);
     void *n2 = *raw_ptr<void *>(n1, 4);
-    SafeLog::WriteToFile("path_cached_map.txt", Format(L"MAP size: %d ===========================================", mapSize));
+    //SafeLog::WriteToFile("path_cached_map.txt", Format(L"MAP size: %d ===========================================", mapSize));
     CachedPathsMapCallback(n2);
     return result;
 }

@@ -4,6 +4,7 @@
 #include "shared.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
+#include "GfxCoreHook.h"
 
 using namespace plugin;
 
@@ -158,6 +159,12 @@ void METHOD OnProcessOptions3DCheckboxes(void *screen, DUMMY_ARG, int *data, int
         Settings::GetInstance().TeamControl = checked;
         SafeLog::Write(Utils::Format(L"Process : %d ", checked));
         CallVirtualMethod<9>(manualSwitchChk, checked);
+        if (!Settings::GetInstance().TeamControlDisabledAtGameStart) {
+            if (Settings::GetInstance().TeamControl)
+                patch::Nop(GfxCoreAddress(0x132FC2), 2);
+            else
+                patch::SetUShort(GfxCoreAddress(0x2475), 2);
+        }
         return;
     }
     else if (*data == CallVirtualMethodAndReturn<int, 23>(manualSwitchChk)) {

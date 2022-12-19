@@ -4,5 +4,6 @@
 
 String &GameLanguage();
 extern Bool IsRussianLanguage;
+extern Bool IsUkrainianLanguage;
 
 void PatchTranslation(FM::Version v);

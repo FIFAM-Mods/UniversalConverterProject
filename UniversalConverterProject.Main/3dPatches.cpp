@@ -1211,7 +1211,10 @@ void OnDefensiveFK1(void *player, float shotPower) {
 }
 
 void OnDefensiveFK2(void *in, float power, float angle, void *out) {
-    CallDynGlobal(GfxCoreAddress(0x1DCB70), in, 1920.0f * gDefensiveFKShotPower + 480.0f, angle, out);
+    if (Settings::GetInstance().TeamControl)
+        CallDynGlobal(GfxCoreAddress(0x1DCB70), in, 1920.0f * gDefensiveFKShotPower + 480.0f, angle, out);
+    else
+        CallDynGlobal(GfxCoreAddress(0x1DCB70), in, power, angle, out);
 }
 
 int OnGetTacticSettingTackles(void *player, int attribute) {
@@ -2018,21 +2021,23 @@ void Install3dPatches_FM13() {
    /// patch::SetUInt(GfxCoreAddress(0x384069 + 6), kitH);
    /// patch::SetUInt(GfxCoreAddress(0x3840D9 + 1), kitH);
    /// patch::SetUInt(GfxCoreAddress(0x3840DE + 1), kitW);
-   
-
-    // fix for defensive FK
-    patch::Nop(GfxCoreAddress(0x132FC2), 2);
-    patch::RedirectCall(GfxCoreAddress(0xFDF6D), OnDefensiveFK1);
-    patch::RedirectCall(GfxCoreAddress(0x1349C9), OnDefensiveFK1);
-    patch::RedirectCall(GfxCoreAddress(0x132FE0), OnDefensiveFK2);
 
     // fix for tactic tackles in 3d match
     patch::RedirectCall(GfxCoreAddress(0x484D), OnGetTacticSettingTackles);
 
     // fps
-    patch::RedirectCall(GfxCoreAddress(0x3B9CE), OnGetBeLoopTimers);
+    patch::RedirectCall(GfxCoreAddress(0x3B9CE), OnGetBeLoopTimers); // TODO: comment this?
 
     // resolution
     if (Settings::GetInstance().ResolutionX != 0 && Settings::GetInstance().ResolutionY != 0)
         patch::RedirectCall(GfxCoreAddress(0x3ABC8), OnGetResolution);
+
+    // fix for defensive FK
+    if (!Settings::GetInstance().TeamControlDisabledAtGameStart) {
+        patch::RedirectCall(GfxCoreAddress(0xFDF6D), OnDefensiveFK1);
+        patch::RedirectCall(GfxCoreAddress(0x1349C9), OnDefensiveFK1);
+        patch::RedirectCall(GfxCoreAddress(0x132FE0), OnDefensiveFK2);
+        if (Settings::GetInstance().TeamControl)
+            patch::Nop(GfxCoreAddress(0x132FC2), 2);
+    }
 }

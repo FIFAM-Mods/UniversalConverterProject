@@ -869,6 +869,11 @@ CTeamIndex CTeamIndex::null() {
     return result;
 }
 
+UInt GetCurrentMetric() {
+    void *metrics = CallAndReturn<void *, 0x14AC159>();
+    return CallMethodAndReturn<UInt, 0x14AC3A0>(metrics);
+}
+
 bool operator==(CTeamIndex const &a, CTeamIndex const &b) {
     return a.index == b.index && a.countryId == b.countryId && a.type == b.type;
 }

@@ -1122,7 +1122,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
 
                     if (DUMP_TO_LOG) {
                         SafeLog::Write(Utils::Format(L"Champions League Winner: %s", TeamTagWithCountry(teams[0])));
-                        SafeLog::Write(Utils::Format(L"Europa League Winner: %s", TeamTagWithCountry(teams[0])));
+                        SafeLog::Write(Utils::Format(L"Europa League Winner: %s", TeamTagWithCountry(teams[1])));
                     }
 
                     CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
@@ -2352,8 +2352,8 @@ UChar METHOD GetCountryAtAssessmentPositionLastYear(CAssessmentTable* table, DUM
         if (position >= pos2)
             position += 1;
         UChar result = table->GetCountryIdAtPositionLastYear(position);
-        SafeLog::Write(Utils::Format(L"%s: Position %d translated to %d (from %s to %s)", 
-            CompetitionTag(gCurrentScriptComp), positionOriginal, position, CountryName(resultOriginal), CountryName(result)));
+        //SafeLog::Write(Utils::Format(L"%s: Position %d translated to %d (from %s to %s)", 
+        //    CompetitionTag(gCurrentScriptComp), positionOriginal, position, CountryName(resultOriginal), CountryName(result)));
         return (result == 0) ? ResultNoCountry : result;
     }
     return table->GetCountryIdAtPositionLastYear(position);
@@ -3302,20 +3302,18 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             if (compId.index == 0) { // East - top 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> eastTeams = {
-                        0x5F1003, //Philadelphia Union
-                        0x5F0011, //CF Montreal
-                        0x5F0006, //New York Red Bulls
-                        0x5F1020, //New York City FC
-                        0x5F221E, //FC Cincinnati
-                        0x5F1001, //Orlando City SC
-                        0x5F214B, //Inter Miami CF
-                        0x5F0002, //Columbus Crew
-                        0x5F2149, //Atlanta United FC
-                        //Charlotte FC
-                        0x5F000A, //New England Revolution
-                        0x5F0001, //Chicago Fire FC
-                        0x5F0022, //Toronto FC
-                        0x5F0003 //D.C.United
+                        0x5F1003, // Philadelphia Union
+                        0x5F340C, // CF Montreal
+                        0x5F0006, // New York Red Bulls
+                        0x5F1020, // New York City FC
+                        0x5F1001, // Orlando City SC
+                        0x5F214B, // Inter Miami CF
+                        0x5F0002, // Columbus Crew
+                        0x5F2149, // Atlanta United FC
+                        0x5F000A, // New England Revolution
+                        0x5F0001, // Chicago Fire FC
+                        0x5F0022, // Toronto FC
+                        0x5F0003  // D.C.United
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !eastTeams.contains(team->GetTeamUniqueID()))
@@ -3334,7 +3332,6 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> westTeams = {
                         0x5F214A, // Los Angeles FC
-                        0x5F3285, // Austin FC
                         0x5F0008, // FC Dallas
                         0x5F2073, // Nashville SC
                         0x5F0005, // LA Galaxy
@@ -3345,8 +3342,7 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
                         0x5F000D, // Vancouver Whitecaps
                         0x5F0009, // Colorado Rapids
                         0x5F0004, // Sporting Kansas City
-                        0x5F0007, // Houston Dynamo FC
-                        0x5F0024, // San Jose Earthquakes
+                        0x5F0024  // San Jose Earthquakes
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !westTeams.contains(team->GetTeamUniqueID()))

@@ -1214,34 +1214,34 @@ Bool METHOD OnPlayQuickMatch(void *t, DUMMY_ARG, CDBOneMatch *m) {
         CDBCompetition *comp = GetCompetition(compId);
         if (comp)
             compName = comp->GetName();
-        SafeLog::WriteToFile("quick_matches.txt", Utils::Format(L"%s (%08X): %s (%08X) - %s (%08X)",
-            compName, compId.ToInt(), m->GetHomeTeam()->GetName(), m->GetHomeTeamID().ToInt(),
-            m->GetAwayTeam()->GetName(), m->GetAwayTeamID().ToInt()));
+        //SafeLog::WriteToFile("quick_matches.txt", Utils::Format(L"%s (%08X): %s (%08X) - %s (%08X)",
+        //    compName, compId.ToInt(), m->GetHomeTeam()->GetName(), m->GetHomeTeamID().ToInt(),
+        //    m->GetAwayTeam()->GetName(), m->GetAwayTeamID().ToInt()));
     }
     return result;
 }
 
 Int OnFormatLocaleUpper(Int ch) {
-    if (IsRussianLanguage) {
-        if ((ch >= 0x410 && ch <= 0x415) || (ch >= 0x416 && ch <= 0x42F) || ch == 0x401)
+    if (IsRussianLanguage || IsUkrainianLanguage) {
+        if (ch >= 0x400 && ch <= 0x42F)
             return ch;
-        if ((ch >= 0x430 && ch <= 0x435) || (ch >= 0x436 && ch <= 0x44F))
+        if (ch >= 0x430 && ch <= 0x44F)
             return ch - 0x20;
-        if (ch == 0x451)
-            return 0x401;
+        if (ch >= 0x450 && ch <= 0x45F)
+            return ch - 0x50;
     }
     Int result = CallAndReturn<Int, 0x157BED8>(ch);
     return result;
 }
 
 Int OnFormatLocaleLower(Int ch) {
-    if (IsRussianLanguage) {
-        if ((ch >= 0x430 && ch <= 0x435) || (ch >= 0x436 && ch <= 0x44F) || ch == 0x451)
+    if (IsRussianLanguage || IsUkrainianLanguage) {
+        if (ch >= 0x430 && ch <= 0x45F)
             return ch;
-        if ((ch >= 0x410 && ch <= 0x415) || (ch >= 0x416 && ch <= 0x42F))
+        if (ch >= 0x410 && ch <= 0x42F)
             return ch + 0x20;
-        if (ch == 0x401)
-            return 0x451;
+        if (ch >= 0x400 && ch <= 0x40F)
+            return ch + 0x50;
     }
     Int result = CallAndReturn<Int, 0x157C91E>(ch);
     return result;
@@ -1250,6 +1250,10 @@ Int OnFormatLocaleLower(Int ch) {
 void *OnFormatAssists(void *t, Float value, Int, Int) {
     CallMethod<0x14978B3>(t, Format(L"%d", (Int)value).c_str());
     return t;
+}
+
+__int64 METHOD GetValueInCurrency_Fix(EAGMoney *t, DUMMY_ARG, Int currency) {
+    return CallMethodAndReturn<__int64, 0x149C9D7>(t, CallAndReturn<Int, 0xF4A430>());
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -1735,5 +1739,12 @@ void PatchEABFFixes(FM::Version v) {
 
         patch::Nop(0x5CDE07, 2);
         patch::RedirectCall(0x5CDE70, OnFormatAssists);
+
+        // club transfers money fix
+        patch::RedirectCall(0x66533E, GetValueInCurrency_Fix);
+        patch::RedirectCall(0x664FB8, GetValueInCurrency_Fix);
+        patch::RedirectCall(0x664D9D, GetValueInCurrency_Fix);
+        patch::RedirectCall(0x664DFA, GetValueInCurrency_Fix);
+        patch::RedirectCall(0x664E5F, GetValueInCurrency_Fix);
     }
 }
