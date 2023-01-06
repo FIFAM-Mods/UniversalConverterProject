@@ -44,7 +44,7 @@ const UChar *GetArtBig() {
         CallMethod<0x409AD0>(gArtBig[Id]);
         Call<0x5FBB38>(&DestroyArtBig<Id>);
         *raw_ptr<UChar>(gArtBig[Id], 0x104A) = 1;
-        static WideChar const *artName[] = { L"art_09.big", L"art_10.big" };
+        static WideChar const *artName[] = { L"art_10.big", L"art_11.big" };
         CallMethod<0x409B90>(gArtBig[Id], artName[Id], 7);
         *raw_ptr<UChar>(gArtBig[Id], 0x104A) = 0;
     }
@@ -68,7 +68,7 @@ Int WAccessKitFile(WideChar const *filepath, Int mode) {
 
 WideChar const *portraitsArts[] = {
     L"update_portraits2.big", L"update2.big", L"update_portraits.big", L"update.big",
-    L"art_02.big", L"art_03.big", L"art_06.big", L"art_07.big", L"art_08.big", L"art_11.big", L"art_12.big"
+    L"art_02.big", L"art_03.big", L"art_06.big", L"art_07.big", L"art_08.big", L"art_09.big", L"art_12.big", L"art_13.big"
 };
 
 void OnGetPortraitsArtFilename(wchar_t *dst, wchar_t const *fmt, unsigned int archiveId) {
@@ -83,10 +83,10 @@ void METHOD OnAddArchive(void *t, DUMMY_ARG, void *archive) {
     CallMethod<0x4C0FF0>(t, &update2Archive);
     UChar const *update1Archive = GetUpdateBig<0>();
     CallMethod<0x4C0FF0>(t, &update1Archive);
-	UChar const *art09 = GetArtBig<0>();
-    CallMethod<0x4C0FF0>(t, &art09);
-	UChar const *art10 = GetArtBig<1>();
+	UChar const *art10 = GetArtBig<0>();
     CallMethod<0x4C0FF0>(t, &art10);
+	UChar const *art11 = GetArtBig<1>();
+    CallMethod<0x4C0FF0>(t, &art11);
     CallMethod<0x4C0FF0>(t, archive);
 }
 

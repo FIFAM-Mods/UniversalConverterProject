@@ -5,6 +5,8 @@
 using namespace plugin;
 
 Bool gChangedStartDateForWC = false;
+const UChar NUM_PLAYERS_IN_WC_SQUAD = 26;
+Int gSquadPlayerIDs[NUM_PLAYERS_IN_WC_SQUAD];
 
 void METHOD SetSeasonStartDateForWorldCup(CDBGame *g, DUMMY_ARG, CJDate d) {
     gChangedStartDateForWC = true;
@@ -24,6 +26,46 @@ void METHOD OnLoadGameStartDatabase(void *t, DUMMY_ARG, Int e) {
         }
     }
     CallMethod<0x524A90>(t, e);
+}
+
+void __declspec(naked) WcSquadSize1() {
+    __asm {
+        mov ebp, gSquadPlayerIDs[edi * 4]
+        mov esi, 0x108C5C7
+        jmp esi
+    }
+}
+
+void __declspec(naked) WcSquadSize2() {
+    __asm {
+        mov gSquadPlayerIDs[ecx * 4], eax
+        mov edx, 0x108C4B8
+        jmp edx
+    }
+}
+
+void GetNationalTeamNominationSize_WC(UInt *outTotalPlayers, UInt *outGk) {
+    if (CDBGame::GetInstance() && CDBGame::GetInstance()->GetIsWorldCupMode()) {
+        *outTotalPlayers = 26;
+        *outGk = 3;
+    }
+    else {
+        *outTotalPlayers = 23;
+        *outGk = 3;
+    }
+}
+
+void METHOD NationalTeamNominationSize1(void *t, DUMMY_ARG, UShort a, UShort b, UShort c, UShort d, UShort e, UShort f) {
+    if (CDBGame::GetInstance() && CDBGame::GetInstance()->GetIsWorldCupMode()) {
+        CallMethod<0x106EBA0>(t, 9, 9, 10, 10, 4, 4);
+        patch::SetUChar(0x308A0A4, 5);
+        patch::SetUChar(0x308A0A8, 2);
+    }
+    else {
+        CallMethod<0x106EBA0>(t, a, b, c, d, e, f);
+        patch::SetUChar(0x308A0A4, 4);
+        patch::SetUChar(0x308A0A8, 0);
+    }
 }
 
 void PatchWorldCup(FM::Version v) {
@@ -54,5 +96,14 @@ void PatchWorldCup(FM::Version v) {
             void *game = CallAndReturn<void *, 0xF61410>();
             CallMethod<0xF49960>(game, date);
         }));
-    }
+
+        patch::SetUChar(0x108C59F + 2, NUM_PLAYERS_IN_WC_SQUAD);
+        patch::SetUChar(0x108C5AC + 4, NUM_PLAYERS_IN_WC_SQUAD);
+        patch::SetUChar(0x108C5F3 + 2, NUM_PLAYERS_IN_WC_SQUAD);
+        patch::RedirectJump(0x108C5C0, WcSquadSize1);
+        patch::RedirectJump(0x108C4B1, WcSquadSize2);
+
+        patch::RedirectJump(0xF823E0, GetNationalTeamNominationSize_WC);
+        patch::RedirectCall(0xF37F3A, NationalTeamNominationSize1);
+;    }
 }

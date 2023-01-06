@@ -1205,8 +1205,9 @@ UChar SetupPlayerAndKitForRender(Int playerId, Bool bHomeKit, void *teamIndex, P
 PlayerRenderData *gRenderPlayerDataForGkKit = nullptr;
 DefaultKitRenderData *gRenderKitDataForGkKit = nullptr;
 
+template <bool IsHeadScene>
 void *OnGenerateKitResourceForScenes(UInt *out, PlayerRenderData *kitParams, DefaultKitRenderData *data, void *resMan) {
-    if (gPortraitsStyle == 2) {
+    if (!IsHeadScene || gPortraitsStyle == 2) {
         gRenderPlayerDataForGkKit = kitParams;
         gRenderKitDataForGkKit = data;
         return CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x38FAEE), out, kitParams, data, resMan);
@@ -1807,10 +1808,10 @@ void InstallKits_FM13() {
     patch::SetUChar(GfxCoreAddress(0x23F491), 0x50); // push eax
 
     // other scenes (not 3d-match)
-    patch::RedirectCall(GfxCoreAddress(0x379170), OnGenerateKitResourceForScenes);
-    patch::RedirectCall(GfxCoreAddress(0x37968A), OnGenerateKitResourceForScenes);
-    patch::RedirectCall(GfxCoreAddress(0x37974F), OnGenerateKitResourceForScenes);
-    patch::RedirectCall(GfxCoreAddress(0x37A26C), OnGenerateKitResourceForScenes);
+    patch::RedirectCall(GfxCoreAddress(0x379170), OnGenerateKitResourceForScenes<true>);
+    patch::RedirectCall(GfxCoreAddress(0x37968A), OnGenerateKitResourceForScenes<false>);
+    patch::RedirectCall(GfxCoreAddress(0x37974F), OnGenerateKitResourceForScenes<false>);
+    patch::RedirectCall(GfxCoreAddress(0x37A26C), OnGenerateKitResourceForScenes<false>);
     patch::RedirectCall(GfxCoreAddress(0x38FBFD), UseGenericKit);
 
     patch::Nop(GfxCoreAddress(0x370B5C), 8);

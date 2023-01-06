@@ -116,6 +116,73 @@ void *FormatNumberTh(void *t, UInt value, Bool masculine) {
     return t;
 }
 
+void GetWeekDayNameForCustomLanguage(WideChar const *&out) {
+    if (IsRussianLanguage) {
+        if (!wcscmp(out, L"Mo"))
+            out = L"Пн";
+        else if (!wcscmp(out, L"Tu"))
+            out = L"Вт";
+        else if (!wcscmp(out, L"We"))
+            out = L"Ср";
+        else if (!wcscmp(out, L"Th"))
+            out = L"Чт";
+        else if (!wcscmp(out, L"Fr"))
+            out = L"Пт";
+        else if (!wcscmp(out, L"Sa"))
+            out = L"Сб";
+        else if (!wcscmp(out, L"Su"))
+            out = L"Вс";
+    }
+    else if (IsUkrainianLanguage) {
+        if (!wcscmp(out, L"Mo"))
+            out = L"Пн";
+        else if (!wcscmp(out, L"Tu"))
+            out = L"Вт";
+        else if (!wcscmp(out, L"We"))
+            out = L"Ср";
+        else if (!wcscmp(out, L"Th"))
+            out = L"Чт";
+        else if (!wcscmp(out, L"Fr"))
+            out = L"Пт";
+        else if (!wcscmp(out, L"Sa"))
+            out = L"Сб";
+        else if (!wcscmp(out, L"Su"))
+            out = L"Нд";
+    }
+}
+
+void OnFormatDateStr_222(WideChar *dst, WideChar const *format, Int d, Int m, Int y) {
+    if (IsRussianLanguage || IsUkrainianLanguage)
+        Call<0x1494136>(dst, L"%02d.%02d.%02d", d, m, y);
+    else
+        Call<0x1494136>(dst, format, d, m, y);
+}
+
+void OnCopyDateStr(WideChar *dst, WideChar const *src, UInt len) {
+    GetWeekDayNameForCustomLanguage(src);
+    Call<0x1493F41>(dst, src, len);
+}
+
+void OnFormatDateStr_224(WideChar *dst, WideChar const *format, Int d, Int m, Int y) {
+    if (IsRussianLanguage || IsUkrainianLanguage)
+        Call<0x1494136>(dst, L"%02d.%02d.%04d", d, m, y);
+    else
+        Call<0x1494136>(dst, format, d, m, y);
+}
+
+void OnFormatDateStr_22(WideChar *dst, WideChar const *format, Int d, Int m) {
+    if (IsRussianLanguage || IsUkrainianLanguage)
+        Call<0x1494136>(dst, L"%02d.%02d", d, m);
+    else
+        Call<0x1494136>(dst, format, d, m);
+}
+
+// not sure about calling convention
+void OnSprintfDateStr(void *str, WideChar const *format, WideChar const *a, WideChar const *b) {
+    GetWeekDayNameForCustomLanguage(a);
+    Call<0x1497B06>(str, format, a, b);
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         wchar_t gameLanguageStr[MAX_PATH];
@@ -146,5 +213,13 @@ void PatchTranslation(FM::Version v) {
         patch::SetPointer(0x23AB37C, GetCurrentLocaleShortName);
 
         patch::RedirectJump(0x14AD82F, FormatNumberTh);
+
+        patch::RedirectCall(0x14951FE, OnFormatDateStr_222);
+        patch::RedirectCall(0x1495433, OnFormatDateStr_224);
+        patch::RedirectCall(0x1495654, OnFormatDateStr_22);
+        patch::RedirectCall(0x1495174, OnCopyDateStr);
+        patch::RedirectCall(0x1495394, OnCopyDateStr);
+        patch::RedirectCall(0x14955D0, OnCopyDateStr);
+        //patch::RedirectCall(0x1495B8B, OnSprintfDateStr);
     }
 }
