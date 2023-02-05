@@ -590,6 +590,7 @@ void LaunchCompetitions() {
         //LaunchCompetition(255, COMP_NAM_NL, 0);
     }
     if (year % 4 == 2) {
+        LaunchCompetition(255, COMP_QUALI_EC, 0);
         LaunchCompetition(255, COMP_ASIA_CUP_Q, 0);
         //LaunchCompetition(255, COMP_ASIA_CUP, 0);
     }
@@ -3256,10 +3257,10 @@ UInt METHOD OnGetQualifiedForContinentalCompetition_SeasonGoals(CDBTeam *team, D
     return result;
 }
 
-// NOTE: QUALI_EC 0 and QUALI_WC 8 are hardcoded now in the plugin
+// NOTE: QUALI_EC 1 and QUALI_WC 8 are hardcoded now in the plugin
 
 void METHOD OnPoolLaunch(CDBPool* pool) {
-    if (pool->GetCompetitionType() == COMP_QUALI_EC && pool->GetCompID().index == 0) {
+    if (pool->GetCompetitionType() == COMP_QUALI_EC && pool->GetCompID().index == 1) {
         Bool startSim = GetCurrentYear() == GetStartingYear() && ((GetCurrentYear() % 4) == 3);
         if (!startSim && (GetCurrentYear() % 4) != 2)
             return;
@@ -3273,12 +3274,21 @@ void METHOD OnPoolLaunch(CDBPool* pool) {
                 return;
         }
     }
+    bool clPoolLaunching = false;
     if (pool->GetCompetitionType() == COMP_CHAMPIONSLEAGUE && pool->GetCompID().countryId == FifamCompRegion::Europe
         && pool->GetCompID().index == 0 && !pool->IsLaunched())
     {
-        GetAssesmentTable()->GetInfoForCountry(FifamCompRegion::Russia)->AddPoints(4.33f);
+        clPoolLaunching = true;
     }
     CallMethod<0x10F1A40>(pool);
+    if (clPoolLaunching) {
+        UChar numTeams = GetPoolNumberOfTeamsFromCountry(pool, 0, FifamCompRegion::Russia);
+        if (numTeams == 0) {
+            auto info = GetAssesmentTable()->GetInfoForCountry(FifamCompRegion::Russia);
+            if (info)
+                info->AddPoints(4.33f);
+        }
+    }
 }
 
 CDBLeague* OnGetLeagueForClubTableDevelopment(CCompID const &compID) {
@@ -3937,6 +3947,13 @@ Bool METHOD OnGetIsCountryInCompetitionHosts(void *t, DUMMY_ARG, CCompID *compId
     if (countryId == FifamCompRegion::Russia)
         return true;
     return CallMethodAndReturn<bool, 0x1179ED0>(t, compId, countryId);
+}
+
+template<UInt Addr>
+void METHOD OnSetupCompetitionOneMatch(CDBCompetition *comp, DUMMY_ARG, CDBOneMatch *match) {
+    UInt numSubs = CallMethodAndReturn<UInt, 0xF81990>(comp);
+    CallMethod<0xE812A0>(match, numSubs);
+    CallMethod<Addr>(comp, match);
 }
 
 void PatchCompetitions(FM::Version v) {
@@ -4663,5 +4680,9 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x10449F6, OnGetCompTypeEuroSuperCupForHost);
 
         patch::RedirectCall(0xF652D1, OnGetIsCountryInCompetitionHosts);
+
+        // max subs for DB_ROUND and DB_CUP
+        patch::RedirectCall(0x104321D, OnSetupCompetitionOneMatch<0x1042570>);
+        patch::RedirectCall(0x1049CCF, OnSetupCompetitionOneMatch<0x10496A0>);
     }
 }

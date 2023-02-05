@@ -116,7 +116,6 @@ void *METHOD OnCreateKeepOtherStadiumsCheckbox(void *screen, DUMMY_ARG, char con
     //        team2name = team2->GetName();
     //    w.WriteLine(i + 1, team1name, team2name, pairs[i].m_nFlags, pairs[i].result1[0], pairs[i].result1[1], pairs[i].result2[0], pairs[i].result2[1]);
     //}
-
     //
     void *originalChk = CallMethodAndReturn<void *, 0xD44260>(screen, name);
     void *teamControlChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEnableTeamControl");

@@ -1,6 +1,7 @@
 #include "WorldCup.h"
 #include "GameInterfaces.h"
 #include "FifamCompRegion.h"
+#include "UcpSettings.h"
 
 using namespace plugin;
 
@@ -68,10 +69,35 @@ void METHOD NationalTeamNominationSize1(void *t, DUMMY_ARG, UShort a, UShort b, 
     }
 }
 
+UInt METHOD OnLoadCompetitionFile(void *t, DUMMY_ARG, WideChar const *filePath) {
+    if (CDBGame::GetInstance() && CDBGame::GetInstance()->GetIsWorldCupMode()) {
+        Path p = filePath;
+        if (p.filename().string() == "WorldCup.txt") {
+            Path newp = p;
+            newp.replace_filename("WorldCup_WCMode.txt");
+            if (exists(newp)) {
+                //::Warning("Loading WC Mode script");
+                return CallMethodAndReturn<UInt, 0x14B2C35>(t, newp.c_str());
+            }
+        }
+    }
+    return CallMethodAndReturn<UInt, 0x14B2C35>(t, filePath);
+}
+
+void *METHOD OnDateWCMode(void *t, DUMMY_ARG, UInt year, UInt month, UInt day) {
+    return CallMethodAndReturn<void *, 0x1494A2A>(t, Settings::GetInstance().WCMode_Year, Settings::GetInstance().WCMode_Month, Settings::GetInstance().WCMode_Day);
+}
+
+void *METHOD OnDateWCModeSeason(void *t, DUMMY_ARG, UInt year, UInt month, UInt day) {
+    return CallMethodAndReturn<void *, 0x1494A2A>(t, Settings::GetInstance().WCModeSeason_Year, Settings::GetInstance().WCModeSeason_Month, Settings::GetInstance().WCModeSeason_Day);
+}
+
 void PatchWorldCup(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        patch::SetUInt(0x108A8E6 + 1, 2022); // Start year
-        patch::SetUInt(0x108C7FC + 1, 2021); // Quali start year
+        patch::RedirectCall(0x108A8F8, OnDateWCMode);
+        patch::RedirectCall(0x108C807, OnDateWCModeSeason);
+        //patch::SetUInt(0x108A8E6 + 1, 2022); // Start year
+        //patch::SetUInt(0x108C7FC + 1, 2021); // Quali start year
 
         patch::RedirectCall(0x108C81D, SetSeasonStartDateForWorldCup);
         patch::RedirectCall(0x47F7D7, OnLoadGameStartDatabase);
@@ -105,5 +131,7 @@ void PatchWorldCup(FM::Version v) {
 
         patch::RedirectJump(0xF823E0, GetNationalTeamNominationSize_WC);
         patch::RedirectCall(0xF37F3A, NationalTeamNominationSize1);
+
+        patch::RedirectCall(0xF929AD, OnLoadCompetitionFile);
 ;    }
 }

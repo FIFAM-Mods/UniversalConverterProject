@@ -68,7 +68,7 @@ Int WAccessKitFile(WideChar const *filepath, Int mode) {
 
 WideChar const *portraitsArts[] = {
     L"update_portraits2.big", L"update2.big", L"update_portraits.big", L"update.big",
-    L"art_02.big", L"art_03.big", L"art_06.big", L"art_07.big", L"art_08.big", L"art_09.big", L"art_12.big", L"art_13.big"
+    L"art_02.big", L"art_03.big", L"art_06.big", L"art_07.big", L"art_08.big", L"art_09.big", L"art_12.big", L"art_13.big", L"art_14.big", L"art_15.big"
 };
 
 void OnGetPortraitsArtFilename(wchar_t *dst, wchar_t const *fmt, unsigned int archiveId) {

@@ -31,19 +31,19 @@ public:
             Settings::GetInstance().Load();
             IsWomensDatabase = patch::GetUShort(0x66E7A8) == L'W';
             GenerateBigIdx();
-            patch::SetUInt(0x5504D5 + 3, 0x2013000C); // binary database version
+            patch::SetUInt(0x5504D5 + 3, 0x2013000D); // binary database version
             // set version (0x2013)
-            patch::SetUChar(0x4C7ACA + 1, 0xC);
-            patch::SetUChar(0x4E4F66 + 1, 0xC);
-            patch::SetUChar(0x53AE37 + 1, 0xC);
-            patch::SetUChar(0x541565 + 1, 0xC);
+            patch::SetUChar(0x4C7ACA + 1, 0xD); // CClub::Write
+            patch::SetUChar(0x4E4F66 + 1, 0xD); // CCountry::SaveFileData
+            patch::SetUChar(0x53AE37 + 1, 0xD); // Without.sav
+            patch::SetUChar(0x541565 + 1, 0xD); // Rules.sav
             // validate version (0x2013)
-            patch::SetUChar(0x545493 + 8, 0xC);
-            patch::SetUChar(0x4C527C + 1, 0xC);
-            patch::SetUChar(0x4C7B8C + 1, 0xC);
-            patch::SetUChar(0x4E9A1A + 1, 0xC);
-            patch::SetUChar(0x53B5B9 + 1, 0xC);
-            patch::SetUChar(0x541847 + 1, 0xC);
+            patch::SetUChar(0x545493 + 8, 0xD); // 
+            patch::SetUChar(0x4C527C + 1, 0xD); // CClub::Read
+            patch::SetUChar(0x4C7B8C + 1, 0xD); // loading .clb file
+            patch::SetUChar(0x4E9A1A + 1, 0xD); // CCountry::LoadFileData
+            patch::SetUChar(0x53B5B9 + 1, 0xD); // Without.sav
+            patch::SetUChar(0x541847 + 1, 0xD); // Rules.sav
         }
         PatchRendererHook(v);
         PatchTranslation(v);

@@ -41,6 +41,12 @@ public:
     SETTINGS_PARAMETER(int,    ResolutionY,                 "RESOLUTION_Y",                   0);
     SETTINGS_PARAMETER(bool,   EditorKitExtensions,         "EDITOR_KIT_EXTENSIONS",          true);
     SETTINGS_PARAMETER(bool,   ReloadKitConfig,             "RELOAD_KIT_CONFIG",              false);
+    SETTINGS_PARAMETER(int,    WCMode_Year,                 "WCMODE_YEAR",                    2022);
+    SETTINGS_PARAMETER(int,    WCMode_Month,                "WCMODE_MONTH",                   6);
+    SETTINGS_PARAMETER(int,    WCMode_Day,                  "WCMODE_DAY",                     1);
+    SETTINGS_PARAMETER(int,    WCModeSeason_Year,           "WCMODE_SEASON_YEAR",             2021);
+    SETTINGS_PARAMETER(int,    WCModeSeason_Month,          "WCMODE_SEASON_MONTH",            7);
+    SETTINGS_PARAMETER(int,    WCModeSeason_Day,            "WCMODE_SEASON_DAY",              1);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

@@ -302,7 +302,7 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
         if (!image.isValid())
             return false;
         image.autoOrient();
-        image.filterType(MagickCore::HermiteFilter);
+        image.filterType(MagickCore::LanczosFilter);
         if (image.rows() != 160 || image.columns() != 160) {
             UInt maxSide = Utils::Max(image.rows(), image.columns());
             image.extent(Magick::Geometry(maxSide, maxSide), Magick::Color(0, 0, 0, 0), MagickCore::GravityType::CenterGravity);
@@ -331,7 +331,7 @@ Bool InstallBadge(Path const &gamePath, Path const &badgesDir, String const &bad
         if (!image.isValid())
             return false;
         image.autoOrient();
-        image.filterType(MagickCore::HermiteFilter);
+        image.filterType(MagickCore::LanczosFilter);
         UInt resolution[] = { 256, 128, 64, 32 };
         for (UInt i = 0; i < std::size(resolution); i++) {
             if (resolution[i] == 256) {
@@ -598,6 +598,10 @@ void InstallWindowedMode_GfxCore() {
         // disable minimize
         NopWinapiMethod(GfxCoreAddress(0x7000), 2);
         NopWinapiMethod(GfxCoreAddress(0x3BBCB6), 2);
+
+        // replace SW_NORMAL/SW_RESTORE by SW_SHOW
+        patch::SetUChar(GfxCoreAddress(0x2D56EE) + 1, SW_SHOW);
+        patch::SetUChar(GfxCoreAddress(0x3BBD30) + 1, SW_SHOW);
 
         patch::RedirectCall(GfxCoreAddress(0x715E), MyCreateWindowExW);
         patch::Nop(GfxCoreAddress(0x715E) + 5, 1);

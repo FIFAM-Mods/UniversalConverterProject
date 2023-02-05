@@ -31,9 +31,9 @@ struct WorldPlayerGalaList {
 };
 
 std::vector<std::pair<std::wstring, float>> FifaNominantes = {
-    /*  1 */ { L"MessiLi24061987", 100.45f },
-    /*  2 */ { L"LewandowskiRo21081988", 100.44f },
-    /*  3 */ { L"Jorginho20121991", 100.00f }
+    /*  1 */ { L"BenzemaKa19121987", 5.49f },
+    /*  2 */ { L"ManeSa10041992", 1.93f },
+    /*  3 */ { L"DeBruyneKe28061991", 1.75f }
 };
 
 unsigned short GetCurrentYear2() {
@@ -45,7 +45,7 @@ void METHOD CollectWorldPlayerGalaNominantes(WorldPlayerGalaList *list) {
     // collect default
     CallMethod<0x1136190>(list);
     
-    if (GetCurrentYear2() == 2021) {
+    if (GetCurrentYear2() == 2022) {
         std::vector<CDBPlayer *> nominantesPlayers;
         for (unsigned int i = 0; i < 50; i++) {
             if (list->m_apPlayers[i])
@@ -74,7 +74,7 @@ void METHOD CalcVotes(WorldPlayerGalaEntry *entry) {
     // call original
     CallMethod<0x1134EC0>(entry);
 
-    if (GetCurrentYear2() == 2021) {
+    if (GetCurrentYear2() == 2022) {
         // check all nominantes
         for (auto &n : FifaNominantes) {
             CDBPlayer *p = CallAndReturn<CDBPlayer *, 0xFAF750>(n.first.c_str());

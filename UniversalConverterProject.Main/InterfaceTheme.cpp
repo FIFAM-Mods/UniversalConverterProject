@@ -456,6 +456,9 @@ void PatchInterfaceTheme(FM::Version v) {
                 patch::SetUInt(0xD2B5A6 + 2, 1);
                 // fix player attribute
                 patch::SetUChar(0x4E8D4C + 1, 8); // 22
+                // WC mode
+                patch::SetUInt(0x54D5B6 + 6, 0xFF33CC33);
+                patch::SetUInt(0x54D5C0 + 6, 0xFFFFFFFF);
             }
 
             patch::RedirectCall(0x1126190 + 0x47, MyGetCalendarIconPathPositive);

@@ -1496,7 +1496,7 @@ void PatchEABFFixes(FM::Version v) {
 
         // Default player search values
         patch::SetUChar(0xF9D424 + 6, 145); // min height
-        patch::SetUChar(0xF9D539 + 6, 85); // max level
+        patch::SetUChar(0xF9D539 + 6, 99); // max level
 
         const UInt NumPlayerSearchMoneyValues = std::size(gPlayerSearchMoneyArray);
         patch::SetPointer(0x8DCE29 + 3, gPlayerSearchMoneyArray);

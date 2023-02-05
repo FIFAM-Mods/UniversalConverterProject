@@ -13,7 +13,7 @@
 using namespace plugin;
 
 //#define EDITOR_READ_TEXT
-#define EDITOR_WRITE_TEXT
+//#define EDITOR_WRITE_TEXT
 //#define UPDATE_CLUB_BUDGETS
 
 enum FmLanguage {
@@ -1093,11 +1093,21 @@ void __stdcall OnCountryLeagueLevelChangeDDXText(void* a, int b, void *c) {
     CallMethod<0x5B1A9B>(0, a, c, 28); // DDV_MaxChars
 }
 
+void RemoveUnnededCharsForPortraitName(WideChar *str, WideChar const *src, UInt maxLen) {
+    wcsncpy(str, src, maxLen);
+    UInt counter = 0;
+    for (UInt i = 0; i < wcslen(str); i++) {
+        if (str[i] != L'.' && str[i] != L'_' && str[i] != 0xA0)
+            str[counter++] = str[i];
+    }
+    str[counter] = 0;
+}
+
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
 
         GetSponsorNames() = {
-            L"Amazon", L"Intersport", L"Vodafone", L"Burger King", L"Nike", L"Hyundai", L"Santander Bank", L"Coca-Cola", L"Adidas", L"Evonik Industries", L"AIA Group", L"IKEA", L"Huawei", L"Visa", L"DHL", L"Ziggo", L"Nivea", L"Pepsi", L"Mapei", L"Pirelli", L"Qatar Airways", L"Volkswagen", L"bwin", L"LG Electronics", L"Rakuten", L"Emirates Airlines", L"Puma", L"Grupo Bimbo", L"Youtube TV", L"Carlsberg", L"Microsoft Xbox", L"Acqua Lete", L"Sony", L"MEO", L"Kia Motors", L"Otto GmbH"
+            L"Amazon",L"Intersport",L"Vodafone",L"Burger King",L"Nike",L"Hyundai",L"Santander",L"Coca-Cola",L"Adidas",L"Evonik",L"AIA",L"IKEA",L"Huawei",L"Visa",L"DHL",L"ziggo",L"Nivea",L"Pepsi",L"Mapei",L"Pirelli",L"Qatar Airways",L"Volkswagen",L"bwin",L"LG",L"Rakuten",L"Emirates",L"Puma",L"Groupo Bimbo",L"YouTube TV",L"Carlsberg",L"XBOX",L"Lete",L"SONY",L"MEO",L"KIA",L"OTTO"
         };
         ReadSponsorNames();
 
@@ -1263,7 +1273,7 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x4C5571, OnReadClubTransferBudget);
 
         for (int i = 1; i < 100; i++) {
-            FifamReader reader(Utils::Format(L"E:\\Games\\FIFA Manager 22\\ClubBudgets%d.csv", i), 13);
+            FifamReader reader(Utils::Format(L"ClubBudgets%d.csv", i), 13);
             if (reader.Available()) {
                 //Error("Reading");
                 reader.SkipLine();
@@ -1662,6 +1672,10 @@ void PatchEditor(FM::Version v) {
         //patch::SetUChar(0x456F07 + 1, 63); // localisation>league cup name length
         //patch::SetUChar(0x456F9F + 1, 63); // localisation>league name length
         //patch::SetUChar(0x456FE8 + 1, 63); // localisation>relegation name length
+
+        // fix portrait name '.' '_'
+        patch::RedirectCall(0x51CE60, RemoveUnnededCharsForPortraitName);
+        patch::RedirectCall(0x50B6EC, RemoveUnnededCharsForPortraitName);
 
         if (Settings::GetInstance().DisplayFoomID) {
             patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);
