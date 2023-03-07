@@ -81,6 +81,40 @@ public:
     }
 };
 
+#pragma pack(push, 4)
+template<typename TKey, typename TValue>
+class FmMap {
+public:
+    class Proxy {
+        FmMap *container;
+    };
+
+    class Node {
+        Node *left;
+        Node *parent;
+        Node *right;
+        struct {
+            TKey key;
+            TValue value;
+        };
+        UChar color;
+        UChar isNil;
+    };
+
+    class Iterator {
+        Proxy *proxy;
+        Node *node;
+    };
+
+    Proxy *proxy;
+private:
+    UInt _unk[5];
+public:
+    Node *head;
+    UInt size;
+};
+#pragma pack(pop)
+
 class CDBGameOptions {
 public:
     bool CheckFlag(unsigned int flag);

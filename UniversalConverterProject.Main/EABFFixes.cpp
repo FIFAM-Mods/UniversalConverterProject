@@ -1256,8 +1256,57 @@ __int64 METHOD GetValueInCurrency_Fix(EAGMoney *t, DUMMY_ARG, Int currency) {
     return CallMethodAndReturn<__int64, 0x149C9D7>(t, CallAndReturn<Int, 0xF4A430>());
 }
 
+void *FormationTest1() {
+    ::Warning("field_4F8");
+    return CallAndReturn<void *, 0x5342F0>();
+}
+
+void METHOD FormationTest2(void *t, DUMMY_ARG, UInt a, UInt b) {
+    ::Warning("field_4FC");
+    CallMethod<0xED1FE0>(t, a, b);
+}
+
+struct Hook_EAA287_data {
+    void *find_map;
+    UInt find_playerId;
+    UInt find_map_size;
+    void *find_map_proxy;
+    void *find_map_head;
+    void *find_map_proxy_container;
+    void *find_iter_proxy;
+    void *find_iter_node;
+    UInt data_map_size;
+    void *data_map_proxy;
+    void *data_map_head;
+    void *data_map_proxy_container;
+    void *data_iter_proxy;
+    void *data_iter_node;
+
+} gHook_EAA287_data;
+
+void *METHOD Hook_EAA287_map_playerKnowledge__find(FmMap<UInt, UChar> *_map, DUMMY_ARG, FmMap<UInt, UChar>::Iterator *_iterator, UInt *_playerId) {
+    gHook_EAA287_data.find_map = _map;
+    gHook_EAA287_data.find_playerId = *_playerId;
+    gHook_EAA287_data.find_map_proxy = _map->proxy;
+    gHook_EAA287_data.find_map_head = _map->head;
+    //gHook_EAA287_data.find_map_proxy_container = _map->proxy->container;
+    void *result = CallMethodAndReturn<void *, 0xEAD470>(_map, _iterator, _playerId);
+
+    return result;
+}
+
+void *METHOD Hook_EAA287_mapIterator_playerKnowledge__data(FmMap<UInt, UChar>::Iterator *_iterator) {
+
+}
+
+void UnhandledException_EAA287() {
+   // MessageBoxW(NULL, L"Unhandled exception at 0xEAA287\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", GetSafePatchName(), MB_ICONERROR);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        //patch::RedirectCall(0xC42936, FormationTest1);
+        //patch::RedirectCall(0xC429DE, FormationTest2);
         //patch::RedirectCall(0x101BB90, OnPlayQuickMatch);
         //patch::RedirectCall(0x1027310, OnPlayQuickMatch);
         //patch::SetPointer(0x24DFA2C, SetTacticsParameter);
@@ -1746,5 +1795,11 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x664D9D, GetValueInCurrency_Fix);
         patch::RedirectCall(0x664DFA, GetValueInCurrency_Fix);
         patch::RedirectCall(0x664E5F, GetValueInCurrency_Fix);
+
+        // EAA287 error
+        //patch::RedirectCall(0xEAA282, UnhandledException_EAA287);
+        //patch::RedirectCall(0xEB22CF, Hook_EAA287_map_playerKnowledge__find);
+        //patch::RedirectCall(0xEB2303, Hook_EAA287_mapIterator_playerKnowledge__data);
+        //patch::Nop(0xEB2952, 23);
     }
 }
