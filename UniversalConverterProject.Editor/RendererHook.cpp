@@ -1,6 +1,8 @@
 #include "RendererHook.h"
 #include "3dPatches.h"
 #include "Kits.h"
+#include "CustomShaders.h"
+#include "UcpSettings.h"
 
 unsigned int gOriginalLoadRenderer = 0;
 unsigned int hLibrary = 0;
@@ -17,6 +19,8 @@ bool METHOD OnLoadRenderer(void **info, DUMMY_ARG, const wchar_t *libFileName, c
             void *gfxCore = info[0];
             hLibrary = (unsigned int)info[1];
 
+            //if (Settings::GetInstance().EnableCustomShaders)
+            //    InstallCustomShaders();
             Install3dPatches();
             InstallKits_Renderer();
 

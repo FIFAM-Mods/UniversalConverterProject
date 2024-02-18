@@ -4,9 +4,10 @@
 #include "GfxCoreHook.h"
 #include "shared.h"
 #include "GameInterfaces.h"
+#include "ExtendedPlayer.h"
 
 struct PlayerAccessories {
-    unsigned char jerseystyle : 1; // 0 - tucked, 1 - untucked (not used currently)
+    unsigned char jerseystyle : 1; // 0 - untucked, 1 - tucked
     unsigned char sleeves : 1; // 0 - short, 1 - long
     unsigned char accclr1 : 3; // 0 - 5, 0 - default (white), 1 - white, 2 - black, 3 - blue, 4 - red, 5 - yellow
     unsigned char accclr2 : 3;
@@ -176,11 +177,11 @@ void ObtainCurrentPlayerAccessories(char *a, const char *b, Int id) { // manager
     gCurrentPlayerCustomGlove = -1;
     void *player = CallAndReturn<void *, 0xF97C70>(id); // PlayerFromUID
     if (player) {
-        UInt empicsid = *raw_ptr<UInt>(player, 0xE0);
-        if (empicsid != 0) {
-            gCurrentPlayerAccessories = GetPlayerAccessories(empicsid);
-            gCurrentPlayerCustomShoe = GetPlayerCustomShoe(empicsid);
-            gCurrentPlayerCustomGlove = GetPlayerCustomGlove(empicsid);
+        UInt fifaId = GetPlayerFifaID(player);
+        if (fifaId != 0) {
+            gCurrentPlayerAccessories = GetPlayerAccessories(fifaId);
+            gCurrentPlayerCustomShoe = GetPlayerCustomShoe(fifaId);
+            gCurrentPlayerCustomGlove = GetPlayerCustomGlove(fifaId);
         }
     }
 }
@@ -219,7 +220,7 @@ void PassPlayerAccessoriesSocksAndAccessories(void *a, const char *b, UInt socks
         Call<0x413AB0>(a, "accessoryid2\t%d\r\n", gCurrentPlayerAccessories->acc2);
         Call<0x413AB0>(a, "accessoryid3\t%d\r\n", gCurrentPlayerAccessories->acc3);
         Call<0x413AB0>(a, "accessoryid4\t%d\r\n", gCurrentPlayerAccessories->acc4);
-        Call<0x413AB0>(a, "accessoryid5\t%d\r\n", 0);
+        Call<0x413AB0>(a, "accessoryid5\t%d\r\n", gCurrentPlayerAccessories->jerseystyle == 0);
         Call<0x413AB0>(a, "accessorycolor1\t%d\r\n", gCurrentPlayerAccessories->accclr1);
         Call<0x413AB0>(a, "accessorycolor2\t%d\r\n", gCurrentPlayerAccessories->accclr2);
         Call<0x413AB0>(a, "accessorycolor3\t%d\r\n", gCurrentPlayerAccessories->accclr3);
@@ -231,7 +232,7 @@ void PassPlayerAccessoriesSocksAndAccessories(void *a, const char *b, UInt socks
         Call<0x413AB0>(a, "accessoryid2\t%d\r\n", 0);
         Call<0x413AB0>(a, "accessoryid3\t%d\r\n", 0);
         Call<0x413AB0>(a, "accessoryid4\t%d\r\n", 0);
-        Call<0x413AB0>(a, "accessoryid5\t%d\r\n", 0);
+        Call<0x413AB0>(a, "accessoryid5\t%d\r\n", 1);
         Call<0x413AB0>(a, "accessorycolor1\t%d\r\n", 0);
         Call<0x413AB0>(a, "accessorycolor2\t%d\r\n", 0);
         Call<0x413AB0>(a, "accessorycolor3\t%d\r\n", 0);
@@ -346,6 +347,11 @@ Bool METHOD OnParseTcmMatchInfo(void *io, DUMMY_ARG, wchar_t const *str) {
     return true;
 }
 
+void SetPlayerAccessoryShirtStyle(void *p, int id, int color) {
+    *raw_ptr<int>(p, 0xF3C) = id == 0; // headband (enable_body_shirt_tucked)
+    *raw_ptr<int>(p, 0xF48) = id != 0; // necklace (enable_body_shirt_untucked)
+}
+
 void InstallPlayerAccessoriesGfxPatches() {
     patch::Nop(GfxCoreAddress(0x925AE), 10); // tcmPlayer->legtypeid = 5;
     patch::Nop(GfxCoreAddress(0x23C10B), 2); // sleeveType = 0;
@@ -355,6 +361,10 @@ void InstallPlayerAccessoriesGfxPatches() {
     patch::RedirectCall(GfxCoreAddress(0x94A78), OnReadPlayerAttributesInGfxCore);
     patch::RedirectCall(GfxCoreAddress(0x922C4), ReadPlayerAccessoriesInGfxCore);
     //patch::RedirectCall(GfxCoreAddress(0x25E37C), OnParseTcmMatchInfo);
+    patch::RedirectCall(GfxCoreAddress(0x23D175), SetPlayerAccessoryShirtStyle);
+    patch::SetPointer(GfxCoreAddress(0x54CEF0), "enable_body_shirt_tucked");
+    patch::SetUInt(GfxCoreAddress(0x54CEF4), 1);
+    patch::SetPointer(GfxCoreAddress(0x54CF08), "enable_body_shirt_untucked");
 }
 
 void PatchPlayerAccessories(FM::Version v) {

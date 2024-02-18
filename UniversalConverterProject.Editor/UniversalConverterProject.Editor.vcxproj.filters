@@ -26,6 +26,9 @@
     <ClCompile Include="UcpSettings.cpp" />
     <ClCompile Include="GenericKits.cpp" />
     <ClCompile Include="Kits.cpp" />
+    <ClCompile Include="DatabaseOptions.cpp" />
+    <ClCompile Include="CustomShaders.cpp" />
+    <ClCompile Include="ReserveNames.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -52,6 +55,9 @@
     <ClInclude Include="UcpSettings.h" />
     <ClInclude Include="GenericKits.h" />
     <ClInclude Include="Kits.h" />
+    <ClInclude Include="DatabaseOptions.h" />
+    <ClInclude Include="CustomShaders.h" />
+    <ClInclude Include="ReserveNames.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

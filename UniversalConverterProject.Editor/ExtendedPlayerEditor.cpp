@@ -15,14 +15,17 @@ void BinaryFileWriteString(void *binaryFile, WideChar const *str) {
     CallMethod<0x550D10>(binaryFile, str);
 }
 
+void BinaryFileWriteInt(void *binaryFile, UInt value) {
+    CallMethod<0x551060>(binaryFile, value);
+}
+
 bool ReaderIsVersionGreaterOrEqual(void *reader, UInt year, UShort build) {
     return CallMethodAndReturn<bool, 0x511C70>(reader, year, build);
 }
 
 const UInt DEF_PLAYER_SZ = 0x2C0;
-const UShort PLAYER_EXT_VERSION = 0x2;
 const UInt DEF_CLUB_SZ = 0x391C;
-const UShort CLUB_EXT_VERSION = 0x1;
+const UInt DEF_REFEREE_SZ = 0x4A;
 
 PlayerExtension *GetPlayerExtension(void *player) {
     return raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
@@ -32,15 +35,12 @@ ClubExtension *GetClubExtension(void *club) {
     return raw_ptr<ClubExtension>(club, DEF_CLUB_SZ);
 }
 
-// V 1.0
-// ------
-// String jerseyName
-// ------
-
 void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, void *world) {
     CallMethod<0x528B30>(player, world);
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     ext->jerseyName = nullptr;
+    ext->creator = 0;
+    ext->fifaId = 0;
     ext->footballManagerId = -1;
     return player;
 }
@@ -62,6 +62,7 @@ void METHOD OnWritePlayerToMaster(void *binaryFile, DUMMY_ARG, void *) {
         BinaryFileWriteString(binaryFile, ext->jerseyName);
     else
         BinaryFileWriteString(binaryFile, L"");
+    BinaryFileWriteInt(binaryFile, ext->fifaId);
     CallMethod<0x550640>(binaryFile, 0);
 }
 
@@ -119,15 +120,20 @@ UChar METHOD OnWritePlayerJerseyNameToDatabase(void *file, DUMMY_ARG, WideChar c
 void *gDatabasePlayer = nullptr;
 
 Bool METHOD OnReadPlayerFoomIdFromDatabase(void *t, DUMMY_ARG, Char const *name) {
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC)) {
-        PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabasePlayer, DEF_PLAYER_SZ);
-        CallMethod<0x513560>(t, &ext->footballManagerId);
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabasePlayer, DEF_PLAYER_SZ);
+    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE)) {
+        CallMethod<0x513560>(t, &ext->creator);
+        CallMethod<0x513560>(t, &ext->fifaId);
     }
+    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
+        CallMethod<0x513560>(t, &ext->footballManagerId);
     return CallMethodAndReturn<Bool, 0x512190>(t, name);
 }
 
 Bool METHOD OnWritePlayerFoomIdToDatabase(void *t, DUMMY_ARG, WideChar const *name) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabasePlayer, DEF_PLAYER_SZ);
+    CallMethod<0x514510>(t, &ext->creator);
+    CallMethod<0x514510>(t, &ext->fifaId);
     CallMethod<0x514510>(t, &ext->footballManagerId);
     return CallMethodAndReturn<Bool, 0x513290>(t, name);
 }
@@ -147,15 +153,17 @@ void METHOD OnWritePlayer(void *t, DUMMY_ARG, void *writer) {
 void *gDatabaseStaff = nullptr;
 
 Bool METHOD OnReadStaffFoomIdFromDatabase(void *t, DUMMY_ARG, Char const *name) {
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC)) {
-        PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
+    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE))
+        CallMethod<0x513560>(t, &ext->creator);
+    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
         CallMethod<0x513560>(t, &ext->footballManagerId);
-    }
     return CallMethodAndReturn<Bool, 0x512190>(t, name);
 }
 
 Bool METHOD OnWriteStaffFoomIdToDatabase(void *t, DUMMY_ARG, WideChar const *name) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
+    CallMethod<0x514510>(t, &ext->creator);
     CallMethod<0x514510>(t, &ext->footballManagerId);
     return CallMethodAndReturn<Bool, 0x513290>(t, name);
 }
@@ -174,16 +182,44 @@ void METHOD OnWriteStaff(void *t, DUMMY_ARG, void *writer) {
 
 void METHOD OnReadStaffNoHeader(void **ps, DUMMY_ARG, void *reader) {
     CallMethod<0x5738E0>(ps, reader);
-    if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xC)) {
-        PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
+    if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xE))
+        CallMethod<0x513560>(reader, &ext->creator);
+    if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xC))
         CallMethod<0x513560>(reader, &ext->footballManagerId);
-    }
 }
 
 void METHOD OnWriteStaffNoHeader(void **ps, DUMMY_ARG, void *writer) {
     CallMethod<0x5736F0>(ps, writer);
     PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
+    CallMethod<0x514510>(writer, &ext->creator);
     CallMethod<0x514510>(writer, &ext->footballManagerId);
+}
+
+void *OnAllocReferee(UInt size) {
+    void *result = CallAndReturn<void *, 0x5B0474>(DEF_REFEREE_SZ + sizeof(RefereeExtension));
+    if (result) {
+        RefereeExtension *ext = raw_ptr<RefereeExtension>(result, DEF_REFEREE_SZ);
+        ext->creator = 0;
+        ext->footballManagerId = -1;
+    }
+    return result;
+}
+
+void METHOD OnReadRefereeType(void *t, DUMMY_ARG, UChar *out) {
+    CallMethod<0x5133A0>(t, out);
+    RefereeExtension *ext = raw_ptr<RefereeExtension>(out, 2);
+    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE))
+        CallMethod<0x513560>(t, &ext->creator);
+    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
+        CallMethod<0x513560>(t, &ext->footballManagerId);
+}
+
+void METHOD OnWriteRefereeType(void *t, DUMMY_ARG, UChar *in) {
+    CallMethod<0x514630>(t, in);
+    RefereeExtension *ext = raw_ptr<RefereeExtension>(in, 2);
+    CallMethod<0x514510>(t, &ext->creator);
+    CallMethod<0x514510>(t, &ext->footballManagerId);
 }
 
 void PatchExtendedPlayer(FM::Version v) {
@@ -219,5 +255,12 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::RedirectCall(0x4E53A4, OnWriteStaff);
         patch::RedirectCall(0x4E9DBF, OnReadStaffNoHeader);
         patch::RedirectCall(0x4E52F0, OnWriteStaffNoHeader);
+
+        // foom id - referee
+        patch::RedirectCall(0x492126, OnAllocReferee);
+        patch::RedirectCall(0x49218E, OnAllocReferee);
+        patch::RedirectCall(0x4E9842, OnAllocReferee);
+        patch::RedirectCall(0x53FDF5, OnReadRefereeType);
+        patch::RedirectCall(0x53FDA1, OnWriteRefereeType);
     }
 }

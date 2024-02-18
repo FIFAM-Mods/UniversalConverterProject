@@ -31,9 +31,9 @@ struct WorldPlayerGalaList {
 };
 
 std::vector<std::pair<std::wstring, float>> FifaNominantes = {
-    /*  1 */ { L"BenzemaKa19121987", 5.49f },
-    /*  2 */ { L"ManeSa10041992", 1.93f },
-    /*  3 */ { L"DeBruyneKe28061991", 1.75f }
+    /*  1 */ { L"MessiLi24061987", 1.52f },
+    /*  2 */ { L"MbappeKy20121998", 1.44f },
+    /*  3 */ { L"BenzemaKa19121987", 1.34f }
 };
 
 unsigned short GetCurrentYear2() {

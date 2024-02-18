@@ -132,7 +132,7 @@ void MySetFontDescFromParamsLine(void *fontDesc, char const *fontLine) {
     if (app) {
         Float u = 0.0f, h = 0.0f;
         CallVirtualMethod<45>(app, &u, &h);
-        if (h > 0.0f && h < 0.87f) {
+        if (h > 0.0f && h < 1.0f) {
             if (strstr(fontLine, "|Weight=400|")) {
                 *raw_ptr<Int>(fontDesc, 0) = (Int)((Float)(*raw_ptr<Int>(fontDesc, 0)) * h);
             }
@@ -1200,6 +1200,7 @@ void OnSetupPlayerModel_General(void *desc) { // gfxcore
 
 void OnSetupPlayerModel_Referee(void *desc) { // gfxcore
     OnSetupPlayerModel(desc);
+    SetPlayerAccessoryShirtStyle(desc, 0, 0);
     CallDynGlobal(GfxCoreAddress(0x209400), desc);
 }
 
@@ -1324,6 +1325,28 @@ void OnSetTextureAtId(void* g, UInt id, void* tex) {
     }
     CallDynGlobal(GfxCoreAddress(0x453CF0), g, id, tex);
     gDumpTexName.clear();
+}
+
+void METHOD OnLoadTrophy(void *t, DUMMY_ARG, void *cupTransform, int a3, const char *trophyName) {
+    ::Warning("Loading trophy %s", trophyName);
+    CallMethodDynGlobal(GfxCoreAddress(0x379D37), t, cupTransform, a3, trophyName);
+}
+
+void METHOD RenderVisibleObjects(void *t, DUMMY_ARG, void **objects, UInt count) {
+    struct RenderVisibleObjectData {
+        void *_this;
+        void *_transform;
+        UInt _counter;
+        UInt _phase;
+    };
+    RenderVisibleObjectData data = { t, 0, 0, 0 };
+    for (UInt i = 0; i < count; ++i) {
+        for (UInt phase = 0; phase < 2; phase++) {
+            data._counter = phase;
+            data._phase = phase + 1;
+            CallMethodDynGlobal(GfxCoreAddress(0x38EFF0), t, &data, objects[i]);
+        }
+    }
 }
 
 void Install3dPatches_FM13() {
@@ -2040,4 +2063,10 @@ void Install3dPatches_FM13() {
         if (Settings::GetInstance().TeamControl)
             patch::Nop(GfxCoreAddress(0x132FC2), 2);
     }
+
+    // team scene fixes
+    patch::RedirectJump(GfxCoreAddress(0x38F033), RenderVisibleObjects);
+
+    // commentary for all players
+    patch::Nop(GfxCoreAddress(0x2F779), 40);
 }

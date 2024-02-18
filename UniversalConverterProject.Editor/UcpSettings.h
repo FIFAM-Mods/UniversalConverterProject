@@ -47,6 +47,13 @@ public:
     SETTINGS_PARAMETER(int,    WCModeSeason_Year,           "WCMODE_SEASON_YEAR",             2021);
     SETTINGS_PARAMETER(int,    WCModeSeason_Month,          "WCMODE_SEASON_MONTH",            7);
     SETTINGS_PARAMETER(int,    WCModeSeason_Day,            "WCMODE_SEASON_DAY",              1);
+    SETTINGS_PARAMETER(int,    DatabaseOption,              "DATABASE_OPTION",                0);
+    SETTINGS_PARAMETER(bool,   UseEditorDatabase,           "USE_EDITOR_DATABASE",            false);
+    SETTINGS_PARAMETER(bool,   EnableCustomShaders,         "ENABLE_CUSTOM_SHADERS",          true);
+    SETTINGS_PARAMETER(bool,   DumpShaders,                 "DUMP_SHADERS",                   false);
+    SETTINGS_PARAMETER(bool,   ShadersShowWarnings,         "SHADERS_SHOW_WARNINGS",          false);
+    SETTINGS_PARAMETER(bool,   ShadersReload,               "SHADERS_RELOAD",                 true);
+    SETTINGS_PARAMETER(int,    Max3dFaces,                  "MAX_3D_FACES",                   12000);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

@@ -44,7 +44,7 @@ const UChar *GetArtBig() {
         CallMethod<0x409AD0>(gArtBig[Id]);
         Call<0x5FBB38>(&DestroyArtBig<Id>);
         *raw_ptr<UChar>(gArtBig[Id], 0x104A) = 1;
-        static WideChar const *artName[] = { L"art_10.big", L"art_11.big" };
+        static WideChar const *artName[] = { L"art_11.big", L"art_12.big" };
         CallMethod<0x409B90>(gArtBig[Id], artName[Id], 7);
         *raw_ptr<UChar>(gArtBig[Id], 0x104A) = 0;
     }
@@ -68,7 +68,8 @@ Int WAccessKitFile(WideChar const *filepath, Int mode) {
 
 WideChar const *portraitsArts[] = {
     L"update_portraits2.big", L"update2.big", L"update_portraits.big", L"update.big",
-    L"art_02.big", L"art_03.big", L"art_06.big", L"art_07.big", L"art_08.big", L"art_09.big", L"art_12.big", L"art_13.big", L"art_14.big", L"art_15.big"
+    L"art_02.big", L"art_03.big", L"art_06.big", L"art_07.big", L"art_08.big", L"art_09.big", L"art_10.big",
+    L"art_13.big", L"art_14.big", L"art_15.big", L"art_16.big", L"art_17.big"
 };
 
 void OnGetPortraitsArtFilename(wchar_t *dst, wchar_t const *fmt, unsigned int archiveId) {
@@ -99,8 +100,8 @@ void PatchArchivesReadingForEditor(FM::Version v) {
         patch::RedirectCall(0x4AC8B9, WAccessKitFile);
         //patch::SetUChar(0x50C1E5 + 1, 3);
         //patch::SetPointer(0x6685B8, CBL2002Adapter__FileExists);
-        //patch::SetPointer(0x50C157 + 1, L"art_09.big");
-        //patch::SetPointer(0x50C307 + 1, L"art_10.big");
+        //patch::SetPointer(0x50C157 + 1, L"art_11.big");
+        //patch::SetPointer(0x50C307 + 1, L"art_12.big");
         patch::RedirectCall(0x4C15BF, OnAddArchive);
         
         // fix badges reading

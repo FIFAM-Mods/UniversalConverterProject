@@ -1,6 +1,7 @@
 #include "Kits.h"
 #include "RendererHook.h"
 #include "UcpSettings.h"
+#include "CustomShaders.h"
 #include "FifamReadWrite.h"
 #include "json/json.hpp"
 #include <fstream>
@@ -217,6 +218,8 @@ void ReadKitsFile() {
 }
 
 void METHOD OnLoadClubKit(void *kitCtrl, DUMMY_ARG, void *kitData, UInt fifaKitId, Bool bHome) {
+    if (Settings::GetInstance().ShadersReload)
+        ReloadShaders();
     if (Settings::GetInstance().ReloadKitConfig) {
         GetTeamKitsMap().clear();
         ReadKitsFile();
@@ -248,6 +251,8 @@ void METHOD OnLoadClubKit(void *kitCtrl, DUMMY_ARG, void *kitData, UInt fifaKitI
 }
 
 void METHOD OnLoadHeadScene(void *dlg) {
+    if (Settings::GetInstance().ShadersReload)
+        ReloadShaders();
     if (Settings::GetInstance().ReloadKitConfig) {
         GetTeamKitsMap().clear();
         ReadKitsFile();
@@ -464,6 +469,9 @@ void *METHOD OnNumberGetSubRect2(void *subRect, DUMMY_ARG, void *subRectDst, Int
 }
 
 void InstallKits_Renderer() {
+    patch::SetPointer(RendererAddress(0x2CFCC8), "enable_body_shirt_tucked");
+    patch::SetUInt(RendererAddress(0x2CFCCC), 1);
+    patch::SetPointer(RendererAddress(0x2CFCE0), "enable_body_shirt_untucked");
     if (Settings::GetInstance().EditorKitExtensions) {
         patch::RedirectCall(RendererAddress(0x8472E), SetKitnumbersTexture);
         patch::RedirectCall(RendererAddress(0x90A86), OnWriteBacknumber);

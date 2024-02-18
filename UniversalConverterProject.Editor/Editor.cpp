@@ -9,12 +9,13 @@
 #include "libpng\png.h"
 #include "UcpSettings.h"
 #include "ExtendedPlayerEditor.h"
+#include <ShlObj.h>
 
 using namespace plugin;
 
 //#define EDITOR_READ_TEXT
 //#define EDITOR_WRITE_TEXT
-//#define UPDATE_CLUB_BUDGETS
+#define UPDATE_CLUB_BUDGETS
 
 enum FmLanguage {
     English,
@@ -27,6 +28,11 @@ enum FmLanguage {
 };
 
 FmLanguage gCurrentLanguage;
+
+wchar_t const *GetText(char const *key) {
+    void *locale = CallAndReturn<void *, 0x575200>();
+    return CallMethodAndReturn<wchar_t const *, 0x5756F0>(locale, key, *raw_ptr<unsigned int>(locale, 0x18));
+}
 
 Set<String> &GetSponsorNames() {
     static Set<String> SponsorNames;
@@ -173,10 +179,31 @@ void OnGetFreeAgentsFilePath(WideChar *dest, WideChar const *format, WideChar co
     swprintf(dest, freeAgentsFilePathFormat.c_str(), dbPath);
 }
 
+const wchar_t* GetAppLocalizedName() {
+    return L"FM";
+}
+
+path GetDocumentsPath() {
+    wchar_t documentsDir[MAX_PATH];
+    bool foundDocuments = SHGetSpecialFolderPathW(NULL, documentsDir, CSIDL_MYDOCUMENTS, FALSE);
+    if (foundDocuments)
+        return path(documentsDir) / GetAppLocalizedName();
+    return path();
+}
+
 UInt __stdcall WasEULAShown(Int) {
-    static Int counter = 0;
-    counter++;
-    return counter == 1;
+    path documentsPath = GetDocumentsPath();
+    if (!documentsPath.empty()) {
+        path testFileName = GetDocumentsPath() / "Config" / "ucp-eula-shown";
+        if (exists(testFileName))
+            return true;
+        else {
+            FILE* testFile = _wfopen(testFileName.c_str(), L"wb");
+            if (testFile)
+                fclose(testFile);
+        }
+    }
+    return false;
 }
 
 void *gDlgMainMenu = nullptr;
@@ -473,10 +500,6 @@ void METHOD SetClubFanNameForCurrentLanguage(void *club, DUMMY_ARG, UInt type, c
 void METHOD SetClubPlayerInTextForCurrentLanguage(void *club, DUMMY_ARG, const WideChar *name) {
     for (UInt i = 0; i < 6; i++)
         wcsncpy((WideChar *)((i << 6) + UInt(club) + 1468), name, 31);
-}
-
-const wchar_t *GetAppLocalizedName() {
-    return L"FM";
 }
 
 Int METHOD OnDialogDoModal(void *dlg) {
@@ -880,24 +903,6 @@ UChar METHOD OnGetPlayerLevelMul12(void *t) {
     return UChar(Float(CallMethodAndReturn<UChar, 0x521800>(t)) * 1.2f);
 }
 
-void *OnAllocReferee(UInt size) {
-    void *result = CallAndReturn<void *, 0x5B0474>(size + 4);
-    if (result)
-        *raw_ptr<Int>(result, 0x4A) = -1;
-    return result;
-}
-
-void METHOD OnReadRefereeType(void *t, DUMMY_ARG, UChar *out) {
-    CallMethod<0x5133A0>(t, out);
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
-        CallMethod<0x513560>(t, out + 2);
-}
-
-void METHOD OnWriteRefereeType(void *t, DUMMY_ARG, UChar *in) {
-    CallMethod<0x514630>(t, in);
-    CallMethod<0x514510>(t, in + 2);
-}
-
 WideChar const * METHOD PlayerFoomID_GetFirstname(void *p) {
     WideChar const *result = CallMethodAndReturn<WideChar const *, 0x51CB60>(p);
     Int foomId = GetPlayerExtension(p)->footballManagerId;
@@ -1105,7 +1110,6 @@ void RemoveUnnededCharsForPortraitName(WideChar *str, WideChar const *src, UInt 
 
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
-
         GetSponsorNames() = {
             L"Amazon",L"Intersport",L"Vodafone",L"Burger King",L"Nike",L"Hyundai",L"Santander",L"Coca-Cola",L"Adidas",L"Evonik",L"AIA",L"IKEA",L"Huawei",L"Visa",L"DHL",L"ziggo",L"Nivea",L"Pepsi",L"Mapei",L"Pirelli",L"Qatar Airways",L"Volkswagen",L"bwin",L"LG",L"Rakuten",L"Emirates",L"Puma",L"Groupo Bimbo",L"YouTube TV",L"Carlsberg",L"XBOX",L"Lete",L"SONY",L"MEO",L"KIA",L"OTTO"
         };
@@ -1120,6 +1124,8 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x437FB3, OnDlgClubStadiumSave);
         patch::RedirectCall(0x432FFB, OnDlgClubStadiumLoad);
         patch::RedirectCall(0x4C4CBF, OnWriteClubSponsorAmountToMaster);
+        // set sponsor duration even if amount is 0
+        patch::SetUChar(0x4C29D5, 0x8A); // and al, [esp+8] => mov al, [esp+8]
 
         //patch::RedirectCall(0x4D9868, ShowErr);
         
@@ -1513,22 +1519,9 @@ void PatchEditor(FM::Version v) {
             L"database\\FemaleNames.txt",
             L"database\\MaleNames.txt",
             L"database\\Surnames.txt",
-            nullptr
-        };
-
-        static WideChar const *databaseRestoreFiles_womens[] = {
-            L"database_womens\\data\\CountryData*.sav",
-            L"database_womens\\script\\CountryScript*.sav",
-            L"database_womens\\AppearanceDefs.sav",
-            L"database_womens\\Assessment.sav",
-            L"database_womens\\Countries.sav",
-            L"database_womens\\Master.dat",
-            L"database_womens\\Rules.sav",
-            L"database_womens\\Without.sav",
-            L"database_womens\\PriorityClubs.txt",
-            L"database_womens\\FemaleNames.txt",
-            L"database_womens\\MaleNames.txt",
-            L"database_womens\\Surnames.txt",
+            //L"database\\ExcludeCommonNames.txt",
+            //L"database\\ExcludeNames.txt",
+            //L"database\\ExcludeSurnames.txt",
             nullptr
         };
 
@@ -1540,25 +1533,17 @@ void PatchEditor(FM::Version v) {
             nullptr
         };
 
-        static WideChar const *databaseRestoreFolders1_womens[] = {
-            L"script_womens",
-            L"database_womens",
-            L"database_womens\\data",
-            L"database_womens\\script",
-            nullptr
-        };
-
         static WideChar const *databaseRestoreFolders2[] = {
             L"data",
             L"script",
             nullptr
         };
 
-        patch::SetPointer(0x4FA87D + 2, IsWomensDatabase? databaseRestoreFiles_womens : databaseRestoreFiles);
-        patch::SetPointer(0x4FA886 + 3, IsWomensDatabase? databaseRestoreFiles_womens : databaseRestoreFiles);
-        patch::SetPointer(0x4FABBF + 3, IsWomensDatabase? databaseRestoreFiles_womens : databaseRestoreFiles);
+        patch::SetPointer(0x4FA87D + 2, databaseRestoreFiles);
+        patch::SetPointer(0x4FA886 + 3, databaseRestoreFiles);
+        patch::SetPointer(0x4FABBF + 3, databaseRestoreFiles);
 
-        patch::SetPointer(0x4FAF20 + 2, IsWomensDatabase ? databaseRestoreFolders1_womens : databaseRestoreFolders1);
+        patch::SetPointer(0x4FAF20 + 2, databaseRestoreFolders1);
         patch::SetUChar(0x4FAF4B + 2, UChar((std::size(databaseRestoreFolders1) - 1) * 4));
 
         patch::SetPointer(0x4FAE90 + 2, databaseRestoreFolders2);
@@ -1607,27 +1592,19 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x4F81D1, OnGetPlayerLevelMul125);
         patch::RedirectCall(0x4F81F9, OnGetPlayerLevelMul12);
 
-        if (IsWomensDatabase) {
-            patch::SetPointer(0x4BE2DE + 1, L"Database_womens");
-            patch::SetPointer(0x4D2112 + 1, L"Database_womens");
-            patch::SetPointer(0x6C57B0, L"Database_womens");
-            patch::SetPointer(0x4BE222 + 1, L"%s\\Database_womens");
-            patch::SetPointer(0x4FAFDC + 1, L"atabase_womens"); // substring compare
-            patch::SetPointer(0x44911B + 1, L"script_womens/lg%d.txt");
-            patch::SetPointer(0x4E1252 + 1, L"script_womens/lg%d.txt");
-            patch::SetPointer(0x4BE234 + 1, L"%s\\Script_womens");
-            patch::SetPointer(0x4E6ABA + 1, L"%s\\Script_womens");
-            patch::SetPointer(0x4BAF55 + 1, L"%s\\fmdata\\Restore_womens.big");
-            patch::SetPointer(0x50C7E0 + 1, L"%s\\fmdata\\Restore_womens.big");
-            patch::SetPointer(0x4FA94F + 1, L"fmdata\\Restore_womens.big");
-        }
-
-        // foom id - referee
-        patch::RedirectCall(0x492126, OnAllocReferee);
-        patch::RedirectCall(0x49218E, OnAllocReferee);
-        patch::RedirectCall(0x4E9842, OnAllocReferee);
-        patch::RedirectCall(0x53FDF5, OnReadRefereeType);
-        patch::RedirectCall(0x53FDA1, OnWriteRefereeType);
+        //if (IsWomensDatabase) {
+        //    patch::SetPointer(0x4BE2DE + 1, L"Database_womens");
+        //    patch::SetPointer(0x4D2112 + 1, L"Database_womens");
+        //    patch::SetPointer(0x6C57B0, L"Database_womens");
+        //    patch::SetPointer(0x4BE222 + 1, L"%s\\Database_womens");
+        //    patch::SetPointer(0x4FAFDC + 1, L"atabase_womens"); // substring compare
+        //    patch::SetPointer(0x44911B + 1, L"script_womens/lg%d.txt");
+        //    patch::SetPointer(0x4E1252 + 1, L"script_womens/lg%d.txt");
+        //    patch::SetPointer(0x4BE234 + 1, L"%s\\Script_womens");
+        //    patch::SetPointer(0x4BAF55 + 1, L"%s\\fmdata\\Restore_womens.big");
+        //    patch::SetPointer(0x50C7E0 + 1, L"%s\\fmdata\\Restore_womens.big");
+        //    patch::SetPointer(0x4FA94F + 1, L"fmdata\\Restore_womens.big");
+        //}
 
         // fix club writing (club name usage field offset)
         patch::SetUInt(0x4C5BC4 + 2, 0x412);
@@ -1676,6 +1653,10 @@ void PatchEditor(FM::Version v) {
         // fix portrait name '.' '_'
         patch::RedirectCall(0x51CE60, RemoveUnnededCharsForPortraitName);
         patch::RedirectCall(0x50B6EC, RemoveUnnededCharsForPortraitName);
+
+        // increase 3D face limit - 6000 => 12000
+        patch::SetUInt(0x6C9560 + 4, Settings::GetInstance().Max3dFaces);
+        patch::SetUInt(0x6C9560 + 8, Settings::GetInstance().Max3dFaces);
 
         if (Settings::GetInstance().DisplayFoomID) {
             patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);

@@ -8,6 +8,8 @@
 #include "3dAdboardsAndBanners.h"
 #include "CustomStadiums.h"
 #include "3dModels.h"
+#include "CustomShaders.h"
+#include "UcpSettings.h"
 
 unsigned int gOriginalLoadGfxCore = 0;
 unsigned int hLibrary = 0;
@@ -24,6 +26,8 @@ bool METHOD OnLoadGfxCore(void **info, DUMMY_ARG, const wchar_t *libFileName, co
             void *gfxCore = info[0];
             hLibrary = (unsigned int)info[1];
 
+            //if (Settings::GetInstance().EnableCustomShaders)
+            //    InstallCustomShaders();
             Install3dPatches_FM13();
             InstallKits_FM13();
             InstallPlayerAccessoriesGfxPatches();

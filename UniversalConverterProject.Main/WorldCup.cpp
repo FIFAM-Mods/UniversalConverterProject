@@ -8,6 +8,9 @@ using namespace plugin;
 Bool gChangedStartDateForWC = false;
 const UChar NUM_PLAYERS_IN_WC_SQUAD = 26;
 Int gSquadPlayerIDs[NUM_PLAYERS_IN_WC_SQUAD];
+const UChar NUM_WC_TEAMS = 48;
+UInt gWCCountryIDs[NUM_WC_TEAMS];
+UInt gWCVenueIDs[20][3][16];
 
 void METHOD SetSeasonStartDateForWorldCup(CDBGame *g, DUMMY_ARG, CJDate d) {
     gChangedStartDateForWC = true;
@@ -102,7 +105,7 @@ void PatchWorldCup(FM::Version v) {
         patch::RedirectCall(0x108C81D, SetSeasonStartDateForWorldCup);
         patch::RedirectCall(0x47F7D7, OnLoadGameStartDatabase);
 
-        patch::SetUInt(0x308DC88, FifamCompRegion::Qatar); // Hosting team
+        patch::SetUInt(0x308DC88, FifamCompRegion::United_States); // Hosting team
 
         using CdeclRetInt = int(__cdecl *)();
         //patch::RedirectCall(0x108C6F0, (CdeclRetInt)([] {
@@ -133,5 +136,18 @@ void PatchWorldCup(FM::Version v) {
         patch::RedirectCall(0xF37F3A, NationalTeamNominationSize1);
 
         patch::RedirectCall(0xF929AD, OnLoadCompetitionFile);
-;    }
+
+        //patch::SetPointer(0x108A820 + 1, gWCCountryIDs);
+        //patch::SetPointer(0x108B080 + 3, gWCCountryIDs);
+        //patch::SetPointer(0x108B5B6 + 1, gWCCountryIDs);
+        //patch::SetPointer(0x108BBA8 + 3, gWCCountryIDs);
+        //patch::SetPointer(0x108B5C7 + 1, &gWCCountryIDs[NUM_WC_TEAMS]);
+        //patch::SetPointer(0x108B5EF + 1, &gWCCountryIDs[NUM_WC_TEAMS]);
+        //patch::SetUInt(0x108B0A9 + 2, NUM_WC_TEAMS * 4);
+        //patch::SetUChar(0x108BC06 + 2, NUM_WC_TEAMS);
+        //
+        //patch::SetPointer(0x108BCED + 1, gWCVenueIDs);
+        //patch::SetPointer(0x108BF72 + 3, gWCVenueIDs);
+        //patch::SetUInt(0x108BCE7 + 1, sizeof(gWCVenueIDs));
+    }
 }

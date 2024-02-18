@@ -84,6 +84,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <StructMemberAlignment>4Bytes</StructMemberAlignment>
       <ConformanceMode>false</ConformanceMode>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -92,7 +93,7 @@
       <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\ImageMagick-Windows\VisualMagick\lib;D:\Projects\DXSDK\9.0c\Lib\x86;D:\Projects\opencv2\build\3rdparty\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>version.lib;generic.lib;fmapi.lib;CORE_RL_aom_.lib;CORE_RL_brotli_.lib;CORE_RL_bzlib_.lib;CORE_RL_cairo_.lib;CORE_RL_coders_.lib;CORE_RL_croco_.lib;CORE_RL_de265_.lib;CORE_RL_exr_.lib;CORE_RL_ffi_.lib;CORE_RL_filters_.lib;CORE_RL_freetype_.lib;CORE_RL_fribidi_.lib;CORE_RL_glib_.lib;CORE_RL_harfbuzz_.lib;CORE_RL_heif_.lib;CORE_RL_highway_.lib;CORE_RL_jp2_.lib;CORE_RL_jpeg-turbo_.lib;CORE_RL_jpeg-xl_.lib;CORE_RL_lcms_.lib;CORE_RL_lqr_.lib;CORE_RL_lzma_.lib;CORE_RL_Magick++_.lib;CORE_RL_MagickCore_.lib;CORE_RL_MagickWand_.lib;CORE_RL_openjpeg_.lib;CORE_RL_pango_.lib;CORE_RL_pixman_.lib;CORE_RL_png_.lib;CORE_RL_raqm_.lib;CORE_RL_raw_.lib;CORE_RL_rsvg_.lib;CORE_RL_tiff_.lib;CORE_RL_webp_.lib;CORE_RL_xml_.lib;CORE_RL_zip_.lib;CORE_RL_zlib_.lib;d3d9.lib;d3dx9.lib;zlib.lib;libpng.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -104,21 +105,25 @@
     <ClCompile Include="3dMatchStandings.cpp" />
     <ClCompile Include="3dModels.cpp" />
     <ClCompile Include="3dPatches.cpp" />
+    <ClCompile Include="Achievements.cpp" />
     <ClCompile Include="Balls.cpp" />
     <ClCompile Include="Beta.cpp" />
+    <ClCompile Include="ClubSponsors.cpp" />
     <ClCompile Include="Competitions.cpp" />
+    <ClCompile Include="CustomShaders.cpp" />
     <ClCompile Include="CustomStadiums.cpp" />
+    <ClCompile Include="DatabaseOptions.cpp" />
     <ClCompile Include="EABFFixes.cpp" />
     <ClCompile Include="EasyEdit.cpp" />
     <ClCompile Include="EuCountries.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="ExtendedPlayer.cpp" />
-    <ClCompile Include="FemaleNames.cpp" />
+    <ClCompile Include="ExcludeNames.cpp" />
+    <ClCompile Include="ExtendedTeam.cpp" />
     <ClCompile Include="FifaWorldPlayerGala.cpp" />
     <ClCompile Include="ForeignersLimit.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="GameInterfaces.cpp" />
-    <ClCompile Include="GameStartTweaks.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="GenericHeads.cpp" />
     <ClCompile Include="GfxCoreHook.cpp" />
@@ -143,6 +148,7 @@
     <ClCompile Include="PlayerNameEdit.cpp" />
     <ClCompile Include="PlayerTalks.cpp" />
     <ClCompile Include="PortraitDialog.cpp" />
+    <ClCompile Include="ReserveNames.cpp" />
     <ClCompile Include="Scouting.cpp" />
     <ClCompile Include="ScoutingSystems.cpp" />
     <ClCompile Include="settings\Settings.cpp" />
@@ -161,27 +167,32 @@
     <ClCompile Include="WindowedMode.cpp" />
     <ClCompile Include="WomensDatabase.cpp" />
     <ClCompile Include="WorldCup.cpp" />
+    <ClCompile Include="YouthGenCountries.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3dAdboardsAndBanners.h" />
     <ClInclude Include="3dMatchStandings.h" />
     <ClInclude Include="3dModels.h" />
     <ClInclude Include="3dPatches.h" />
+    <ClInclude Include="Achievements.h" />
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Beta.h" />
+    <ClInclude Include="ClubSponsors.h" />
     <ClInclude Include="Competitions.h" />
+    <ClInclude Include="CustomShaders.h" />
     <ClInclude Include="CustomStadiums.h" />
+    <ClInclude Include="DatabaseOptions.h" />
     <ClInclude Include="EABFFixes.h" />
     <ClInclude Include="EasyEdit.h" />
     <ClInclude Include="EuCountries.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="ExtendedPlayer.h" />
-    <ClInclude Include="FemaleNames.h" />
+    <ClInclude Include="ExcludeNames.h" />
+    <ClInclude Include="ExtendedTeam.h" />
     <ClInclude Include="FifaWorldPlayerGala.h" />
     <ClInclude Include="ForeignersLimit.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="GameInterfaces.h" />
-    <ClInclude Include="GameStartTweaks.h" />
     <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="GenericHeads.h" />
     <ClInclude Include="GfxCoreHook.h" />
@@ -205,6 +216,7 @@
     <ClInclude Include="PlayerNameEdit.h" />
     <ClInclude Include="PlayerTalks.h" />
     <ClInclude Include="PortraitDialog.h" />
+    <ClInclude Include="ReserveNames.h" />
     <ClInclude Include="Scouting.h" />
     <ClInclude Include="ScoutingSystems.h" />
     <ClInclude Include="ScriptsShared.h" />
@@ -224,6 +236,7 @@
     <ClInclude Include="WinHeader.h" />
     <ClInclude Include="WomensDatabase.h" />
     <ClInclude Include="WorldCup.h" />
+    <ClInclude Include="YouthGenCountries.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

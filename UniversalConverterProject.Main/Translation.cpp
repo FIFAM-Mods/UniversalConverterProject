@@ -183,6 +183,60 @@ void OnSprintfDateStr(void *str, WideChar const *format, WideChar const *a, Wide
     Call<0x1497B06>(str, format, a, b);
 }
 
+void ProcessStringUkrainianLanguage(String &str) {
+    static WideChar table[] =
+    { 0,  0,  0,  0,  8,  0,  12, 13, 0,  0,  0,  0,  0,  0,  0,  0,
+      1,  2,  3,  4,  6,  7,  9,  10, 11, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 0,  0,  31, 0,  32, 33,
+      34, 35, 36, 37, 39, 40, 42, 43, 44, 47, 48, 49, 50, 51, 52, 53,
+      54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 0,  0,  64, 0,  65, 66,
+      0,  0,  0,  0,  41, 0,  45, 46, 0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      5,  38 };
+    for (auto &c : str) {
+        if (c >= 0x400 && c <= 0x492) {
+            c = table[c - 0x400];
+            if (c == 0)
+                c = L' ';
+            else
+                c += 0x3FF;
+        }
+    }
+}
+
+void ProcessStringUkrainianLanguageNoCase(String &str) {
+    static WideChar table[] =
+    { 0,  0,  0,  0,  8,  0,  12, 13, 0,  0,  0,  0,  0,  0,  0,  0,
+      1,  2,  3,  4,  6,  7,  9,  10, 11, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 0,  0,  31, 0,  32, 33,
+      1,  2,  3,  4,  6,  7,  9,  10, 11, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 0,  0,  31, 0,  32, 33,
+      0,  0,  0,  0,  8,  0,  12, 13, 0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      5,  5 };
+    for (auto &c : str) {
+        if (c >= 0x400 && c <= 0x492) {
+            c = table[c - 0x400];
+            if (c == 0)
+                c = L' ';
+            else
+                c += 0x3FF;
+        }
+    }
+}
+
+Int MyCompareStringNoCase(WideChar const *str1, WideChar const *str2) {
+    String myStr1 = str1;
+    String myStr2 = str2;
+    ProcessStringUkrainianLanguageNoCase(myStr1);
+    ProcessStringUkrainianLanguageNoCase(myStr2);
+    return CallAndReturn<Int, 0x1580597>(myStr1.c_str(), myStr2.c_str());
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         wchar_t gameLanguageStr[MAX_PATH];
@@ -221,5 +275,8 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x1495394, OnCopyDateStr);
         patch::RedirectCall(0x14955D0, OnCopyDateStr);
         //patch::RedirectCall(0x1495B8B, OnSprintfDateStr);
+
+        if (IsUkrainianLanguage)
+            patch::RedirectCall(0x1493FD4, MyCompareStringNoCase);
     }
 }

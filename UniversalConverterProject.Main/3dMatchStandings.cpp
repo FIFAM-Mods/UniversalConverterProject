@@ -90,11 +90,19 @@ void ReadPopupDataSettingsFile(Vector<PopupCompetitionData> &container, Path con
     }
 }
 
+struct Standings3dCard {
+    UChar mStatus; // 0 - not enabled, 1 - enabled, 2 - shown
+    UInt mEnableTime;
+    void *mpCard;
+};
+
 struct Standings3dAdditionalData {
     void *mImgAddedTime;
     void *mTbAddedTime;
     void *mImgAggregate;
     void *mTbAggregate;
+    Bool mHasRedCards;
+    Standings3dCard mCards[2][3];
 };
 
 Standings3dAdditionalData *GetStandingsAdditionalData(void *standingsInterface) {
@@ -123,11 +131,7 @@ Bool IsSecondLegMatch() {
     return match && *raw_ptr<Bool>(match, 0xBB8);
 }
 
-void SetWidgetTeamColor(void *widget, String const &resourcePath, void *competition, void *team, Bool awayTeam) {
-
-}
-
-String GetGenericKitColorName(CDBTeamKit *kit, Bool home) {
+Pair<UInt, UInt> GetGenericKitColor(CDBTeamKit *kit, Bool home) {
     UChar kitId = (home == true) ? 0 : 1;
     UChar color1 = 0, color2 = 0;
     switch (kit->GetPartType(kitId, 0)) {
@@ -219,29 +223,182 @@ String GetGenericKitColorName(CDBTeamKit *kit, Bool home) {
         color2 = 1;
         break;
     }
-    return Utils::Format(L"clr_%d_%d", kit->GetPartColor(kitId, 0, color1), kit->GetPartColor(kitId, 0, color2));
+    Pair<UInt, UInt> result = { kit->GetPartColor(kitId, 0, color1), kit->GetPartColor(kitId, 0, color2) };
+    if (result.first > 63)
+        result.first = 0;
+    if (result.second > 63)
+        result.second = 0;
+    return result;
 }
 
-void Process3dMatchScreenExtensions(void *screen,
-    char const *homeBadgeNode, char const *awayBadgeNode,
-    char const *homeTeamNode, char const *awayTeamNode,
-    char const *homeScoreNode, char const *awayScoreNode,
+String GetGenericKitColorName(CDBTeamKit *kit, Bool home) {
+    Pair<UInt, UInt> color = GetGenericKitColor(kit, home);
+    return Utils::Format(L"clr_%d_%d", color.first, color.second);
+}
+
+class PopupRecolorProcessor {
+public:
+    struct ColorsData {
+        Array<UInt, 10> mTeamColor = {};
+        Bool mHasTetamColors = false;
+        Array<UInt, 2> mKitColor = {};
+        Bool mHasKitColors = false;
+    };
+    ColorsData mColors[2];
+    Bool mOneTeam = false;
+
+    virtual UInt Process(void *guiNode) {
+        void *guiObjectNode = CallVirtualMethodAndReturn<void *, 16>(guiNode); // guiNode->AsGuiObjectNode()
+        if (guiObjectNode) {
+            void *metadata = CallVirtualMethodAndReturn<void *, 11>(guiObjectNode); // guiObjectNode->Metadata()
+            if (metadata) {
+                void *popupColorEntry = CallVirtualMethodAndReturn<void *, 7>(metadata, "PopupColor"); // metadata->GetEntryByKey()
+                if (popupColorEntry) {
+                    char const *popupColorType = CallMethodAndReturn<char const *, 0x511630>(popupColorEntry); // popupColorEntry->AsString()
+                    if (popupColorType) {
+                        void *control = CallVirtualMethodAndReturn<void *, 29>(guiObjectNode); // guiObjectNode->GetControl()
+                        if (control) {
+                            void *image = CallAndReturn<void *, 0x1448819>(control); // CastToImage()
+                            void *textBox = CallAndReturn<void *, 0x1442B60>(control); // CastToTextBox()
+                            if (image || textBox) {
+                                StringA typeStr = ToLower(popupColorType);
+                                Int teamIndex = -1;
+                                if (typeStr.starts_with("home"))
+                                    teamIndex = 0;
+                                else if (typeStr.starts_with("away"))
+                                    teamIndex = 1;
+                                if (mOneTeam) {
+                                    if (teamIndex != -1)
+                                        return 0;
+                                    teamIndex = 0;
+                                }
+                                else if (teamIndex == -1)
+                                    return 0;
+                                if (mColors[teamIndex].mHasTetamColors) {
+                                    for (UInt colorId = 1; colorId <= 10; colorId++) {
+                                        if (typeStr.ends_with("teamcolor" + std::to_string(colorId))) {
+                                            if (image)
+                                                SetImageColorRGBA(image, mColors[teamIndex].mTeamColor[colorId - 1]);
+                                            else if (textBox)
+                                                SetTextBoxColorRGBA(textBox, mColors[teamIndex].mTeamColor[colorId - 1]);
+                                            //::Message("Set team color %s %X", typeStr.c_str(), mColors[teamIndex].mTeamColor[colorId - 1]);
+                                            return 0;
+                                        }
+                                    }
+                                }
+                                if (mColors[teamIndex].mHasKitColors) {
+                                    for (UInt colorId = 1; colorId <= 2; colorId++) {
+                                        if (typeStr.ends_with("kitcolor" + std::to_string(colorId))) {
+                                            if (image)
+                                                SetImageColorRGBA(image, mColors[teamIndex].mKitColor[colorId - 1]);
+                                            else if (textBox)
+                                                SetTextBoxColorRGBA(textBox, mColors[teamIndex].mKitColor[colorId - 1]);
+                                            return 0;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+};
+
+Map<UInt, Map<UInt, Array<StringA, 10>>> ReadTeamColors(Path const &colorsFilePath) {
+    Map<UInt, Map<UInt, Array<StringA, 10>>> result;
+    FifamReader reader(colorsFilePath);
+    if (reader.Available()) {
+        reader.SkipLine();
+        while (!reader.IsEof()) {
+            if (!reader.EmptyLine()) {
+                UInt teamId = 0;
+                StringA typeStr;
+                Array<StringA, 10> colors;
+                reader.ReadLine(Hexadecimal(teamId), typeStr, colors[0], colors[1], colors[2], colors[3], colors[4], colors[5],
+                    colors[6], colors[7], colors[8], colors[9]);
+                typeStr = ToLower(typeStr);
+                Int type = -1;
+                if (typeStr == "home")
+                    type = 0;
+                else if (typeStr == "away")
+                    type = 1;
+                else if (typeStr == "third")
+                    type = 3;
+                else if (typeStr == "all")
+                    type = 4;
+                if (type != -1)
+                    result[teamId][type] = colors;
+            }
+            else
+                reader.SkipLine();
+        }
+    }
+    return result;
+}
+
+GenColor GenColorFromInt(UInt clrValue) {
+    return GenColor((clrValue >> 16) & 0xFF, (clrValue >> 8) & 0xFF, clrValue & 0xFF);
+}
+
+UInt GenColorToInt(GenColor &clr) {
+    return 0xFF000000 | (clr.r << 16) | (clr.g << 8) | clr.b;
+}
+
+UInt GetTextColor(UInt clr, Bool grey = false) {
+    auto genColor = GenColorFromInt(clr);
+    auto white = GenColor::Distance(genColor, GenColor(255, 255, 255));
+    auto black = GenColor::Distance(genColor, GenColor(0, 0, 0));
+    if (white < black)
+        return grey ? 0xFF202020 : 0xFF000000;
+    return grey ? 0xFFF0F0F0 : 0xFFFFFFFF;
+}
+
+UInt GetAltColor(UInt clr) {
+    auto genClr = GenColorFromInt(clr);
+    if (genClr.r < 20 && genClr.g < 20 && genClr.b < 20) {
+        genClr.r = (UChar)(roundf((Float)genClr.r * 0.85f)) + 38;
+        genClr.g = (UChar)(roundf((Float)genClr.g * 0.85f)) + 38;
+        genClr.b = (UChar)(roundf((Float)genClr.b * 0.85f)) + 38;
+    }
+    else {
+        genClr.r = (UChar)(roundf((Float)genClr.r * 0.7f));
+        genClr.g = (UChar)(roundf((Float)genClr.g * 0.7f));
+        genClr.b = (UChar)(roundf((Float)genClr.b * 0.7f));
+    }
+    return GenColorToInt(genClr);
+}
+
+String GetPathForTeamKitColor(String const &dir, UInt teamUId, UInt kitType) {
+    String kitSuffix;
+    if (kitType == 0)
+        kitSuffix = L"_h";
+    else if (kitType == 1)
+        kitSuffix = L"_a";
+    else if (kitType == 3)
+        kitSuffix = L"_t";
+    else
+        return String();
+    return dir + Utils::Format(L"%08X", teamUId) + kitSuffix + L".png";
+}
+
+void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, char const *awayBadgeNode,
     CTeamIndex _homeTeamID, CTeamIndex _awayTeamID, UInt _compID, bool oneTeam)
 {
-    Bool reserveHome = false;
-    Bool reserveAway = false;
-    CDBTeam *homeTeam = nullptr;
-    CDBTeam *awayTeam = nullptr;
+    Bool isReserve[2] = { false, false };
+    CDBTeam *team[2] = { nullptr, nullptr };
     UInt compId = 0;
     if (_compID != 0)
         compId = _compID;
     if (!_homeTeamID.isNull()) {
-        homeTeam = GetTeam(_homeTeamID);
-        reserveHome = _homeTeamID.type == 1;
+        team[0] = GetTeam(_homeTeamID);
+        isReserve[0] = _homeTeamID.type == 1;
     }
     if (!oneTeam && !_awayTeamID.isNull()) {
-        awayTeam = GetTeam(_awayTeamID);
-        reserveAway = _awayTeamID.type == 1;
+        team[1] = GetTeam(_awayTeamID);
+        isReserve[1] = _awayTeamID.type == 1;
     }
     if (_compID == 0 || _homeTeamID.isNull()) {
         CDBOneMatch *match = GetCurrentMatch();
@@ -249,328 +406,320 @@ void Process3dMatchScreenExtensions(void *screen,
             if (_homeTeamID.isNull()) {
                 CTeamIndex homeTeamIndex = match->GetHomeTeamID();
                 if (!homeTeamIndex.isNull()) {
-                    homeTeam = GetTeam(homeTeamIndex);
-                    reserveHome = homeTeamIndex.type == 1;
+                    team[0] = GetTeam(homeTeamIndex);
+                    isReserve[0] = homeTeamIndex.type == 1;
                 }
             }
             if (!oneTeam && _awayTeamID.isNull()) {
                 CTeamIndex awayTeamIndex = match->GetAwayTeamID();
                 if (!awayTeamIndex.isNull()) {
-                    awayTeam = GetTeam(awayTeamIndex);
-                    reserveAway = awayTeamIndex.type == 1;
+                    team[1] = GetTeam(awayTeamIndex);
+                    isReserve[1] = awayTeamIndex.type == 1;
                 }
             }
             if (_compID == 0)
                 compId = match->GetCompIDInt();
         }
     }
-    // kit colors
-    if (homeTeam || (!oneTeam && awayTeam)) {
-        void *imgKitColor1 = nullptr;
-        void *imgKitColor2 = nullptr;
-        if (homeTeam)
-            imgKitColor1 = GetOptionalComponent(screen, "ImgColor1");
-        if (!oneTeam && awayTeam)
-            imgKitColor2 = GetOptionalComponent(screen, "ImgColor2");
-        if (imgKitColor1 || imgKitColor2) {
-            auto colorsData = GetPopupDataForCompetition(GetPopupKitColors(), compId);
-            if (!colorsData.paramStr.empty()) {
-                UInt homeTeamUId = 0;
-                if (imgKitColor1)
-                    homeTeamUId = homeTeam->GetTeamUniqueID();
-                UInt awayTeamUId = 0;
-                if (imgKitColor2)
-                    awayTeamUId = awayTeam->GetTeamUniqueID();
-
-                auto GetPathForTeamKitColor = [](String const &dir, UInt teamUId, UInt kitType) {
-                    String kitSuffix;
-                    if (kitType == 0)
-                        kitSuffix = L"_h";
-                    else if (kitType == 1)
-                        kitSuffix = L"_a";
-                    else if (kitType == 2)
-                        kitSuffix = L"_t";
-                    else
-                        return String();
-                    return dir + Utils::Format(L"%08X", teamUId) + kitSuffix + L".png";
-                };
-
-                // get home/away team kit type (home/away/third)
-                void *gfxCoreInterface = *reinterpret_cast<void **>(0x30ABBD0);
-                void *aiInterface = CallVirtualMethodAndReturn<void *, 7>(gfxCoreInterface);
-                void *matchData = CallVirtualMethodAndReturn<void *, 65>(aiInterface);
-                void *kitsData = raw_ptr<void *>(matchData, 0x30);
-                UInt homeTeamKitId = *raw_ptr<UInt>(kitsData, 0xED8);
-                UInt awayTeamKitId = *raw_ptr<UInt>(kitsData, 0xEDC);
-
-                Bool homeSet = false;
-                Bool awaySet = false;
-
-                CDBTeamKit *homeTeamKit = homeTeam->GetKit();
-                Bool homeGenericKit = (*raw_ptr<UInt>(homeTeamKit, 4) & 0xC0000000) == 0;
-                CDBTeamKit *awayTeamKit = awayTeam->GetKit();
-                Bool awayGenericKit = (*raw_ptr<UInt>(awayTeamKit, 4) & 0xC0000000) == 0;
-
-                if (imgKitColor1 && !homeGenericKit) {
-                    WideChar const *homeTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x454);
-                    if (homeTeamKitPath[0]) {
-                        String kitPath = homeTeamKitPath;
-                        auto dotPos = kitPath.find(L'.');
-                        if (dotPos != String::npos) {
-                            kitPath = kitPath.substr(0, dotPos);
-                            if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
-                                if (kitPath[kitPath.size() - 1] == L'h')
-                                    homeTeamKitId = 0;
-                                else if (kitPath[kitPath.size() - 1] == L'a')
-                                    homeTeamKitId = 1;
-                                else if (kitPath[kitPath.size() - 1] == L't')
-                                    homeTeamKitId = 2;
-                            }
+    if (!team[0] && !team[1])
+        return;
+    // get home/away team kit type (home/away/third)
+    UInt kitType[2] = { 0, 0 };
+    CDBTeam *teamForKitType[2] = { team[0], team[1] };
+    Bool teamsSwapped = false;
+    CDBOneMatch *match = GetCurrentMatch();
+    if (match) {
+        if (!_homeTeamID.isNull()) {
+            CTeamIndex awayTeamIndex = match->GetAwayTeamID();
+            if (_homeTeamID == awayTeamIndex) {
+                std::swap(teamForKitType[0], teamForKitType[1]);
+                teamsSwapped = true;
+            }
+        }
+    }
+    void *gfxCoreInterface = *reinterpret_cast<void **>(0x30ABBD0);
+    void *aiInterface = CallVirtualMethodAndReturn<void *, 7>(gfxCoreInterface);
+    void *matchData = CallVirtualMethodAndReturn<void *, 65>(aiInterface);
+    void *kitsData = raw_ptr<void *>(matchData, 0x30);
+    for (UInt t = 0; t < 2; t++) {
+        if (teamForKitType[t]) {
+            kitType[t] = *raw_ptr<UInt>(kitsData, (t == 0) ? 0xED8 : 0xEDC);
+            CDBTeamKit *kit = teamForKitType[t]->GetKit();
+            Bool isGeneric = (*raw_ptr<UInt>(kit, 4) & 0xC0000000) == 0;
+            if (!isGeneric) {
+                WideChar const *teamKitPath = raw_ptr<WideChar const>(kitsData, (t == 0) ? (0x220 + 0x454) : (0x220 + 0x65C + 0x454));
+                if (teamKitPath[0]) {
+                    String kitPath = teamKitPath;
+                    auto dotPos = kitPath.find(L'.');
+                    if (dotPos != String::npos) {
+                        kitPath = kitPath.substr(0, dotPos);
+                        if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
+                            if (kitPath[kitPath.size() - 1] == L'h')
+                                kitType[t] = 0;
+                            else if (kitPath[kitPath.size() - 1] == L'a')
+                                kitType[t] = 1;
+                            else if (kitPath[kitPath.size() - 1] == L't')
+                                kitType[t] = 3;
                         }
                     }
-                    String homeTeamColorPath = GetPathForTeamKitColor(colorsData.paramStr, homeTeamUId, homeTeamKitId);
-                    if (!homeTeamColorPath.empty() && FileExists(homeTeamColorPath)) {
-                        SetImageFilename(imgKitColor1, homeTeamColorPath);
-                        homeSet = true;
-                    }
-                }
-                if (imgKitColor2 && !awayGenericKit) {
-                    WideChar const *awayTeamKitPath = raw_ptr<WideChar const>(kitsData, 0x220 + 0x65C + 0x454);
-                    if (awayTeamKitPath[0]) {
-                        String kitPath = awayTeamKitPath;
-                        auto dotPos = kitPath.find(L'.');
-                        if (dotPos != String::npos) {
-                            kitPath = kitPath.substr(0, dotPos);
-                            if (kitPath.size() >= 2 && kitPath[kitPath.size() - 2] == L'_') {
-                                if (kitPath[kitPath.size() - 1] == L'h')
-                                    awayTeamKitId = 0;
-                                else if (kitPath[kitPath.size() - 1] == L'a')
-                                    awayTeamKitId = 1;
-                                else if (kitPath[kitPath.size() - 1] == L't')
-                                    awayTeamKitId = 2;
-                            }
-                        }
-                    }
-                    String awayTeamColorPath = GetPathForTeamKitColor(colorsData.paramStr, awayTeamUId, awayTeamKitId);
-                    if (!awayTeamColorPath.empty() && FileExists(awayTeamColorPath)) {
-                        SetImageFilename(imgKitColor2, awayTeamColorPath);
-                        awaySet = true;
-                    }
-                }
-                if (imgKitColor1 && !homeSet) {
-                    String homeTeamColorPath = colorsData.paramStr + GetGenericKitColorName(homeTeamKit, homeTeamKitId == 0) + L".png";
-                    if (FileExists(homeTeamColorPath))
-                        SetImageFilename(imgKitColor1, homeTeamColorPath);
-                }
-                if (imgKitColor2 && !awaySet) {
-                    String awayTeamColorPath = colorsData.paramStr + GetGenericKitColorName(awayTeamKit, awayTeamKitId == 0) + L".png";
-                    if (FileExists(awayTeamColorPath))
-                        SetImageFilename(imgKitColor2, awayTeamColorPath);
                 }
             }
         }
     }
+    if (teamsSwapped)
+        std::swap(kitType[0], kitType[1]);
     // custom badges
-    if (homeTeam) {
-        if (homeBadgeNode) {
-            //SafeLog::WriteToFile("popups.log", Format(L"compId: %08X", compId));
-            auto badgesData = GetPopupDataForCompetition(GetPopupCustomBadge(), compId);
-            //SafeLog::WriteToFile("popups.log", L"badgesPathStr: " + badgesData.paramStr);
-            if (!badgesData.paramStr.empty() && badgesData.paramStr != L"-") {
-                String homeBadgePath;
-                String awayBadgePath;
-                void *homeBadge = GetOptionalComponent(screen, homeBadgeNode);
-                if (homeBadge) {
-                    //SafeLog::WriteToFile("popups.log", L"Home badge available");
-                    String uid = Format(L"%08X", homeTeam->GetTeamUniqueID());
-                    if (reserveHome) {
-                        homeBadgePath = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L"_2.png";
-                        if (!FileExists(homeBadgePath)) {
-                            homeBadgePath = badgesData.paramStr + uid + L"_2.png";
-                            if (!FileExists(homeBadgePath))
-                                homeBadgePath.clear();
+    auto badgesData = GetPopupDataForCompetition(GetPopupCustomBadge(), compId);
+    if (!badgesData.paramStr.empty() && badgesData.paramStr != L"-") {
+        char const *badgeNode[2] = { homeBadgeNode, awayBadgeNode };
+        String badgePath[2];
+        void *badge[2] = { nullptr, nullptr };
+        for (UInt t = 0; t < 2; t++) {
+            if (badgeNode[t]) {
+                badge[t] = GetOptionalComponent(screen, badgeNode[t]);
+                if (badge[t]) {
+                    String uid = Format(L"%08X", team[t]->GetTeamUniqueID());
+                    if (isReserve[t]) {
+                        badgePath[t] = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L"_2.png";
+                        if (!FileExists(badgePath[t])) {
+                            badgePath[t] = badgesData.paramStr + uid + L"_2.png";
+                            if (!FileExists(badgePath[t]))
+                                badgePath[t].clear();
                         }
                     }
-                    if (homeBadgePath.empty()) {
-                        homeBadgePath = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L".png";
-                        if (!FileExists(homeBadgePath)) {
-                            homeBadgePath = badgesData.paramStr + uid + L".png";
-                            if (!FileExists(homeBadgePath))
-                                homeBadgePath.clear();
+                    if (badgePath[t].empty()) {
+                        badgePath[t] = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L".png";
+                        if (!FileExists(badgePath[t])) {
+                            badgePath[t] = badgesData.paramStr + uid + L".png";
+                            if (!FileExists(badgePath[t]))
+                                badgePath[t].clear();
                         }
-                    }
-                    //SafeLog::WriteToFile("popups.log", L"homeBadgePath: " + homeBadgePath);
-                }
-                void *awayBadge = nullptr;
-                if (!oneTeam && awayBadgeNode && awayTeam) {
-                    awayBadge = GetOptionalComponent(screen, awayBadgeNode);
-                    if (awayBadge) {
-                        //SafeLog::WriteToFile("popups.log", L"Away badge available");
-                        String uid = Format(L"%08X", awayTeam->GetTeamUniqueID());
-                        if (reserveAway) {
-                            awayBadgePath = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L"_2.png";
-                            if (!FileExists(awayBadgePath)) {
-                                awayBadgePath = badgesData.paramStr + uid + L"_2.png";
-                                if (!FileExists(awayBadgePath))
-                                    awayBadgePath.clear();
-                            }
-                        }
-                        if (awayBadgePath.empty()) {
-                            awayBadgePath = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L".png";
-                            if (!FileExists(awayBadgePath)) {
-                                awayBadgePath = badgesData.paramStr + uid + L".png";
-                                if (!FileExists(awayBadgePath))
-                                    awayBadgePath.clear();
-                            }
-                        }
-                        //SafeLog::WriteToFile("popups.log", L"awayBadgePath: " + awayBadgePath);
-                    }
-                }
-                if (badgesData.paramInt1 == 0) {
-                    if (homeBadge && !homeBadgePath.empty())
-                        SetImageFilename(homeBadge, homeBadgePath);
-                    if (awayBadge && !awayBadgePath.empty())
-                        SetImageFilename(awayBadge, awayBadgePath);
-                }
-                else if (badgesData.paramInt1 == 1) {
-                    if (homeBadge && !homeBadgePath.empty() && (!awayBadge || !awayBadgePath.empty())) {
-                        SetImageFilename(homeBadge, homeBadgePath);
-                        SetImageFilename(awayBadge, awayBadgePath);
                     }
                 }
             }
         }
+        if (badgesData.paramInt1 == 0) {
+            if (badge[0] && !badgePath[0].empty())
+                SetImageFilename(badge[0], badgePath[0]);
+            if (badge[1] && !badgePath[1].empty())
+                SetImageFilename(badge[1], badgePath[1]);
+        }
+        else if (badgesData.paramInt1 == 1) {
+            if (badge[0] && !badgePath[0].empty() && (!badge[1] || !badgePath[1].empty())) {
+                SetImageFilename(badge[0], badgePath[0]);
+                SetImageFilename(badge[1], badgePath[1]);
+            }
+        }
+    }
+    // kit colors
+    auto colorsData = GetPopupDataForCompetition(GetPopupKitColors(), compId);
+    for (UInt t = 0; t < 2; t++) {
+        Vector<void *> imgKit;
+        Vector<void *> imgGenKit;
+        StringA imgNamePrefix;
+        if (!oneTeam)
+            imgNamePrefix = (t == 0) ? "Home" : "Away";
+        for (UInt i = 0; i < 2; i++) {
+            for (UInt k = 0; k <= 3; k++) {
+                StringA imgName = imgNamePrefix + ((i == 0) ? "Kit" : "GenKit");
+                if (k != 0)
+                    imgName += std::to_string(k);
+                void *img = GetOptionalComponent(screen, imgName.c_str());
+                if (img) {
+                    if (i == 0)
+                        imgKit.push_back(img);
+                    else
+                        imgGenKit.push_back(img);
+                }
+            }
+        }
+        Bool customKit = false;
+        if (!colorsData.paramStr.empty() && !imgKit.empty()) {
+            String teamColorPath = GetPathForTeamKitColor(colorsData.paramStr, team[t]->GetTeamUniqueID(), kitType[t]);
+            if (!teamColorPath.empty() && FileExists(teamColorPath)) {
+                for (auto k : imgKit)
+                    SetImageFilename(k, teamColorPath);
+                customKit = true;
+            }
+            else {
+                String teamColorPath = colorsData.paramStr + GetGenericKitColorName(team[t]->GetKit(), kitType[t] == 0) + L".png";
+                if (FileExists(teamColorPath)) {
+                    for (auto k : imgKit)
+                        SetImageFilename(k, teamColorPath);
+                    customKit = true;
+                }
+            }
+            for (auto k : imgKit)
+                SetVisible(k, customKit);
+        }
+        for (auto k : imgGenKit)
+            SetVisible(k, !customKit);
     }
     // recoloring
-    if (homeTeam || (!oneTeam && awayTeam)) {
-        //SafeLog::WriteToFile("popups.log", L"performing recolor");
-        auto recolorData = GetPopupDataForCompetition(GetPopupRecolor(), compId);
-        //SafeLog::WriteToFile("popups.log", L"recolorPathStr: " + recolorData.paramStr);
-        if (!recolorData.paramStr.empty()) {
-            void *homeTeamName = nullptr;
-            void *awayTeamName = nullptr;
-            void *homeTeamColor = nullptr;
-            void *awayTeamColor = nullptr;
-            void *homeScore = nullptr;
-            void *awayScore = nullptr;
-            if (homeTeam) {
-                homeTeamColor = GetOptionalComponent(screen, "ImgTeamColor1");
-                if (homeTeamColor) {
-                    if (recolorData.paramInt1 != 0 && homeTeamNode)
-                        homeTeamName = GetOptionalComponent(screen, homeTeamNode);
-                    if (recolorData.paramInt2 != 0 && homeScoreNode)
-                        homeScore = GetOptionalComponent(screen, homeScoreNode);
+    PopupRecolorProcessor popupProcessor;
+    popupProcessor.mOneTeam = oneTeam;
+    Map<UInt, Map<UInt, Array<StringA, 10>>> teamColors;
+    auto recolorData = GetPopupDataForCompetition(GetPopupRecolor(), compId);
+    if (!recolorData.paramStr.empty() && recolorData.paramStr != L"-")
+        teamColors = ReadTeamColors(recolorData.paramStr);
+    for (UInt t = 0; t < 2; t++) {
+        if (team[t]) {
+            Pair<UInt, UInt> kitColorId = GetGenericKitColor(team[t]->GetKit(), kitType[t] != 1);
+            Pair<UInt, UInt> kitColor = {
+                0xFF000000 | *(UInt *)(0x3080410 + kitColorId.first * 4),
+                0xFF000000 | *(UInt *)(0x3080410 + kitColorId.second * 4)
+            };
+            popupProcessor.mColors[t].mHasKitColors = true;
+            popupProcessor.mColors[t].mKitColor[0] = kitColor.first;
+            popupProcessor.mColors[t].mKitColor[1] = kitColor.second;
+            Bool hasColors = false;
+            Array<StringA, 10> colors;
+            for (UInt k = 0; k < 2; k++) {
+                if (!hasColors) {
+                    UInt teamId = (k == 0) ? team[t]->GetTeamUniqueID() : 0;
+                    if (teamColors.contains(teamId)) {
+                        Int teamKitType = -1;
+                        if (teamColors[teamId].contains(kitType[t]))
+                            teamKitType = kitType[t];
+                        else if (teamColors[teamId].contains(4))
+                            teamKitType = 4;
+                        if (teamKitType != -1) {
+                            colors = teamColors[teamId][teamKitType];
+                            hasColors = true;
+                        }
+                    }
                 }
             }
-            if (!oneTeam && awayTeam) {
-                awayTeamColor = GetOptionalComponent(screen, "ImgTeamColor2");
-                if (awayTeamColor) {
-                    if (recolorData.paramInt1 != 0 && awayTeamNode)
-                        awayTeamName = GetOptionalComponent(screen, awayTeamNode);
-                    if (recolorData.paramInt2 != 0 && awayScoreNode)
-                        awayScore = GetOptionalComponent(screen, awayScoreNode);
+            if (hasColors) {
+                auto WHITE = GenColor(255, 255, 255);
+                auto BLACK = GenColor(0, 0, 0);
+                UInt clrTeam1 = 0xFF000000 | team[t]->GetColorRGBA(0);
+                UInt clrTeam2 = 0xFF000000 | team[t]->GetColorRGBA(1);
+                auto kitDiff = Color::Distance(GenColorFromInt(kitColor.first), GenColorFromInt(kitColor.second));
+                UInt eplColor = kitColor.second;
+                if (kitDiff < 100) {
+                    eplColor = GetAltColor(kitColor.first);
+                    if (Color::Distance(GenColorFromInt(kitColor.first), GenColorFromInt(eplColor)) < 100)
+                        eplColor = GetTextColor(kitColor.first, true);
                 }
-            }
-            if (homeTeamColor || awayTeamColor) {
-                //SafeLog::WriteToFile("popups.log", L"can perform recolor");
-                UInt homeBackgroundColor = 0, homeTextColor = 0, awayBackgroundColor = 0, awayTextColor = 0;
-                Bool foundHome = false, foundAway = false;
-                if (recolorData.paramStr != L"-") {
-                    FifamReader reader(recolorData.paramStr);
-                    if (reader.Available()) {
-                        while (!reader.IsEof()) {
-                            if (!reader.EmptyLine()) {
-                                UInt teamId = 0, backgroundColor = 0, textColor = 0;
-                                reader.ReadLine(Hexadecimal(teamId), Hexadecimal(backgroundColor), Hexadecimal(textColor));
-                                if (!foundHome && homeTeamColor && teamId == homeTeam->GetTeamUniqueID()) {
-                                    homeBackgroundColor = backgroundColor;
-                                    homeTextColor = textColor;
-                                    foundHome = true;
-                                    if (!awayTeamColor || foundAway)
-                                        break;
-                                }
-                                if (!foundAway && awayTeamColor && teamId == awayTeam->GetTeamUniqueID()) {
-                                    awayBackgroundColor = backgroundColor;
-                                    awayTextColor = textColor;
-                                    foundAway = true;
-                                    if (!homeTeamColor || foundHome)
-                                        break;
-                                }
-                            }
-                            else
-                                reader.SkipLine();
-                        }
+                UInt epl_1 = eplColor;
+                UInt epl_2 = 0;
+                if (GenColor::Distance(GenColorFromInt(eplColor), WHITE) < 200) {
+                    if (GenColor::Distance(GenColorFromInt(kitColor.first), WHITE) < 200) {
+                        epl_1 = 0xFF202020;
+                        epl_2 = 0;
+                    }
+                    else {
+                        epl_1 = 0;
+                        epl_2 = eplColor;
                     }
                 }
-                if (homeTeamColor) {
-                    if (!foundHome) {
-                        UChar teamColor = homeTeam->GetColor(4);
-                        //SafeLog::WriteToFile("popups.log", L"home team recolor from db: " + Format(L"%d", teamColor));
-                        if (teamColor > 63)
-                            homeBackgroundColor = 0xFF000000;
-                        else
-                            homeBackgroundColor = 0xFF000000 | (*(UInt *)(0x3125508 + teamColor * 4 + 4 * 4 * 64));
-                        if (homeTeamName || homeScore) {
-                            if (teamColor > 63)
-                                homeTextColor = 0xFFFFFFFF;
-                            else {
-                                GenColor genBbackgroundColor = GenColor((homeBackgroundColor >> 16) & 0xFF, (homeBackgroundColor >> 8) & 0xFF, homeBackgroundColor & 0xFF);
-                                auto white = GenColor::Distance(genBbackgroundColor, GenColor(255, 255, 255));
-                                auto black = GenColor::Distance(genBbackgroundColor, GenColor(0, 0, 0));
-                                if (white < black)
-                                    homeTextColor = 0xFF000000;
-                                else
-                                    homeTextColor = 0xFFFFFFFF;
-                            }
-                        }
-                    }
-                    SetImageColorRGBA(homeTeamColor, homeBackgroundColor);
-                    if (homeTeamName)
-                        SetTextBoxColorRGBA(homeTeamName, homeTextColor);
-                    if (homeScore)
-                        SetTextBoxColorRGBA(homeScore, homeTextColor);
+                UInt eplPresentation = kitColor.first;
+                if (GenColor::Distance(GenColorFromInt(eplPresentation), WHITE) < 200) {
+                    eplPresentation = kitColor.second;
+                    if (GenColor::Distance(GenColorFromInt(eplPresentation), WHITE) < 200)
+                        eplPresentation = 0xFF202020;
                 }
-                if (awayTeamColor) {
-                    if (!foundAway) {
-                        UChar teamColor = awayTeam->GetColor(4);
-                        //SafeLog::WriteToFile("popups.log", L"away team recolor from db: " + Format(L"%d", teamColor));
-                        if (teamColor > 63)
-                            awayBackgroundColor = 0xFF000000;
-                        else
-                            awayBackgroundColor = 0xFF000000 | (*(UInt *)(0x3125508 + teamColor * 4 + 4 * 4 * 64));
-                        if (awayTeamName || awayScore) {
-                            if (teamColor > 63)
-                                awayTextColor = 0xFFFFFFFF;
-                            else {
-                                GenColor genBbackgroundColor = GenColor((awayBackgroundColor >> 16) & 0xFF, (awayBackgroundColor >> 8) & 0xFF, awayBackgroundColor & 0xFF);
-                                auto white = GenColor::Distance(genBbackgroundColor, GenColor(255, 255, 255));
-                                auto black = GenColor::Distance(genBbackgroundColor, GenColor(0, 0, 0));
-                                if (white < black)
-                                    awayTextColor = 0xFF000000;
-                                else
-                                    awayTextColor = 0xFFFFFFFF;
-                            }
-                        }
+                popupProcessor.mColors[t].mHasTetamColors = true;
+                for (UInt c = 0; c < 10; c++) {
+                    auto clr = ToLower(colors[c]);
+                    UInt clrValue = 0;
+                    if (clr.starts_with("team_interface_color"))
+                        clrValue = 0xFF000000 | team[t]->GetColorRGBA(4);
+                    else if (clr.starts_with("team_background"))
+                        clrValue = clrTeam1;
+                    else if (clr.starts_with("team_foreground")) {
+                        clrValue = clrTeam2;
+                        if (Color::Distance(GenColorFromInt(clrTeam1), GenColorFromInt(clrTeam2)) < 100)
+                            clrValue = GetTextColor(clrTeam1);
                     }
-                    SetImageColorRGBA(awayTeamColor, awayBackgroundColor);
-                    if (awayTeamName)
-                        SetTextBoxColorRGBA(awayTeamName, awayTextColor);
-                    if (awayScore)
-                        SetTextBoxColorRGBA(awayScore, awayTextColor);
+                    else if (clr.starts_with("team_color_1"))
+                        clrValue = clrTeam1;
+                    else if (clr.starts_with("team_color_2"))
+                        clrValue = clrTeam2;
+                    else if (clr.starts_with("kit_background"))
+                        clrValue = kitColor.first;
+                    else if (clr.starts_with("kit_foreground")) {
+                        clrValue = kitColor.second;
+                        if (kitDiff < 100)
+                            clrValue = GetTextColor(kitColor.first);
+                    }
+                    else if (clr.starts_with("kit_color_1"))
+                        clrValue = kitColor.first;
+                    else if (clr.starts_with("kit_color_2"))
+                        clrValue = kitColor.second;
+                    else if (clr.starts_with("epl_color_1"))
+                        clrValue = epl_1;
+                    else if (clr.starts_with("epl_color_2"))
+                        clrValue = epl_2;
+                    else if (clr.starts_with("epl_presentation_color"))
+                        clrValue = eplPresentation;
+                    else
+                        clrValue = Utils::SafeConvertInt<UInt>(clr, true);
+                    if (clr.ends_with("_text") || clr.contains("_text_"))
+                        clrValue = GetTextColor(clrValue);
+                    if (clr.ends_with("_alt") || clr.contains("_alt_"))
+                        clrValue = GetAltColor(clrValue);
+                    if (clr.ends_with("_onblack") || clr.contains("_onblack_")) {
+                        if (GenColor::Distance(GenColorFromInt(clrValue), BLACK) < 200)
+                            clrValue = 0xFFFFFFFF;
+                    }
+                    else if (clr.ends_with("_onwhite") || clr.contains("_onwhite_")) {
+                        if (GenColor::Distance(GenColorFromInt(clrValue), WHITE) < 200)
+                            clrValue = 0xFF000000;
+                    }
+                    popupProcessor.mColors[t].mTeamColor[c] = clrValue;
                 }
             }
         }
     }
+    void *guiInstance = *raw_ptr<void *>(screen, 0x20);
+    CallVirtualMethod<26>(guiInstance, &popupProcessor, 0);
 }
 
 void METHOD OnSetupMatch3DTeamPresentation(void *screen, DUMMY_ARG, CDBOneMatch *match) {
     CallMethod<0xB55900>(screen, match);
-    Process3dMatchScreenExtensions(screen, "TrfmTeam1|TbBadge", "TrfmTeam2|TbBadge", "TrfmTeam1|TbName", "TrfmTeam2|TbName", nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    Process3dMatchScreenExtensions(screen, "TrfmTeam1|TbBadge", "TrfmTeam2|TbBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    for (UInt t = 0; t < 2; t++) {
+        CDBEmployee *employee = *raw_ptr<CDBEmployee *>(screen, 0x4FC + 0x1C + 0x3C * t);
+        if (employee) {
+            void *tb = GetOptionalComponent(screen, (t == 0) ? "TrfmTeam1|TbManagerPhoto" : "TrfmTeam2|TbManagerPhoto");
+            if (tb)
+                Call<0xD4F8E0>(tb, employee, 3, 1);
+        }
+    }
+}
+
+void *gCurrentTeamPresentationScreen = nullptr;
+
+void METHOD OnSetupTeam3DTeamPresentation(void *screen, DUMMY_ARG, void *teamData) {
+    gCurrentTeamPresentationScreen = screen;
+    CallMethod<0xB570A0>(screen, teamData);
+    Process3dMatchScreenExtensions(screen, nullptr, nullptr, *raw_ptr<CTeamIndex>(teamData, 0x20), CTeamIndex::null(), 0, true);
+}
+
+void OnSetStatusWidgetImage(void *widget, const WideChar *imagePath, UInt a, UInt b) {
+    if (gCurrentTeamPresentationScreen) {
+        void *buf[3] = { 0, 0, gCurrentTeamPresentationScreen };
+        UInt dummy = 0;
+        CallMethod<0xD5FE50>(buf, Utils::SafeConvertInt<UInt>(imagePath), widget, &dummy);
+    }
+}
+
+void METHOD OnSetPresentationScreenPlayerId(void *str, DUMMY_ARG, const WideChar *, UInt playerId) {
+    String playerIdStr = std::to_wstring(playerId);
+    CallMethod<0x424060>(str, playerIdStr.c_str(), playerIdStr.size());
+}
+
+Float *METHOD OnCalcPlayerLabelPosition(void *t, DUMMY_ARG, Float *out, Float *in) {
+    for (UInt i = 0; i < 4; i++)
+        out[i] = in[i];
+    return out;
 }
 
 void METHOD OnSetupMatch3DStatisticsOverlay(void *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB3BFD0>(screen, data);
-    Process3dMatchScreenExtensions(screen, "TbBadgeHome", "TbBadgeAway", "TbClubNameHome", "TbClubNameAway", nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    Process3dMatchScreenExtensions(screen, "TbBadgeHome", "TbBadgeAway", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
 void METHOD OnSetupMatch3DCardOverlay(void *screen, DUMMY_ARG, void *data) {
@@ -580,7 +729,27 @@ void METHOD OnSetupMatch3DCardOverlay(void *screen, DUMMY_ARG, void *data) {
         if (matchController) {
             CTeamIndex teamID = CTeamIndex::null();
             CallVirtualMethod<57>(matchController, &teamID, *raw_ptr<UInt>(data, 0x14));
-            Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
+            Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, teamID, CTeamIndex::null(), 0, true);
+            Vector<StringA> compsToDisable = { "ImgGoal", "TbGoal" };
+            switch (*raw_ptr<UInt>(data, 0x18)) {
+            case 0:
+                compsToDisable.push_back("Tb2ndYellowCard");
+                compsToDisable.push_back("TbRedCard");
+                break;
+            case 1:
+                compsToDisable.push_back("TbYellowCard");
+                compsToDisable.push_back("TbRedCard");
+                break;
+            case 2:
+                compsToDisable.push_back("TbYellowCard");
+                compsToDisable.push_back("Tb2ndYellowCard");
+                break;
+            }
+            for (auto const &s : compsToDisable) {
+                auto comp = GetOptionalComponent(screen, s.c_str());
+                if (comp)
+                    SetVisible(comp, false);
+            }
         }
     }
 }
@@ -592,7 +761,13 @@ void METHOD OnSetupMatch3DGoalOverlay(void *screen, DUMMY_ARG, void *data) {
         if (matchController) {
             CTeamIndex teamID = CTeamIndex::null();
             CallVirtualMethod<57>(matchController, &teamID, *raw_ptr<UInt>(data, 0x14));
-            Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
+            Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, teamID, CTeamIndex::null(), 0, true);
+            Vector<StringA> compsToDisable = { "TbYellowCard", "Tb2ndYellowCard", "TbRedCard" };
+            for (auto const &s : compsToDisable) {
+                auto comp = GetOptionalComponent(screen, s.c_str());
+                if (comp)
+                    SetVisible(comp, false);
+            }
         }
     }
 }
@@ -600,13 +775,13 @@ void METHOD OnSetupMatch3DGoalOverlay(void *screen, DUMMY_ARG, void *data) {
 void METHOD OnSetupMatch3DPitchOverlayStandings(void *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB719C0>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 0x2000)
-        Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", "TbHomeTeam", "TbAwayTeam", "TbStandingHome", "TbStandingAway", CTeamIndex::null(), CTeamIndex::null(), 0, false);
+        Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
 void METHOD OnSetupMatch3DPenaltyShootOut(void *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB38CE0>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) == 0x80)
-        Process3dMatchScreenExtensions(screen, "ImgBadgeHome", "ImgBadgeAway", "TbTeamHome", "TbTeamAway", nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, false);
+        Process3dMatchScreenExtensions(screen, "ImgBadgeHome", "ImgBadgeAway", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
 void METHOD OnSetupMatch3DSubstitution(void *screen, DUMMY_ARG, void *data) {
@@ -617,9 +792,9 @@ void METHOD OnSetupMatch3DSubstitution(void *screen, DUMMY_ARG, void *data) {
             CTeamIndex teamID = CTeamIndex::null();
             CallVirtualMethod<57>(matchController, &teamID, *raw_ptr<UInt>(data, 0x18));
             if (*raw_ptr<UInt>(data, 0x14) == 1)
-                Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
+                Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, teamID, CTeamIndex::null(), 0, true);
             else if (*raw_ptr<UInt>(data, 0x14) > 1)
-                Process3dMatchScreenExtensions(screen, "TbBadgeSmall", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
+                Process3dMatchScreenExtensions(screen, "TbBadgeSmall", nullptr, teamID, CTeamIndex::null(), 0, true);
         }
     }
 }
@@ -636,7 +811,7 @@ void METHOD OnSetupMatch3DManagerSentOff(void *screen, DUMMY_ARG, void *data) {
                 CallMethod<0xEA77C0>(employee, &teamID);
             else
                 CallMethod<0xE7EC90>(raw_ptr<void>(employee, 0x10), &teamID);
-            Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, "TbClubName", nullptr, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
+            Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, teamID, CTeamIndex::null(), 0, true);
         }
     }
 }
@@ -653,7 +828,7 @@ void METHOD OnSetuMatch3DHalfTimeStats(void *screen, DUMMY_ARG, void *data) {
                 process = false;
         }
         if (process)
-            Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", "TbHomeTeam", "TbAwayTeam", nullptr, nullptr, CTeamIndex::null(), CTeamIndex::null(), 0, false);
+            Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
     }
 }
 
@@ -666,6 +841,20 @@ void METHOD OnCreateStandingsUI(void *standingsInterface) {
     additionalData->mTbAddedTime = GetOptionalComponent(standingsInterface, "TbAddedTime");
     additionalData->mImgAggregate = GetOptionalComponent(standingsInterface, "ImgAggregate");
     additionalData->mTbAggregate = GetOptionalComponent(standingsInterface, "TbAggregate");
+    additionalData->mHasRedCards = false;
+    for (UInt t = 0; t < 2; t++) {
+        for (UInt i = 0; i < 3; i++) {
+            additionalData->mCards[t][i].mStatus = 0;
+            additionalData->mCards[t][i].mEnableTime = 0;
+            StringA cardName = (t == 0) ? Utils::Format("HomeRedCard%d", i + 1) :  Utils::Format("AwayRedCard%d", i + 1);
+            additionalData->mCards[t][i].mpCard = GetOptionalComponent(standingsInterface, cardName.c_str());
+            if (additionalData->mCards[t][i].mpCard) {
+                SetVisible(additionalData->mCards[t][i].mpCard, false);
+                if (!additionalData->mHasRedCards)
+                    additionalData->mHasRedCards = true;
+            }
+        }
+    }
     // setup added time and aggregate result
     SetVisible(additionalData->mImgAddedTime, false);
     SetVisible(additionalData->mTbAddedTime, false);
@@ -678,7 +867,7 @@ void METHOD OnCreateStandingsUI(void *standingsInterface) {
         SetVisible(additionalData->mImgAggregate, false);
         SetVisible(additionalData->mTbAggregate, false);
     }
-    Process3dMatchScreenExtensions(standingsInterface, "ImgHomeBadge", "ImgAwayBadge", "TbHomeTeam", "TbAwayTeam", "TbScoreHome", "TbScoreAway", CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    Process3dMatchScreenExtensions(standingsInterface, "ImgHomeBadge", "ImgAwayBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
 void UpdateTime(void *standingsInterface) {
@@ -706,6 +895,39 @@ void UpdateTime(void *standingsInterface) {
         SetVisible(additionalData->mImgAddedTime, false);
         SetVisible(additionalData->mTbAddedTime, false);
         SetText(tbTime, time);
+    }
+    if (additionalData->mHasRedCards) {
+        UInt time = GetTickCount();
+        // show cards which were enabled
+        for (UInt t = 0; t < 2; t++) {
+            for (UInt c = 0; c < 3; c++) {
+                if (additionalData->mCards[t][c].mStatus == 1 && (time - additionalData->mCards[t][c].mEnableTime) > 1000) {
+                    additionalData->mCards[t][c].mStatus = 2;
+                    SetVisible(additionalData->mCards[t][c].mpCard, true);
+                }
+            }
+        }
+        // enable cards which are not yet enabled
+        auto match = GetCurrentMatch();
+        if (match) {
+            for (UInt t = 0; t < 2; t++) {
+                UInt numRedCards = 0;
+                UInt *playerFlags = raw_ptr<UInt>(CallMethodAndReturn<void *, 0xE802D0>(match, t == 0), 0x4E0);
+                for (UInt p = 0; p < 18; p++) {
+                    if (playerFlags[p] & 6) {
+                        numRedCards++;
+                        if (numRedCards == 3)
+                            break;
+                    }
+                }
+                for (UInt c = 0; c < numRedCards; c++) {
+                    if (additionalData->mCards[t][c].mStatus == 0) {
+                        additionalData->mCards[t][c].mStatus = 1;
+                        additionalData->mCards[t][c].mEnableTime = time;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -837,16 +1059,95 @@ WideChar const *gNew3DScreenNames[] = {
     L"12Match3DPitchStandingsOverlay",
 };
 
-void *METHOD sub_B24950(void *t, DUMMY_ARG, const char *a2, int a3, int a4, int a5, int a6, char a7) {
-    Message(a2);
-    return CallMethodAndReturn<void *, 0xB24950>(t, a2, a3, a4, a5, a6, a7);
+void METHOD OnSetCardFlag(void *t, DUMMY_ARG, UInt playerId, UInt flag, Bool bEnable) {
+    ::Warning("OnSetCardFlag %d %d", playerId, bEnable);
+    CallMethod<0xE857C0>(t, playerId, flag, bEnable);
+}
+
+void METHOD ReadPresentationConfig(void *t, DUMMY_ARG, WideChar const *filePath) {
+    void *match = *(void **)0x3124748;
+    if (match) {
+        UInt compId = 0;
+        CallMethod<0xE80190>(match, &compId);
+        if (compId != 0) {
+            //Message(Format(L"compId: %08X", compId));
+            UShort year = GetCurrentYear();
+            String newfilename = Format(L"fmdata\\popups\\presentation\\%4d_%08X.txt", year, compId);
+            if (!FileExists(newfilename)) {
+                if (IsCompetitionLeagueSplit_UInt(compId)) {
+                    UInt mainCompId = GetCompetitionLeagueSplitMainLeague(compId);
+                    newfilename = Format(L"fmdata\\popups\\presentation\\%4d_%08X.txt", year, mainCompId);
+                    if (!FileExists(newfilename))
+                        newfilename.clear();
+                }
+                else
+                    newfilename.clear();
+            }
+            if (newfilename.empty()) {
+                newfilename = Format(L"fmdata\\popups\\presentation\\%4d_%04X.txt", year, (compId >> 16) & 0xFFFF);
+                if (!FileExists(newfilename))
+                    newfilename.clear();
+            }
+            if (newfilename.empty()) {
+                newfilename = Format(L"fmdata\\popups\\presentation\\%08X.txt", compId);
+                if (!FileExists(newfilename)) {
+                    if (IsCompetitionLeagueSplit_UInt(compId)) {
+                        UInt mainCompId = GetCompetitionLeagueSplitMainLeague(compId);
+                        newfilename = Format(L"fmdata\\popups\\presentation\\%08X.txt", mainCompId);
+                        if (!FileExists(newfilename))
+                            newfilename.clear();
+                    }
+                    else
+                        newfilename.clear();
+                }
+                if (newfilename.empty()) {
+                    newfilename = Format(L"fmdata\\popups\\presentation\\%04X.txt", (compId >> 16) & 0xFFFF);
+                    if (!FileExists(newfilename))
+                        newfilename.clear();
+                }
+            }
+            if (!newfilename.empty()) {
+                CallMethod<0xB4D240>(t, newfilename.c_str());
+                return;
+            }
+        }
+    }
+    CallMethod<0xB4D240>(t, L"fmdata\\ParameterFiles\\Team Presentation.txt");
+}
+
+void METHOD OnPresentationInvertPlayersY(void *t) {
+    if (false)
+        CallMethod<0xB47DA0>(t);
+}
+
+void METHOD OnPresentationInvertPlayersX(void *t) {
+    if (false)
+        CallMethod<0xB47E60>(t);
+}
+
+void METHOD SetOverlayMinuteText(void *t, DUMMY_ARG, void *control, UInt minute) {
+    SetText(control, Format(L"%d'", minute).c_str());
+}
+
+void METHOD PitchDummyAnimationCallback(void *t, DUMMY_ARG, float factor) {
+
+}
+
+Short *CalcBoundingTeamLabel(Short *outRect, void *control1, void *control2, void *control3, void *) {
+    outRect[0] = 0;
+    outRect[1] = 0;
+    outRect[2] = 1280;
+    outRect[3] = 1024;
+    //Call<0xB46C30>(outRect, control1, control2, control3, 0);
+    //::Message("%d %d %d %d", outRect[0], outRect[1], outRect[2], outRect[3]);
+    return outRect;
 }
 
 void Patch3dMatchStandings(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        ReadPopupDataSettingsFile(GetPopupKitColors(), "plugins\\ucp\\popup_kitcolors.dat", true);
-        ReadPopupDataSettingsFile(GetPopupCustomBadge(), "plugins\\ucp\\popup_badges.dat", true);
-        ReadPopupDataSettingsFile(GetPopupRecolor(), "plugins\\ucp\\popup_teamcolors.dat", false);
+        ReadPopupDataSettingsFile(GetPopupKitColors(), FM::GameDirPath(L"plugins\\ucp\\popup_kitcolors.dat"), true);
+        ReadPopupDataSettingsFile(GetPopupCustomBadge(), FM::GameDirPath(L"plugins\\ucp\\popup_badges.dat"), true);
+        ReadPopupDataSettingsFile(GetPopupRecolor(), FM::GameDirPath(L"plugins\\ucp\\popup_teamcolors.dat"), false);
         // expand struct size
         const UInt newStructSize = STANDINGS3D_ORIGINAL_STRUCT_SIZE + sizeof(Standings3dAdditionalData);
         patch::SetUInt(0xBF68D4 + 1, newStructSize);
@@ -863,8 +1164,6 @@ void Patch3dMatchStandings(FM::Version v) {
 
         patch::RedirectCall(0xBFACCB, OnRead3dMatchOverlaysConfig);
 
-
-
         patch::SetPointer(0xB33519 + 1, "Pitca");
         patch::SetPointer(0x4E0260 + 3, gNew3DScreenNames);
         patch::SetUChar(0xB2B92B + 1, 11);
@@ -874,6 +1173,10 @@ void Patch3dMatchStandings(FM::Version v) {
         patch::SetPointer(0x246992C, OnCreateMatch3DPlayerIndicatorUI);
 
         patch::SetPointer(0x246013C, OnSetupMatch3DTeamPresentation);
+        patch::RedirectCall(0xB58033, OnSetupTeam3DTeamPresentation);
+        patch::RedirectCall(0xB58BEA, OnSetupTeam3DTeamPresentation);
+        patch::SetPointer(0xB57ED8 + 4, OnSetupTeam3DTeamPresentation);
+        patch::SetPointer(0xB588E9 + 4, OnSetupTeam3DTeamPresentation);
         patch::SetPointer(0x245DC3C, OnSetupMatch3DStatisticsOverlay);
         patch::SetPointer(0x245A394, OnSetupMatch3DCardOverlay);
         patch::SetPointer(0x245A6A4, OnSetupMatch3DGoalOverlay);
@@ -882,6 +1185,8 @@ void Patch3dMatchStandings(FM::Version v) {
         patch::SetPointer(0x245E0AC, OnSetupMatch3DSubstitution);
         patch::SetPointer(0x2468984, OnSetupMatch3DManagerSentOff);
         patch::SetPointer(0x246831C, OnSetuMatch3DHalfTimeStats);
+
+        patch::RedirectCall(0xB57469, OnSetStatusWidgetImage);
 
         // remove 1024x1024
         patch::Nop(0xB7274B, 7);
@@ -904,5 +1209,42 @@ void Patch3dMatchStandings(FM::Version v) {
         patch::SetUChar(0xB1F4B5, 0xEB);
         // LiveTable - remove away team color
         patch::SetUChar(0xB1F4D5, 0xEB);
+
+        //patch::RedirectCall(0x438210, OnSetCardFlag);
+        //patch::RedirectCall(0x438126, OnSetCardFlag);
+        //patch::RedirectCall(0x43810A, OnSetCardFlag);
+
+        // disable TbStatus special tweak
+        patch::SetUChar(0xB449D0, 0xC3);
+        // replace player status by player id
+        patch::Nop(0xB56C2F, 11);
+        patch::RedirectCall(0xB56C4B, OnSetPresentationScreenPlayerId);
+        // remove pitch label translation
+       // patch::RedirectCall(0xB47BBA, OnCalcPlayerLabelPosition);
+       // patch::Nop(0xB47BBA + 5, 3);
+        patch::SetUChar(0xB4783C, 0x83);
+        patch::SetUChar(0xB4783C + 1, 0xC4);
+        patch::SetUChar(0xB4783C + 2, 0x04);
+        patch::Nop(0xB4783C + 3, 7);
+        patch::SetUChar(0xB47866, 0x83);
+        patch::SetUChar(0xB47866 + 1, 0xC4);
+        patch::SetUChar(0xB47866 + 2, 0x04);
+        patch::Nop(0xB47866 + 3, 7);
+        patch::Nop(0xB47A60, 3);
+        //patch::Nop(0xB47FCA, 2);
+        patch::SetPointer(0xB58976 + 4, OnPresentationInvertPlayersY);
+        patch::SetPointer(0xB58A03 + 4, OnPresentationInvertPlayersX);
+        patch::SetPointer(0xB582F4 + 4, PitchDummyAnimationCallback);
+        //patch::SetPointer(0xB57D35 + 4, PitchDummyAnimationCallback);
+        //patch::SetPointer(0xB5920D + 4, PitchDummyAnimationCallback);
+        //patch::RedirectCall(0xB47399, CalcBoundingTeamLabel);
+
+        patch::RedirectCall(0x20794E8, ReadPresentationConfig);
+        patch::RedirectCall(0x209F5D3, ReadPresentationConfig);
+
+        // change minute text to X'
+        patch::RedirectCall(0xB14A5A, SetOverlayMinuteText);
+        patch::RedirectCall(0xB158E1, SetOverlayMinuteText);
+        patch::RedirectCall(0xBFEE72, SetOverlayMinuteText);
     }
 }

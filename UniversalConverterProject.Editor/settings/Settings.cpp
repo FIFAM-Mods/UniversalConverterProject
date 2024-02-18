@@ -23,8 +23,7 @@ std::wstring SettingsHelper::ToUTF16(std::string const &str) {
 
 void SettingsAbstract::Read(std::filesystem::path const &filename) {
     Reset();
-    FILE *file = nullptr;
-    _wfopen_s(&file, filename.c_str(), L"rb");
+    FILE *file = _wfopen(filename.c_str(), L"rb");
     if (file) {
         fseek(file, 0, SEEK_END);
         long fileSizeWithBom = ftell(file);
@@ -175,8 +174,7 @@ void SettingsAbstract::Read(std::filesystem::path const &filename) {
 void SettingsAbstract::Write(std::filesystem::path const &filename, bool onlyNonDefault) {
     if (filename.has_parent_path() && !exists(filename.parent_path()))
         std::filesystem::create_directories(filename.parent_path());
-    FILE *file = nullptr;
-    _wfopen_s(&file, filename.c_str(), L"wb");
+    FILE *file = _wfopen(filename.c_str(), L"wb");
     if (file) {
         if (!mParametersMap.empty()) {
             _setmode(_fileno(file), _O_U8TEXT);

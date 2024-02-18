@@ -4,8 +4,6 @@
 
 using namespace plugin;
 
-bool gKitsInstalled = false;
-
 bool ImgExistsAnyOrTpi(std::wstring const &filename) {
     return CallAndReturn<bool, 0xD2CBB0>(filename.c_str(), 0);
 }
@@ -41,7 +39,7 @@ void METHOD Render2dKit(void *t) {
         if (club->IsManagedByAI())
             homeGenericKit = false;
         else {
-            if (!gKitsInstalled)
+            if (!teamKit->HasUserKitType(0))
                 homeGenericKit = false;
         }
     }
@@ -74,7 +72,6 @@ void METHOD Render2dKit(void *t) {
 }
 
 void PatchMinikits(FM::Version v) {
-    gKitsInstalled = GetPrivateProfileIntW(L"MAIN", L"Kits", 0, L".\\installer.ini") != 0;
     patch::RedirectCall(0x654991, Render2dKit<0, 0x21E0, 0x19A0, 0x652E40>);
     patch::RedirectCall(0x6D36C1, Render2dKit<0xBE0, 0, 0xBC0, 0x6D0630>);
 }

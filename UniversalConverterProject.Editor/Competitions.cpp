@@ -50,15 +50,12 @@ CompTypeNameDesc gNewCompTypeNames[] = {
      { L"Q_OFC_CUP", 0, 48 }, // OFC Cup Quali
      { L"OFC_CUP", 0, 49 }, // OFC Cup
      { L"CONFERENCE_LEAGUE", 0, 51 }, // Conference League
+     { L"FINALISSIMA", 0, 52 }, // Finalissima
      { nullptr, 0, 0 }
 };
 
 bool METHOD TakesPlaceInThisYear(void *comp, DUMMY_ARG, int year) {
     switch (*raw_ptr<unsigned char>(comp, 10)) {
-    case COMP_QUALI_WC: // QUALI_WC
-        if (!(year % 4))
-            return true;
-        break;
     case COMP_QUALI_EC: // QUALI_EC
     case COMP_ASIA_CUP:
     case COMP_ASIA_CUP_Q:
@@ -75,13 +72,14 @@ bool METHOD TakesPlaceInThisYear(void *comp, DUMMY_ARG, int year) {
         if (year % 4 == 3)
             return true;
         break;
-    case COMP_U20_WORLD_CUP: // U20_WORLD_CUP
     case COMP_NAM_NL:
     case COMP_NAM_NL_Q:
         if (year % 2 == 1)
             return true;
         break;
+    case COMP_QUALI_WC: // QUALI_WC
     case COMP_CONFED_CUP: // CONFED_CUP
+    case COMP_FINALISSIMA: // FINALISSIMA
         if (year % 4 == 0)
             return true;
         break;
@@ -90,6 +88,8 @@ bool METHOD TakesPlaceInThisYear(void *comp, DUMMY_ARG, int year) {
     case COMP_AFRICA_CUP:
     case COMP_AFRICA_CUP_Q:
     case COMP_NAM_CUP:
+    case COMP_U20_WC_Q:
+    case COMP_U20_WORLD_CUP: // U20_WORLD_CUP
         if (year % 2 == 0)
             return true;
         break;
@@ -123,6 +123,7 @@ ExternalScriptDesc gExternalScripts[] = {
     {L"EuropeanChampionship.txt", 255, L"EURO_NL", 1},
     {L"EuropeanChampionship.txt", 255, L"Q_EURO_NL", 1},
     {L"CopaAmerica.txt", 255, L"COPA_AMERICA", 2},
+    {L"CopaAmerica.txt", 255, L"FINALISSIMA", 2},
     {L"NorthAmericaCup.txt", 255, L"NAM_CUP", 1},
     {L"NorthAmericaCup.txt", 255, L"NAM_NL", 2},
     {L"NorthAmericaCup.txt", 255, L"Q_NAM_NL", 2},
@@ -133,15 +134,6 @@ ExternalScriptDesc gExternalScripts[] = {
     {L"OFCCup.txt", 255, L"OFC_CUP", 2},
     {L"OFCCup.txt", 255, L"Q_OFC_CUP", 2} // not implemented
 };
-
-wchar_t const *GetTranslation(char const *key) {
-    void *locale = CallAndReturn<void *, 0x575200>();
-    return CallMethodAndReturn<wchar_t *, 0x5756F0>(locale, key, *raw_ptr<unsigned int>(locale, 0x18));
-}
-
-void *GetLocale() {
-    return CallAndReturn<void *, 0x575200>();
-}
 
 unsigned int gCalendarContinent = 0;
 void SetupCalendarForContinent(unsigned int continent, unsigned int season, void *calendar) {
@@ -173,6 +165,8 @@ void METHOD RemoveCompetitionsFromCalendar(void *obj, DUMMY_ARG, unsigned char t
         CallMethod<0x4FC310>(obj, COMP_OFC_CUP);
         CallMethod<0x4FC310>(obj, COMP_OFC_CUP_Q);
     }
+    if (gCalendarContinent != 0 && gCalendarContinent != 1)
+        CallMethod<0x4FC310>(obj, COMP_FINALISSIMA);
 }
 
 wchar_t const *gCompBlockName = nullptr;

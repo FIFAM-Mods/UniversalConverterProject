@@ -3,6 +3,13 @@
 
 struct PlayerExtension {
     wchar_t *jerseyName;
+    unsigned int creator;
+    unsigned int fifaId;
+    int footballManagerId;
+};
+
+struct RefereeExtension {
+    unsigned int creator;
     int footballManagerId;
 };
 

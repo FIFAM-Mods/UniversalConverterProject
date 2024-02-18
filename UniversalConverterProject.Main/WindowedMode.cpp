@@ -140,9 +140,16 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     CallVirtualMethod<9>(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
     CallVirtualMethod<9>(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
     CallVirtualMethod<9>(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
-    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DEFAULT"), 0, 0);
-    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DARK"), 1, 0);
-    CallVirtualMethod<70>(data->cbTheme, ToLower(Settings::GetInstance().Theme) == "dark");
+    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_CLASSIC"), 0, 0);
+    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_LIGHT"), 1, 0);
+    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DARK"), 2, 0);
+    auto theme = ToLower(Settings::GetInstance().Theme);
+    if (theme == "light")
+        CallVirtualMethod<70>(data->cbTheme, 1);
+    else if (theme == "dark")
+        CallVirtualMethod<70>(data->cbTheme, 2);
+    else
+        CallVirtualMethod<70>(data->cbTheme, 0);
     return result;
 }
 
@@ -180,6 +187,8 @@ void METHOD OnProcessGameOptionsComboboxes(void *screen, DUMMY_ARG, int *id, int
     else if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbTheme)) {
         int themeId = CallVirtualMethodAndReturn<int, 94>(data->cbTheme, 0, 0);
         if (themeId == 1)
+            Settings::GetInstance().Theme = "light";
+        else if (themeId == 2)
             Settings::GetInstance().Theme = "dark";
         else
             Settings::GetInstance().Theme = "";

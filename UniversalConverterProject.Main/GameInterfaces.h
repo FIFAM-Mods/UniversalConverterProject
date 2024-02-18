@@ -16,6 +16,8 @@ public:
     UInt Value();
     UInt GetDayOfWeek();
     static CJDate DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year);
+    void AddRandomDaysCount(UChar direction);
+    CJDate AddYears(Int years);
 };
 
 using EAGMoney = Int64;
@@ -132,6 +134,7 @@ public:
     bool TestFlag(unsigned int flag);
     void SetCurrentDate(CJDate date);
     CDBGameOptions &GetOptions();
+    bool IsCountryPlayable(UChar countryId);
 };
 
 struct CTeamIndex {
@@ -149,8 +152,23 @@ struct CTeamIndex {
 
 bool operator==(CTeamIndex const &a, CTeamIndex const &b);
 
+class CDBCountry;
 class CDBTeam;
 class CDBEmployee;
+class CDBStaff;
+class CWorker;
+
+class CPlayerStats {
+public:
+    UChar GetNumInternationalCaps();
+};
+
+enum ePlayerPositionRole {
+    PLAYER_POSITION_ROLE_GK,
+    PLAYER_POSITION_ROLE_DEF,
+    PLAYER_POSITION_ROLE_MID,
+    PLAYER_POSITION_ROLE_ATT
+};
 
 class CDBPlayer {
 public:
@@ -164,13 +182,58 @@ public:
     EAGMoney GetMarketValue(CDBEmployee *employee = nullptr);
     EAGMoney GetDemandValue();
     EAGMoney GetMinRelFee();
-    void SetDemandValue(EAGMoney const &money);
-    void SetMinRelFee(EAGMoney const &money);
     UChar GetNationality(UChar number = 0);
     CTeamIndex GetNationalTeam();
+    String GetName(bool shortForm = false);
+    void SetDemandValue(EAGMoney const &money);
+    void SetMinRelFee(EAGMoney const &money);
+    void SetNationality(UChar index, UChar nation);
+    void SetIsBasque(bool basque);
+    UChar GetNumKnownLanguages();
+    UChar GetLanguage(UChar number = 0);
+    void SetLanguage(UChar index, UChar language);
+    UInt GetID();
+    Bool IsInNationalTeam();
+    Bool IsRetiredFromNationalTeam();
+    Bool IsInU21NationalTeam();
+    Bool IsEndOfCareer();
+    UChar GetNumPlannedYearsForCareer();
+    CPlayerStats *GetStats();
+    UChar GetPotential();
+    UChar GetPositionRole();
 };
 
-class CDBCountry;
+class CDBStaff {
+public:
+    CWorker *GetWorker();
+    void SetBirthDate(CJDate const &date);
+    CJDate const &GetBirthdate();
+    void SetNationality(UChar index, UChar countryId);
+    UChar GetNationality(UChar index);
+    WideChar const *GetName(WideChar const *nameBuf = nullptr);
+    UInt GetAge();
+    void SetTalent(UInt talent);
+    UInt GetTalent();
+};
+
+class CDBEmployeeBase {
+public:
+    void SetBirthDate(CJDate const &date);
+    WideChar const *GetName(WideChar const *nameBuf = nullptr);
+};
+
+class CDBEmployee {
+public:
+    CDBEmployeeBase *GetBase();
+    void SetBirthDate(CJDate const &date);
+    void SetFirstNationality(UChar countryId);
+    void SetSecondNationality(UChar countryId);
+    void SetLanguage(UChar languageId);
+    void SetAdditionalLanguageLevel(UChar index, UChar languageId, UChar level);
+    CTeamIndex GetTeamID();
+    void GetTeamID(CTeamIndex &out);
+    WideChar const *GetName(WideChar const *nameBuf = nullptr);
+};
 
 enum eCompetitionType : unsigned char {
     COMP_ROOT = 0,
@@ -225,16 +288,17 @@ enum eCompetitionType : unsigned char {
     COMP_OFC_CUP = 49, // OFC Cup
     COMP_U20_WC_Q = 50, // U20 WC Quali
     COMP_CONFERENCE_LEAGUE = 51, // Conference League
-    COMP_U17_WC_Q = 52, // U17 WC Quali
-    COMP_U17_WORLD_CUP = 53, // U17 WC
-    COMP_U21_EC_Q = 54, // U21 EC Quali
-    COMP_U21_EC = 55, // U21 EC
-    COMP_U19_EC_Q = 56, // U19 EC Quali
-    COMP_U19_EC = 57, // U19 EC
-    COMP_U17_EC_Q = 58, // U17 EC Quali
-    COMP_U17_EC = 59, // U17 EC
-    COMP_OLYMPIC_Q = 60, // Olympic Games Quali
-    COMP_OLYMPIC = 61, // Olympic Games
+    COMP_FINALISSIMA = 52, // Finalissima
+    COMP_U17_WC_Q = 53, // U17 WC Quali
+    COMP_U17_WORLD_CUP = 54, // U17 WC
+    COMP_U21_EC_Q = 55, // U21 EC Quali
+    COMP_U21_EC = 56, // U21 EC
+    COMP_U19_EC_Q = 57, // U19 EC Quali
+    COMP_U19_EC = 58, // U19 EC
+    COMP_U17_EC_Q = 59, // U17 EC Quali
+    COMP_U17_EC = 60, // U17 EC
+    COMP_OLYMPIC_Q = 61, // Olympic Games Quali
+    COMP_OLYMPIC = 62, // Olympic Games
 };
 
 struct CCompID {
@@ -324,6 +388,8 @@ enum eRoundType {
     ROUND_QUARTERFINAL = 13,
     ROUND_SEMIFINAL = 14,
     ROUND_FINAL = 15,
+    ROUND_FINAL_3RD_PLACE = 16,
+    ROUND_NONE = 255
 };
 
 struct TeamLeaguePositionData {
@@ -351,20 +417,31 @@ struct RoundPair {
     char field_E[2];
     unsigned int m_nFlags;
     int m_anMatchEventsStartIndex[3];
+
+    RoundPair();
+    bool AreTeamsValid();
+    void *GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name);
 };
 
 struct MatchGoalInfo {
-    Int scorer;
-    UChar teamSide;
-    UChar minute;
-    Char field_6;
-    Bool isOwnGoal;
+    int scorer;
+    unsigned char teamSide;
+    unsigned char minute;
+    char field_6;
+    bool isOwnGoal;
 };
 
 class CDBRoot : public CDBCompetition {};
 class CDBPool : public CDBCompetition {};
-class CDBRound : public CDBCompetition {};
+
+class CDBRound : public CDBCompetition {
+public:
+    unsigned int GetNumOfPairs();
+    void GetRoundPair(unsigned int pairIndex, RoundPair &out);
+};
+
 class CDBCup : public CDBCompetition {};
+
 class CDBLeagueBase : public CDBCompetition {
 public:
     CTeamIndex &GetTeamAtPosition(int position);
@@ -426,21 +503,42 @@ class CDBTeamKit {
 public:
     UInt GetPartType(UChar kitType, UChar shirtPart);
     UChar GetPartColor(UChar kitType, UChar shirtPart, UChar colorIndex);
+    Bool HasUserKitType(UInt kitType);
+    Bool HasUserKit();
+};
+
+class CStadiumDevelopment {
+public:
+    CDBTeam *GetTeam();
+    UInt GetNumSeats();
 };
 
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
     unsigned int GetTeamUniqueID();
+    unsigned char GetNationalPrestige();
     unsigned char GetInternationalPrestige();
     wchar_t *GetName(bool first = true);
+    wchar_t *GetShortName(CTeamIndex const &teamID, bool includeYouth = false);
     CTeamSponsor &GetSponsor();
     bool IsRivalWith(CTeamIndex const &teamIndex);
     CDBTeamKit *GetKit();
     bool IsManagedByAI(bool flag = true);
-    UChar GetColor(UChar index);
+    UChar GetColorId(UInt colorType);
+    UInt GetColorRGBA(UInt colorType);
     UInt GetNumPlayers();
     UInt GetPlayer(UChar index);
+    UInt GetFifaID();
+    bool CanBuyOnlyBasquePlayers();
+    bool YouthPlayersAreBasques();
+    UChar GetYouthPlayersCountry();
+    UChar GetCountryId();
+    CDBCountry *GetCountry();
+    Bool IsPlayerPresent(UInt playerId);
+    CStadiumDevelopment *GetStadiumDevelopment();
+    Int GetManagerId();
+    void SetFlag(UInt flag, Bool enable);
 };
 
 struct CAssessmentInfo {
@@ -499,6 +597,9 @@ public:
     const WideChar *GetAbbr();
     const WideChar *GetContinentName();
     const Int GetLastTeamIndex();
+    const UInt GetNumRegenPlayers();
+    const UChar GetLanguage(UChar number);
+    const Bool IsPlayerInNationalTeam(UInt playerId);
 };
 
 class CCountryStore {
@@ -520,18 +621,23 @@ CDBRound *GetRound(unsigned char region, unsigned char type, unsigned short inde
 CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType);
 CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index);
 
+CDBCountry *GetCountry(UChar countryId);
 CDBTeam *GetTeam(CTeamIndex teamId);
 CDBTeam *GetTeamByUniqueID(unsigned int uniqueID);
 CDBPlayer *GetPlayer(Int playerId);
+CDBEmployee *GetEmployee(Int employeeId);
 
 CCountryStore *GetCountryStore();
 
 wchar_t const *GetTranslation(const char *key);
+bool IsTranslationPresent(const char *key);
+wchar_t const *GetTranslationIfPresent(const char *key);
 unsigned short GetCurrentYear();
 unsigned char GetCurrentMonth();
 unsigned short GetStartingYear();
 unsigned short GetCurrentSeasonStartYear();
 unsigned short GetCurrentSeasonEndYear();
+wchar_t const *GetCountryLogoPath(wchar_t *out, unsigned char countryId, int size);
 
 int gfxGetVarInt(char const *varName, int defaultValue);
 char const *gfxGetVarString(char const *varName);
@@ -585,13 +691,25 @@ void SetTextBoxColors(void *tb, UInt clr);
 void SetVisible(void* widget, bool visible);
 void SetText(void* widget, WideChar const* text);
 unsigned char SetImageFilename(void* widget, std::wstring const& path);
+unsigned char SetImageFilename(void *widget, wchar_t const *filename, int u1, int u2);
 
 class CRandom {
 public:
     static Int GetRandomInt(Int maxExclusive);
 };
 
-String TeamName(CTeamIndex const &teamId);;
+class CParameterFiles {
+public:
+    static CParameterFiles *Instance();
+    UChar GetProbabilityOfForeignPlayersInYouthTeam();
+    UChar GetProbabilityOfBasquePlayersInYouthTeam();
+};
+
+String TeamName(CDBTeam *team);
+String TeamNameWithCountry(CDBTeam *team);
+String TeamTag(CDBTeam *team);
+String TeamTagWithCountry(CDBTeam *team);
+String TeamName(CTeamIndex const &teamId);
 String TeamNameWithCountry(CTeamIndex const &teamId);
 String TeamTag(CTeamIndex const& teamId);
 String TeamTagWithCountry(CTeamIndex const& teamId);
@@ -634,9 +752,75 @@ void *FmNew(UInt size);
 void FmDelete(void *data);
 bool BinaryReaderIsVersionGreaterOrEqual(void *reader, UInt year, UInt build);
 void BinaryReaderReadString(void *reader, WideChar *out, UInt maxLen);
+void BinaryReaderReadUInt32(void *reader, UInt *out);
 void SaveGameReadString(void *save, WideChar *out, UInt maxLen);
 void SaveGameWriteString(void *save, WideChar const *str);
 void SaveGameReadInt8(void *save, UChar &out);
+void SaveGameReadInt32(void *save, UInt &out);
+UInt SaveGameReadInt32(void *save);
 void SaveGameWriteInt8(void *save, UChar value);
+void SaveGameWriteInt32(void *save, UInt value);
 UInt SaveGameLoadGetVersion(void *save);
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID);
+
+enum eNetComStorage {
+    STORAGE_PLAYERS = 1,
+    STORAGE_CAREER_LISTS = 2,
+    STORAGE_STAT_LISTS = 3,
+    STORAGE_TEAMS = 4,
+    STORAGE_EMPLOYEES = 6,
+    STORAGE_STAFF = 7,
+    STORAGE_CREDITS_LISTS = 8,
+    STORAGE_MAILS = 11,
+    STORAGE_STADIUMS = 12,
+    STORAGE_CONTRACT_OFFERS = 14,
+    STORAGE_TRANSFERS = 15,
+    STORAGE_EMPLOYEE_JOBS = 19,
+    STORAGE_COMPLETED_TRANSFERS = 20,
+    STORAGE_REFEREES = 21,
+    STORAGE_DRAFT_LISTS = 22
+};
+
+struct NetComStorageIterator {
+    void *pStorage;
+    UInt blockId;
+    Int index;
+    UInt id;
+    void *object;
+};
+
+NetComStorageIterator NetComStorageBegin(eNetComStorage storageType);
+NetComStorageIterator NetComStorageEnd(eNetComStorage storageType);
+void NetComStorageNext(NetComStorageIterator &it);
+
+class SyncFile {
+    FILE *m_pFile;
+    UInt m_nMode;
+    UInt m_nVersion;
+    WideChar m_szFilePath[256];
+    Int field_20C;
+    void *m_pUserBufferData;
+    UInt m_pUserBufferSize;
+
+public:
+    enum Mode {
+        Read = 1,
+        Write = 2
+    };
+
+    SyncFile();
+    SyncFile(UInt bufferSize);
+    ~SyncFile();
+    Bool Load(WideChar const *filePath, UInt mode, UInt version);
+    Bool Close();
+    UInt Mode();
+    UInt Version();
+    Bool Chunk(UInt id, UInt minVersion);
+    Bool Data(void *buf, void *pDefaultValue, UInt minVersion, UInt size);
+    Bool DataArray(void *buf, UInt count, void *pDefaultValue, UInt minVersion, UInt size);
+    Bool String(WideChar *out, UInt maxLen, WideChar const *defaultValue, UInt minVersion);
+    Bool IsVersionGreaterOrEqual(UInt version);
+    Bool UInt32(UInt *pValue, UInt *pDefaultValue, UInt minVersion);
+    Bool UInt16(UShort *pValue, UShort *pDefaultValue, UInt minVersion);
+    Bool UInt8(UChar *pValue, UChar *pDefaultValue, UInt minVersion);
+};

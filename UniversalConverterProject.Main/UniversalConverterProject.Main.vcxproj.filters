@@ -24,7 +24,7 @@
     <ClCompile Include="SpareEmployeeFix.cpp" />
     <ClCompile Include="LoansLimit.cpp" />
     <ClCompile Include="EuCountries.cpp" />
-    <ClCompile Include="FemaleNames.cpp" />
+    <ClCompile Include="ExcludeNames.cpp" />
     <ClCompile Include="Minikits.cpp" />
     <ClCompile Include="Balls.cpp" />
     <ClCompile Include="Log.cpp" />
@@ -56,7 +56,6 @@
     <ClCompile Include="Media.cpp" />
     <ClCompile Include="Translation.cpp" />
     <ClCompile Include="GenericHeads.cpp" />
-    <ClCompile Include="GameStartTweaks.cpp" />
     <ClCompile Include="3dAdboardsAndBanners.cpp" />
     <ClCompile Include="CustomStadiums.cpp" />
     <ClCompile Include="GenerateBigIdx.cpp" />
@@ -72,6 +71,13 @@
       <Filter>settings</Filter>
     </ClCompile>
     <ClCompile Include="UcpSettings.cpp" />
+    <ClCompile Include="DatabaseOptions.cpp" />
+    <ClCompile Include="CustomShaders.cpp" />
+    <ClCompile Include="YouthGenCountries.cpp" />
+    <ClCompile Include="ExtendedTeam.cpp" />
+    <ClCompile Include="ClubSponsors.cpp" />
+    <ClCompile Include="Achievements.cpp" />
+    <ClCompile Include="ReserveNames.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -97,7 +103,7 @@
     <ClInclude Include="SpareEmployeeFix.h" />
     <ClInclude Include="LoansLimit.h" />
     <ClInclude Include="EuCountries.h" />
-    <ClInclude Include="FemaleNames.h" />
+    <ClInclude Include="ExcludeNames.h" />
     <ClInclude Include="Minikits.h" />
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Log.h" />
@@ -126,7 +132,6 @@
     <ClInclude Include="Media.h" />
     <ClInclude Include="Translation.h" />
     <ClInclude Include="GenericHeads.h" />
-    <ClInclude Include="GameStartTweaks.h" />
     <ClInclude Include="3dAdboardsAndBanners.h" />
     <ClInclude Include="CustomStadiums.h" />
     <ClInclude Include="GenerateBigIdx.h" />
@@ -143,6 +148,13 @@
       <Filter>settings</Filter>
     </ClInclude>
     <ClInclude Include="UcpSettings.h" />
+    <ClInclude Include="DatabaseOptions.h" />
+    <ClInclude Include="CustomShaders.h" />
+    <ClInclude Include="YouthGenCountries.h" />
+    <ClInclude Include="ExtendedTeam.h" />
+    <ClInclude Include="ClubSponsors.h" />
+    <ClInclude Include="Achievements.h" />
+    <ClInclude Include="ReserveNames.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

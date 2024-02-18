@@ -7,15 +7,17 @@
 using namespace plugin;
 
 const UInt DEF_PLAYER_SZ = 0x3B8;
-const UShort PLAYER_EXT_VERSION = 0x1;
+const UShort PLAYER_EXT_VERSION = 0x2;
 
-// V 1.0
+// V 2.0
 // ------
 // String jerseyName
+// UInt fifaId
 // ------
 
 struct PlayerExtension {
     WideChar *jerseyName;
+    UInt fifaId;
     //struct ExtensionStats {
     //    UChar worldCupMatches;
     //    UChar worldCupGoals;
@@ -40,6 +42,7 @@ void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, UInt playerId) {
     CallMethod<0xFBDD20>(player, playerId);
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     ext->jerseyName = nullptr;
+    ext->fifaId = 0;
     //ext->extensionStats.worldCupMatches = 0;
     //ext->extensionStats.worldCupGoals = 0;
     //ext->extensionStats.euroMatches = 0;
@@ -90,6 +93,11 @@ void SetPlayerJerseyName(void *player, wchar_t const *name) {
     }
 }
 
+void SetPlayerFifaID(void *player, UInt id) {
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+    ext->fifaId = id;
+}
+
 template<UInt id>
 void METHOD OnReadPlayerFromMaster(void *player, DUMMY_ARG, void *reader) {
     CallMethodDynGlobal(gPlayerExtenderPlayerLoaderAddr[id], player, reader);
@@ -98,6 +106,10 @@ void METHOD OnReadPlayerFromMaster(void *player, DUMMY_ARG, void *reader) {
         jerseyName[0] = 0;
         BinaryReaderReadString(reader, jerseyName, std::size(jerseyName));
         SetPlayerJerseyName(player, jerseyName);
+    }
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0E)) {
+        PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+        BinaryReaderReadUInt32(reader, &ext->fifaId);
     }
 }
 
@@ -121,6 +133,15 @@ WideChar const *METHOD OnGetPlayerJerseyName2(void *player) {
     return CallMethodAndReturn<WideChar const *, 0xFA25B0>(player);
 }
 
+UInt GetPlayerFifaID(void *player) {
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+    return ext->fifaId;
+}
+
+UInt METHOD OnGetPlayerFifaId(void *player) {
+    return GetPlayerFifaID(player);
+}
+
 void METHOD OnReadPlayerFromSaveGame(void *player) {
     CallMethod<0xFC40B0>(player);
     void *loader = *(void **)0x3179DD8;
@@ -129,7 +150,9 @@ void METHOD OnReadPlayerFromSaveGame(void *player) {
     if (SaveGameLoadGetVersion(loader) >= 42)
         SaveGameReadString(loader, jerseyName, std::size(jerseyName));
     SetPlayerJerseyName(player, jerseyName);
-    //if (SaveGameLoadGetVersion(loader) >= 43) {
+    if (SaveGameLoadGetVersion(loader) >= 44)
+        SetPlayerFifaID(player, SaveGameReadInt32(loader));
+    //if (SaveGameLoadGetVersion(loader) >= 45) {
     //    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //    SaveGameReadInt8(loader, ext->extensionStats.worldCupMatches);
     //    SaveGameReadInt8(loader, ext->extensionStats.worldCupGoals);
@@ -150,6 +173,7 @@ void METHOD OnWritePlayerToSaveGame(void *player) {
     CallMethod<0xFC33F0>(player);
     void *writer = *(void **)0x3179DD4;
     SaveGameWriteString(writer, GetPlayerJerseyName(player));
+    SaveGameWriteInt32(writer, GetPlayerFifaID(player));
     //PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //SaveGameWriteInt8(writer, ext->extensionStats.worldCupMatches);
     //SaveGameWriteInt8(writer, ext->extensionStats.worldCupGoals);
@@ -241,9 +265,13 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::RedirectCall(0x413D07, OnGetPlayerJerseyName1);
         patch::RedirectCall(0x413D52, OnGetPlayerJerseyName2);
         const UInt NEW_PLAYER_SZ = DEF_PLAYER_SZ + sizeof(PlayerExtension);
+        patch::SetUInt(0xFB421E + 1, NEW_PLAYER_SZ);
         patch::SetUInt(0xFBDD54 + 1, NEW_PLAYER_SZ);
         patch::SetUInt(0xFC6622 + 1, NEW_PLAYER_SZ);
+        patch::SetUInt(0xDDE820 + 1, NEW_PLAYER_SZ);
+        patch::SetUInt(0xDEE0E0 + 1, NEW_PLAYER_SZ);
         //patch::RedirectCall(0xF9765E, OnReadPlayerStartingConditions);
+        patch::RedirectCall(0x417D15, OnGetPlayerFifaId);
 
         // stats CL
         //patch::SetPointer(0x23FB214, (void *)0x7951F0);

@@ -49,6 +49,16 @@ CJDate CJDate::DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year) {
     return date;
 }
 
+void CJDate::AddRandomDaysCount(UChar direction) {
+    CallMethod<0x149633E>(this, direction);
+}
+
+CJDate CJDate::AddYears(Int years) {
+    CJDate outDate;
+    CallMethod<0x1495EFF>(this, &outDate, years);
+    return outDate;
+}
+
 CDBGame *CDBGame::GetInstance() {
     return plugin::CallAndReturn<CDBGame *, 0xF61410>();
 }
@@ -95,6 +105,10 @@ void CDBGame::SetCurrentDate(CJDate date) {
 
 CDBGameOptions &CDBGame::GetOptions() {
     return *plugin::CallMethodAndReturn<CDBGameOptions *, 0xF49D70>(this);
+}
+
+bool CDBGame::IsCountryPlayable(UChar countryId) {
+    return plugin::CallMethodAndReturn<bool, 0xF49AA0>(this, countryId);
 }
 
 bool CDBGameOptions::CheckFlag(unsigned int flag) {
@@ -447,6 +461,10 @@ CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index)
     return plugin::CallAndReturn<CDBPool *, 0xF8C5C0>(region, type, index);
 }
 
+CDBCountry *GetCountry(UChar countryId) {
+    return &GetCountryStore()->m_aCountries[countryId];
+}
+
 CDBTeam *GetTeam(CTeamIndex teamId) {
     return plugin::CallAndReturn<CDBTeam *, 0xEC8F70>(teamId);
 }
@@ -459,12 +477,26 @@ CDBPlayer *GetPlayer(Int playerId) {
     return CallAndReturn<CDBPlayer *, 0xF97C70>(playerId);
 }
 
+CDBEmployee *GetEmployee(Int employeeId) {
+    return CallAndReturn<CDBEmployee *, 0xEA2A00>(employeeId);
+}
+
 CCountryStore *GetCountryStore() {
     return plugin::CallAndReturn<CCountryStore *, 0x415100>();
 }
 
 wchar_t const *GetTranslation(const char *key) {
     return plugin::CallMethodAndReturn<wchar_t const *, 0x14A9B78>(0x31E3FA8, key);
+}
+
+bool IsTranslationPresent(const char *key) {
+    return plugin::CallMethodAndReturn<bool, 0x14A9BA4>(0x31E3FA8, key);
+}
+
+wchar_t const *GetTranslationIfPresent(const char *key) {
+    if (IsTranslationPresent(key))
+        return GetTranslation(key);
+    return nullptr;
 }
 
 unsigned short GetCurrentYear() {
@@ -500,6 +532,10 @@ unsigned short GetCurrentSeasonEndYear() {
     if (game)
         return game->GetCurrentSeasonEndDate().GetYear();
     return 0;
+}
+
+wchar_t const *GetCountryLogoPath(wchar_t *out, unsigned char countryId, int size) {
+    return plugin::CallAndReturn<wchar_t const *, 0xD3D800>(out, countryId, size);
 }
 
 int gfxGetVarInt(char const *varName, int defaultValue) {
@@ -658,6 +694,34 @@ unsigned char SetImageFilename(void* widget, std::wstring const& path) {
     return 0;
 }
 
+unsigned char SetImageFilename(void *widget, wchar_t const *filename, int u1, int u2) {
+    return CallAndReturn<unsigned char, 0xD32860>(widget, filename, u1, u2);
+}
+
+String TeamName(CDBTeam *team) {
+    if (team)
+        return team->GetName();
+    return L"n/a";
+}
+
+String TeamNameWithCountry(CDBTeam *team) {
+    if (team)
+        return Format(L"%s (%s)", team->GetName(), GetCountryStore()->m_aCountries[team->GetCountryId()].GetName());
+    return L"n/a";
+}
+
+String TeamTag(CDBTeam *team) {
+    if (team)
+        return Utils::Format(L"%08X %s", team->GetTeamID().ToInt(), team->GetName());
+    return L"n/a";
+}
+
+String TeamTagWithCountry(CDBTeam *team) {
+    if (team)
+        return Utils::Format(L"%08X %s (%s)", team->GetTeamID().ToInt(), team->GetName(), GetCountryStore()->m_aCountries[team->GetCountryId()].GetName());
+    return L"n/a";
+}
+
 String TeamName(CTeamIndex const &teamId) {
     auto team = GetTeam(teamId);
     if (team)
@@ -791,12 +855,20 @@ unsigned int CDBTeam::GetTeamUniqueID() {
     return CallMethodAndReturn<unsigned int, 0xEC9490>(this);
 }
 
+unsigned char CDBTeam::GetNationalPrestige() {
+    return plugin::CallMethodAndReturn<unsigned char, 0xED1480>(this);
+}
+
 unsigned char CDBTeam::GetInternationalPrestige() {
     return plugin::CallMethodAndReturn<unsigned char, 0xED14B0>(this);
 }
 
 wchar_t *CDBTeam::GetName(bool first) {
     return plugin::CallMethodAndReturn<wchar_t *, 0xEEB670>(this, first);
+}
+
+wchar_t *CDBTeam::GetShortName(CTeamIndex const &teamID, bool includeYouth) {
+    return plugin::CallMethodAndReturn<wchar_t *, 0xEDD3E0>(this, &teamID, includeYouth);
 }
 
 CTeamSponsor &CDBTeam::GetSponsor() {
@@ -815,8 +887,12 @@ bool CDBTeam::IsManagedByAI(bool flag) {
     return CallMethodAndReturn<bool, 0xECA230>(this, flag);
 }
 
-UChar CDBTeam::GetColor(UChar index) {
-    return *raw_ptr<UChar>(this, 0xFD + index);
+UChar CDBTeam::GetColorId(UInt colorType) {
+    return CallMethodAndReturn<UChar, 0xED2F20>(this, colorType);
+}
+
+UInt CDBTeam::GetColorRGBA(UInt colorType) {
+    return CallMethodAndReturn<UInt, 0xED2FC0>(this, colorType);
 }
 
 UInt CDBTeam::GetNumPlayers() {
@@ -825,6 +901,50 @@ UInt CDBTeam::GetNumPlayers() {
 
 UInt CDBTeam::GetPlayer(UChar index) {
     return CallMethodAndReturn<UInt, 0xEC9950>(this, index);
+}
+
+UInt CDBTeam::GetFifaID() {
+    return CallMethodAndReturn<UInt, 0xEC9550>(this);
+}
+
+bool CDBTeam::CanBuyOnlyBasquePlayers() {
+    return CallMethodAndReturn<bool, 0xEC9520>(this);
+}
+
+bool CDBTeam::YouthPlayersAreBasques() {
+    return *raw_ptr<UInt>(this, 0xF4) & 0x1000000;
+}
+
+UChar CDBTeam::GetYouthPlayersCountry() {
+    return CallMethodAndReturn<UChar, 0xEC9510>(this);
+}
+
+UChar CDBTeam::GetCountryId() {
+    return GetTeamID().countryId;
+}
+
+CDBCountry *CDBTeam::GetCountry() {
+    return ::GetCountry(GetCountryId());
+}
+
+CStadiumDevelopment *CDBTeam::GetStadiumDevelopment() {
+    return CallMethodAndReturn<CStadiumDevelopment *, 0xECFFC0>(this);
+}
+
+Int CDBTeam::GetManagerId() {
+    return CallMethodAndReturn<UInt, 0xECA1A0>(this);
+}
+
+void CDBTeam::SetFlag(UInt flag, Bool enable) {
+    CallMethod<0xEC9590>(this, flag, enable);
+}
+
+Bool CDBTeam::IsPlayerPresent(UInt playerId) {
+    for (UInt i = 0; i < GetNumPlayers(); i++) {
+        if (GetPlayer(i) == playerId)
+            return true;
+    }
+    return false;
 }
 
 CTeamIndex &CDBLeagueBase::GetTeamAtPosition(int position) {
@@ -906,6 +1026,18 @@ const Int CDBCountry::GetLastTeamIndex() {
     return CallMethodAndReturn<Int, 0xFD6910>(this);
 }
 
+const UInt CDBCountry::GetNumRegenPlayers() {
+    return plugin::CallMethodAndReturn<UInt, 0xFDC7C0>(this);
+}
+
+const UChar CDBCountry::GetLanguage(UChar number) {
+    return plugin::CallMethodAndReturn<UInt, 0xFD71B0>(this, number);
+}
+
+const Bool CDBCountry::IsPlayerInNationalTeam(UInt playerId) {
+    return plugin::CallMethodAndReturn<Bool, 0xFD7CD0>(this, playerId);
+}
+
 TeamLeaguePositionData::TeamLeaguePositionData() {
     m_teamID.countryId = 0;
     m_teamID.index = 0;
@@ -973,6 +1105,62 @@ void CDBPlayer::SetMinRelFee(EAGMoney const &money) {
     CallMethod<0xFC27A0>(this, &money);
 }
 
+void CDBPlayer::SetNationality(UChar index, UChar nation) {
+    CallMethod<0xF9AF00>(this, index, nation);
+}
+
+void CDBPlayer::SetIsBasque(bool basque) {
+    CallMethod<0xF9AF50>(this, basque);
+}
+
+UChar CDBPlayer::GetNumKnownLanguages() {
+    return CallMethodAndReturn<UChar, 0xF9B230>(this);
+}
+
+UChar CDBPlayer::GetLanguage(UChar number) {
+    return CallMethodAndReturn<UChar, 0xF9B220>(this, number);
+}
+
+void CDBPlayer::SetLanguage(UChar index, UChar language) {
+    CallMethod<0xF9B200>(this, index, language);
+}
+
+UInt CDBPlayer::GetID() {
+    return *plugin::raw_ptr<UInt>(this, 0xD8);
+}
+
+Bool CDBPlayer::IsInNationalTeam() {
+    return CallMethodAndReturn<Bool, 0xFB2BC0>(this);
+}
+
+Bool CDBPlayer::IsRetiredFromNationalTeam() {
+    return CallMethodAndReturn<Bool, 0xFB2B20>(this);
+}
+
+Bool CDBPlayer::IsInU21NationalTeam() {
+    return CallMethodAndReturn<Bool, 0xFB1D20>(this);
+}
+
+Bool CDBPlayer::IsEndOfCareer() {
+    return CallMethodAndReturn<Bool, 0xFB1D30>(this);
+}
+
+UChar CDBPlayer::GetNumPlannedYearsForCareer() {
+    return CallMethodAndReturn<UChar, 0xF9C2C0>(this);
+}
+
+CPlayerStats *CDBPlayer::GetStats() {
+    return CallMethodAndReturn<CPlayerStats *, 0xF9CE50>(this);
+}
+
+UChar CDBPlayer::GetPotential() {
+    return CallMethodAndReturn<UChar, 0xF9CC00>(this);
+}
+
+UChar CDBPlayer::GetPositionRole() {
+    return CallMethodAndReturn<UChar, 0xFB4AF0>(this);
+}
+
 UChar CDBPlayer::GetNationality(UChar number) {
     return CallMethodAndReturn<UChar, 0xF9AF10>(this, number);
 }
@@ -981,6 +1169,12 @@ CTeamIndex CDBPlayer::GetNationalTeam() {
     CTeamIndex result;
     CallMethod<0xF9AF60>(this, &result);
     return result;
+}
+
+String CDBPlayer::GetName(bool shortForm) {
+    WideChar playerName[256];
+    CallMethod<0x13255C0>(0, this, playerName, shortForm);
+    return playerName;
 }
 
 FmVec<CDBSponsorContractAdBoards> &CTeamSponsor::GetAdBoardSponsors() {
@@ -1005,6 +1199,14 @@ UInt CDBTeamKit::GetPartType(UChar kitType, UChar shirtPart) {
 
 UChar CDBTeamKit::GetPartColor(UChar kitType, UChar shirtPart, UChar colorIndex) {
     return CallMethodAndReturn<UInt, 0xFFCC20>(this, kitType, shirtPart, colorIndex);
+}
+
+Bool CDBTeamKit::HasUserKitType(UInt kitType) {
+    return CallMethodAndReturn<Bool, 0xFFD940>(this, kitType);
+}
+
+Bool CDBTeamKit::HasUserKit() {
+    return CallMethodAndReturn<Bool, 0xFFDD00>(this);
 }
 
 void CAssessmentInfo::AddPoints(float points) {
@@ -1126,6 +1328,10 @@ void BinaryReaderReadString(void *reader, WideChar *out, UInt maxLen) {
     CallMethod<0x1338700>(reader, out, maxLen);
 }
 
+void BinaryReaderReadUInt32(void *reader, UInt *out) {
+    CallMethod<0x1338B10>(reader, out);
+}
+
 void SaveGameReadString(void *save, WideChar *out, UInt maxLen) {
     CallMethod<0x1080EB0>(save, out, maxLen);
 }
@@ -1138,8 +1344,20 @@ void SaveGameReadInt8(void *save, UChar &out) {
     CallMethod<0x1080390>(save, &out);
 }
 
+void SaveGameReadInt32(void *save, UInt &out) {
+    CallMethod<0x10802D0>(save, &out);
+}
+
+UInt SaveGameReadInt32(void *save) {
+    return CallMethodAndReturn<UInt, 0x10802F0>(save);
+}
+
 void SaveGameWriteInt8(void *save, UChar value) {
     CallMethod<0x107F400>(save, value);
+}
+
+void SaveGameWriteInt32(void *save, UInt value) {
+    CallMethod<0x107F380>(save, value);
 }
 
 UInt SaveGameLoadGetVersion(void *save) {
@@ -1148,4 +1366,206 @@ UInt SaveGameLoadGetVersion(void *save) {
 
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID) {
     return CallAndReturn<CDBPlayer *, 0xFAF750>(stringID);
+}
+
+CParameterFiles *CParameterFiles::Instance() {
+    return CallAndReturn<CParameterFiles *, 0x103E540>();
+}
+
+UChar CParameterFiles::GetProbabilityOfForeignPlayersInYouthTeam() {
+    return CallMethodAndReturn<UChar, 0x1028120>(this);
+}
+
+UChar CParameterFiles::GetProbabilityOfBasquePlayersInYouthTeam() {
+    return CallMethodAndReturn<UChar, 0x1028140>(this);
+}
+
+UChar CPlayerStats::GetNumInternationalCaps() {
+    return CallMethodAndReturn<UChar, 0x1005F40>(this);
+}
+
+NetComStorageIterator NetComStorageBegin(eNetComStorage storageType) {
+    NetComStorageIterator it;
+    Call<0x156F100>(&it, storageType);
+    return it;
+}
+
+NetComStorageIterator NetComStorageEnd(eNetComStorage storageType) {
+    NetComStorageIterator it;
+    Call<0x156F160>(&it, storageType);
+    return it;
+}
+
+void NetComStorageNext(NetComStorageIterator &it) {
+    Call<0x156F1E0>(&it);
+}
+
+UInt CStadiumDevelopment::GetNumSeats() {
+    return CallMethodAndReturn<UInt, 0xF74220>(this);
+}
+
+CDBTeam *CStadiumDevelopment::GetTeam() {
+    return *raw_ptr<CDBTeam *>(this, 0x52C);
+}
+
+void CDBEmployeeBase::SetBirthDate(CJDate const &date) {
+    CallMethod<0xE7E940>(this, &date);
+}
+
+WideChar const *CDBEmployeeBase::GetName(WideChar const *nameBuf) {
+    return CallMethodAndReturn<WideChar const *, 0xE7E9E0>(this, nameBuf);
+}
+
+CDBEmployeeBase *CDBEmployee::GetBase() {
+    return raw_ptr<CDBEmployeeBase>(this, 0x10);
+}
+
+void CDBEmployee::SetBirthDate(CJDate const &date) {
+    CallMethod<0xEA2EF0>(this, &date);
+}
+
+void CDBEmployee::SetFirstNationality(UChar countryId) {
+    CallMethod<0xEA2C20>(this, countryId);
+}
+
+void CDBEmployee::SetSecondNationality(UChar countryId) {
+    CallMethod<0xEA2C40>(this, countryId);
+}
+
+void CDBEmployee::SetLanguage(UChar languageId) {
+    CallMethod<0xEA35B0>(this, languageId);
+}
+
+void CDBEmployee::SetAdditionalLanguageLevel(UChar index, UChar languageId, UChar level) {
+    CallMethod<0xEA35E0>(this, index, languageId, level);
+}
+
+CTeamIndex CDBEmployee::GetTeamID() {
+    CTeamIndex teamID;
+    CallMethod<0xEA2C10>(this, &teamID);
+    return teamID;
+}
+
+void CDBEmployee::GetTeamID(CTeamIndex &out) {
+    CallMethod<0xEA2C00>(this, &out);
+}
+
+WideChar const *CDBEmployee::GetName(WideChar const *nameBuf) {
+    return GetBase()->GetName(nameBuf);
+}
+
+CWorker *CDBStaff::GetWorker() {
+    return *raw_ptr<CWorker *>(this, 0xC);
+}
+
+void CDBStaff::SetBirthDate(CJDate const &date) {
+    CallMethod<0x11029C0>(this, &date);
+}
+
+CJDate const &CDBStaff::GetBirthdate() {
+    return CallMethodAndReturn<CJDate const &, 0x11029D0>(this);
+}
+
+void CDBStaff::SetNationality(UChar index, UChar countryId) {
+    CallMethod<0x11029F0>(this, index, countryId);
+}
+
+UChar CDBStaff::GetNationality(UChar index) {
+    return CallMethodAndReturn<UChar, 0x1102A10>(this, index);
+}
+
+WideChar const *CDBStaff::GetName(WideChar const *nameBuf) {
+    return CallMethodAndReturn<WideChar const *, 0x11028D0>(this, nameBuf);
+}
+
+UInt CDBStaff::GetAge() {
+    return CallMethodAndReturn<UInt, 0x11029E0>(this);
+}
+
+void CDBStaff::SetTalent(UInt talent) {
+    CallMethod<0x1102AE0>(this, talent);
+}
+
+UInt CDBStaff::GetTalent() {
+    return CallMethodAndReturn<UInt, 0x1102AF0>(this);
+}
+
+unsigned int CDBRound::GetNumOfPairs() {
+    return plugin::CallMethodAndReturn<unsigned int, 0x1042260>(this);
+}
+
+void CDBRound::GetRoundPair(unsigned int pairIndex, RoundPair &out) {
+    plugin::CallMethod<0x1043BA0>(this, pairIndex, &out);
+}
+
+RoundPair::RoundPair() {
+    plugin::CallMethod<0x10ED6C0>(this);
+}
+
+bool RoundPair::AreTeamsValid() {
+    return plugin::CallMethodAndReturn<bool, 0x10EDE40>(this);
+}
+
+void *RoundPair::GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name) {
+    return plugin::CallMethodAndReturn<void *, 0x10ED930>(this, str, flags, team1name, team2name);
+}
+
+SyncFile::SyncFile() {
+    plugin::CallMethod<0x14BDD8D>(this);
+}
+
+SyncFile::SyncFile(UInt bufferSize) {
+    plugin::CallMethod<0x14BDDC9>(this, bufferSize);
+}
+
+SyncFile::~SyncFile() {
+    plugin::CallMethod<0x14BDE22>(this);
+}
+
+Bool SyncFile::Load(WideChar const *filePath, UInt mode, UInt version) {
+    return plugin::CallMethodAndReturn<Bool, 0x14BDE5F>(this, filePath, mode, version);
+}
+
+Bool SyncFile::Close() {
+    return plugin::CallMethodAndReturn<Bool, 0x14BE00B>(this);
+}
+
+UInt SyncFile::Mode() {
+    return plugin::CallMethodAndReturn<UInt, 0x14BE07D>(this);
+}
+
+UInt SyncFile::Version() {
+    return plugin::CallMethodAndReturn<UInt, 0x14BE08C>(this);
+}
+
+Bool SyncFile::Chunk(UInt id, UInt minVersion) {
+    return plugin::CallMethodAndReturn<Bool, 0x14BE0AA>(this, id, minVersion);
+}
+
+Bool SyncFile::Data(void *buf, void *pDefaultValue, UInt minVersion, UInt size) {
+    return plugin::CallMethodAndReturn<Bool, 0x14BE194>(this, buf, pDefaultValue, minVersion, size);
+}
+
+Bool SyncFile::DataArray(void *buf, UInt count, void *pDefaultValue, UInt minVersion, UInt size) {
+    return plugin::CallMethodAndReturn<Bool, 0x14BE25F>(this, buf, count, pDefaultValue, minVersion, size);
+}
+
+Bool SyncFile::String(WideChar *out, UInt maxLen, WideChar const *defaultValue, UInt minVersion) {
+    return plugin::CallMethodAndReturn<Bool, 0x14BE461>(this, out, maxLen, defaultValue, minVersion);
+}
+
+Bool SyncFile::IsVersionGreaterOrEqual(UInt version) {
+    return plugin::CallMethodAndReturn<Bool, 0x14BE86F>(this, version);
+}
+
+Bool SyncFile::UInt32(UInt *pValue, UInt *pDefaultValue, UInt minVersion) {
+    return plugin::CallMethodAndReturn<Bool, 0x10CF840>(this, pValue, pDefaultValue, minVersion);
+}
+
+Bool SyncFile::UInt16(UShort *pValue, UShort *pDefaultValue, UInt minVersion) {
+    return plugin::CallMethodAndReturn<Bool, 0x10CF8E0>(this, pValue, pDefaultValue, minVersion);
+}
+
+Bool SyncFile::UInt8(UChar *pValue, UChar *pDefaultValue, UInt minVersion) {
+    return plugin::CallMethodAndReturn<Bool, 0x10CF880>(this, pValue, pDefaultValue, minVersion);
 }

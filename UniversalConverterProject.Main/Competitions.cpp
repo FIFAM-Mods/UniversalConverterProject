@@ -65,7 +65,7 @@ Bool ChampionsLeagueRoundSorter(CDBTeam *teamA, CDBTeam *teamB) {
     return posA <= posB;
 }
 
-Bool Europe_NationalTeamSorter(CTeamIndex const &a, CTeamIndex const &b) {
+Bool Europe_CountryLeagueSorter(CTeamIndex const &a, CTeamIndex const &b) {
     if (!b.countryId)
         return true;
     if (!a.countryId)
@@ -75,7 +75,7 @@ Bool Europe_NationalTeamSorter(CTeamIndex const &a, CTeamIndex const &b) {
     return posA <= posB;
 }
 
-Bool NationalTeamSorter(CTeamIndex const &a, CTeamIndex const &b) {
+Bool CountryLeagueSorter(CTeamIndex const &a, CTeamIndex const &b) {
     if (!b.countryId)
         return true;
     if (!a.countryId)
@@ -83,6 +83,24 @@ Bool NationalTeamSorter(CTeamIndex const &a, CTeamIndex const &b) {
     Int posA = (a.countryId < 208) ? GetCountryStore()->m_aCountries[a.countryId].GetLeagueAverageLevel() : 0;
     Int posB = (b.countryId < 208) ? GetCountryStore()->m_aCountries[b.countryId].GetLeagueAverageLevel() : 0;
     return posA <= posB;
+}
+
+Bool NationalTeamSorter(CTeamIndex const &a, CTeamIndex const &b) {
+    if (!b.countryId)
+        return true;
+    if (!a.countryId)
+        return false;
+    UInt ranking1 = 0;
+    if (a.countryId < 208) {
+        CDBCountry *c = &GetCountryStore()->m_aCountries[a.countryId];
+        ranking1 = *raw_ptr<UShort>(c, 0x284) + *raw_ptr<UShort>(c, 0x288) + *raw_ptr<UShort>(c, 0x28C) + *raw_ptr<UShort>(c, 0x290);
+    }
+    UInt ranking2 = 0;
+    if (b.countryId < 208) {
+        CDBCountry *c = &GetCountryStore()->m_aCountries[b.countryId];
+        ranking2 = *raw_ptr<UShort>(c, 0x284) + *raw_ptr<UShort>(c, 0x288) + *raw_ptr<UShort>(c, 0x28C) + *raw_ptr<UShort>(c, 0x290);
+    }
+    return ranking1 >= ranking2;
 }
 
 UInt Oceania_ParticipantsCountries[] = {
@@ -297,20 +315,21 @@ CompTypeNameDesc gNewCompTypeNames[] = {
      { L"OFC_CUP", 49 }, // OFC Cup
      { L"Q_U20_WC", 50 }, // U20 WC Quali
      { L"CONFERENCE_LEAGUE", 51 }, // Conference League
-     { L"Q_U17_WC", 52 }, // U17 WC Quali
-     { L"U17_WORLD_CUP", 53 }, // U17 WC
-     { L"Q_U21_EC", 54 }, // U21 EC Quali
-     { L"U21_EC", 55 }, // U21 EC
-     { L"Q_U19_EC", 56 }, // U19 EC Quali
-     { L"U19_EC", 57 }, // U19 EC
-     { L"Q_U17_EC", 58 }, // U17 EC Quali
-     { L"U17_EC", 59 }, // U17 EC
-     { L"Q_OLYMPIC", 60 }, // Olympic Games Quali
-     { L"OLYMPIC", 61 }, // Olympic Games
+     { L"FINALISSIMA", 52 }, // Finalissima
+     { L"Q_U17_WC", 53 }, // U17 WC Quali
+     { L"U17_WORLD_CUP", 54 }, // U17 WC
+     { L"Q_U21_EC", 55 }, // U21 EC Quali
+     { L"U21_EC", 56 }, // U21 EC
+     { L"Q_U19_EC", 57 }, // U19 EC Quali
+     { L"U19_EC", 58 }, // U19 EC
+     { L"Q_U17_EC", 59 }, // U17 EC Quali
+     { L"U17_EC", 60 }, // U17 EC
+     { L"Q_OLYMPIC", 61 }, // Olympic Games Quali
+     { L"OLYMPIC", 62 }, // Olympic Games
      { L"", 0 }
 };
 
-const unsigned char gNumCompetitionTypes = 52;
+const unsigned char gNumCompetitionTypes = 53;
 
 unsigned int gContinentalCompetitionTypes[] = {
     9, 10, COMP_CONFERENCE_LEAGUE, 12, 11, 13, COMP_UIC, COMP_ICC, COMP_CONTINENTAL_1, COMP_CONTINENTAL_2 // TODO: set root for Youth CL
@@ -319,7 +338,7 @@ unsigned int gContinentalCompetitionTypes[] = {
 unsigned int gNewIntlComps[] = { 36, 37 };
 
 unsigned int gInternationalCompsTypes[] = { COMP_EURO_NL_Q, 15, 16, COMP_EURO_NL, 17, 18, 32, 33, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP,
-    COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q, COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP }; // for NT matches info screen
+    COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q, COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP, COMP_FINALISSIMA }; // for NT matches info screen
 
 void OnSetCompetitionName(int compRegion, int compType, wchar_t const *name) {
     Call<0xF904D0>(compRegion, compType, name);
@@ -342,6 +361,8 @@ void OnSetCompetitionName(int compRegion, int compType, wchar_t const *name) {
     Call<0xF904D0>(FifamCompRegion::International, COMP_OFC_CUP_Q, GetTranslation("IDS_NAME_OFC_CUP_Q"));
     Call<0xF904D0>(FifamCompRegion::International, COMP_OFC_CUP, GetTranslation("IDS_NAME_OFC_CUP"));
 
+    Call<0xF904D0>(FifamCompRegion::International, COMP_FINALISSIMA, GetTranslation("IDS_NAME_FINALISSIMA"));
+
     // international youth
 
     Call<0xF904D0>(FifamCompRegion::International, COMP_U20_WC_Q, GetTranslation("IDS_NAME_U20_WC_Q"));
@@ -363,45 +384,50 @@ void OnSetCompetitionName(int compRegion, int compType, wchar_t const *name) {
     Call<0xF904D0>(FifamCompRegion::Europe, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_EURO_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::Europe, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_EURO_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::Europe, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_EURO_CONTINENTAL_2"));
-    Call<0xF904D0>(FifamCompRegion::Europe, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_CONFERENCE_LEAGUE"));
+    Call<0xF904D0>(FifamCompRegion::Europe, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_EURO_CONFERENCE_LEAGUE"));
 
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_SOUTHAM_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_SOUTHAM_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_SOUTHAM_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_SOUTHAM_CONTINENTAL_2"));
+    Call<0xF904D0>(FifamCompRegion::SouthAmerica, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_SOUTHAM_CONFERENCE_LEAGUE"));
 
-    //Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_UEFA_CUP, GetTranslation("IDS_NAME_NORTHAM_2ND_CUP")); // remove later
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_NORTHAM_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_NORTHAM_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_NORTHAM_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_NORTHAM_CONTINENTAL_2"));
+    Call<0xF904D0>(FifamCompRegion::NorthAmerica, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_NORTHAM_CONFERENCE_LEAGUE"));
 
-    //Call<0xF904D0>(FifamCompRegion::Africa, COMP_UEFA_CUP, GetTranslation("IDS_NAME_AFRICA_2ND_CUP")); // remove later
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_AFRICA_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_AFRICA_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_AFRICA_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::Africa, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_AFRICA_CONTINENTAL_2"));
+    Call<0xF904D0>(FifamCompRegion::Africa, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_AFRICA_CONFERENCE_LEAGUE"));
     
     Call<0xF904D0>(FifamCompRegion::Asia, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_ASIA_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::Asia, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_ASIA_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::Asia, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_ASIA_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::Asia, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_ASIA_CONTINENTAL_2"));
+    Call<0xF904D0>(FifamCompRegion::Asia, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_ASIA_CONFERENCE_LEAGUE"));
 
     Call<0xF904D0>(FifamCompRegion::Oceania, COMP_EURO_SUPERCUP, GetTranslation("IDS_NAME_OCEANIA_SUPERCUP"));
     Call<0xF904D0>(FifamCompRegion::Oceania, COMP_YOUTH_CHAMPIONSLEAGUE, GetTranslation("IDS_NAME_OCEANIA_YOUTH_LEAGUE"));
     Call<0xF904D0>(FifamCompRegion::Oceania, COMP_CONTINENTAL_1, GetTranslation("IDS_NAME_OCEANIA_CONTINENTAL_1"));
     Call<0xF904D0>(FifamCompRegion::Oceania, COMP_CONTINENTAL_2, GetTranslation("IDS_NAME_OCEANIA_CONTINENTAL_2"));
+    Call<0xF904D0>(FifamCompRegion::Oceania, COMP_CONFERENCE_LEAGUE, GetTranslation("IDS_NAME_OCEANIA_CONFERENCE_LEAGUE"));
 
     SetCompetitionWinnerAndRunnerUp(FifamCompRegion::International, COMP_EURO_NL,
-        CTeamIndex::make(FifamCompRegion::Portugal, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Netherlands, 0, 0xFFFF));
+        CTeamIndex::make(FifamCompRegion::Spain, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Croatia, 0, 0xFFFF));
     SetCompetitionWinnerAndRunnerUp(FifamCompRegion::International, COMP_NAM_CUP,
-        CTeamIndex::make(FifamCompRegion::Mexico, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::United_States, 0, 0xFFFF));
+        CTeamIndex::make(FifamCompRegion::Mexico, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Panama, 0, 0xFFFF));
     SetCompetitionWinnerAndRunnerUp(FifamCompRegion::International, COMP_ASIA_CUP,
         CTeamIndex::make(FifamCompRegion::Qatar, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Japan, 0, 0xFFFF));
     SetCompetitionWinnerAndRunnerUp(FifamCompRegion::International, COMP_AFRICA_CUP,
-        CTeamIndex::make(FifamCompRegion::Algeria, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Senegal, 0, 0xFFFF));
+        CTeamIndex::make(FifamCompRegion::Senegal, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Egypt, 0, 0xFFFF));
     SetCompetitionWinnerAndRunnerUp(FifamCompRegion::International, COMP_OFC_CUP,
         CTeamIndex::make(FifamCompRegion::New_Zealand, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Papua_New_Guinea, 0, 0xFFFF));
+    SetCompetitionWinnerAndRunnerUp(FifamCompRegion::International, COMP_FINALISSIMA,
+        CTeamIndex::make(FifamCompRegion::Argentina, 0, 0xFFFF), CTeamIndex::make(FifamCompRegion::Italy, 0, 0xFFFF));
     // TODO: Conference League winner in Rules.sav
 }
 
@@ -443,6 +469,7 @@ void METHOD OnSetupRootInternational(void *root, DUMMY_ARG, int id) {
     ReadCompetitionFile(L"NorthAmericaCup.txt", L"Q_NAM_NL", root);
     ReadCompetitionFile(L"AfricaCup.txt", L"AFRICA_CUP", root);
     ReadCompetitionFile(L"AfricaCup.txt", L"Q_AFRICA_CUP", root);
+    ReadCompetitionFile(L"CopaAmerica.txt", L"FINALISSIMA", root);
     //ReadCompetitionFile(L"WorldCupU17.txt", L"U17_WORLD_CUP", root);
     //ReadCompetitionFile(L"EuropeanChampionshipU21.txt", L"U21_EC", root);
     //ReadCompetitionFile(L"EuropeanChampionshipU19.txt", L"U19_EC", root);
@@ -480,6 +507,7 @@ bool METHOD TakesPlaceInThisYear(CDBCompetition *comp, DUMMY_ARG, int) {
         break;
     case COMP_QUALI_WC: // QUALI_WC
     case COMP_CONFED_CUP: // CONFED_CUP
+    case COMP_FINALISSIMA: // FINALISSIMA
         if (year % 4 == 0)
             return true;
         break;
@@ -545,6 +573,8 @@ WideChar const * METHOD GetCompetitionShortName(CDBCompetition *comp) {
         return GetTranslation("IDS_SHORTNAME_OFC_CUP");
     case COMP_OFC_CUP_Q:
         return GetTranslation("IDS_SHORTNAME_OFC_CUP_Q");
+    case COMP_FINALISSIMA:
+        return GetTranslation("IDS_SHORTNAME_FINALISSIMA");
     case COMP_U20_WC_Q:
         return GetTranslation("IDS_SHORTNAME_U20_WC_Q");
     case COMP_U17_WORLD_CUP:
@@ -595,7 +625,7 @@ void LaunchCompetitions() {
         //LaunchCompetition(255, COMP_ASIA_CUP, 0);
     }
     if (year % 4 == 3) {
-        LaunchCompetition(255, COMP_COPA_AMERICA, 0);
+        //LaunchCompetition(255, COMP_COPA_AMERICA, 0);
         LaunchCompetition(255, COMP_OFC_CUP, 0);
     }
     if (year % 2 == 0) {
@@ -610,6 +640,7 @@ void LaunchCompetitions() {
     if (year % 4 == 0) {
         LaunchCompetition(255, COMP_QUALI_WC, 0);
         LaunchCompetition(255, COMP_CONFED_CUP, 0);
+        LaunchCompetition(255, COMP_FINALISSIMA, 0);
     }
     if (year % 4 == 1) {
         if (GetCurrentYear() == GetStartingYear())
@@ -655,20 +686,13 @@ bool METHOD MatchdayScreen_TestGameFlag(void *game, DUMMY_ARG, unsigned int flag
     return false;
 }
 
-// not used
-void *MatchdayScreen_GetCompById(unsigned int *pCompId) {
-    gLastCompType = (*pCompId >> 16) & 0xFF;
-    if ((gLastCompType >= 15 && gLastCompType <= 18) || gLastCompType == 36 || gLastCompType == 37)
-        return GetCompetition(pCompId);
-    return nullptr;
-}
-
 unsigned char gCompTypesClub[] =         { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 14, 8, 19, 20, 21, 23, 27,
     COMP_ICC, COMP_CONTINENTAL_1, COMP_CONTINENTAL_2, COMP_CONFERENCE_LEAGUE };
 unsigned char gCompTypesClubYouth[] =    { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 14, 8, 19, 20, 21, 23,
     COMP_YOUTH_CHAMPIONSLEAGUE, COMP_CONFERENCE_LEAGUE };
 unsigned char gCompTypesNationalTeam[] = { 1, 3, 7, 6, 4, 9, 10, 11, 12, 13, 8, 19, 20, 21, 15, 16, 17, 18, 32, 33, 29,
-    COMP_EURO_NL_Q, COMP_EURO_NL, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP, COMP_AFRICA_CUP, COMP_AFRICA_CUP_Q, COMP_ASIA_CUP, COMP_ASIA_CUP_Q, COMP_OFC_CUP_Q, COMP_OFC_CUP };
+    COMP_EURO_NL_Q, COMP_EURO_NL, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP, COMP_AFRICA_CUP, COMP_AFRICA_CUP_Q, COMP_ASIA_CUP,
+    COMP_ASIA_CUP_Q, COMP_OFC_CUP_Q, COMP_OFC_CUP, COMP_FINALISSIMA };
 unsigned char *gCurrFixturesCompTypes = gCompTypesClub;
 
 void *SetupFixturesList(unsigned int teamId) {
@@ -711,7 +735,7 @@ void __declspec(naked) CheckFixtureList_2_Exec() { __asm {
 void METHOD ChampionsLeagueUniversalSort(CDBPool *comp, DUMMY_ARG, int numGroups, int numTeamsInGroup) {
     auto id = comp->GetCompID();
     if (id.countryId == FifamCompRegion::International && id.type == COMP_EURO_NL_Q && id.index == 0) {
-        //if (GetCurrentYear() > 2021) {
+        //if (GetStartingYear() != 2023 || GetCurrentYear() != 2024) {
             comp->RandomlySortTeams(0, 4);
             comp->RandomlySortTeams(4, 4);
             comp->RandomlySortTeams(8, 4);
@@ -734,19 +758,25 @@ void METHOD ChampionsLeagueUniversalSort(CDBPool *comp, DUMMY_ARG, int numGroups
         return;
     }
     else if (comp->GetCompID().countryId == FifamCompRegion::International && comp->GetCompID().type == COMP_NAM_NL_Q && comp->GetCompID().index == 0) {
-        //if (GetCurrentYear() > 2023) {
-            comp->RandomlySortTeams(0, 4);
-            comp->RandomlySortTeams(4, 4);
-            comp->RandomlySortTeams(8, 4);
-
-            comp->RandomlySortTeams(12, 4);
-            comp->RandomlySortTeams(16, 4);
-            comp->RandomlySortTeams(20, 4);
-
-            comp->RandomlySortTeams(24, 4);
-            comp->RandomlySortTeams(28, 4);
-            comp->RandomlySortTeams(32, 2);
-        //}
+        // first 4 slots are reserved for Mexico, UnitedStates, CostaRica, Canada
+        // League A
+        comp->SortTeamIDs(4, 10, NationalTeamSorter); // League A
+        comp->RandomlySortTeams(4, 2); // League A Pot 1
+        comp->RandomlySortTeams(6, 2); // League A Pot 2
+        comp->RandomlySortTeams(8, 2); // League A Pot 3
+        comp->RandomlySortTeams(10, 2); // League A Pot 4
+        comp->RandomlySortTeams(12, 2); // League A Pot 5
+        // League B
+        comp->SortTeamIDs(14, 12, NationalTeamSorter); // League B
+        comp->RandomlySortTeams(14, 4); // League B Pot 1
+        comp->RandomlySortTeams(18, 4); // League B Pot 2
+        comp->RandomlySortTeams(22, 4); // League B Pot 3
+        // League C
+        comp->SortTeamIDs(26, 8, NationalTeamSorter); // League C
+        comp->RandomlySortTeams(26, 2); // League C Pot 1
+        comp->RandomlySortTeams(28, 2); // League C Pot 2
+        comp->RandomlySortTeams(30, 2); // League C Pot 3
+        comp->RandomlySortTeams(32, 2); // League C Pot 4
         return;
     }
     switch (comp->GetNumOfTeams()) {
@@ -864,15 +894,15 @@ void METHOD ChampionsLeagueUniversalSort(CDBPool *comp, DUMMY_ARG, int numGroups
             //SafeLog::WriteToFile("cl_pool_sorting.log", L"Pool with universal ChampionsLeague sorting: sorted by rating");
             //for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
             //    SafeLog::WriteToFile("cl_pool_sorting.log", Utils::Format(L"%2d. %08X %s", i, pTeamIDs[i].ToInt(), TeamName(pTeamIDs[i])));
-            for (UInt i = 0; i < numTeamsInGroup; i++)
+            for (Int i = 0; i < numTeamsInGroup; i++)
                 comp->RandomlySortTeams(i * numGroups, numGroups);
             //SafeLog::WriteToFile("cl_pool_sorting.log", L"Pool with universal ChampionsLeague sorting: randomized by pots");
             //for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
             //    SafeLog::WriteToFile("cl_pool_sorting.log", Utils::Format(L"%2d. %08X %s", i, pTeamIDs[i].ToInt(), TeamName(pTeamIDs[i])));
             memcpy(teams.data(), pTeamIDs, 4 * comp->GetNumOfTeams());
             memset(pTeamIDs, 0, 4 * comp->GetNumOfTeams());
-            for (UInt g = 0; g < numGroups; g++) {
-                for (UInt t = 0; t < numTeamsInGroup; t++)
+            for (Int g = 0; g < numGroups; g++) {
+                for (Int t = 0; t < numTeamsInGroup; t++)
                     pTeamIDs[g * numTeamsInGroup + t] = teams[t * numGroups + g];
             }
             //SafeLog::WriteToFile("cl_pool_sorting.log", L"Pool with universal ChampionsLeague sorting: fixed pool");
@@ -910,7 +940,7 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
                 numTeams += _hibyte(command->m_params);
             break;
         case 7: // GET_TAB_X_TO_Y
-            if (countryId == command->m_competitionId.countryId && countryId != FifamCompRegion::India)
+            if (countryId == command->m_competitionId.countryId)
                 numTeams += _hibyte(command->m_params);
             break;
         case 12: // GET_EUROPEAN_ASSESSMENT_CUPWINNER
@@ -951,11 +981,8 @@ void METHOD OnFillEuropeanCompsParticipants(void *obj, DUMMY_ARG, unsigned int r
     UChar continentalComps[3] = {COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE};
     for (UInt i = 0; i < 3; i++) {
         Bool enable = false;
-        UChar compType = continentalComps[i];
-        if (gParticipantsRegion == FifamCompRegion::NorthAmerica && i == 2) // TODO: change Caribbean Club Championship ID?
-            compType = COMP_CONTINENTAL_2;
-        if (GetCompetition(gParticipantsRegion, compType, 0)) {
-            CallMethod<0x88F670>(obj, gParticipantsRegion, compType, i);
+        if (GetCompetition(gParticipantsRegion, continentalComps[i], 0)) {
+            CallMethod<0x88F670>(obj, gParticipantsRegion, continentalComps[i], i);
             enable = true;
         }
         SetVisible(*raw_ptr<void*>(obj, 0x19C0 + i * 4), enable);
@@ -1323,7 +1350,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                         Vector<CTeamIndex> liechtensteinClubs;
                         CDBCountry* country = &GetCountryStore()->m_aCountries[FifamCompRegion::Switzerland];
                         if (country) {
-                            for (UInt t = 1; t <= country->GetLastTeamIndex(); t++) {
+                            for (Int t = 1; t <= country->GetLastTeamIndex(); t++) {
                                 CTeamIndex teamIndex = CTeamIndex::make(FifamCompRegion::Switzerland, FifamClubTeamType::First, t);
                                 if (IsLiechtensteinClubFromSwitzerland(teamIndex))
                                     liechtensteinClubs.push_back(teamIndex);
@@ -1475,15 +1502,21 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     for (UInt i = 0; i < 32; i++)
                         pTeamIDs[i] = teams[i];
                 }
-                else if (id.countryId == FifamCompRegion::NorthAmerica && id.type == COMP_CONTINENTAL_1 && rt == ROUND_QUARTERFINAL)
-                    comp->RandomizePairs();
+                else if (id.countryId == FifamCompRegion::NorthAmerica && id.type == COMP_CONTINENTAL_2 && rt == ROUND_LAST_16) { // leagues cup last16
+                    if (!CDBGame::GetInstance()->IsCountryPlayable(FifamCompRegion::Mexico)
+                        || !CDBGame::GetInstance()->IsCountryPlayable(FifamCompRegion::United_States))
+                    {
+                        comp->AddTeamsFromCountry(FifamCompRegion::Mexico, 8);
+                        comp->AddTeamsFromCountry(FifamCompRegion::United_States, 8);
+                        comp->SortTeams(ChampionsLeagueRoundSorter);
+                        comp->RandomizePairs();
+                    }
+                }
                 else if (id.countryId == FifamCompRegion::Africa && id.type == COMP_UEFA_CUP && rt == ROUND_QUALI3) // playoff round
                     comp->RandomizePairs();
                 else if (id.countryId == FifamCompRegion::Africa && id.type == COMP_CHAMPIONSLEAGUE && rt == ROUND_QUARTERFINAL) // quarterfinal
                     comp->RandomizePairs();
                 else if (id.countryId == FifamCompRegion::Africa && id.type == COMP_UEFA_CUP && rt == ROUND_QUARTERFINAL) // quarterfinal
-                    comp->RandomizePairs();
-                else if (id.countryId == FifamCompRegion::Oceania && id.type == COMP_CHAMPIONSLEAGUE && rt == ROUND_QUARTERFINAL)
                     comp->RandomizePairs();
                 else {
                     comp->SortTeams(ChampionsLeagueRoundSorter);
@@ -1683,35 +1716,14 @@ void OnGetSpare(CDBCompetition **ppComp) {
                                 SafeLog::Write(Utils::Format(L"%2d. %08X %s", i, pTeamIDs[i].ToInt(), TeamNameWithCountry(pTeamIDs[i])));
                         }
                     }
-                    else if (id.type == COMP_UEFA_CUP && id.index == 0 && comp->GetNumOfTeams() == 56 && comp->GetNumOfRegisteredTeams() == 55) {
-                        CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
-                        if (DUMP_TO_LOG) {
-                            SafeLog::Write(L"AFC Cup Pool");
-                            for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
-                                SafeLog::Write(Utils::Format(L"%2d. %08X %s", i, pTeamIDs[i].ToInt(), TeamNameWithCountry(pTeamIDs[i])));
-                        }
-                        for (UInt i = 56; i > 44; i--)
-                            pTeamIDs[i - 1] = pTeamIDs[i - 2];
-                        pTeamIDs[44 - 1] = CTeamIndex::make(0, 0, 0);
-                        *raw_ptr<UInt>(comp, 0xA4) = 56;
-                        if (DUMP_TO_LOG) {
-                            SafeLog::Write(L"Modified AFC Cup Pool");
-                            for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
-                                SafeLog::Write(Utils::Format(L"%2d. %08X %s", i, pTeamIDs[i].ToInt(), TeamNameWithCountry(pTeamIDs[i])));
-                        }
-                    }
                 }
             }
             return;
         }
         else if (id.countryId == FifamCompRegion::International) {
             if (comp->GetDbType() == DB_ROUND) {
-                if (id.type == COMP_QUALI_WC && (id.index == 28)) { // Euro Quali WC play-off (@E_playoff_semi)
-                    comp->SortTeamIDs(Europe_NationalTeamSorter);
-                    comp->RandomizePairs();
-                }
-                else
-                    comp->RandomizePairs();
+                comp->SortTeamIDs(NationalTeamSorter);
+                comp->RandomizePairs();
             }
             return;
         }
@@ -1727,7 +1739,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                 Vector<CTeamIndex> liechtensteinClubs;
                 CDBCountry* country = &GetCountryStore()->m_aCountries[FifamCompRegion::Switzerland];
                 if (country) {
-                    for (UInt t = 1; t <= country->GetLastTeamIndex(); t++) {
+                    for (Int t = 1; t <= country->GetLastTeamIndex(); t++) {
                         CTeamIndex teamIndex = CTeamIndex::make(FifamCompRegion::Switzerland, FifamClubTeamType::First, t);
                         if (IsLiechtensteinClubFromSwitzerland(teamIndex))
                             liechtensteinClubs.push_back(teamIndex);
@@ -1755,6 +1767,49 @@ void OnGetSpare(CDBCompetition **ppComp) {
                 }
             }
         }
+        else if (id.countryId == FifamCompRegion::Canada) {
+            if (id.type == COMP_FA_CUP && id.index == 0 && comp->GetNumOfTeams() == 14) {
+                Vector<CTeamIndex> canadianClubs;
+                if (GetStartingYear() == GetCurrentYear() && GetCurrentYear() == 2023) { // UPDATE: every season
+                    static const UInt CanadianChampionshipByeTeams[] = { 0x5F0022, 0x5F000D }; // Toronto FC, Vancouver Whitecaps FC
+                    for (UInt clubUID : CanadianChampionshipByeTeams) {
+                        CDBTeam *team = GetTeamByUniqueID(clubUID);
+                        if (team && !Utils::Contains(canadianClubs, team->GetTeamID()))
+                            canadianClubs.push_back(team->GetTeamID());
+                    }
+                }
+                else {
+                    CTeamIndex canadaChampion = comp->GetChampion();
+                    if (!canadaChampion.isNull())
+                        canadianClubs.push_back(canadaChampion);
+                    CTeamIndex canadaRunnerUp = comp->GetRunnerUp();
+                    if (!canadaRunnerUp.isNull() && !Utils::Contains(canadianClubs, canadaRunnerUp))
+                        canadianClubs.push_back(canadaRunnerUp);
+                }
+                static const UInt MLSCanadianClubs[] = {0x5F0022, 0x5F000D, 0x5F340C}; // Toronto FC, Vancouver Whitecaps FC, CF Montreal
+                for (UInt clubUID : MLSCanadianClubs) {
+                    CDBTeam *team = GetTeamByUniqueID(clubUID);
+                    if (team && !Utils::Contains(canadianClubs, team->GetTeamID()))
+                        canadianClubs.push_back(team->GetTeamID());
+                }
+                for (UInt i = 0; i < comp->GetNumOfRegisteredTeams(); i++) {
+                    CTeamIndex teamId = comp->GetTeamID(i);
+                    if (!teamId.isNull() && !Utils::Contains(canadianClubs, teamId))
+                        canadianClubs.push_back(teamId);
+                }
+                if (canadianClubs.size() > comp->GetNumOfTeams())
+                    canadianClubs.resize(comp->GetNumOfTeams());
+                CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
+                for (UInt i = 0; i < canadianClubs.size(); i++)
+                    pTeamIDs[i] = canadianClubs[i];
+                comp->SetNumOfRegisteredTeams(canadianClubs.size());
+                if (DUMP_TO_LOG) {
+                    SafeLog::Write(L"Canadian Championship Modified");
+                    for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
+                        SafeLog::Write(Utils::Format(L"%2d. %s", i + 1, TeamTagWithCountry(canadianClubs[i])));
+                }
+            }
+        }
         Call<0x139D9A0>(ppComp);
     }
 }
@@ -1774,6 +1829,8 @@ void METHOD OnAddMyCareerTrophyNationalTeam(void *vec, DUMMY_ARG, void *pValue) 
     compType = COMP_AFRICA_CUP;
     CallMethod<0x416950>(vec, &compType);
     compType = COMP_OFC_CUP;
+    CallMethod<0x416950>(vec, &compType);
+    compType = COMP_FINALISSIMA;
     CallMethod<0x416950>(vec, &compType);
 }
 
@@ -1834,6 +1891,7 @@ UChar GetCompetitionGroupByCompetitionId(UInt competitionId) {
     case COMP_AFRICA_CUP_Q:
     case COMP_OFC_CUP:
     case COMP_OFC_CUP_Q:
+    case COMP_FINALISSIMA:
         return 4;
     case COMP_FRIENDLY:
     case COMP_ICC:
@@ -1848,7 +1906,7 @@ UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
     UChar compType = *raw_ptr<UChar>(comp, 0x1A);
     if (compType == COMP_EURO_NL || compType == COMP_NAM_NL || compType == COMP_NAM_CUP || compType == COMP_ASIA_CUP || compType == COMP_AFRICA_CUP
         || compType == COMP_OFC_CUP || compType == COMP_U17_WORLD_CUP || compType == COMP_U21_EC || compType == COMP_U19_EC || compType == COMP_U17_EC
-        || compType == COMP_OLYMPIC || compType == COMP_OFC_CUP_Q)
+        || compType == COMP_OLYMPIC || compType == COMP_OFC_CUP_Q || compType == COMP_FINALISSIMA)
     {
         return COMP_WORLD_CUP;
     }
@@ -1856,9 +1914,17 @@ UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
 }
 
 Char const *GetNationalTeamECQualifiedTeamsScreenName() {
-    if (GetCurrentYear() == 2020)
-        return "Screens/10NationalTeamECQualifiedTeams_2020_FF12.xml";
+    if (GetCurrentYear() == 2024)
+        return "Screens/10NationalTeamECQualifiedTeams_2024_FF12.xml";
     return "Screens/10NationalTeamECQualifiedTeams.xml";
+}
+
+Char const *GetNationalTeamWCQualifiedTeams2ScreenName() {
+    return "Screens/10NationalTeamWCQualifiedTeams2.xml";
+}
+
+Char const *GetNationalTeamWCQualifiedTeams4ScreenName() {
+    return "Screens/10NationalTeamWCQualifiedTeams4.xml";
 }
 
 Char const *GetNationalTeamTournamentWelcomeScreenName() {
@@ -1870,28 +1936,34 @@ Char const *GetNationalTeamTournamentWelcomeScreenName() {
     }
     else {
         //if (game->TestFlag(4);
-        if (game->GetCurrentYear() == 2020)
-            return "Screens/10NationalTeamECTournamentWelcome_2020_FF12.xml";
-        return "Screens/10NationalTeamECTournamentWelcome.xml";
+        if (GetCurrentYear() == 2024)
+            return "Screens/10NationalTeamECTournamentWelcome_2024_FF12.xml";
     }
     return "Screens/10NationalTeamECTournamentWelcome.xml";
 }
 
 Char const *GetNationalTeamTournamentGroupsScreenName() {
     if (*(UChar *)0x3111C74 == 2) {
-        auto game = CDBGame::GetInstance();
-        if (game->GetCurrentYear() == 2020)
-            return "Screens/11NationalTeamECTournamentGroups_2020_FF12.xml";
+        if (GetCurrentYear() == 2024)
+            return "Screens/11NationalTeamECTournamentGroups_2024_FF12.xml";
         return "Screens/11NationalTeamECTournamentGroups.xml";
     }
     return "Screens/11NationalTeamWCTournamentGroups.xml";
 }
 
 Char const *GetNationalTeamECTournamentFinalsScreenName() {
-    auto game = CDBGame::GetInstance();
-    if (game->GetCurrentYear() == 2020)
-        return "Screens/10NationalTeamECTournamentFinals_2020_FF12.xml";
+    if (GetCurrentYear() == 2024)
+        return "Screens/10NationalTeamECTournamentFinals_2024_FF12.xml";
     return "Screens/10NationalTeamECTournamentFinals.xml";
+}
+
+Char const *GetNationalTeamWCTournamentFinalsScreenName() {
+    auto game = CDBGame::GetInstance();
+    if (game->GetIsWorldCupMode())
+        return "Screens/11NationalTeamWC2010TournamentFinals.xml";
+    if (GetCurrentYear() & 1)
+        return "Screens/10NationalTeamU20TournamentFinals.xml";
+    return "Screens/10NationalTeamWCTournamentFinals.xml";
 }
 
 Char const *GetNationalTeamTournamentReportScreenName() {
@@ -1899,8 +1971,8 @@ Char const *GetNationalTeamTournamentReportScreenName() {
     if (game->GetIsWorldCupMode())
         return "Screens/11NationalTeamWC2010TournamentReport.xml";
     if (game->TestFlag(4) || !game->TestFlag(2)) {
-        if (game->GetCurrentYear() == 2020)
-            return "Screens/10NationalTeamECTournamentReport_2020_FF12.xml";
+        if (GetCurrentYear() == 2024)
+            return "Screens/10NationalTeamECTournamentReport_2024_FF12.xml";
         return "Screens/10NationalTeamECTournamentReport.xml";
     }
     return "Screens/10NationalTeamWCTournamentReport.xml";
@@ -1911,42 +1983,21 @@ Char const *GetNationalTeamTournamentDreamTeamScreenName() {
     if (game->GetIsWorldCupMode())
         return "Screens/11NationalTeamWC2010DreamTeam.xml";
     if (game->TestFlag(4) || !game->TestFlag(2)) {
-        if (game->GetCurrentYear() == 2020)
-            return "Screens/10NationalTeamECTournamentDreamTeam_2020_FF12.xml";
+        if (GetCurrentYear() == 2024)
+            return "Screens/10NationalTeamECTournamentDreamTeam_2024_FF12.xml";
         return "Screens/10NationalTeamECTournamentDreamTeam.xml";
     }
     return "Screens/10NationalTeamWCTournamentDreamTeam.xml";
 }
 
 Char const *GetNationalTeamTournamentECUpsAndDownsScreenName() {
-    auto game = CDBGame::GetInstance();
-    if (game->GetCurrentYear() == 2020)
-        return "Screens/13NationalTeamECUpsAndDowns_2020_FF12.xml";
+    if (GetCurrentYear() == 2024)
+        return "Screens/13NationalTeamECUpsAndDowns_2024_FF12.xml";
     return "Screens/13NationalTeamECUpsAndDowns.xml";
 }
 
-UInt gTmpAddress = 0;
-wchar_t gTmpMessage[256];
-
-void __declspec(naked) GetNumOfTeamsInComp() {
-    __asm {
-        mov eax, dword ptr[esp]
-        mov gTmpAddress, eax
-        test ecx, ecx
-        jz SHOW_ERR
-        mov eax, [ecx + 0xA8]
-        //cdq
-        //sub eax, edx
-        //sar eax, 1
-        retn
-        SHOW_ERR :
-    }
-        swprintf(gTmpMessage, L"0x%X", gTmpAddress);
-        MessageBoxW(NULL, gTmpMessage, L"Season 2019 (v.1.3) - Exception", MB_ICONERROR);
-    __asm {
-        xor eax, eax
-        retn
-    }
+Char const *GetNationalTeamTournamentWCUpsAndDownsScreenName() {
+    return "Screens/13NationalTeamWCUpsAndDowns.xml";
 }
 
 CDBRound *GetECLast16Round(Int, Int, Int) {
@@ -2026,13 +2077,26 @@ CDBCompetition *GetECPoolForSimulation(Int, Int, Int) {
     return GetCompetition(255, compType, 0);
 }
 
-CDBRound *GetWCFinalForSimulation(Int, Int, Int) {
-    return GetRoundByRoundType(255, COMP_WORLD_CUP, 15);
+CDBRound *GetWCLast32Round(Int, Int, Int) {
+    CDBRound *round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_3);
+    if (!round) {
+        round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_LAST_16);
+        if (!round) {
+            round = GetRound(255, COMP_WORLD_CUP, 14);
+            if (!round)
+                round = GetRound(255, COMP_WORLD_CUP, 9);
+        }
+    }
+    return round;
+}
+
+CDBRound *GetWCFinal(Int, Int, Int) {
+    return GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_FINAL);
 }
 
 CDBRound *GetCompetitionFinalForSimulationScreen(UInt region, UInt type, UInt index) {
     GetFirstManagerRegion(region);
-    return GetRoundByRoundType(region, type, 15);
+    return GetRoundByRoundType(region, type, ROUND_FINAL);
 }
 
 CDBCompetition *GetCompetitionPoolForSimulationScreen(UInt region, UInt type, UInt index) {
@@ -2049,10 +2113,10 @@ void METHOD OnStoreSimulationLbChampions(void *t) {
 
 CDBCompetition *GetCompetitionPoolForSimulationScreen_Supercup(UInt region, UInt type, UInt index) {
     GetFirstManagerRegion(region);
-    if (region == FifamCompRegion::Europe) {
-        auto confPool = GetCompetition(region, COMP_CONFERENCE_LEAGUE, 0);
+    auto confPool = GetCompetition(region, COMP_CONFERENCE_LEAGUE, 0);
+    if (confPool) {
         auto confFinal = GetRoundByRoundType(region, COMP_CONFERENCE_LEAGUE, 15);
-        if (confPool && confFinal) {
+        if (confFinal) {
             auto championId = confFinal->GetChampion(false);
             if (!championId.isNull()) {
                 auto confId = confPool->GetCompID();
@@ -2063,8 +2127,6 @@ CDBCompetition *GetCompetitionPoolForSimulationScreen_Supercup(UInt region, UInt
             }
         }
     }
-    if (region == FifamCompRegion::NorthAmerica)
-        return nullptr;
     return GetCompetition(region, type, 0);
 }
 
@@ -2128,13 +2190,266 @@ CDBLeague *OnGetLeagueTournamentWelcome(UChar region, UChar type, UShort index) 
     return GetLeague(region, type, index);
 }
 
+struct NTWelcomeAdditionalData {
+    void *mTextBoxes[48];
+    void *mFlags[48];
+    UInt mCountryIDs[48];
+};
+
+void __declspec(naked) OnNTWelcome1() {
+    __asm {
+        mov [edi - 0xC0], eax
+        mov edx, [eax]
+        mov ecx, 0x8364D4
+        jmp ecx
+    }
+}
+
+void __declspec(naked) OnNTWelcome2() {
+    __asm {
+        mov [edi - 0xC0], eax
+        mov edx, [eax]
+        mov ecx, 0x836434
+        jmp ecx
+    }
+}
+
+void __declspec(naked) OnNTWelcome3() {
+    __asm {
+        mov ecx, [esi - 0xC0]
+        mov edx, [ecx]
+        mov eax, 0x8359FB
+        jmp eax
+    }
+}
+
+void METHOD NationalTeamTournamentGroupsButtonReleased(void *t, DUMMY_ARG, UInt *pId, Int) {
+    void *pBtSwitchGroups = *raw_ptr<void *>(t, 0x48C);
+    if (*pId == CallVirtualMethodAndReturn<UInt, 23>(pBtSwitchGroups)) { // GetId()
+        UInt numGroups = *raw_ptr<UInt>(t, 0x2108); // m_nNumGrpoups
+        UInt *pFirstGroupIndexToShow = raw_ptr<UInt>(t, 0x210C); // m_nFirstGroupIndexToShow
+        *pFirstGroupIndexToShow += 4;
+        if (*pFirstGroupIndexToShow >= numGroups)
+            *pFirstGroupIndexToShow = 0;
+        Char compType = CDBGame::GetInstance()->TestFlag(2) ? 'W' : 'E';
+        UInt textId = *pFirstGroupIndexToShow + 4;
+        if (textId >= numGroups)
+            textId = 0;
+        textId = textId / 4 + 1;
+        CallVirtualMethod<88>(pBtSwitchGroups, GetTranslation(FormatStatic("IDS_%cC_GROUPDS_%u", compType, textId))); // SetButtonText
+        CallMethod<0x832080>(t); // UpdateGroups
+    }
+}
+
+struct WCFinalsAdditionalData {
+    CTeamIndex mTeamIDs[32 * 2];
+    void *mTextBoxes[128];
+    void *mFlags[64];
+};
+
+WCFinalsAdditionalData *GetWCFinalsAdditionalData(void *screen) {
+    return raw_ptr<WCFinalsAdditionalData>(screen, 0x6C0);
+}
+
+void *METHOD OnCreateNationalTeamTournamentFinalsWC(void *screen, DUMMY_ARG, void *guiInstance) {
+    CallMethod<0x830C50>(screen, guiInstance);
+    auto data = GetWCFinalsAdditionalData(screen);
+    for (UInt i = 0; i < std::size(data->mTeamIDs); i++) {
+        data->mTeamIDs[i].countryId = 0;
+        data->mTeamIDs[i].type = 0;
+        data->mTeamIDs[i].index = 0;
+    }
+    return screen;
+}
+
+void __declspec(naked) OnWCFinals1() {
+    __asm {
+        add ebx, 4
+        cmp eax, 128
+        mov ecx, 0x830F5C
+        jmp ecx
+    }
+}
+
+void __declspec(naked) OnWCFinals2() {
+    __asm {
+        add ebx, 4
+        cmp edi, 128
+        mov eax, 0x83101D
+        jmp eax
+    }
+}
+
+void METHOD OnWCFinalsSetupClick(void *screen, DUMMY_ARG, UInt *controlId, Int) {
+    auto data = GetWCFinalsAdditionalData(screen);
+    for (UInt i = 0; i < 64; i++) {
+        if (CallVirtualMethodAndReturn<UInt, 23>(data->mFlags[i]) == *controlId) {
+            if (data->mTeamIDs[i].countryId)
+                Call<0xD42E60>(&data->mTeamIDs[i], screen, 0, 0);
+            return;
+        }
+    }
+    for (UInt i = 0; i < 1; i++) {
+        void *imgFlag = *raw_ptr<void *>(screen, 0x51C + i * 4);
+        if (CallVirtualMethodAndReturn<UInt, 23>(imgFlag) == *controlId) {
+            CTeamIndex teamID = CTeamIndex::make(*raw_ptr<UChar>(screen, 0x514 + i), 0, 0xFFFF);
+            Call<0xD42E60>(&data->mTeamIDs[i], screen, 0, 0);
+            return;
+        }
+    }
+}
+
+void METHOD OnWCFinalsSetupRound(void *screen, DUMMY_ARG, UChar roundIndex, void *) {
+    auto data = GetWCFinalsAdditionalData(screen);
+    Bool isU20 = *raw_ptr<UInt>(screen, 0x48C) == 2;
+    CDBRound *round = nullptr;
+    void **textBoxes = data->mTextBoxes;
+    void **flags = data->mFlags;
+    UInt pairOffset = 0;
+    Bool oldWCMode = false;
+    if (!isU20) {
+        auto wcPool = GetPool(255, COMP_WORLD_CUP, 0);
+        if (wcPool && wcPool->GetNumOfTeams() == 32)
+            oldWCMode = true;
+    }
+    if (isU20 || oldWCMode) {
+        UChar compType = isU20 ? COMP_U20_WORLD_CUP : COMP_WORLD_CUP;
+        switch (roundIndex) {
+        case 0:
+            round = GetRoundByRoundType(255, compType, ROUND_LAST_16);
+            break;
+        case 1:
+            round = GetRoundByRoundType(255, compType, ROUND_QUARTERFINAL);
+            textBoxes = &data->mTextBoxes[32];
+            flags = &data->mFlags[16];
+            pairOffset = 16;
+            break;
+        case 2:
+            round = GetRoundByRoundType(255, compType, ROUND_SEMIFINAL);
+            textBoxes = &data->mTextBoxes[48];
+            flags = &data->mFlags[24];
+            pairOffset = 24;
+            break;
+        case 3:
+            round = GetRoundByRoundType(255, compType, ROUND_FINAL_3RD_PLACE);
+            textBoxes = &data->mTextBoxes[60];
+            flags = &data->mFlags[30];
+            pairOffset = 30;
+            break;
+        case 4:
+            round = GetRoundByRoundType(255, compType, ROUND_FINAL);
+            textBoxes = &data->mTextBoxes[56];
+            flags = &data->mFlags[28];
+            pairOffset = 28;
+            break;
+        }
+    }
+    else {
+        switch (roundIndex) {
+        case 0:
+            round = GetWCLast32Round(0, 0, 0);
+            break;
+        case 1:
+            round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_LAST_16);
+            textBoxes = &data->mTextBoxes[64];
+            flags = &data->mFlags[32];
+            pairOffset = 32;
+            break;
+        case 2:
+            round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_QUARTERFINAL);
+            textBoxes = &data->mTextBoxes[96];
+            flags = &data->mFlags[48];
+            pairOffset = 48;
+            break;
+        case 3:
+            round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_SEMIFINAL);
+            textBoxes = &data->mTextBoxes[112];
+            flags = &data->mFlags[56];
+            pairOffset = 56;
+            break;
+        case 4:
+            round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_FINAL_3RD_PLACE);
+            textBoxes = &data->mTextBoxes[124];
+            flags = &data->mFlags[62];
+            pairOffset = 62;
+            break;
+        case 5:
+            round = GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_FINAL);
+            textBoxes = &data->mTextBoxes[120];
+            flags = &data->mFlags[60];
+            pairOffset = 60;
+            break;
+        }
+    }
+    if (!round)
+        return;
+    wchar_t countryLogoPath[512];
+    for (UInt p = 0; p < round->GetNumOfPairs(); p++) {
+        RoundPair pair;
+        round->GetRoundPair(p, pair);
+        if (pair.AreTeamsValid()) {
+            data->mTeamIDs[pairOffset] = pair.m_n1stTeam;
+            data->mTeamIDs[pairOffset + 1] = pair.m_n2ndTeam;
+            CDBTeam *team1 = GetTeam(pair.m_n1stTeam);
+            if (team1) {
+                SetText(*textBoxes, team1->GetShortName(pair.m_n1stTeam));
+                SetImageFilename(*flags, GetCountryLogoPath(countryLogoPath, pair.m_n1stTeam.countryId, 1), 4, 4);
+                SetVisible(*flags, true);
+            }
+            textBoxes++;
+            SetText(*textBoxes, GetTranslation("CAL_VERSUS_LABEL"));
+            textBoxes++;
+            flags++;
+            CDBTeam *team2 = GetTeam(pair.m_n2ndTeam);
+            if (team2) {
+                SetText(*textBoxes, team2->GetShortName(pair.m_n2ndTeam));
+                SetImageFilename(*flags, GetCountryLogoPath(countryLogoPath, pair.m_n2ndTeam.countryId, 1), 4, 4);
+                SetVisible(*flags, true);
+            }
+            textBoxes++;
+            char strBuf[0x14];
+            void *str = pair.GetResultString(strBuf, 0x18, 0, 0);
+            SetText(*textBoxes, *raw_ptr<WideChar const *>(str, 8));
+            CallMethod<0x40BF80>(strBuf);
+            textBoxes++;
+            flags++;
+        }
+        pairOffset += 2;
+    }
+}
+
+CDBRound *OnWCFinalsGetWCFinal(void *) {
+    return GetRoundByRoundType(255, COMP_WORLD_CUP, ROUND_FINAL);
+}
+
+void __declspec(naked) OnWCFinals3() {
+    __asm {
+        add esi, 4
+        cmp ebx, 128
+        mov eax, 0x83137B
+        jmp eax
+    }
+}
+
+Int METHOD OnWCQualiGetNumOfRegisteredTeams_FirstLastPlace(CDBCompetition *comp) {
+    auto pool = GetCompetition(255, COMP_QUALI_WC, 0);
+    if (pool) {
+        for (Int i = 0; i < pool->GetNumOfScriptCommands(); i++) {
+            auto command = pool->GetScriptCommand(i);
+            if (command->m_nCommandId == 7 && command->m_competitionId.ToInt() == comp->GetCompID().ToInt()) // GET_TAB_X_TO_Y
+                return comp->GetNumOfRegisteredTeams();
+        }
+    }
+    return 0;
+}
+
 void METHOD OnSetupRootInternationalComps(void *vec, DUMMY_ARG, UInt *pCompId) {
     CallMethod<0x6E3FD0>(vec, pCompId);
     *pCompId = 0xFF240000;
     CallMethod<0x6E3FD0>(vec, pCompId);
     *pCompId = 0xFF250000;
     CallMethod<0x6E3FD0>(vec, pCompId);
-    for (UInt i = 41; i <= 60; i++) {
+    for (UInt i = 41; i <= 62; i++) {
         *pCompId = 0xFF000000 | (i << 16);
         CallMethod<0x6E3FD0>(vec, pCompId);
     }
@@ -2151,16 +2466,9 @@ WideChar *ReadCompetitionName(void *file, WideChar *out) {
     return result;
 }
 
-void METHOD OnGetCalendarMatchesBuffer(void *a, DUMMY_ARG, UInt b, void **c) {
-    CallMethod<0xEFDBB0>(a, b, c);
-    void *cal = *c;
-    UInt size = *raw_ptr<UInt>(cal, 4);
-    Error(L"%d", size);
-}
-
 void METHOD OnSetupAssessmentEntry(CAssessmentTable *table, DUMMY_ARG, UChar countryIndex, UShort y1, UShort y2, UShort y3, UShort y4, UShort y5, UShort y6) {
     if (countryIndex == 207) // Kosovo
-        CallMethod<0x121D410>(table, countryIndex, 0, 0, 250, 150, 183, 233);
+        CallMethod<0x121D410>(table, countryIndex, 0, 250, 150, 183, 233, 287); // done for 2023/2024
     else
         CallMethod<0x121D410>(table, countryIndex, y1, y2, y3, y4, y5, y6);
 }
@@ -2394,9 +2702,9 @@ void *OnGetGameInstanceSetupCompetitionWinners() {
         r->SetChampion(CTeamIndex::make(FifamCompRegion::England, 0, 1));
     r = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::ConferenceLeague, 15);
     if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion()))) {
-        CDBTeam* roma = GetTeamByUniqueID(0x001B0004);
-        if (roma)
-            r->SetChampion(roma->GetTeamID());
+        CDBTeam* westHam = GetTeamByUniqueID(0x000E0007);
+        if (westHam)
+            r->SetChampion(westHam->GetTeamID());
         else
             r->SetChampion(CTeamIndex::make(FifamCompRegion::Italy, 0, 1));
     }
@@ -2498,6 +2806,7 @@ void METHOD OnClearInternationalCompsEvents(void *vec, DUMMY_ARG, UInt *pId) {
     }
     if (year % 4 == 1) { // 2017/2018
         AddComp(COMP_CONFED_CUP); // 2017
+        AddComp(COMP_FINALISSIMA); // 2017
     }
     if (year % 4 == 2) { // 2018/2019
         AddComp(COMP_QUALI_WC); // 2018
@@ -2534,6 +2843,8 @@ void METHOD OnAddTrophyStickerCompID(void *vec, DUMMY_ARG, UInt *pCompId) {
     pCompId[1] = 0xFF000000 | (COMP_EURO_NL << 16);
     CallMethod<0x129CB00>(vec, pCompId);
     pCompId[1] = 0xFF000000 | (COMP_NAM_NL << 16);
+    CallMethod<0x129CB00>(vec, pCompId);
+    pCompId[1] = 0xFF000000 | (COMP_FINALISSIMA << 16);
     CallMethod<0x129CB00>(vec, pCompId);
 }
 
@@ -2597,7 +2908,8 @@ UInt METHOD GetIsInternationalCompQuali(CDBCompetition *comp) {
         type == COMP_ASIA_CUP ||
         type == COMP_AFRICA_CUP ||
         type == COMP_NAM_CUP ||
-        
+        type == COMP_FINALISSIMA ||
+
         type == COMP_INTERNATIONAL_FRIENDLY;
     if (result)
         return COMP_QUALI_WC;
@@ -3231,7 +3543,7 @@ UChar *METHOD OnFillClubInfoFixturesList(void *m, DUMMY_ARG, UChar *arg) {
 }
 
 UChar *METHOD OnFillClubInfoFixturesList_NT(void *m, DUMMY_ARG, UChar *arg) {
-    UChar compTypes[] = { COMP_EURO_NL_Q, COMP_EURO_NL, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP, COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q, COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP };
+    UChar compTypes[] = { COMP_EURO_NL_Q, COMP_EURO_NL, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP, COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q, COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP, COMP_FINALISSIMA };
     for (UChar compType : compTypes)
         *CallMethodAndReturn<UChar *, 0x651180>(m, &compType) = 1;
     return CallMethodAndReturn<UChar *, 0x651180>(m, arg);
@@ -3260,26 +3572,39 @@ UInt METHOD OnGetQualifiedForContinentalCompetition_SeasonGoals(CDBTeam *team, D
 // NOTE: QUALI_EC 1 and QUALI_WC 8 are hardcoded now in the plugin
 
 void METHOD OnPoolLaunch(CDBPool* pool) {
-    if (pool->GetCompetitionType() == COMP_QUALI_EC && pool->GetCompID().index == 1) {
-        Bool startSim = GetCurrentYear() == GetStartingYear() && ((GetCurrentYear() % 4) == 3);
-        if (!startSim && (GetCurrentYear() % 4) != 2)
-            return;
-    }
-    if (pool->GetCompetitionType() == COMP_QUALI_WC && pool->GetCompID().index == 8) {
-        Bool startSim = GetCurrentYear() == GetStartingYear() && ((GetCurrentYear() % 4) == 1);
-        if (!startSim) {
-            if ((GetCurrentYear() % 4) != 0)
-                return;
-            if (GetCurrentMonth() == 7)
-                return;
+    CCompID compID = pool->GetCompID();
+    if (compID.countryId == FifamCompRegion::NorthAmerica && compID.type == COMP_CONTINENTAL_2 && compID.index == 0) {
+        if (!CDBGame::GetInstance()->IsCountryPlayable(FifamCompRegion::Mexico)
+            || !CDBGame::GetInstance()->IsCountryPlayable(FifamCompRegion::United_States))
+        {
+            CCompID successorID = pool->GetSuccessor(0);
+            if (successorID.countryId == FifamCompRegion::NorthAmerica && successorID.type == COMP_CONTINENTAL_2 && successorID.index == 1) {
+                CDBRound *leaguesCupLast16 = GetRoundByRoundType(FifamCompRegion::NorthAmerica, COMP_CONTINENTAL_2, ROUND_LAST_16);
+                if (leaguesCupLast16) {
+                    *raw_ptr<CCompID>(pool, 0x12C) = leaguesCupLast16->GetCompID(); // successor[0]
+                    *raw_ptr<CCompID>(leaguesCupLast16, 0xAC) = compID; // predecessor[0]
+                }
+            }
         }
     }
-    bool clPoolLaunching = false;
-    if (pool->GetCompetitionType() == COMP_CHAMPIONSLEAGUE && pool->GetCompID().countryId == FifamCompRegion::Europe
-        && pool->GetCompID().index == 0 && !pool->IsLaunched())
-    {
-        clPoolLaunching = true;
+    if (GetCompetition(FifamCompRegion::International, FifamCompType::EuroNLQ, 0)) { // if Euro NL is present - we need to wait for it
+        if (compID.type == COMP_QUALI_EC && compID.index == 1) {
+            Bool startSim = GetCurrentYear() == GetStartingYear() && ((GetCurrentYear() % 4) == 3);
+            if (!startSim && (GetCurrentYear() % 4) != 2)
+                return;
+        }
+        if (compID.type == COMP_QUALI_WC && compID.index == 8) {
+            Bool startSim = GetCurrentYear() == GetStartingYear() && ((GetCurrentYear() % 4) == 1);
+            if (!startSim) {
+                if ((GetCurrentYear() % 4) != 0)
+                    return;
+                if (GetCurrentMonth() == 7)
+                    return;
+            }
+        }
     }
+    bool clPoolLaunching = compID.type == COMP_CHAMPIONSLEAGUE && compID.countryId == FifamCompRegion::Europe && compID.index == 0
+        && !pool->IsLaunched();
     CallMethod<0x10F1A40>(pool);
     if (clPoolLaunching) {
         UChar numTeams = GetPoolNumberOfTeamsFromCountry(pool, 0, FifamCompRegion::Russia);
@@ -3312,18 +3637,18 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             if (compId.index == 0) { // East - top 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> eastTeams = {
-                        0x5F1003, // Philadelphia Union
-                        0x5F340C, // CF Montreal
-                        0x5F0006, // New York Red Bulls
-                        0x5F1020, // New York City FC
-                        0x5F1001, // Orlando City SC
-                        0x5F214B, // Inter Miami CF
-                        0x5F0002, // Columbus Crew
                         0x5F2149, // Atlanta United FC
+                        0x5F3335, // Charlotte Football Club
+                        0x5F221E, // FC Cincinnati
+                        0x5F0002, // Columbus Crew
+                        0x5F214B, // Inter Miami CF
+                        0x5F340C, // Club de Foot Montreal
+                        0x5F2073, // Nashville SC
                         0x5F000A, // New England Revolution
-                        0x5F0001, // Chicago Fire FC
-                        0x5F0022, // Toronto FC
-                        0x5F0003  // D.C.United
+                        0x5F1020, // New York City FC
+                        0x5F0006, // New York Red Bulls
+                        0x5F1001, // Orlando City SC
+                        0x5F1003, // Philadelphia Union
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !eastTeams.contains(team->GetTeamUniqueID()))
@@ -3341,18 +3666,18 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             else if (compId.index == 1) { // West - bottom 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> westTeams = {
-                        0x5F214A, // Los Angeles FC
+                        0x5F3285, // Austin FC
+                        0x5F0009, // Colorado Rapids
                         0x5F0008, // FC Dallas
-                        0x5F2073, // Nashville SC
+                        0x5F0004, // Sporting Kansas City
+                        0x5F214A, // Los Angeles Football Club
                         0x5F0005, // LA Galaxy
-                        0x5F0012, // Portland Timbers
                         0x5F1004, // Minnesota United FC
+                        0x5F0012, // Portland Timbers
                         0x5F000B, // Real Salt Lake
                         0x5F0016, // Seattle Sounders FC
-                        0x5F000D, // Vancouver Whitecaps
-                        0x5F0009, // Colorado Rapids
-                        0x5F0004, // Sporting Kansas City
-                        0x5F0024  // San Jose Earthquakes
+                        0x5F000D, // Vancouver Whitecaps FC
+                        0x5F0001, // Chicago Fire FC
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !westTeams.contains(team->GetTeamUniqueID()))
@@ -3553,7 +3878,8 @@ CCompID *METHOD OnGetIsCompetitionCupType(void *match, DUMMY_ARG, CCompID *out) 
     if (out->type == COMP_CONFERENCE_LEAGUE || out->type == COMP_CONTINENTAL_1 || out->type == COMP_CONTINENTAL_2
         || out->type == COMP_EURO_NL || out->type == COMP_EURO_NL_Q || out->type == COMP_NAM_CUP || out->type == COMP_NAM_NL
         || out->type == COMP_NAM_NL_Q || out->type == COMP_ASIA_CUP || out->type == COMP_ASIA_CUP_Q || out->type == COMP_AFRICA_CUP
-        || out->type == COMP_AFRICA_CUP_Q || out->type == COMP_OFC_CUP || out->type == COMP_OFC_CUP_Q || out->type == COMP_ICC)
+        || out->type == COMP_AFRICA_CUP_Q || out->type == COMP_OFC_CUP || out->type == COMP_OFC_CUP_Q || out->type == COMP_ICC
+        || out->type == COMP_FINALISSIMA)
     {
         out->type = COMP_CHAMPIONSLEAGUE;
     }
@@ -3822,8 +4148,8 @@ UInt GetStadiumForContinentalCompetition(FifamContinent const &continent) {
         Map<String, CDBTeam *> uniqueStadiums;
         for (UInt c = 1; c <= 207; c++) {
             CDBCountry *country = &GetCountryStore()->m_aCountries[c];
-            if (country->GetContinent() == continent) {
-                for (UInt t = 1; t <= country->GetLastTeamIndex(); t++) {
+            if (country->GetContinent() == continent.ToInt()) {
+                for (Int t = 1; t <= country->GetLastTeamIndex(); t++) {
                     auto team = GetTeam(CTeamIndex::make(c, FifamClubTeamType::First, t));
                     if (team) {
                         String id = StadiumStringId(team);
@@ -3954,6 +4280,68 @@ void METHOD OnSetupCompetitionOneMatch(CDBCompetition *comp, DUMMY_ARG, CDBOneMa
     UInt numSubs = CallMethodAndReturn<UInt, 0xF81990>(comp);
     CallMethod<0xE812A0>(match, numSubs);
     CallMethod<Addr>(comp, match);
+}
+
+int METHOD OnSortPoolCountryStrength(CDBPool *pool) {
+    if (pool->GetCompID().countryId == 255) {
+        pool->SortTeamIDs(NationalTeamSorter);
+        return 0;
+    }
+    return pool->GetNumOfRegisteredTeams();
+}
+
+void METHOD OnSortPoolDrawWorldCup(CDBPool *pool) {
+    if (pool->GetNumOfTeams() == 32)
+        CallMethod<0x10F36B0>(pool);
+    else if (pool->GetNumOfTeams() == 48) {
+        pool->SortTeamIDs(1, 47, NationalTeamSorter);
+        pool->RandomlySortTeams(1, 11);
+        pool->RandomlySortTeams(12, 12);
+        pool->RandomlySortTeams(24, 12);
+        pool->RandomlySortTeams(36, 12);
+        pool->DumpToFile();
+    }
+}
+
+void SetHostTeamForNextCopaAmerica() {
+    UInt compID = 0xFF210000;
+    Int rndIndex = GetRandomInt(std::size(SouthAmerica_ParticipantsCountries));
+    void *hosts = CallAndReturn<void *, 0x117C830>();
+    CallMethod<0x117C040>(hosts, &compID, GetCurrentYear() + 4, SouthAmerica_ParticipantsCountries[rndIndex], 0);
+}
+
+CDBRound *CopaAmericaGetQuarterFinal(UInt region, UInt compType, UShort index) {
+    return GetRoundByRoundType(region, compType, ROUND_QUARTERFINAL);
+}
+
+CDBRound *CopaAmericaGetSemiFinal(UInt region, UInt compType, UShort index) {
+    return GetRoundByRoundType(region, compType, ROUND_SEMIFINAL);
+}
+
+CDBRound *CopaAmericaGet3rdPlace(UInt region, UInt compType, UShort index) {
+    return GetRoundByRoundType(region, compType, ROUND_FINAL_3RD_PLACE);
+}
+
+CDBRound *CopaAmericaGetFinal(UInt region, UInt compType, UShort index) {
+    return GetRoundByRoundType(region, compType, ROUND_FINAL);
+}
+
+CDBCompetition *OnGetCopaAmericaCompetition(CCompID const &compId) {
+    CDBCompetition *comp = GetCompetition(compId);
+    if (comp && comp->GetDbType() == DB_ROUND) {
+        UInt r = comp->GetRoundType();
+        if (r != ROUND_QUARTERFINAL && r != ROUND_SEMIFINAL && r != ROUND_FINAL_3RD_PLACE && r != ROUND_FINAL)
+            return nullptr;
+    }
+    return comp;
+}
+
+CDBRound *WorldCupGetFinal(UInt region, UInt compType, UShort index) {
+    return GetRoundByRoundType(region, compType, ROUND_FINAL);
+}
+
+CDBRound *GetWorldClubCupFinalForTransitionScreen(CCompID const &compID) {
+    return GetRoundByRoundType(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP, ROUND_FINAL);
 }
 
 void PatchCompetitions(FM::Version v) {
@@ -4234,8 +4622,8 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x669EAE, OnAddTrophyClubTrophiesScreen_Continental);
         patch::RedirectCall(0x669F19, OnAddTrophyClubTrophiesScreen_Other);
 
-                                               // 3  4  5   6   7  8   9  10 11 12 13 14 15  16  17 18 19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35 36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  57  58  59  60
-        static UChar gCompWinYearsJumpTable[] = { 0, 1, 11, 11, 2, 11, 3, 4, 5, 6, 7, 5, 11, 11, 8, 9, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 11, 5, 11, 10, 11,  5,  5, 11, 10, 10, 11, 10, 11, 10, 11, 10, 11,  5, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
+                                               // 3  4  5   6   7  8   9  10 11 12 13 14 15  16  17 18 19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35 36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  57  58  59  60  61  62
+        static UChar gCompWinYearsJumpTable[] = { 0, 1, 11, 11, 2, 11, 3, 4, 5, 6, 7, 5, 11, 11, 8, 9, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 11, 5, 11, 10, 11,  5,  5, 11, 10, 10, 11, 10, 11, 10, 11, 10, 11,  5, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
         patch::SetPointer(0xEFBCB8 + 3, gCompWinYearsJumpTable);
         patch::RedirectCall(0x7DA52D, OnAddMyCareerTrophyNationalTeam);
         patch::RedirectCall(0x7DA4DC, OnAddMyCareerTrophyContinental);
@@ -4251,7 +4639,7 @@ void PatchCompetitions(FM::Version v) {
 
         // tournament status (fixtures and tables)
         static UInt gTournamentStatusFixturesAndTablesComps[] = { 17, 18, 32, 33, COMP_EURO_NL, COMP_NAM_NL, COMP_NAM_CUP,
-            COMP_AFRICA_CUP, COMP_ASIA_CUP, COMP_OFC_CUP, COMP_U20_WORLD_CUP };
+            COMP_AFRICA_CUP, COMP_ASIA_CUP, COMP_OFC_CUP, COMP_FINALISSIMA, COMP_U20_WORLD_CUP };
         patch::SetPointer(0x837760 + 3, gTournamentStatusFixturesAndTablesComps);
         patch::SetPointer(0x8377A8 + 3, gTournamentStatusFixturesAndTablesComps);
         patch::SetUChar(0x83776A + 2, (UChar)std::size(gTournamentStatusFixturesAndTablesComps));
@@ -4279,6 +4667,10 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectJump(0x832940, GetNationalTeamTournamentReportScreenName);
         patch::RedirectJump(0x82E9E0, GetNationalTeamTournamentDreamTeamScreenName);
         patch::RedirectJump(0xE5F100, GetNationalTeamTournamentECUpsAndDownsScreenName);
+        patch::RedirectJump(0x82A190, GetNationalTeamWCQualifiedTeams2ScreenName);
+        patch::RedirectJump(0x82AB20, GetNationalTeamWCQualifiedTeams4ScreenName);
+        patch::RedirectJump(0x830D50, GetNationalTeamWCTournamentFinalsScreenName);
+        patch::RedirectJump(0xE5F020, GetNationalTeamTournamentWCUpsAndDownsScreenName);
 
         patch::RedirectCall(0x106D2F3, GetECLast16Round);
         patch::RedirectCall(0x106D571, GetECLast16Round);
@@ -4324,6 +4716,71 @@ void PatchCompetitions(FM::Version v) {
         patch::SetUInt(0x830455 + 3, 0x594 + offsetof(ECFinalsAdditionalData, mFlags));
 
         patch::RedirectCall(0x835EC9, OnGetLeagueTournamentWelcome);
+
+        // WC Quali
+        patch::RedirectCall(0x106D68C, OnWCQualiGetNumOfRegisteredTeams_FirstLastPlace);
+
+        // World Cup
+        const UInt NumWorldCupTeams = 48;
+        const UInt NumWorldCupGroups = 12;
+        patch::RedirectCall(0x108B186, OnSortPoolDrawWorldCup);
+        patch::RedirectCall(0x10F47E6, OnSortPoolDrawWorldCup);
+        patch::RedirectCall(0x106D92A, GetWCLast32Round);
+        patch::RedirectCall(0x106DB0C, GetWCLast32Round);
+        patch::RedirectCall(0x83FB8A, GetWCFinal);
+
+        // World Cup - welcome
+        patch::SetUChar(0x8364A8 + 2, NumWorldCupTeams - 1);
+        patch::SetUInt(0x835E9E + 4, NumWorldCupGroups);
+        patch::SetUInt(0x8359DB + 1, NumWorldCupTeams);
+        patch::SetUInt(0x49C0A4 + 1, 0x638 + sizeof(NTWelcomeAdditionalData));
+        patch::SetUInt(0x49C0AB + 1, 0x638 + sizeof(NTWelcomeAdditionalData));
+        patch::SetUInt(0x8364A2 + 2, 0x638 + offsetof(NTWelcomeAdditionalData, mFlags));
+        patch::RedirectJump(0x8364CF, OnNTWelcome1);
+        patch::SetUInt(0x836403 + 2, 0x638 + offsetof(NTWelcomeAdditionalData, mFlags));
+        patch::RedirectJump(0x83642F, OnNTWelcome2);
+        patch::SetUInt(0x835F2B + 3, 0x638 + offsetof(NTWelcomeAdditionalData, mTextBoxes));
+        patch::SetUInt(0x835F88 + 3, 0x638 + offsetof(NTWelcomeAdditionalData, mCountryIDs));
+        patch::SetUInt(0x836011 + 3, 0x638 + offsetof(NTWelcomeAdditionalData, mFlags));
+        patch::SetUInt(0x8359ED + 2, 0x638 + offsetof(NTWelcomeAdditionalData, mFlags));
+        patch::RedirectJump(0x8359F6, OnNTWelcome3);
+        patch::SetUInt(0x835A11 + 2, sizeof(NTWelcomeAdditionalData::mFlags));
+
+        // World Cup - groups
+        patch::RedirectJump(0x8321A0, NationalTeamTournamentGroupsButtonReleased);
+
+        // World Cup - finals
+        patch::RedirectCall(0x49B637, OnCreateNationalTeamTournamentFinalsWC);
+        patch::SetUInt(0x49B604 + 1, 0x6C0 + sizeof(WCFinalsAdditionalData));
+        patch::SetUInt(0x49B60B + 1, 0x6C0 + sizeof(WCFinalsAdditionalData));
+        patch::SetUInt(0x830F1B + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mTextBoxes));
+        patch::RedirectJump(0x830F56, OnWCFinals1);
+        patch::RedirectJump(0x831017, OnWCFinals2);
+        patch::SetUInt(0x831024 + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mFlags));
+        patch::SetUChar(0x831063 + 2, 64);
+        patch::SetUInt(0x83106A + 1, 64);
+        patch::SetUInt(0x831089 + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mTextBoxes) + 3 * 4);
+        patch::SetUInt(0x83108F + 1, 32);
+        patch::SetUInt(0x8310AD + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mFlags));
+        patch::SetUInt(0x8310B3 + 1, 64);
+        patch::Nop(0x831AC6, 13);
+        patch::RedirectCall(0x831AD7, OnWCFinalsSetupRound);
+        patch::SetPointer(0x241131C, OnWCFinalsSetupClick);
+        patch::SetUChar(0x831AE0 + 2, 6);
+        patch::RedirectCall(0x831B68, OnWCFinalsGetWCFinal);
+        patch::SetUInt(0x831507 + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mTextBoxes));
+        patch::SetUInt(0x83150D + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mFlags));
+        patch::SetUInt(0x831589 + 3, 0x6C0 + offsetof(WCFinalsAdditionalData, mTeamIDs) + 4);
+        patch::SetUInt(0x83135C + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mTextBoxes));
+        patch::RedirectJump(0x831375, OnWCFinals3);
+        patch::SetUInt(0x831417 + 3, offsetof(WCFinalsAdditionalData, mTeamIDs) + 2);
+        patch::SetUInt(0x831421 + 3, offsetof(WCFinalsAdditionalData, mTeamIDs));
+        patch::SetUInt(0x831448 + 3, offsetof(WCFinalsAdditionalData, mTeamIDs) + 2);
+        patch::SetUInt(0x831452 + 3, offsetof(WCFinalsAdditionalData, mTeamIDs));
+        patch::SetUInt(0x83137F + 2, 0x6C0 + offsetof(WCFinalsAdditionalData, mFlags));
+        patch::SetUChar(0x83139B + 2, 64);
+        patch::SetUInt(0x831495 + 3, 0x6C0 + offsetof(WCFinalsAdditionalData, mFlags));
+        patch::SetUChar(0x8314AA + 2, 64);
 
         patch::RedirectCall(0x11F2B93, OnSetupRootInternationalComps);
 
@@ -4409,10 +4866,12 @@ void PatchCompetitions(FM::Version v) {
         patch::SetUInt(0x897977 + 2, 0xF90A0014);
 
         // Copa America IDs
-        patch::SetUChar(0x836D48 + 1, 4);
-        patch::SetUChar(0x836D67 + 1, 5);
-        patch::SetUChar(0x836D86 + 1, 7);
-        patch::SetUChar(0x836E07 + 1, 6);
+        patch::RedirectCall(0x836D51, CopaAmericaGetQuarterFinal);
+        patch::RedirectCall(0x836D70, CopaAmericaGetSemiFinal);
+        patch::RedirectCall(0x836E10, CopaAmericaGet3rdPlace);
+        patch::RedirectCall(0x836D8F, CopaAmericaGetFinal);
+        patch::RedirectCall(0xF6CA82, OnGetCopaAmericaCompetition);
+        patch::RedirectJump(0xF63000, SetHostTeamForNextCopaAmerica);
 
         // U-20 WC IDs
         patch::SetUInt(0x831A7E + 6, 0xFF1F000C);
@@ -4442,7 +4901,7 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x7BD405, GetCompetitionPoolForSimulationScreen_Supercup);
         patch::RedirectCall(0x7BD4F5, GetECFinalForSimulation);
         patch::RedirectCall(0x7BD505, GetECPoolForSimulation);
-        patch::RedirectCall(0x7BD475, GetWCFinalForSimulation);
+        patch::RedirectCall(0x7BD475, GetWCFinal);
 
         //patch::RedirectJump(0x11F46FF, LaunchQualiExec); TODO: make it flexible
         patch::RedirectCall(0x54678D, GetPoolForGameStartNationalTeam);
@@ -4604,7 +5063,7 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x6516CC, OnFillClubInfoFixturesList_NT);
 
         // World Club Cup for season transition screen
-        patch::SetUInt(0x8875CA + 4, 0xF90D0008);
+        patch::RedirectCall(0x8875D2, GetWorldClubCupFinalForTransitionScreen);
 
         // remove loading of all clubs when all league levels selected
        // patch::Nop(0xF954DC, 1);
@@ -4616,7 +5075,7 @@ void PatchCompetitions(FM::Version v) {
             8, 8, 2, 9, 2, 2, 2, 2, 2, 2, 
             2, 2, 2, 2, 0, 30, 2, 2, 31, 32,
             32, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-            2, 6
+            2, 6, 2
         };
 
         patch::SetPointer(0x62BE96 + 3, gCompSpectatorCalcType);
@@ -4666,7 +5125,8 @@ void PatchCompetitions(FM::Version v) {
             COMP_NAM_CUP, COMP_NAM_NL, COMP_NAM_NL_Q,
             COMP_AFRICA_CUP, COMP_AFRICA_CUP_Q,
             COMP_ASIA_CUP, COMP_ASIA_CUP_Q,
-            COMP_OFC_CUP, COMP_OFC_CUP_Q
+            COMP_OFC_CUP, COMP_OFC_CUP_Q,
+            COMP_FINALISSIMA
         };
         patch::SetPointer(0x9DD323 + 2, intlCompTypesWorldAllClubs);
         patch::SetUChar(0x9DD3BE + 2, (UChar)std::size(intlCompTypesWorldAllClubs) * 4);
@@ -4684,5 +5144,12 @@ void PatchCompetitions(FM::Version v) {
         // max subs for DB_ROUND and DB_CUP
         patch::RedirectCall(0x104321D, OnSetupCompetitionOneMatch<0x1042570>);
         patch::RedirectCall(0x1049CCF, OnSetupCompetitionOneMatch<0x10496A0>);
+
+        // sort by FIFA ranking for international comps
+        patch::RedirectCall(0x10F4535, OnSortPoolCountryStrength);
+
+        // Cup Draw pot/group WC/EC
+        //patch::SetUInt(0x249562C + 4, 3); // Euro
+        //patch::SetUInt(0x249562C + 4, 6); // WC
     }
 }

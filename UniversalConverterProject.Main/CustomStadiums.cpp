@@ -493,11 +493,19 @@ CTeamIndex *METHOD OnGetMatchPreviewAwayTeamID(void *match, DUMMY_ARG, CTeamInde
         return CallMethodAndReturn<CTeamIndex *, 0xE7FD00>(match, teamId);
 }
 
-void *METHOD OnCopyMatchForMatchPreview(void *matchList, DUMMY_ARG, unsigned int index, void *outMatch) {
+void *METHOD OnCopyMatchForMatchPreview(void *matchList, DUMMY_ARG, unsigned int index, CDBOneMatch *outMatch) {
     unsigned int numMatches = CallMethodAndReturn<unsigned int, 0xE884A0>(matchList);
-    if (index >= numMatches)
+    Bool isSwapped = index >= numMatches;
+    if (isSwapped)
         index -= numMatches;
-    return CallMethodAndReturn<void *, 0xE8BB20>(matchList, index, outMatch);
+    void *result = CallMethodAndReturn<void *, 0xE8BB20>(matchList, index, outMatch);
+    if (isSwapped) {
+        CTeamIndex homeTeamID = outMatch->GetHomeTeamID();
+        CTeamIndex awayTeamID = outMatch->GetAwayTeamID();
+        *raw_ptr<CTeamIndex>(outMatch, 8) = awayTeamID;
+        *raw_ptr<CTeamIndex>(outMatch, 12) = homeTeamID;
+    }
+    return result;
 }
 
 void PatchCustomStadiums(FM::Version v) {

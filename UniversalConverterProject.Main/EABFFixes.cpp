@@ -10,6 +10,9 @@
 #include "Competitions.h"
 #include "Translation.h"
 #include "Random.h"
+#include "ExtendedTeam.h"
+
+const UInt NUM_LANGUAGES = 105;
 
 using namespace plugin;
 
@@ -797,25 +800,6 @@ UInt METHOD UserFormationsBugFix(void *t) {
     return CallMethodAndReturn<UInt, 0x11EDE10>(t);
 }
 
-Bool METHOD OnFireEmployee(CDBEmployee *employee, DUMMY_ARG, UInt type, Bool flag) {
-    
-    CDBTeam *managerTeam = GetTeam(*raw_ptr<CTeamIndex>(employee, 0x20)); // GetTeam(employee->mTeamIndex)
-    Bool result = CallMethodAndReturn<Bool, 0xEB6D70>(employee, type, flag); // employee->Fire(type, flag)
-    if (!result && managerTeam) {
-        if (CallMethodAndReturn<Bool, 0xEB1600>(employee)) { // employee->IsHumanManager()
-            void *tasks = CallMethodAndReturn<void *, 0x1017380>(managerTeam); // managerTeam->GetTasks()
-            CallMethod<0x11A0580>(tasks); // tasks->Clear() CallMethod<0x11A0580>(tasks); // tasks->Clear()
-            CallMethod<0x11A1020>(tasks); // tasks->DelegateAll()
-
-            //Error(L"Delegated all tasks for\nteam %s\nmanager: %s %s",
-            //    managerTeam->GetName(),
-            //    CallMethodAndReturn<WideChar *, 0xE7E990>(raw_ptr<void *>(employee, 0x10)),
-            //    CallMethodAndReturn<WideChar *, 0xE7E9A0>(raw_ptr<void *>(employee, 0x10)));
-        }
-    }
-    return result;
-}
-
 template<UInt Addr>
 void * METHOD Handler_1010D90(void *t, DUMMY_ARG, UInt a, UInt b) {
     gPreviousAddress = Addr;
@@ -1005,64 +989,6 @@ void METHOD OnAddClubFans(void *t, DUMMY_ARG, Int fans) {
 //    void *def = CallAndReturn<void *, 0x11D1F90>();
 //    return def;
 //}
-
-WideChar gSponsorName[29];
-
-void METHOD OnReadClubSponsorAmount(void *reader, DUMMY_ARG, UInt *amount) {
-    gSponsorName[0] = 0;
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0D)) {
-        BinaryReaderReadString(reader, gSponsorName, std::size(gSponsorName));
-    }
-    CallMethod<0x1338AB0>(reader, amount);
-}
-
-void METHOD OnSetupSponsorClub(void *contract, DUMMY_ARG, UChar isSpecial) {
-    CallMethod<0x1275DD0>(contract, isSpecial);
-    CTeamIndex teamID = *raw_ptr<CTeamIndex>(contract, 0x24);
-    void *list = CallAndReturn<void *, 0x69E9E0>();
-    Bool found = false;
-    if (gSponsorName[0]) {
-        auto CheckCountry = [&](UChar countryId) {
-            FmVec<Char[84]> *v = CallMethodAndReturn<FmVec<Char[84]> *, 0x126E9D0>(list, countryId);
-            if (v && !v->empty()) {
-                for (UInt i = 0; i < v->size(); i++) {
-                    void *sponsor = &v->begin[i];
-                    auto sponsorName = CallMethodAndReturn<WideChar const *, 0x126D490>(sponsor);
-                    if (!wcscmp(gSponsorName, sponsorName)) {
-                        UInt placement[2] = { i, countryId };
-                        CallMethod<0x11B8540>(contract, placement);
-                        found = true;
-                        break;
-                    }
-                }
-
-            }
-        };
-        CheckCountry(teamID.countryId);
-        if (!found) {
-            for (UInt i = 1; i < 207; i++) {
-                if (i != teamID.countryId) {
-                    CheckCountry(i);
-                    if (found)
-                        break;
-                }
-            }
-        }
-        gSponsorName[0] = 0;
-    }
-    if (!found) {
-        FmVec<Char[84]> *v = CallMethodAndReturn<FmVec<Char[84]> *, 0x126E9D0>(list, teamID.countryId);
-        if (v && !v->empty()) {
-            UInt placement[2] = { 0, 0 };
-            if (v->size() == 1)
-                placement[0] = 0;
-            else
-                placement[0] = Random::Get(0, v->size() - 1);
-            placement[1] = teamID.countryId;
-            CallMethod<0x11B8540>(contract, placement);
-        }
-    }
-}
 
 void METHOD OnOpenTactics(void *t, DUMMY_ARG, Int lineupId, UInt teamID) {
     CallMethod<0xC2D4E0>(t, lineupId, teamID);
@@ -1295,12 +1221,308 @@ void *METHOD Hook_EAA287_map_playerKnowledge__find(FmMap<UInt, UChar> *_map, DUM
     return result;
 }
 
-void *METHOD Hook_EAA287_mapIterator_playerKnowledge__data(FmMap<UInt, UChar>::Iterator *_iterator) {
+//void *METHOD Hook_EAA287_mapIterator_playerKnowledge__data(FmMap<UInt, UChar>::Iterator *_iterator) {
+//
+//}
+//
+//void UnhandledException_EAA287() {
+//   // MessageBoxW(NULL, L"Unhandled exception at 0xEAA287\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", GetSafePatchName(), MB_ICONERROR);
+//}
 
+void METHOD OnPlayerPlanCareerEndAtGameStart(CDBPlayer *player) {
+    if (player->GetAge() >= 37) {           //  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
+        static const UInt clubRepToLvl[20] = { 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82 };
+        UInt rep = 20;
+        CTeamIndex teamID = player->GetCurrentTeam();
+        if (teamID.countryId) {
+            CDBTeam *team = GetTeam(teamID);
+            rep = team->GetInternationalPrestige();
+            if (rep < 1 || rep > 20)
+                rep = 20;
+        }
+        if (player->GetLevel(player->GetMainPosition()) < clubRepToLvl[rep - 1]) {
+            CallMethod<0xFCBE50>(player); // original function
+            //SafeLog::WriteToFile("career_end_players.txt",
+            //    player->GetName() + L"(" + to_wstring(player->GetLevel(player->GetMainPosition())) + L"/" + to_wstring(rep) + L") - " +
+            //    TeamName(teamID) + L"(" + CountryName(teamID.countryId) + L")");
+        }
+        //else {
+        //    SafeLog::WriteToFile("skip_career_end_players.txt", 
+        //        player->GetName() + L"(" + to_wstring(player->GetLevel(player->GetMainPosition())) + L"/" + to_wstring(rep) + L") - " + 
+        //        TeamName(teamID) + L"(" + CountryName(teamID.countryId) + L")");
+        //}
+    }
 }
 
-void UnhandledException_EAA287() {
-   // MessageBoxW(NULL, L"Unhandled exception at 0xEAA287\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", GetSafePatchName(), MB_ICONERROR);
+CRITICAL_SECTION CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel;
+
+UChar METHOD OnGetPlayerKnowledgeLevel(CDBEmployee *employee, DUMMY_ARG, CDBPlayer *player) {
+    EnterCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
+    UChar result = CallMethodAndReturn<UChar, 0xEB2290>(employee, player); // CDBEmployee::GetPlayerKnowledgeLevel
+    LeaveCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
+    return result;
+}
+
+UInt METHOD OnBestGkScreenLeagueGetNumTeams(CDBLeague *league) {
+    UChar minMatches = (UChar)((Float)league->GetNumMatchdays() * 0.74f); // 38 => 28, 46 => 34, 8 => 5
+    if (minMatches < 1)
+        minMatches = 1;
+    patch::SetUChar(0xA4BD08 + 2, minMatches);
+    return league->GetNumOfRegisteredTeams();
+}
+
+CDBEmployee *OnGetEmployee_SimulationScreen(UInt employeeID) {
+    return nullptr;
+}
+
+Bool CanExtendStadium(UInt currentCapacity, UChar natPrestige, UChar intlPrestige) {
+    UInt maxCapacityNat = Utils::Clamp(natPrestige, 0, 20) * 3'000 + 20'000;
+    UInt maxCapacityIntl = Utils::Clamp(intlPrestige, 0, 20) * 4'000 + 20'000;
+    UInt max = Utils::Max(maxCapacityNat, maxCapacityIntl) * 10 / 11;
+    return currentCapacity < max;
+}
+
+void LogStadiumExtension(CStadiumDevelopment *stad, CDBTeam *team, UInt oldCapacity, Float factor, Bool promoted, String result) {
+    static String header = L"Date,Team,Factor,Promoted,OldCapacity,NewCapacity,NP,IP,Result";
+    auto date = CDBGame::GetInstance()->GetCurrentDate();
+    SafeLog::WriteToFile("stadium_extension.csv", Utils::Format(L"%02d.%02d.%04d,%s,%.2f,%d,%d,%d,%d,%d,%s",
+        date.GetDays(), date.GetMonth(), date.GetYear(),
+        TeamNameWithCountry(team), factor, promoted, oldCapacity, stad->GetNumSeats(),
+        team->GetNationalPrestige(), team->GetInternationalPrestige(), result), header);
+}
+
+Short METHOD OnExtendStadium(CStadiumDevelopment *stad, DUMMY_ARG, Float factor, Bool promoted, CDBTeam *team) {
+    Short result = -1;
+    if (CanExtendStadium(stad->GetNumSeats(), team->GetNationalPrestige(), team->GetInternationalPrestige())) {
+        UChar chanceOfExtension = promoted ? 75 : 25;
+        if (chanceOfExtension > CRandom::GetRandomInt(100)) {
+            UInt oldCapacity = stad->GetNumSeats();
+            result = CallMethodAndReturn<Short, 0xF7B640>(stad, factor, promoted, team);
+            //LogStadiumExtension(stad, team, oldCapacity, factor, promoted, result > 0 ? L"Extended" : L"NotExtended");
+        }
+        //else
+        //    LogStadiumExtension(stad, team, stad->GetNumSeats(), factor, promoted, L"NoChance");
+    }
+    //else
+    //    LogStadiumExtension(stad, team, stad->GetNumSeats(), factor, promoted, L"CantExtend");
+    return result;
+}
+
+void METHOD OnClubStaffMarketScreen(void *t) {
+    void *cb = *raw_ptr<void *>(t, 0x53C); // CClubStaffMarket::m_pCbCountry
+    Int sorter[4]; // CXgTableSortByString
+    void *items = CallVirtualMethodAndReturn<void *, 68>(cb); // CXgComboBox::GetItems()
+    CallMethod<0x547270>(sorter, items, 0, 0); // CXgTableSortByString::CXgTableSortByString()
+    Int itemCount = CallVirtualMethodAndReturn<Int, 69>(cb); // CXgComboBox::GetItemCount()
+    CallVirtualMethod<91>(items, sorter, 0, 0, itemCount); // CXgTableItems?::SetSorting()
+    CallMethod<0x68DC20>(t); // original func
+}
+
+void *METHOD TeamPhotoRetNull(void *, DUMMY_ARG, CTeamIndex const &) {
+    return nullptr;
+}
+
+WideChar *METHOD OnResolverGetPathFromCache(void *t, DUMMY_ARG, void *desc, UInt *out) {
+    if (*raw_ptr<UInt>(desc, 0) == 0 && *raw_ptr<UInt>(desc, 8) == 0) // if club badge
+        *raw_ptr<UInt>(desc, 0x14) = GetCurrentSeasonStartYear();
+    return CallMethodAndReturn<WideChar *, 0x4DBDB0>(t, desc, out);
+}
+
+struct TeamFormationInfo {
+    Int f1 = -1;
+    Int f2 = -1;
+    Int f3 = -1;
+    Int f4 = -1;
+    Int f5 = -1;
+    Int rf = -1;
+    Int ff = -1;
+    Int lcf = -1;
+};
+
+TeamFormationInfo GetTeamFormationInfo(CDBTeam *team) {
+    TeamFormationInfo info;
+    if (team) {
+        info.f1 = *raw_ptr<UInt>(team, 0x7A60);
+        info.f2 = *raw_ptr<UInt>(team, 0x7A60 + 4);
+        info.f3 = *raw_ptr<UInt>(team, 0x7A60 + 8);
+        info.f4 = *raw_ptr<UInt>(team, 0x7A60 + 12);
+        info.f5 = *raw_ptr<UInt>(team, 0x7A60 + 16);
+        void *tf = CallMethodAndReturn<void *, 0x10039B0>(team, 1);
+        info.rf = *raw_ptr<UInt>(tf, 0x48);
+        info.ff = *raw_ptr<UInt>(tf, 0x4C);
+        void *lu = CallMethodAndReturn<void *, 0x1002EF0>(team, 1);
+        void *lc = *raw_ptr<void *>(lu, 0);
+        if (lc)
+            info.lcf = CallVirtualMethodAndReturn<Int, 40>(lc);
+        else
+            info.lcf = -1;
+    }
+    return info;
+}
+
+void LogFormationInfo(String const &type, Int reason, Char flag, Int result, CDBTeam *team, CDBEmployee *employee, TeamFormationInfo const &b, TeamFormationInfo const &a = TeamFormationInfo()) {
+    CJDate date = CDBGame::GetInstance()->GetCurrentDate();
+    String teamName = TeamNameWithCountry(team);
+    String employeeName;
+    if (!employee && team)
+        employee = GetEmployee(team->GetManagerId());
+    if (employee)
+        employeeName = employee->GetName();
+    Int sauf = -1;
+    Int sarf = -1;
+    if (team) {
+        sauf = *raw_ptr<Int>(team, 0x6A88 + 0x38);
+        sarf = *raw_ptr<Int>(team, 0x6A88 + 0x9C);
+    }
+    SafeLog::WriteToFile("fire_employee.txt", Utils::Format(L"%02d.%02d.%04d,%s,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+        date.GetDays(), date.GetMonth(), date.GetYear(), type, employeeName, teamName, reason, flag,
+        b.f1, b.f2, b.f3, b.f4, b.f5, b.rf, b.ff, b.lcf, a.f1, a.f2, a.f3, a.f4, a.f5, a.rf, a.ff, a.lcf, sauf, sarf, result),
+        L"Date,Type,Employee,Team,Reason,Flag,F1,F2,F3,F4,F5,RF,FF,LCF,AF1,AF2,AF3,AF4,AF5,ARF,AFF,ALCF,SAUF,SARF,Result");
+}
+
+CDBTeam *TestFireManager_Everyday(CTeamIndex teamID) {
+    CDBTeam *team = GetTeam(teamID);
+    if (team && team->GetTeamUniqueID() == 0x0E000E)
+        LogFormationInfo(L"EVERYDAY", -1, -1, -1, team, GetEmployee(team->GetManagerId()), GetTeamFormationInfo(team));
+    return team;
+}
+
+void METHOD TestFireManager_FormationUpdate_AutoFill(CDBTeam *team) {
+    if (team->GetTeamUniqueID() == 0x0E000E) {
+        TeamFormationInfo b = GetTeamFormationInfo(team);
+        CallMethod<0x1003F90>(team);
+        LogFormationInfo(L"FORMATION_UPDATE_AUTOFILL", -1, -1, -1, team, GetEmployee(team->GetManagerId()), b, GetTeamFormationInfo(team));
+    }
+    else
+        CallMethod<0x1003F90>(team);
+}
+
+CDBEmployee *TestFireManager_FireEmployee(Int employeeId) {
+    CDBEmployee *employee = GetEmployee(employeeId);
+    if (employee) {
+        CDBTeam *team = GetTeam(employee->GetTeamID());
+        if (team)
+            LogFormationInfo(L"FIRE_MANAGER", -1, -1, -1, team, employee, GetTeamFormationInfo(team));
+    }
+    return employee;
+}
+
+template<UInt Address>
+Bool METHOD OnFireEmployee(CDBEmployee *employee, DUMMY_ARG, UInt reason, UChar flag) {
+    //String type = L"FIRE_EMPLOYEE_" + Utils::Format(L"%X", Address);
+    //String employeeName = employee->GetName();
+    CDBTeam *team = GetTeam(employee->GetTeamID());
+    //String teamName = TeamNameWithCountry(team);
+    //TeamFormationInfo b, a;
+    //if (team)
+    //    b = GetTeamFormationInfo(team);
+    Bool result = CallMethodAndReturn<Bool, 0xEB6D70>(employee, reason, flag); // employee->Fire(type, flag)
+    //if (team)
+    //    a = GetTeamFormationInfo(team);
+    if (!result && team) {
+        if (CallMethodAndReturn<Bool, 0xEB1600>(employee)) { // employee->IsHumanManager()
+            void *tasks = CallMethodAndReturn<void *, 0x1017380>(team); // managerTeam->GetTasks()
+            //CallMethod<0x11A0580>(tasks); // tasks->Clear()
+            CallMethod<0x11A1020>(tasks); // tasks->DelegateAll()
+            ClearTeamFormationInfo(team);
+        }
+    }
+    //LogFormationInfo(type, reason, flag, result, team, employee, b, a);
+    return result;
+}
+
+void METHOD OnSquadAnalysis(void *t, DUMMY_ARG, Int a, Int b) {
+    CallMethod<0x11ED400>(t, a, b);
+    CDBTeam *team = (CDBTeam *)((UInt)t - 0x6A88);
+    if (team->GetTeamUniqueID() == 0x0E000E)
+        LogFormationInfo(L"SQUAD_ANALYSIS", -1, -1, -1, team, nullptr, GetTeamFormationInfo(team));
+}
+
+void METHOD OnClearTeamBestFormations(CDBTeam *team) {
+    ClearTeamFormationInfo(team);
+}
+
+void METHOD TestFireManager_FormationUpdate_NewSeason(CDBTeam *team) {
+    *raw_ptr<UInt>(team, 0xF54) = *raw_ptr<UInt>(team, 0xF54) - 8; // force formation update
+    //if (team->GetTeamUniqueID() == 0x0E000E) {
+    //    TeamFormationInfo b = GetTeamFormationInfo(team);
+    //    CallMethod<0x1003F90>(team);
+    //    LogFormationInfo(L"FORMATION_UPDATE_NEWSEASON", -1, -1, -1, team, GetEmployee(team->GetManagerId()), b, GetTeamFormationInfo(team));
+    //}
+    //else
+        CallMethod<0x1003F90>(team);
+}
+
+void METHOD OnTf24ImmediateContractAccepted(void *t, DUMMY_ARG, UInt playerId, void *contract) {
+    CallMethod<0x8F81A0>(t, playerId, contract);
+    void *transferPlayer = CallAndReturn<void *, 0x109BEC0>(playerId); // GetDBTransferPlayer()
+    if (transferPlayer) {
+        CDBTeam *team = *raw_ptr<CDBTeam *>(t, 0x285C);
+        CTeamIndex teamID = team->GetTeamID();
+        UInt contractId = CallMethodAndReturn<UInt, 0x109D940>(transferPlayer, &teamID); // CDBTransferPlayer::GetContractOfferFromTeam()
+        if (CallAndReturn<void *, 0x1104C40>(contractId)) // GetDBContractOffer()
+            CallMethod<0x10A32B0>(transferPlayer, &contractId); // CDBTransferPlayer::Succeeded()
+    }
+}
+
+void METHOD OnTf24ImmediateContractRejected(void *t, DUMMY_ARG, UInt playerId, UChar type) {
+    CallMethod<0x8F85D0>(t, playerId, type);
+    if (GetPlayer(playerId)) {
+        void *transferPlayer = CallAndReturn<void *, 0x109BEC0>(playerId); // GetDBTransferPlayer()
+        if (transferPlayer) {
+            CDBTeam *team = *raw_ptr<CDBTeam *>(t, 0x285C);
+            CTeamIndex teamID = team->GetTeamID();
+            UInt contractId = CallMethodAndReturn<UInt, 0x109D940>(transferPlayer, &teamID); // CDBTransferPlayer::GetContractOfferFromTeam()
+            if (CallAndReturn<void *, 0x1104C40>(contractId)) // GetDBContractOffer()
+                CallMethod<0x109D180>(transferPlayer, contractId); // CDBTransferPlayer::Failed()
+        }
+    }
+}
+
+struct StatsChallengeDelOffensiveData {
+    CTeamIndex teamIndex;
+    int points;
+    int field_8;
+    int field_C;
+    int field_10;
+    int field_14;
+    int field_18;
+    int field_1C;
+    int field_20;
+    int field_24;
+    EAGMoney money;
+};
+
+Double MultipliersLigue1[24] = { 2403772.0, 2073253.0, 1791144.0, 1547428.0, 1337098.0, 1155146.0, 998233.0, 861352.0, 744502.0, 642675.0, 555872.0, 480754.0, 415652.0, 358896.0, 308818.0, 267086.0, 230361.0, 200314.0, 171936.0, 148566.0, 130000.0, 120000.0, 110000.0, 100000.0 };
+Double MultipliersLigue2[24] = { 542348.0, 461328.0, 392530.0, 333860.0, 284270.0, 241664.0, 205694.0, 174962.0, 149120.0, 126769.0, 107911.0, 91846.0, 78227.0, 66353.0, 56575.0, 48193.0, 40859.0, 34923.0, 29684.0, 25144.0, 20000.0, 15000.0, 10000.0, 5000.0 };
+
+void FillChallengeDelOffensive(CDBLeague *league, FmVec<StatsChallengeDelOffensiveData> *vec, Double *multipliers) {
+    if (league && league->GetNumOfRegisteredTeams() > 0) {
+        for (UInt i = 0; i < Utils::Min(league->GetNumOfRegisteredTeams(), vec->size()); i++)
+            CallMethod<0x149C8C7>(&vec->begin[i].money, multipliers[i], 0);
+    }
+}
+
+void METHOD SetupStatsChallengeDelOffensive(void *t) {
+    FillChallengeDelOffensive(GetLeague(FifamNation::France, COMP_LEAGUE, 0), raw_ptr<FmVec<StatsChallengeDelOffensiveData>>(t, 0xBC8), MultipliersLigue1);
+    FillChallengeDelOffensive(GetLeague(FifamNation::France, COMP_LEAGUE, 1), raw_ptr<FmVec<StatsChallengeDelOffensiveData>>(t, 0xBE0), MultipliersLigue2);
+}
+
+void METHOD SetupNewspaperChallengeDelOffensive(void *t) {
+    FmVec<StatsChallengeDelOffensiveData> *vec1 = raw_ptr<FmVec<StatsChallengeDelOffensiveData>>(t, 0xBA4);
+    FillChallengeDelOffensive(GetLeague(FifamNation::France, COMP_LEAGUE, 0), vec1, MultipliersLigue1);
+    for (UInt i = 0; i < vec1->size(); i++) {
+        CDBTeam *team = GetTeam(vec1->begin[i].teamIndex);
+        if (team)
+            CallMethod<0xECA910>(team, 51, &vec1->begin[i].money, 0);
+    }
+    FmVec<StatsChallengeDelOffensiveData> *vec2 = raw_ptr<FmVec<StatsChallengeDelOffensiveData>>(t, 0xBBC);
+    FillChallengeDelOffensive(GetLeague(FifamNation::France, COMP_LEAGUE, 1), vec2, MultipliersLigue2);
+    for (UInt i = 0; i < vec2->size(); i++) {
+        CDBTeam *team = GetTeam(vec2->begin[i].teamIndex);
+        if (team)
+            CallMethod<0xECA910>(team, 51, &vec2->begin[i].money, 0);
+    }
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -1637,8 +1859,8 @@ void PatchEABFFixes(FM::Version v) {
 
         patch::RedirectCall(0x7F57B2, OnGetLeagueForQuiz);
 
-       // if (true)
-       //     patch::RedirectJump(0xFCEFE0, OnPlayerHasPhoto);
+        //if (true)
+        //    patch::RedirectJump(0xFCEFE0, OnPlayerHasPhoto);
 
         // national team select - 35 players => 18
         patch::SetUChar(0x5467FD + 3, 18);
@@ -1648,14 +1870,6 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x13ED5CC, UserFormationsBugFix);
         patch::RedirectCall(0x1172FF7, UserFormationsBugFix);
         patch::RedirectCall(0x141558C, UserFormationsBugFix);
-        
-        // manager fire - task delegation fix
-      // patch::RedirectCall(0xEDCEDD, OnFireEmployee);
-      // patch::RedirectCall(0xEDCFD3, OnFireEmployee);
-      // patch::RedirectCall(0xF3BD47, OnFireEmployee);
-      // patch::RedirectCall(0xF3BDEC, OnFireEmployee);
-      // patch::RedirectCall(0xF3C02A, OnFireEmployee);
-      // patch::RedirectCall(0xF3C173, OnFireEmployee);
 
         // temporary handler for 1010DAA
         patch::RedirectCall(0x5401D0 + 0x1DA, Handler_1010D90<0x5401D0 + 0x1DA>);
@@ -1736,10 +1950,15 @@ void PatchEABFFixes(FM::Version v) {
         patch::SetUInt(0x4DD25B + 1, 'UNIR');
         patch::SetUInt(0x4DD2D4 + 1, 'UNIQ');
         patch::SetUInt(0x4DD359 + 1, 'UNIQ');
-        patch::RedirectCall(0x4DD220, OnFormatBadgeNameAddSeasonYear);
-        patch::RedirectCall(0x4DD28B, OnFormatBadgeNameAddSeasonYear);
-        patch::RedirectCall(0x4DD31E, OnFormatBadgeNameAddSeasonYear);
-        patch::RedirectCall(0x4DD389, OnFormatBadgeNameAddSeasonYear);
+        patch::SetUChar(0x4DD22F + 1, 0);
+        patch::SetUChar(0x4DD29A + 1, 0);
+        patch::SetUChar(0x4DD32D + 1, 0);
+        patch::SetUChar(0x4DD398 + 1, 0);
+        patch::RedirectCall(0x4DD00A, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DD08F, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DD122, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DD18D, OnFormatBadgeNameAddSeasonYear);
+        patch::RedirectCall(0x4DC689, OnResolverGetPathFromCache);
 
         // fix for PASSING (Short/Long) in TextMode
         patch::SetUChar(0x14038A0 + 1, 4); // default 3 (TP_PASSINGSTYLE), replaced by 4 (TP_PASSING)
@@ -1749,10 +1968,6 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xF0D35D, OnAddClubFans<0xF0D35D>);
         patch::RedirectCall(0xF0D3DC, OnAddClubFans<0xF0D3DC>);
         patch::RedirectCall(0xF0D4C1, OnAddClubFans<0xF0D4C1>);
-
-        // initial sponsor
-        patch::RedirectCall(0xF334A7, OnReadClubSponsorAmount);
-        patch::RedirectCall(0xF33512, OnSetupSponsorClub);
 
         // auto-substitutions test - TODO: remove
         //patch::RedirectCall(0x59037E, OnGetSubsList);
@@ -1796,10 +2011,69 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x664DFA, GetValueInCurrency_Fix);
         patch::RedirectCall(0x664E5F, GetValueInCurrency_Fix);
 
+        // change player retirement at game start
+        patch::RedirectCall(0xFD0BBA, OnPlayerPlanCareerEndAtGameStart);
+
         // EAA287 error
         //patch::RedirectCall(0xEAA282, UnhandledException_EAA287);
         //patch::RedirectCall(0xEB22CF, Hook_EAA287_map_playerKnowledge__find);
         //patch::RedirectCall(0xEB2303, Hook_EAA287_mapIterator_playerKnowledge__data);
         //patch::Nop(0xEB2952, 23);
+
+        // fix 101B264 error - simply remove throw_error call (not really needed there)
+        patch::Nop(0x101B25F, 5);
+
+        patch::RedirectCall(0xA4BAF2, OnBestGkScreenLeagueGetNumTeams);
+
+        InitializeCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
+        patch::RedirectCall(0xEB68CC, OnGetPlayerKnowledgeLevel);
+        patch::RedirectCall(0xEB9C33, OnGetPlayerKnowledgeLevel);
+        patch::RedirectCall(0xEB9C46, OnGetPlayerKnowledgeLevel);
+
+        // change AI stadium seats extension
+        patch::RedirectCall(0xEEF527, OnExtendStadium);
+
+        // fix simulation screen tasks delegation
+        //patch::RedirectCall(0x7BC191, OnGetEmployee_SimulationScreen);
+
+        // fix sorting on staff market screen
+        patch::RedirectCall(0x690316, OnClubStaffMarketScreen);
+
+        // new languages
+        patch::SetUChar(0x8E03DE + 1, NUM_LANGUAGES + 1); // transfer search - screen 1
+        patch::SetUChar(0x8E0442 + 2, NUM_LANGUAGES + 1); // transfer search - screen 2
+        patch::SetUChar(0xF9D42B + 6, NUM_LANGUAGES + 1); // transfer search - init
+        patch::SetUChar(0xF9DAAC + 1, NUM_LANGUAGES + 1); // transfer search - compare
+
+        patch::RedirectCall(0xF2B079, TeamPhotoRetNull);
+
+        //patch::RedirectCall(0xF6632C, TestFireManager_Everyday);
+        //patch::RedirectCall(0x1004241, TestFireManager_FormationUpdate_AutoFill);
+        //patch::RedirectCall(0xEEB28E, TestFireManager_FireEmployee);
+        // manager fire - task delegation fix
+        patch::RedirectCall(0xEDCEDD, OnFireEmployee<0xEDCEDD>);
+        patch::RedirectCall(0xEDCFD3, OnFireEmployee<0xEDCFD3>);
+        patch::RedirectCall(0xF3BD47, OnFireEmployee<0xF3BD47>);
+        patch::RedirectCall(0xF3BDEC, OnFireEmployee<0xF3BDEC>);
+        patch::RedirectCall(0xF3C02A, OnFireEmployee<0xF3C02A>);
+        patch::RedirectCall(0xF3C173, OnFireEmployee<0xF3C173>);
+        //patch::RedirectCall(0x11D9247, OnSquadAnalysis);
+        //patch::RedirectCall(0x11D278E, OnSquadAnalysis);
+        //patch::RedirectCall(0x11E1CEE, OnSquadAnalysis);
+
+        patch::RedirectCall(0xEEB328, OnClearTeamBestFormations);
+        patch::RedirectCall(0xF3EFDA, TestFireManager_FormationUpdate_NewSeason);
+
+        patch::RedirectCall(0x8FA52A, OnTf24ImmediateContractAccepted);
+        patch::RedirectCall(0x8FA4F7, OnTf24ImmediateContractRejected);
+        patch::RedirectCall(0x8FA514, OnTf24ImmediateContractRejected);
+
+        patch::RedirectJump(0x6D5BE0, SetupStatsChallengeDelOffensive);
+        patch::RedirectJump(0xA375A0, SetupNewspaperChallengeDelOffensive);
     }
+}
+
+void UnpatchEABFFixes() {
+    if (v.id() == ID_FM_13_1030_RLD)
+        DeleteCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
 }

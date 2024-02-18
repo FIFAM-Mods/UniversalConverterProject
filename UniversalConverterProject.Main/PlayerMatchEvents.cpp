@@ -1,4 +1,7 @@
 #include "PlayerMatchEvents.h"
+#include "FifamReadWrite.h"
+
+//#define DEBUG_PLAYER_MATCH_EVENTS
 
 using namespace plugin;
 
@@ -116,9 +119,103 @@ void METHOD ModifyChanceDistributionWithPlayerLevel(unsigned int dst, int, unsig
     *(unsigned int *)(dst + 772) = (signed int)(v2 * *(unsigned int *)(dst + 772)) / 100;
 }
 
+void GeneratePlayerMatchEventsFile(String const &fileName) {
+    static char const *eventNames[] = {
+        "NONE",
+        "WITH_FOUL",
+        "FOULED",
+        "WITH_FOUL_OPPONENT",
+        "FOULED_OPPONENT",
+        "DISTANCE",
+        "HEADER",
+        "HEADER_SET_PIECE",
+        "HEADER_DEFENDING",
+        "DRIBBLING",
+        "BOX",
+        "THROUGH_PASS",
+        "ATTACKER",
+        "ATTACKER_2",
+        "ATTACKING_MIDFIELDER",
+        "BUILD_UP_MIDFIELDER",
+        "DEFENDING_MIDFIELDER",
+        "LEFT_ATTACKER",
+        "RIGHT_ATTACKER",
+        "WING_ATTACKER",
+        "LEFT_BUILD_UP_ATTACKER",
+        "RIGHT_BUILD_UP_ATTACKER",
+        "LEFT_MIDFIELDER",
+        "RIGHT_MIDFIELDER",
+        "WING_MIDFIELDER",
+        "CENTRAL_DEFENDER",
+        "AGILE_DEFENDER",
+        "ATTACKING_DEFENDER",
+        "LEFT_DEFENDER",
+        "RIGHT_DEFENDER",
+        "WING_DEFENDER",
+        "REPLACED_1",
+        "REPLACED_2",
+        "RETURNS_1",
+        "RETURNS_2",
+        "OLD_CLUB",
+        "NEW_1",
+        "NEW_2",
+        "DIRECT_FREE_KICK",
+        "FREE_KICK_LEFT",
+        "FREE_KICK_RIGHT",
+        "CROSSES_LEFT",
+        "CROSSES_RIGHT",
+        "PLAYS_FOR_TIME",
+        "COMPLAINING",
+        "BEST",
+        "TECHNICAL_PROBLEMS",
+        "WEAKEST",
+        "LEADER",
+        "DIVING",
+        "WARNED",
+        "FIRST_GOAL",
+        "LAST_GOAL",
+        "ATTACKER_SPEED",
+        "ATTACKER_TECHNIQUE",
+        "BALL_WINNER",
+        "GOALKEEPER",
+        "CORNER_LEFT",
+        "CORNER_RIGHT",
+        "GOALKEEPER_ATTACKING",
+        "SUPERSTAR",
+        "BUILD_UP_ATTACKER",
+        "INJURED",
+        "PENALTY_TAKER",
+        "SUBBED_IN",
+        "SUBBED_OUT",
+        "YELLOW",
+        "RED_CARD_1",
+        "YELLOW_RED_CARD_1",
+        "LONG_INJURED_FIRST_ELEVEN",
+        "LONG_INJURED_BENCH",
+        "PREINJURED",
+        "SELF_PREINJURED",
+        "AGAINST_OLD_CLUB",
+        "WORST",
+        "LEFT_ATTACKER_OPPONENT",
+        "RIGHT_DEFENDER_OPPONENT",
+        "HEADER_OPPONENT"
+    };
+    EventData *events = (EventData *)0x24DFD10;
+    FifamWriter w(fileName, 13, FifamVersion(), false);
+    w.WriteLine("//                        NO, GK, RB, LB, CD, DM, RM, LM, CM, RW, LW, AM, CF, ST, Flag");
+    for (UInt e = 0; e < 78; e++) {
+        w.WriteLine(Format("%-25s %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %-3d %d",
+            eventNames[e], events[e].posn[0], events[e].posn[1], events[e].posn[2], events[e].posn[3], events[e].posn[4],
+            events[e].posn[5], events[e].posn[6], events[e].posn[7], events[e].posn[8], events[e].posn[9], events[e].posn[10],
+            events[e].posn[11], events[e].posn[12], events[e].posn[13], events[e].flag));
+    }
+}
+
 void PatchPlayerMatchEvents(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-
+#ifdef DEBUG_PLAYER_MATCH_EVENTS
+        GeneratePlayerMatchEventsFile(L"Textmode Events Matrix - Original.txt");
+#endif
         patch::RedirectJump(0x13B0BE0, ModifyChanceDistributionWithPlayerLevel);
 
         DWORD oldProtect;
@@ -161,5 +258,28 @@ void PatchPlayerMatchEvents(FM::Version v) {
 
         events[PLAYERID_HEADER_OPPONENT].posn[POS_LW] = 55;
         events[PLAYERID_HEADER_OPPONENT].posn[POS_RW] = 55;
+#ifdef DEBUG_PLAYER_MATCH_EVENTS
+        GeneratePlayerMatchEventsFile(L"Textmode Events Matrix.txt");
+        Vector<UChar> matchEventsBefore(78 * 15 * 4);
+        memcpy(matchEventsBefore.data(), events, matchEventsBefore.size());
+#endif
+        FifamReader reader(L"fmdata\\ParameterFiles\\Textmode Events Matrix.txt", 13, false, false);
+        if (reader.Available()) {
+            reader.SkipLine();
+            for (UInt e = 0; e < 78; e++) {
+                auto line = reader.ReadFullLine();
+                swscanf(line.c_str(), L"%*s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                    &events[e].posn[0],  &events[e].posn[1],  &events[e].posn[2],  &events[e].posn[3],  &events[e].posn[4],
+                    &events[e].posn[5],  &events[e].posn[6],  &events[e].posn[7],  &events[e].posn[8],  &events[e].posn[9],
+                    &events[e].posn[10], &events[e].posn[11], &events[e].posn[12], &events[e].posn[13], &events[e].flag);
+            }
+        }
+#ifdef DEBUG_PLAYER_MATCH_EVENTS
+        Vector<UChar> matchEventsAfter(78 * 15 * 4);
+        memcpy(matchEventsAfter.data(), events, matchEventsAfter.size());
+        if (memcmp(matchEventsBefore.data(), matchEventsAfter.data(), matchEventsBefore.size()))
+            ::Error("matchEventsBefore and matchEventsAfter are different");
+        GeneratePlayerMatchEventsFile(L"Textmode Events Matrix - After reading.txt");
+#endif
     }
 }

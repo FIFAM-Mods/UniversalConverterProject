@@ -92,31 +92,6 @@ void ExportClubBudgets() {
 }
 
 void *METHOD OnCreateKeepOtherStadiumsCheckbox(void *screen, DUMMY_ARG, char const *name) {
-    //
-    //CDBRound *r = (CDBRound *)GetCompetition(0xF933000B);
-    //struct RoundPair {
-    //    CTeamIndex m_n1stTeam;
-    //    CTeamIndex m_n2ndTeam;
-    //    char result1[2];
-    //    char result2[2];
-    //    int field_C;
-    //    int m_nFlags;
-    //    int m_anMatchEventsStartIndex[3];
-    //};
-    //RoundPair *pairs = raw_ptr<RoundPair>(r, 0x2088);
-    //FifamWriter w("dump_pairs.txt");
-    //for (UInt i = 0; i < (r->GetNumOfTeams() / 2); i++) {
-    //    String team1name = L"N/A";
-    //    String team2name = L"N/A";
-    //    CDBTeam *team1 = GetTeam(pairs[i].m_n1stTeam);
-    //    CDBTeam *team2 = GetTeam(pairs[i].m_n2ndTeam);
-    //    if (team1)
-    //        team1name = team1->GetName();
-    //    if (team2)
-    //        team2name = team2->GetName();
-    //    w.WriteLine(i + 1, team1name, team2name, pairs[i].m_nFlags, pairs[i].result1[0], pairs[i].result1[1], pairs[i].result2[0], pairs[i].result2[1]);
-    //}
-    //
     void *originalChk = CallMethodAndReturn<void *, 0xD44260>(screen, name);
     void *teamControlChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEnableTeamControl");
     *raw_ptr<void *>(screen, 0xC30) = teamControlChk;

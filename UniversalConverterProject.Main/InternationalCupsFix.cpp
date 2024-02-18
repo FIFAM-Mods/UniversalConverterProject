@@ -7,9 +7,9 @@
 
 using namespace plugin;
 
-CDBLeague *gCompLeague = nullptr;
 CDBRound *gCompRound = nullptr;
-uintptr_t gOriginal_117C830 = 0;
+Bool gRoundLaunchRegisterFirst = false;
+Bool gRoundLaunchRegisterSecond = false;
 
 Bool IsStartingSeason() {
     UShort startYear = CDBGame::GetInstance()->GetStartDate().GetYear();
@@ -17,32 +17,25 @@ Bool IsStartingSeason() {
     return currDate.GetYear() == startYear || (currDate.GetYear() == (startYear + 1) && currDate.GetMonth() <= 6);
 }
 
+Bool CompetitionStartsInTheMiddle(CDBCompetition *comp) {
+    if (comp->GetCompetitionType() == COMP_QUALI_WC || comp->GetCompetitionType() == COMP_QUALI_EC) {
+        CJDate startDate = CDBGame::GetInstance()->GetStartDate();
+        return (startDate.GetYear() % 2) == 1 && IsStartingSeason();
+    }
+    return false;
+}
+
 void METHOD OnLeagueLaunch(CDBLeague *league) {
-    gCompLeague = league;
     CallMethod<0x106B950>(league);
-    if (IsStartingSeason()) {
-        if (league->GetCompetitionType() == COMP_QUALI_WC || league->GetCompetitionType() == COMP_QUALI_EC) {
-            if (league->GetCurrentMatchday() >= league->GetNumMatchdays()) {
-                league->Finish();
-                //Message(L"Finished %s", league->GetCompID().ToStr().c_str());
-            }
-        }
-    }
+    if (CompetitionStartsInTheMiddle(league) && league->GetCurrentMatchday() >= league->GetNumMatchdays())
+        league->Finish();
 }
 
-void *MyFixInternationalQuali_Fix() {
-    CJDate startDate = CDBGame::GetInstance()->GetStartDate();
-    if ((gCompLeague->GetCompetitionType() == COMP_QUALI_WC || gCompLeague->GetCompetitionType() == COMP_QUALI_EC) && (startDate.GetYear() % 2) == 1) {
-        if (IsStartingSeason())
-            gCompLeague->SetStartDate(CJDate::DateFromDayOfWeek(6, 7, startDate.GetYear() - 1));
-    }
-    return CallAndReturnDynGlobal<void *>(gOriginal_117C830);
+void METHOD OnLeagueStartNewSeason(CDBLeague *league, DUMMY_ARG, UInt phase) {
+    CallMethod<0x106B540>(league, phase);
+    if (phase == 2 && CompetitionStartsInTheMiddle(league))
+        league->SetStartDate(CJDate::DateFromDayOfWeek(6, 7, GetStartingYear() - 1));
 }
-
-uintptr_t gOriginal_FixRound = 0;
-
-Bool gRoundLaunchRegisterFirst = false;
-Bool gRoundLaunchRegisterSecond = false;
 
 void GenerateResult(CTeamIndex const &team1, CTeamIndex const &team2, UInt &out1, UInt &out2, Bool extraTime = false) {
     out1 = 0;
@@ -103,6 +96,16 @@ void METHOD OnRoundLaunch(CDBRound *round) {
     gCompRound = round;
     gRoundLaunchRegisterFirst = true;
     gRoundLaunchRegisterSecond = true;
+    if (CompetitionStartsInTheMiddle(round)) {
+        CJDate *dates = raw_ptr<CJDate>(round, 0x2070);
+        CJDate currentDate = CDBGame::GetInstance()->GetCurrentDate();
+        if (currentDate.Value() > dates[0].Value()) {
+            gRoundLaunchRegisterFirst = false;
+            UInt firstLegFlags = *raw_ptr<UInt>(round, 0x2080);
+            if (firstLegFlags & FifamBeg::With2ndLeg && currentDate.Value() > dates[1].Value())
+                gRoundLaunchRegisterSecond = false;
+        }
+    }
     CallMethod<0x10445D0>(round);
     if (!gRoundLaunchRegisterFirst) {
         //SafeLog::WriteToFile("round_results.txt", Utils::Format(L"Competition %s", round->GetCompID().ToStr()));
@@ -204,42 +207,10 @@ void METHOD OnRoundLaunch(CDBRound *round) {
     }
 }
 
-void *MyFixInternationalQuali_FixRound() {
-    CJDate startDate = CDBGame::GetInstance()->GetStartDate();
-    if ((gCompRound->GetCompetitionType() == COMP_QUALI_WC || gCompRound->GetCompetitionType() == COMP_QUALI_EC) && (startDate.GetYear() % 2) == 1) {
-        if (IsStartingSeason()) {
-            CallMethod<0x10429E0>(gCompRound, CJDate::DateFromDayOfWeek(6, 7, startDate.GetYear() - 1));
-            //CJDate *dates = raw_ptr<CJDate>(gCompRound, 0x2070);
-            //for (UInt i = 0; i < gCompRound->GetNumMatchdays(); i++) {
-            //    SafeLog::WriteToFile("round_dates_fix.log", Utils::Format(L"(launch) %s - %02d.%02d.%02d",
-            //        gCompRound->GetCompID().ToStr(), dates[i].GetDays(), dates[i].GetMonth(), dates[i].GetYear()));
-            //}
-            CJDate *dates = raw_ptr<CJDate>(gCompRound, 0x2070);
-            CJDate currentDate = CDBGame::GetInstance()->GetCurrentDate();
-            if (currentDate.Value() > dates[0].Value()) {
-                gRoundLaunchRegisterFirst = false;
-                UInt firstLegFlags = *raw_ptr<UInt>(gCompRound, 0x2080);
-                if (firstLegFlags & FifamBeg::With2ndLeg && currentDate.Value() > dates[1].Value())
-                    gRoundLaunchRegisterSecond = false;
-            }
-        }
-    }
-    return CallAndReturnDynGlobal<void *>(gOriginal_FixRound);
-}
-
-UInt METHOD MyGetRoundMatchDate(CDBRound *comp, DUMMY_ARG, UInt matchId) {
-    CJDate startDate = CDBGame::GetInstance()->GetStartDate();
-    if ((comp->GetCompetitionType() == COMP_QUALI_WC || comp->GetCompetitionType() == COMP_QUALI_EC) && (startDate.GetYear() % 2) == 1) {
-        if (IsStartingSeason()) {
-            CallMethod<0x10429E0>(comp, CJDate::DateFromDayOfWeek(6, 7, startDate.GetYear() - 1));
-            //CJDate *dates = raw_ptr<CJDate>(comp, 0x2070);
-            //for (UInt i = 0; i < comp->GetNumMatchdays(); i++) {
-            //    SafeLog::Write(Utils::Format(L"%s - %02d.%02d.%02d",
-            //        comp->GetCompID().ToStr(), dates[i].GetDays(), dates[i].GetMonth(), dates[i].GetYear()));
-            //}
-        }
-    }
-    return CallMethodAndReturn<UInt, 0x10423F0>(comp, matchId);
+void METHOD OnRoundStartNewSeason(CDBRound *round, DUMMY_ARG, UInt phase) {
+    CallMethod<0x1042F10>(round, phase);
+    if (phase == 2 && CompetitionStartsInTheMiddle(round))
+        CallMethod<0x10429E0>(round, CJDate::DateFromDayOfWeek(6, 7, GetStartingYear() - 1));
 }
 
 void __declspec(naked) OnRoundLaunchCreateMatch1() {
@@ -273,19 +244,11 @@ void __declspec(naked) OnRoundLaunchCreateMatch2() {
 
 void PatchInternationalCups(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        gOriginal_117C830 = patch::RedirectCall(0x105E2F4, MyFixInternationalQuali_Fix);
-        gOriginal_FixRound = patch::RedirectCall(0x10446A1, MyFixInternationalQuali_FixRound);
-
-        //patch::RedirectCall(0xF950D1, MyGetRoundMatchDate);
-        //patch::RedirectCall(0xF950E5, MyGetRoundMatchDate);
-
         patch::SetPointer(0x24ADECC, OnLeagueLaunch);
         patch::SetPointer(0x24AD3AC, OnRoundLaunch);
-
+        patch::SetPointer(0x24ADEF0, OnLeagueStartNewSeason);
+        patch::SetPointer(0x24AD3D0, OnRoundStartNewSeason);
         patch::RedirectJump(0x1044BED, OnRoundLaunchCreateMatch1); // jmp back to 0x1044BF2/0x1044ECC
         patch::RedirectJump(0x1044EE0, OnRoundLaunchCreateMatch2); // jmp back to 0x1044EED/0x10451F6
-
-        // result for statistics
-
     }
 }
