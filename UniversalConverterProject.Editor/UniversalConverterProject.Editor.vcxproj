@@ -43,12 +43,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>D:\Games\FIFA Manager 22\plugins\</OutDir>
+    <OutDir>D:\Games\FIFA Manager 24\plugins\</OutDir>
     <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>D:\Games\FIFA Manager 21\plugins\</OutDir>
+    <OutDir>D:\Games\FIFA Manager 24\plugins\</OutDir>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -56,15 +56,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\Projects\fifam-api\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Projects\DXSDK\9.0c\Include;D:\Projects\fifam-api\include;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Projects\DXSDK\9.0c\Lib\x86;D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\libpng\projects\vstudio\Release Library;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d9.lib;d3dx9.lib;generic.lib;fmapi.lib;UCPCompiler.lib;zlib.lib;libpng.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\Projects\DXSDK\9.0c\Include;D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv2\src\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Projects\DXSDK\9.0c\Include;$(SolutionDir)fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -88,8 +88,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Projects\DXSDK\9.0c\Lib\x86;D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\opencv2\build\3rdparty\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>d3d9.lib;d3dx9.lib;generic.lib;fmapi.lib;UCPCompiler.lib;zlib.lib;libpng.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Projects\DXSDK\9.0c\Lib\x86;D:\Projects\fifam\output\libs;D:\Projects\UniversalConverterProject\ScriptCompiler;D:\Projects\ImageMagick-Windows\VisualMagick\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d9.lib;d3dx9.lib;generic.lib;fmapi.lib;UCPCompiler.lib;CORE_RL_png_.lib;CORE_RL_zlib_.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
@@ -151,6 +151,7 @@
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="Translation.h" />
     <ClInclude Include="UcpSettings.h" />
+    <ClInclude Include="WinHeader.h" />
     <ClInclude Include="WomensDatabase.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

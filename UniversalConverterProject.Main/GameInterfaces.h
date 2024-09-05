@@ -18,6 +18,7 @@ public:
     static CJDate DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year);
     void AddRandomDaysCount(UChar direction);
     CJDate AddYears(Int years);
+	String ToStr();
 };
 
 using EAGMoney = Int64;
@@ -359,6 +360,7 @@ public:
     void Launch();
     Bool IsContinental();
     Bool IsLaunched();
+	Bool IsFinished();
 };
 
 enum CompDbType {
@@ -413,8 +415,8 @@ struct RoundPair {
     CTeamIndex m_n2ndTeam;
     char result1[2];
     char result2[2];
-    char field_C[2];
-    char field_E[2];
+    char firstHalfResult1[2];
+    char firstHalfResult2[2];
     unsigned int m_nFlags;
     int m_anMatchEventsStartIndex[3];
 
@@ -600,6 +602,8 @@ public:
     const UInt GetNumRegenPlayers();
     const UChar GetLanguage(UChar number);
     const Bool IsPlayerInNationalTeam(UInt playerId);
+	void SetFifaRanking(Float value);
+	Float GetFifaRanking();
 };
 
 class CCountryStore {
@@ -632,6 +636,7 @@ CCountryStore *GetCountryStore();
 wchar_t const *GetTranslation(const char *key);
 bool IsTranslationPresent(const char *key);
 wchar_t const *GetTranslationIfPresent(const char *key);
+CJDate GetCurrentDate();
 unsigned short GetCurrentYear();
 unsigned char GetCurrentMonth();
 unsigned short GetStartingYear();
@@ -736,6 +741,8 @@ public:
     CDBTeam *GetHomeTeam();
     CTeamIndex GetAwayTeamID();
     CDBTeam *GetAwayTeam();
+	Bool CheckFlag(UInt flag);
+	void GetResult(UChar &outHome, UChar &outAway);
 };
 
 CDBOneMatch *GetCurrentMatch();
@@ -823,4 +830,15 @@ public:
     Bool UInt32(UInt *pValue, UInt *pDefaultValue, UInt minVersion);
     Bool UInt16(UShort *pValue, UShort *pDefaultValue, UInt minVersion);
     Bool UInt8(UChar *pValue, UChar *pDefaultValue, UInt minVersion);
+};
+
+class CStatsBaseScrWrapper {
+public:
+	UChar m_name[0x14];
+	UInt m_nType;
+
+	virtual WideChar const *GetName();
+	virtual UInt GetType();
+	virtual void *CreateScreen(void *guiInstance) = 0;
+	virtual void *DeletingDestructor(UChar flags);
 };

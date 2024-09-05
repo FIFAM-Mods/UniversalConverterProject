@@ -1,5 +1,5 @@
 #include "PortraitDialog.h"
-#include "libpng/png.h"
+#include "png.h"
 
 using namespace plugin;
 

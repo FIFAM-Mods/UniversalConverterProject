@@ -221,7 +221,7 @@ Bool32 CachedExists(char const *filename) {
     
     //static Set<StringA> cache;
     //StringA filenameStr = filename;
-    //if (cache.contains(filenameStr))
+    //if (Utils::Contains(cache, filenameStr))
     //    return true;
     //Bool32 exists = CallAndReturnDynGlobal<Bool32>(GfxCoreAddress(0x19E60), filename);
     //if (exists != 0)
@@ -1117,7 +1117,7 @@ void *OnResolveScene(void *scene, void *attributeCallback) {
         char const *sceneEntryName = *raw_ptr<char const *>(sceneEntry, 0x64);
         if (sceneEntryName) {
             string sceneEntryNameStr = sceneEntryName;
-            if (sceneEntryNameStr.starts_with("Player(")) {
+            if (Utils::StartsWith(sceneEntryNameStr, "Player(")) {
                 auto spacePos = sceneEntryNameStr.find(' ', 7);
                 if (spacePos != string::npos && spacePos != 7) {
                     int playerIndex = -1;

@@ -152,7 +152,7 @@ void METHOD OnReadPlayerFromSaveGame(void *player) {
     SetPlayerJerseyName(player, jerseyName);
     if (SaveGameLoadGetVersion(loader) >= 44)
         SetPlayerFifaID(player, SaveGameReadInt32(loader));
-    //if (SaveGameLoadGetVersion(loader) >= 45) {
+    //if (SaveGameLoadGetVersion(loader) >= 46) {
     //    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //    SaveGameReadInt8(loader, ext->extensionStats.worldCupMatches);
     //    SaveGameReadInt8(loader, ext->extensionStats.worldCupGoals);

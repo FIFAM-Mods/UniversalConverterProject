@@ -4,6 +4,7 @@
 #include "FifamNation.h"
 #include "FifamContinent.h"
 #include "FifamCompDbType.h"
+#include "FifamClubTeamType.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -403,6 +404,81 @@ void *OnLeagueDetailsFormatNumYearsToBeNaturalized(void *t, UInt number, Int a, 
     return t;
 }
 
+UChar METHOD CDBCompetition_GetNoOfNonEUPlayers(CDBCompetition *comp) {
+	if (comp->IsContinental())
+		return 0;
+	return *raw_ptr<UChar>(comp, 0x289);
+}
+
+// test
+
+bool gLogCollector = false;
+
+struct TeamDescForLineUp {
+	CDBTeam *pTeam;
+	CTeamIndex teamID;
+};
+
+WideChar const *TeamTypeStr[] = { L"First", L"Reserve", L"YouthA", L"", L"YouthB" };
+
+void METHOD Collector_AddPlayer(void *vec, DUMMY_ARG, CDBPlayer **p) {
+	CallMethod<0x13D8E80>(vec, p);
+	if (gLogCollector)
+		SafeLog::WriteToFile("lineup.log", Utils::Format(L"Added player: %s (team %s)",
+		(*p)->GetName(), TeamTypeStr[CallMethodAndReturn<UInt, 0xFB5220>(*p)]));
+}
+
+enum CollectType { NationalTeam, Club, FullButInjured, Rotation };
+WideChar const *CollectTypeStr[] = { L"NationalTeam", L"Club", L"FullButInjured", L"Rotation" };
+
+template<UInt Orig, CollectType Type>
+void METHOD Collect(void *t, DUMMY_ARG, FmVec<CDBPlayer *> *vec, TeamDescForLineUp *desc) {
+	gLogCollector = desc->pTeam->GetName() == String(L"Brescia Calcio") || !desc->pTeam->IsManagedByAI();
+	if (gLogCollector) {
+		SafeLog::WriteToFile("lineup.log", L"____________________________________");
+		SafeLog::WriteToFile("lineup.log", Utils::Format(L"Collecting %s %s", CollectTypeStr[Type], desc->pTeam->GetName()));
+		SafeLog::WriteToFile("lineup.log", L"____________________________________");
+	}
+	CallMethod<Orig>(t, vec, desc);
+	if (gLogCollector) {
+		SafeLog::WriteToFile("lineup.log", L"New squad:");
+		for (UInt i = 0; i < vec->size(); i++)
+		    SafeLog::WriteToFile("lineup.log", Utils::Format(L"%u. %s", i + 1, vec->begin[i]->GetName()));
+	}
+	gLogCollector = false;
+}
+
+enum FilterType { Absent, Banned, EuropeanCup, Excluded, FirstTeam, Injured, LeaguePermission, LoanPlayers, LongtermInjury, Suspended, WorkingPermission, WrongTeam };
+WideChar const *FilterTypeStr[] = { L"Absent", L"Banned", L"EuropeanCup", L"Excluded", L"FirstTeam", L"Injured", L"LeaguePermission", L"LoanPlayers", L"LongtermInjury", L"Suspended", L"WorkingPermission", L"WrongTeam" };
+
+template<UInt Orig, FilterType Type>
+Bool METHOD Filter(void *t, DUMMY_ARG, CDBPlayer **p) {
+	Bool result = CallMethodAndReturn<Bool, Orig>(t, p);
+	if (gLogCollector && result)
+		SafeLog::WriteToFile("lineup.log", Utils::Format(L"%s: Removed player %s", FilterTypeStr[Type], (*p)->GetName()));
+	return result;
+}
+
+struct MyFilterTeamForRotationCollector {
+	void *vtable;
+	CTeamIndex teamID;
+};
+
+Bool METHOD MyFilterTeamForRotationCollector_Filter(MyFilterTeamForRotationCollector *t, DUMMY_ARG, CDBPlayer **p) {
+	Bool result = false;
+	if (t->teamID.type == FifamClubTeamType::YouthA || t->teamID.type == FifamClubTeamType::YouthB)
+		result = CallMethodAndReturn<Bool, 0x1427C10>(t, p); // LineUpAI::PlayerFilters::FilterWrongTeam::Filter()
+	else
+		result = CallMethodAndReturn<Bool, 0x1427C70>(t, p); // LineUpAI::PlayerFilters::FilterFirstTeam::Filter()
+	//if (gLogCollector && result)
+	//	SafeLog::WriteToFile("lineup.log", Utils::Format(L"%s: Removed player %s", L"MyFilterTeamForRotationCollector", (*p)->GetName()));
+	return result;
+}
+
+Char const * METHOD MyFilterTeamForRotationCollector_GetName(MyFilterTeamForRotationCollector *t) {
+	return "MyFilterTeamForRotationCollector";
+}
+
 void PatchForeignersLimit(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xF3377D, TestX);
@@ -465,5 +541,35 @@ void PatchForeignersLimit(FM::Version v) {
         patch::SetUChar(0xF8D4D1 + 2, 11);
         patch::SetUChar(0x13D2D4D + 1, 11);
         patch::SetUChar(0x13D2DF2 + 2, 11);
+
+		patch::SetUChar(0x11F2D5C + 1, 0); // SetupNoOfNonEUPlayers
+		// TODO: remove this
+		patch::RedirectJump(0xF81970, CDBCompetition_GetNoOfNonEUPlayers); // temporary fix for FM24
+
+		// Fix: Rotation line-up collector didn't use youth players in first team
+		static void *MyFilterTeamForRotationCollector_Vtable[] = {
+			&MyFilterTeamForRotationCollector_Filter,
+			&MyFilterTeamForRotationCollector_GetName
+		};
+		patch::SetPointer(0x13D9848 + 4, MyFilterTeamForRotationCollector_Vtable);
+
+		// TODO: tests
+		//patch::RedirectCall(0x13D8F5E, Collector_AddPlayer);
+		//patch::SetPointer(0x24D02F8, Collect<0x13D8FB0, NationalTeam>);
+		//patch::SetPointer(0x24D0300, Collect<0x13D90D0, Club>);
+		//patch::SetPointer(0x24D02D0, Collect<0x13D9470, FullButInjured>);
+		//patch::SetPointer(0x24D02F0, Collect<0x13D9740, Rotation>);
+		//patch::SetPointer(0x24E2320, Filter<0x1427CE0, Absent>);
+		//patch::SetPointer(0x24E233C, Filter<0x1427D00, Banned>);
+		//patch::SetPointer(0x24E2278, Filter<0x1427B10, EuropeanCup>);
+		//patch::SetPointer(0x24E2224, Filter<0x1427BA0, Excluded>);
+		//patch::SetPointer(0x24E22E0, Filter<0x1427C70, FirstTeam>);
+		//patch::SetPointer(0x24E2240, Filter<0x1427B50, Injured>);
+		//patch::SetPointer(0x24E2298, Filter<0x1427B80, LeaguePermission>);
+		//patch::SetPointer(0x24E2358, Filter<0x1427D20, LoanPlayers>);
+		//patch::SetPointer(0x24E2200, Filter<0x1427BC0, LongtermInjury>);
+		//patch::SetPointer(0x24E225C, Filter<0x1427B30, Suspended>);
+		//patch::SetPointer(0x24E22FC, Filter<0x1427CA0, WorkingPermission>);
+		//patch::SetPointer(0x24E22C4, Filter<0x1427C10, WrongTeam>);
     }
 }

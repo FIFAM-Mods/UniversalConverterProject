@@ -1,5 +1,6 @@
 #pragma once
 #include "FifamTypes.h"
+#include "Utils.h"
 
 String GetAppName();
 String GetPatchName();
@@ -12,8 +13,8 @@ Bool &IsFirstLaunch();
 path GetDocumentsPath();
 void SaveTestFile();
 
-const Bool ENABLE_LOG = false;
-const Bool ENABLE_FILE_LOG = false;
+const Bool ENABLE_LOG = true;
+const Bool ENABLE_FILE_LOG = true;
 
 class SafeLog {
 public:
@@ -32,7 +33,7 @@ public:
         if (ENABLE_FILE_LOG) {
             static Map<Path, bool> fileCreated;
             FILE *file = nullptr;
-            if (!fileCreated.contains(fileName)) {
+            if (!Utils::Contains(fileCreated, fileName)) {
                 file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
                 fileCreated[fileName] = true;
                 if (!header.empty()) {

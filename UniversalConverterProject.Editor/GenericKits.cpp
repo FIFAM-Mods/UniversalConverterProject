@@ -1,4 +1,7 @@
 #include "GenericKits.h"
+#include "FifamTypes.h"
+#include "WinHeader.h"
+#include "Commdlg.h"
 
 const unsigned int NUM_GEN_SHIRTS = 60;
 const unsigned int NUM_GEN_SHORTS = 26;
@@ -25,8 +28,54 @@ unsigned int KitColors[] = {
 
 const unsigned int NUM_KIT_COLORS = std::size(KitColors);
 
+struct MyDlgClubShirtsColor {
+	CHOOSECOLOR cc;
+	Int selectedColor;
+};
+
+void METHOD DlgClubShirtsColor_constructor(MyDlgClubShirtsColor *dlg, DUMMY_ARG, void *parent) {
+	ZeroMemory(&dlg->cc, sizeof(CHOOSECOLOR));
+	dlg->cc.lStructSize = sizeof(CHOOSECOLOR);
+	//dlg->cc.hwndOwner = hwnd;
+	static COLORREF acrCustClr[16];
+	dlg->cc.lpCustColors = (LPDWORD)acrCustClr;
+	//dlg->cc.rgbResult = rgbCurrent;
+	dlg->cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+	dlg->selectedColor = -1;
+}
+
+HWND gDlgClubShirtsHWND = 0;
+
+UInt *METHOD DlgClubShirts_GetKitColorForControl(void *dlg, DUMMY_ARG, UInt controlId) {
+	gDlgClubShirtsHWND = *raw_ptr<HWND>(dlg, 0x20);
+	return CallMethodAndReturn<UInt *, 0x434F90>(dlg, controlId);
+}
+
+void METHOD DlgClubShirtsColor_SetSelectedColor(MyDlgClubShirtsColor *dlg, DUMMY_ARG, UInt color) {
+	dlg->cc.hwndOwner = gDlgClubShirtsHWND;
+	dlg->cc.rgbResult = CallAndReturn<COLORREF, 0x436EA0>(color);
+	dlg->selectedColor = 1; // TODO
+}
+
+UInt METHOD DlgClubShirtsColor_DoModal(MyDlgClubShirtsColor *dlg) {
+	if (ChooseColor(&dlg->cc) == TRUE) {
+		//dlg->selectedColor = cc.rgbResult;
+		dlg->selectedColor = 1; // TODO
+		return 1;
+	}
+	return 0;
+}
+
+UInt METHOD DlgClubShirtsColor_GetSelectedColor(MyDlgClubShirtsColor *dlg) {
+	return dlg->selectedColor;
+}
+
+void METHOD DlgClubShirtsColor_destructor(MyDlgClubShirtsColor *dlg) {}
+
 void PatchGenericKits(FM::Version v) {
     if (v.id() == VERSION_ED_13) {
+		// old patches
+		/*
         patch::SetUChar(0x435FA4 + 1, NUM_GEN_SHIRTS);
         patch::SetUChar(0x435FB5 + 1, NUM_GEN_SHIRTS);
         patch::SetUChar(0x435FC6 + 1, NUM_GEN_SHORTS);
@@ -36,7 +85,7 @@ void PatchGenericKits(FM::Version v) {
         patch::SetUChar(0x511960 + 1, NUM_GEN_SHIRTS);
         patch::SetUChar(0x511970 + 1, NUM_GEN_SHORTS);
         patch::SetUChar(0x511982 + 1, NUM_GEN_SOCKS);
-        //patch::SetUInt(0x436EC0 + 1, 32);
+        patch::SetUInt(0x436EC0 + 1, NUM_KIT_COLORS); // randomizer
         patch::SetUChar(0x437292 + 2, NUM_KIT_COLORS);
         patch::SetUChar(0x436FD2 + 2, NUM_KIT_COLORS);
         patch::SetUChar(0x436F34 + 2, NUM_KIT_COLORS);
@@ -46,5 +95,13 @@ void PatchGenericKits(FM::Version v) {
         patch::SetPointer(0x436F40 + 4, (unsigned char *)KitColors + 2);
         patch::SetPointer(0x43718C + 3, KitColors);
         patch::SetUInt(0x6C95E8 + 4, NUM_KIT_COLORS);
+		*/
+		patch::RedirectCall(0x436136, DlgClubShirtsColor_constructor);
+		patch::RedirectCall(0x436150, DlgClubShirts_GetKitColorForControl);
+		patch::RedirectCall(0x43615F, DlgClubShirtsColor_SetSelectedColor);
+		patch::RedirectCall(0x436168, DlgClubShirtsColor_DoModal);
+		patch::RedirectCall(0x43617A, DlgClubShirtsColor_GetSelectedColor);
+		patch::RedirectCall(0x43618B, DlgClubShirtsColor_GetSelectedColor);
+		patch::RedirectCall(0x436221, DlgClubShirtsColor_destructor);
     }
 }

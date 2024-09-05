@@ -1,6 +1,7 @@
 #include "InterfaceTheme.h"
 #include "GameInterfaces.h"
 #include "UcpSettings.h"
+#include "Utils.h"
 
 using namespace plugin;
 
@@ -17,7 +18,7 @@ StringA &GetCustomInterfaceFolderA() {
 String GetUIScreenFilenameW(String const &filename) {
     if (!GetCustomInterfaceFolderW().empty()) {
         String screenNameW = ToLower(filename);
-        if (screenNameW.starts_with(L"screens/") || screenNameW.starts_with(L"screens\\")) {
+        if (Utils::StartsWith(screenNameW, L"screens/") || Utils::StartsWith(screenNameW, L"screens\\")) {
             screenNameW = GetCustomInterfaceFolderW() + L"/" + filename;
             if (FmFileExists(screenNameW))
                 return screenNameW;
@@ -30,7 +31,7 @@ String GetUIScreenFilenameW(String const &filename) {
 StringA GetUIScreenFilenameA(StringA const &filename) {
     if (!GetCustomInterfaceFolderA().empty()) {
         StringA screenNameA = ToLower(filename);
-        if (screenNameA.starts_with("screens/") || screenNameA.starts_with("screens\\")) {
+        if (Utils::StartsWith(screenNameA, "screens/") || Utils::StartsWith(screenNameA, "screens\\")) {
             screenNameA = GetCustomInterfaceFolderA() + "/" + filename;
             if (FmFileExists(screenNameA))
                 return screenNameA;
@@ -240,7 +241,7 @@ void METHOD OnSetupWeeklyProgressCalendarDays_DarkTheme(void *t) {
 UChar OnSetWidgetCalendarIconPath(WideChar const *dst, WideChar const *filepath, UInt scaleX, UInt scaleY) {
     if (!GetCustomInterfaceFolderW().empty()) {
         String filepathStr = filepath;
-        if (!filepathStr.starts_with(GetCustomInterfaceFolderW() + L"\\"))
+        if (!Utils::StartsWith(filepathStr, GetCustomInterfaceFolderW() + L"\\"))
             return CallAndReturn<UChar, 0xD32860>(dst, (GetCustomInterfaceFolderW() + L"\\" + filepath).c_str(), scaleX, scaleY);
     }
     return CallAndReturn<UChar, 0xD32860>(dst, filepath, scaleX, scaleY);
@@ -377,6 +378,13 @@ void METHOD MyConstructArtFmLibMediaString(void *t, DUMMY_ARG, const WideChar *f
         CallMethod<0x14978B3>(t, fileName);
 }
 
+void METHOD MyAddHalfTimeSpeechEffectIcon(void *t, DUMMY_ARG, const WideChar *fileName) {
+	if (!GetCustomInterfaceFolderW().empty())
+		CallMethod<0xD1E4C0>(t, (GetCustomInterfaceFolderW() + L"\\" + fileName).c_str());
+	else
+		CallMethod<0xD1E4C0>(t, fileName);
+}
+
 void * METHOD OnConstructEmployeeOffice(void *office, DUMMY_ARG, CDBEmployee *employee) {
     void *result = CallMethodAndReturn<void *, 0x12F22B0>(office, employee);
     *raw_ptr<UInt>(office, 4) = 100000;
@@ -396,7 +404,7 @@ void OnGetTeamLogoPathForSaveGame(WideChar *out, void *loadInfo, Int managerInde
     Call<0x1A198ED>(out, loadInfo, managerIndex);
     if (*out != 0) {
         String newPath = out;
-        if (newPath.ends_with(L".tga")) {
+        if (Utils::EndsWith(newPath, L".tga")) {
             newPath = newPath.substr(0, newPath.length() - 4) + L"_1.tga";
             if (FmFileExists(newPath))
                 wcscpy(out, newPath.c_str());
@@ -467,6 +475,28 @@ Bool METHOD ClubFixtures_AddColumnResultEmpty(void *t, DUMMY_ARG, const WideChar
     CallMethod<0xD1EF40>(t, str, color, unk);
     CallMethod<0xD1EF40>(t, str, color, unk);
     return true;
+}
+
+void FormatLeagueBadgeName1(UInt *data, UInt length, WideChar const *format, UInt year, UInt type) {
+	data[0] = type;
+	data[1] = year;
+}
+
+void FormatLeagueBadgeName2(WideChar *out, UInt length, WideChar const *format, UInt resX, UInt resY, UInt *data, WideChar const *strCompId) {
+	switch (data[0]) {
+	case 0:
+		_snwprintf(out, length, L"Leagues\\%dx%d\\%04d_%s_1", resX, resY, data[1], strCompId);
+		break;
+	case 1:
+		_snwprintf(out, length, L"Leagues\\%dx%d\\%04d_%s", resX, resY, data[1], strCompId);
+		break;
+	case 2:
+		_snwprintf(out, length, L"Leagues\\%dx%d\\%s_1", resX, resY, strCompId);
+		break;
+	case 3:
+		_snwprintf(out, length, L"Leagues\\%dx%d\\%s", resX, resY, strCompId);
+		break;
+	}
 }
 
 void PatchInterfaceTheme(FM::Version v) {
@@ -560,6 +590,22 @@ void PatchInterfaceTheme(FM::Version v) {
                 patch::SetUChar(0xE174D6 + 1, 0xB9); // team logo style
                 patch::SetUInt(0xE174D6 + 2, 1);     // team logo style
                 patch::RedirectJump(0xD2D800, OnGetTeamLogoPathForSaveGame); // savegame
+				// badge league dark mode
+				patch::SetUChar(0x4DCBB5 + 2, 4);
+				patch::SetUInt(0x4DC750, 0x6C24548B); // mov edx, [esp+0x6C]
+				patch::SetUChar(0x4DC750 + 4, 0x52); // push edx
+				patch::Nop(0x4DC755, 2);
+				patch::RedirectCall(0x4DC76E, FormatLeagueBadgeName1);
+				patch::SetUChar(0x4DC773 + 2, 0x14);
+				patch::SetUInt(0x4DC757 + 3, 0x100C + 4);
+				patch::SetUInt(0x4DC764 + 3, 0x94 + 4);
+				patch::RedirectCall(0x4DC7CD, FormatLeagueBadgeName2);
+				patch::RedirectCall(0x4DC86B, FormatLeagueBadgeName2);
+				patch::RedirectCall(0x4DC8E1, FormatLeagueBadgeName2);
+				patch::RedirectCall(0x4DC9E4, FormatLeagueBadgeName2);
+				patch::RedirectCall(0x4DCA5F, FormatLeagueBadgeName2);
+				patch::RedirectCall(0x4DCAF0, FormatLeagueBadgeName2);
+				patch::RedirectCall(0x4DCB5E, FormatLeagueBadgeName2);
                 // fix player attribute
                 patch::SetUChar(0x4E8D4C + 1, 8); // 22
                 // WC mode
@@ -574,6 +620,11 @@ void PatchInterfaceTheme(FM::Version v) {
                 // text color in CTeamDynamicsAnalyser1PList > m_LbFrustration
                 patch::SetUInt(0x5B26D3 + 1, 0xFFF1F1F1);
                 patch::SetUInt(0x5B26F4 + 1, 0xFFF1F1F1);
+				// line colors in CWeekInfoTraining
+				patch::SetUInt(0x8623B7 + 1, 0xFFff7769);
+				patch::SetUInt(0x86248B + 1, 0xFFff7769);
+				patch::SetUInt(0x86241E + 1, 0xFF8ab4f8);
+				patch::SetUInt(0x8624F5 + 1, 0xFF8ab4f8);
             }
 
             if (theme != LIGHT) {
@@ -788,6 +839,9 @@ void PatchInterfaceTheme(FM::Version v) {
                 patch::RedirectCall(0xA32512, MyConstructArtFmLibMediaString);
 
                 patch::RedirectCall(0xD19C75, OnSetWidgetProgressBar08);
+
+				patch::RedirectCall(0xC131F9, MyAddHalfTimeSpeechEffectIcon);
+				patch::RedirectCall(0xC134A5, MyAddHalfTimeSpeechEffectIcon);
             }
 
             if (theme == DARK || theme == LIGHT) {

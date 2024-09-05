@@ -58,6 +58,7 @@
     <ClInclude Include="DatabaseOptions.h" />
     <ClInclude Include="CustomShaders.h" />
     <ClInclude Include="ReserveNames.h" />
+    <ClInclude Include="WinHeader.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

@@ -7,6 +7,7 @@
 #include <string>
 #include <set>
 #include "plugin-std.h"
+#include "Utils.h"
 
 using namespace std;
 using namespace std::filesystem;
@@ -38,30 +39,30 @@ vector<string> archiveNames14 = { // 47
 };
 
 bool IsFileIncludedToIndex(string const& fileName) {
-    if (fileName.starts_with("m228__") ||
-        fileName.starts_with("m728__") ||
-        fileName.starts_with("m432__") ||
-        //fileName.starts_with("t75__") ||
-        //fileName.starts_with("tag-") ||
-        //fileName.starts_with("flr-") ||
-        //fileName.starts_with("fls-") ||
-        //fileName.starts_with("sle-") ||
-        //fileName.starts_with("m713__") ||
-        //fileName.starts_with("m714__") ||
-        //fileName.starts_with("m715__") ||
-        //fileName.starts_with("m716__") ||
-        //fileName.starts_with("m717__") ||
-        //fileName.starts_with("m718__") ||
-        //fileName.starts_with("m720__") ||
-        //fileName.starts_with("t226__") ||
-        //fileName.starts_with("t13__") ||
-        //fileName.starts_with("t122__") ||
-        //fileName.starts_with("t212__") ||
-        //fileName.starts_with("t238__") ||
-        fileName.starts_with("t21__") ||
-        fileName.starts_with("cm_") ||
-        fileName.starts_with("cmbhair_") ||
-        fileName.starts_with("hair_cm")
+    if (Utils::StartsWith(fileName, "m228__") ||
+        Utils::StartsWith(fileName, "m728__") ||
+        Utils::StartsWith(fileName, "m432__") ||
+        //Utils::StartsWith(fileName, "t75__") ||
+        //Utils::StartsWith(fileName, "tag-") ||
+        //Utils::StartsWith(fileName, "flr-") ||
+        //Utils::StartsWith(fileName, "fls-") ||
+        //Utils::StartsWith(fileName, "sle-") ||
+        //Utils::StartsWith(fileName, "m713__") ||
+        //Utils::StartsWith(fileName, "m714__") ||
+        //Utils::StartsWith(fileName, "m715__") ||
+        //Utils::StartsWith(fileName, "m716__") ||
+        //Utils::StartsWith(fileName, "m717__") ||
+        //Utils::StartsWith(fileName, "m718__") ||
+        //Utils::StartsWith(fileName, "m720__") ||
+        //Utils::StartsWith(fileName, "t226__") ||
+        //Utils::StartsWith(fileName, "t13__") ||
+        //Utils::StartsWith(fileName, "t122__") ||
+        //Utils::StartsWith(fileName, "t212__") ||
+        //Utils::StartsWith(fileName, "t238__") ||
+        Utils::StartsWith(fileName, "t21__") ||
+        Utils::StartsWith(fileName, "cm_") ||
+        Utils::StartsWith(fileName, "cmbhair_") ||
+        Utils::StartsWith(fileName, "hair_cm")
         )
     {
         return false;
@@ -126,13 +127,13 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
                 if (fileSize >= 4) {
                     if (fileSize >= 16) {
                         if (data_at<unsigned int>(fileData) == 'FGIB') {
-                            bool isUpdate = archiveNames[i].starts_with("update");
+                            bool isUpdate = Utils::StartsWith(archiveNames[i], "update");
                             unsigned int numFiles = _byteswap_ulong(data_at<unsigned int>(fileData, 8));
                             unsigned char* fileDesc = (unsigned char*)((unsigned int)fileData + 16);
                             for (unsigned int i = 0; i < numFiles; i++) {
                                 char* fileName = (char*)((unsigned int)fileDesc + 8);
                                 //if (IsFileIncludedToIndex(fileName)) {
-                                if (!updateFiles.contains(fileName) && !ignoreFiles.contains(fileName)) {
+                                if (!Utils::Contains(updateFiles, string(fileName)) && !Utils::Contains(ignoreFiles, string(fileName))) {
                                     unsigned int hash = FileNameHash(fileName);
                                     filesMap[hash].emplace_back(archiveId, -1, fileName);
                                     filesCount++;

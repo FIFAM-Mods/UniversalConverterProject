@@ -6,7 +6,7 @@
 #include "Compiler.h"
 #include "FifamReadWrite.h"
 #include "Competitions.h"
-#include "libpng\png.h"
+#include "png.h"
 #include "UcpSettings.h"
 #include "ExtendedPlayerEditor.h"
 #include <ShlObj.h>
@@ -1108,6 +1108,11 @@ void RemoveUnnededCharsForPortraitName(WideChar *str, WideChar const *src, UInt 
     str[counter] = 0;
 }
 
+WideChar * METHOD FixAssessmentFormatNumber(void *locale, DUMMY_ARG, Double value, UInt digits, WideChar *out, UInt outLen) {
+	CallMethod<0x575BC0>(locale, value, digits, out, outLen);
+	return out;
+}
+
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         GetSponsorNames() = {
@@ -1292,7 +1297,7 @@ void PatchEditor(FM::Version v) {
                         UInt clubId = 0;
                         reader.ReadLine(d, d, Hexadecimal(clubId), d, b.cash, b.salaries, b.salariesLeft, b.transfers, b.transfersLeft, b.infrastructure, b.infrastructureLeft,
                             b.misc, b.miscLeft, b.reserve);
-                        if (clubId != 0 && !budgets.contains(clubId))
+                        if (clubId != 0 && !Utils::Contains(budgets, clubId))
                             budgets[clubId] = b;
                     }
                 }
@@ -1657,6 +1662,8 @@ void PatchEditor(FM::Version v) {
         // increase 3D face limit - 6000 => 12000
         patch::SetUInt(0x6C9560 + 4, Settings::GetInstance().Max3dFaces);
         patch::SetUInt(0x6C9560 + 8, Settings::GetInstance().Max3dFaces);
+
+		patch::RedirectCall(0x416F1D, FixAssessmentFormatNumber);
 
         if (Settings::GetInstance().DisplayFoomID) {
             patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);

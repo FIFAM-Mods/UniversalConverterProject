@@ -126,8 +126,8 @@ void METHOD OnRoundLaunch(CDBRound *round) {
             //Message("Result: %d:%d", res1, res2);
             pairs[i].result1[0] = res1;
             pairs[i].result2[0] = res2;
-            pairs[i].field_C[0] = res1 / 2;
-            pairs[i].field_E[0] = res2 / 2;
+            pairs[i].firstHalfResult1[0] = res1 / 2;
+            pairs[i].firstHalfResult2[0] = res2 / 2;
             pairs[i].m_anMatchEventsStartIndex[0] = -1;
             pairs[i].m_nFlags |= FifamBeg::_1stPlayed;
             if (firstLegFlags & FifamBeg::With2ndLeg) {
@@ -159,8 +159,8 @@ void METHOD OnRoundLaunch(CDBRound *round) {
                     }
                     pairs[i].result1[1] = res2nd1 + ex1;
                     pairs[i].result2[1] = res2nd2 + ex2;
-                    pairs[i].field_C[1] = res2nd1 / 2;
-                    pairs[i].field_E[1] = res2nd2 / 2;
+                    pairs[i].firstHalfResult1[1] = res2nd1 / 2;
+                    pairs[i].firstHalfResult2[1] = res2nd2 / 2;
                     pairs[i].m_anMatchEventsStartIndex[1] = -1;
                     pairs[i].m_nFlags |= FifamBeg::_2ndPlayed | FifamBeg::Finished;
                     //SafeLog::WriteToFile("round_results.txt", Utils::Format(L"%s - %s - %d:%d, %d:%d%s, flags %d->%d", TeamName(pairs[i].m_n1stTeam),
@@ -195,8 +195,8 @@ void METHOD OnRoundLaunch(CDBRound *round) {
                 }
                 pairs[i].result1[0] = res1 + ex1;
                 pairs[i].result2[0] = res2 + ex2;
-                pairs[i].field_C[0] = res1 + ex1;
-                pairs[i].field_E[0] = res2 + ex2;
+                pairs[i].firstHalfResult1[0] = res1 + ex1;
+                pairs[i].firstHalfResult2[0] = res2 + ex2;
                 pairs[i].m_nFlags |= FifamBeg::Finished;
                 //SafeLog::WriteToFile("round_results.txt", Utils::Format(L"%s - %s - %d:%d%s, flags %d->%d", TeamName(pairs[i].m_n1stTeam),
                 //    TeamName(pairs[i].m_n2ndTeam), res1, res2, extraTime ? Utils::Format(L" (ET %d:%d)", ex1, ex2) : L"", flagsBefore, pairs[i].m_nFlags));

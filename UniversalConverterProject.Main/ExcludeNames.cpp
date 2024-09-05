@@ -31,17 +31,17 @@ NamesArray &GetExcludeCommonNames() {
     return excludeCommonNames;
 }
 
-WideChar const *GetNameByIndex(UInt nameType, UChar languageId, UShort index) {
+String GetNameByIndex(UInt nameType, UChar languageId, UShort index) {
     return CallMethodAndReturn<WideChar const *, 0x1499EC3>(CallAndReturn<void *, 0x1499D1D>(), languageId, nameType, index);
 }
 
 Bool IsExcluded(UShort nameIndex, UChar languageId, UInt nameType) {
     if (nameType == NAME_FIRST)
-        return GetExcludeNames().contains(GetNameByIndex(nameType, languageId, nameIndex));
+        return Utils::Contains(GetExcludeNames(), GetNameByIndex(nameType, languageId, nameIndex));
     else if (nameType == NAME_LAST)
-        return GetExcludeSurnames().contains(GetNameByIndex(nameType, languageId, nameIndex));
+        return Utils::Contains(GetExcludeSurnames(), GetNameByIndex(nameType, languageId, nameIndex));
     else if (nameType == NAME_COMMON)
-        return GetExcludeCommonNames().contains(GetNameByIndex(nameType, languageId, nameIndex));
+        return Utils::Contains(GetExcludeCommonNames(), GetNameByIndex(nameType, languageId, nameIndex));
     return false;
 }
 

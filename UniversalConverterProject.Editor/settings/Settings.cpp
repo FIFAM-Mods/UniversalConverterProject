@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "Settings.h"
+#include "Utils.h"
 #include <io.h>
 #include <fcntl.h>
 
@@ -91,7 +92,7 @@ void SettingsAbstract::Read(std::filesystem::path const &filename) {
             enum class parsing_state { before_name, name, before_parameter, parameter, section, ignore } state = parsing_state::before_name;
             auto lineEnd = [&]() {
                 if (!sectionName.empty()) {
-                    if (sectionName.starts_with(L'[') && sectionName.ends_with(L']')) {
+                    if (Utils::StartsWith(sectionName, L"[") && Utils::EndsWith(sectionName, L"]")) {
                         currentSectionName = sectionName.substr(1, sectionName.size() - 2);
                         SettingsHelper::Trim(currentSectionName);
                     }
@@ -105,7 +106,7 @@ void SettingsAbstract::Read(std::filesystem::path const &filename) {
                         if (!currentSectionName.empty())
                             paramName = currentSectionName + L"/" + paramName;
                         auto paramKey = SettingsHelper::ToUTF8(SettingsHelper::ToLower(paramName));
-                        if (mParametersMap.contains(paramKey)) {
+                        if (Utils::Contains(mParametersMap, paramKey)) {
                             auto &parameter = mParametersMap[paramKey];
                             parameter.mFromString((void *)((unsigned int)this + parameter.mOffset), paramValue);
                         }
@@ -202,7 +203,7 @@ void SettingsAbstract::Write(std::filesystem::path const &filename, bool onlyNon
                         }
                         std::wstring thisValue;
                         parameter->mToString((void *)((unsigned int)this + parameter->mOffset), thisValue);
-                        if (thisValue.starts_with(L' ') || thisValue.ends_with(L' '))
+                        if (Utils::StartsWith(thisValue, L" ") || Utils::EndsWith(thisValue, L" "))
                             thisValue = L"\"" + thisValue + L"\"";
                         fwprintf(file, L"%s = %s\n", thisName.c_str(), thisValue.c_str());
                         firstLine = false;

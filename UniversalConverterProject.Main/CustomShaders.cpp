@@ -38,10 +38,10 @@ void writeshadercode(std::ofstream &f, std::string const &codeStr, bool pixel, b
     for (auto c : codeStr) {
         if (c == '\n') {
             if (!line.empty()) {
-                if (line.starts_with("// approximately"))
+                if (Utils::StartsWith(line, "// approximately"))
                     comment = line;
                 else {
-                    if (line.starts_with("#line"))
+                    if (Utils::StartsWith(line, "#line"))
                         line = "// " + line.substr(1);
                     lines.push_back(line);
                 }
@@ -137,7 +137,7 @@ void ShaderLoadCustom(Shader *shader) {
         for (size_t lineId = 0; lineId < lines.size(); lineId++) {
             auto line = lines[lineId];
             auto lineLow = ToLower(line);
-            if (lineLow.starts_with("#technique")) {
+            if (Utils::StartsWith(lineLow, "#technique")) {
                 ClearSection();
                 techniqueName.clear();
                 if (line.size() > 11) {
@@ -147,10 +147,10 @@ void ShaderLoadCustom(Shader *shader) {
                 }
                 mode = Mode::Technique;
             }
-            else if (lineLow.starts_with("#vertexshader") || lineLow.starts_with("#pixelshader")) {
+            else if (Utils::StartsWith(lineLow, "#vertexshader") || Utils::StartsWith(lineLow, "#pixelshader")) {
                 ClearSection();
                 unsigned int titleSize = 0;
-                if (lineLow.starts_with("#vertexshader")) {
+                if (Utils::StartsWith(lineLow, "#vertexshader")) {
                     titleSize = 14;
                     mode = Mode::VertexShader;
                 }
@@ -175,7 +175,7 @@ void ShaderLoadCustom(Shader *shader) {
                     }
                 }
             }
-            else if (lineLow.starts_with("#end")) {
+            else if (Utils::StartsWith(lineLow, "#end")) {
                 if (mode == Mode::VertexShader || mode == Mode::PixelShader) {
                     // find technique
                     int techniqueIndex = -1;

@@ -78,6 +78,10 @@
     <ClCompile Include="ClubSponsors.cpp" />
     <ClCompile Include="Achievements.cpp" />
     <ClCompile Include="ReserveNames.cpp" />
+    <ClCompile Include="ExtendedCountry.cpp" />
+    <ClCompile Include="StatsFifaRanking.cpp" />
+    <ClCompile Include="MobilePhone.cpp" />
+    <ClCompile Include="ChampionsLeague.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -155,6 +159,10 @@
     <ClInclude Include="ClubSponsors.h" />
     <ClInclude Include="Achievements.h" />
     <ClInclude Include="ReserveNames.h" />
+    <ClInclude Include="ExtendedCountry.h" />
+    <ClInclude Include="StatsFifaRanking.h" />
+    <ClInclude Include="MobilePhone.h" />
+    <ClInclude Include="ChampionsLeague.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="competition_scripts">

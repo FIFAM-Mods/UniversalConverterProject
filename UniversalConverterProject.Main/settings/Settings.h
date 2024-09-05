@@ -33,7 +33,7 @@ public:
     }
 
     template<typename SrcT>
-    static std::vector<SrcT> Split(SrcT const &line, SrcT::value_type delim, bool trim = true, bool skipEmpty = false) {
+    static std::vector<SrcT> Split(SrcT const &line, typename SrcT::value_type delim, bool trim = true, bool skipEmpty = false) {
         std::vector<SrcT> result;
         SrcT currStr;
         auto AddStr = [&, trim, skipEmpty]() {

@@ -166,6 +166,10 @@ void OnGetFxFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UI
     GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\fx_%d.big", "%s\\fx.big");
 }
 
+void OnGetParticleFilenameFor3dMatch(Char *dst, Char const *format, UInt stadiumId, UInt lightingId) {
+	GetStadiumExtraFilenameFor3dMatch(dst, format, stadiumId, lightingId, "%s\\particles_%d.loc", "%s\\particles.loc");
+}
+
 void *METHOD OnSetupCustomStadiumCrowdEffects(CDBTeam *team, DUMMY_ARG, void *a2) {
     SetVarInt("OPTIONS/CROWDFLAGS", 100);
     SetVarInt("OPTIONS/CROWDFLARES", 100);
@@ -558,6 +562,7 @@ void InstallCustomStadiums3DPatches() {
     patch::RedirectCall(GfxCoreAddress(0x20A498), OnGetShadowFilenameFor3dMatch);
     patch::RedirectCall(GfxCoreAddress(0x213FB7), OnGetCovmapFilenameFor3dMatch);
     patch::RedirectCall(GfxCoreAddress(0x1FFFCA), OnGetFxFilenameFor3dMatch);
+	patch::RedirectCall(GfxCoreAddress(0x1FFF79), OnGetParticleFilenameFor3dMatch);
 
     patch::RedirectCall(GfxCoreAddress(0x410868), OnOrigStadiumLoad);
     patch::RedirectCall(GfxCoreAddress(0x420F43), OnOrigStadiumDestroy);

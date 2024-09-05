@@ -3,6 +3,8 @@
 #include "Utils.h"
 #include "shared.h"
 
+using namespace plugin;
+
 CJDate CJDate::GetTranslated(int numYears) {
     CJDate result;
     plugin::CallMethod<0x1495EFF>(this, &result, numYears);
@@ -57,6 +59,10 @@ CJDate CJDate::AddYears(Int years) {
     CJDate outDate;
     CallMethod<0x1495EFF>(this, &outDate, years);
     return outDate;
+}
+
+String CJDate::ToStr() {
+	return Utils::Format(L"%02d.%02d.%04d", GetDays(), GetMonth(), GetYear());
 }
 
 CDBGame *CDBGame::GetInstance() {
@@ -394,7 +400,11 @@ Bool CDBCompetition::IsContinental() {
 }
 
 Bool CDBCompetition::IsLaunched() {
-    return CallMethodAndReturn<Bool, 0xF81B30>(this);
+    return CallVirtualMethodAndReturn<Bool, 1>(this);
+}
+
+Bool CDBCompetition::IsFinished() {
+	return CallVirtualMethodAndReturn<Bool, 2>(this);
 }
 
 void CDBLeague::SetStartDate(CJDate date) {
@@ -497,6 +507,15 @@ wchar_t const *GetTranslationIfPresent(const char *key) {
     if (IsTranslationPresent(key))
         return GetTranslation(key);
     return nullptr;
+}
+
+CJDate GetCurrentDate() {
+	auto game = CDBGame::GetInstance();
+	if (game)
+		return game->GetCurrentDate();
+	static CJDate DUMMY_DATE;
+	DUMMY_DATE.Set(0);
+	return DUMMY_DATE;
 }
 
 unsigned short GetCurrentYear() {
@@ -1038,6 +1057,14 @@ const Bool CDBCountry::IsPlayerInNationalTeam(UInt playerId) {
     return plugin::CallMethodAndReturn<Bool, 0xFD7CD0>(this, playerId);
 }
 
+void CDBCountry::SetFifaRanking(Float value) {
+	*raw_ptr<Float>(this, 0x284) = value;
+}
+
+Float CDBCountry::GetFifaRanking() {
+	return *raw_ptr<Float>(this, 0x284);
+}
+
 TeamLeaguePositionData::TeamLeaguePositionData() {
     m_teamID.countryId = 0;
     m_teamID.index = 0;
@@ -1282,6 +1309,14 @@ CDBTeam *CDBOneMatch::GetAwayTeam() {
     if (teamID.countryId != 0)
         return ::GetTeam(teamID);
     return nullptr;
+}
+
+Bool CDBOneMatch::CheckFlag(UInt flag) {
+	return CallMethodAndReturn<Bool, 0xE80230>(this, flag);
+}
+
+void CDBOneMatch::GetResult(UChar & outHome, UChar & outAway) {
+	CallMethod<0xE7FF20>(this, &outHome, &outAway);
 }
 
 CDBOneMatch *GetCurrentMatch() {
@@ -1568,4 +1603,19 @@ Bool SyncFile::UInt16(UShort *pValue, UShort *pDefaultValue, UInt minVersion) {
 
 Bool SyncFile::UInt8(UChar *pValue, UChar *pDefaultValue, UInt minVersion) {
     return plugin::CallMethodAndReturn<Bool, 0x10CF880>(this, pValue, pDefaultValue, minVersion);
+}
+
+WideChar const * CStatsBaseScrWrapper::GetName() {
+	return *raw_ptr<WideChar const *>(this, 0xC);
+}
+
+UInt CStatsBaseScrWrapper::GetType() {
+	return m_nType;
+}
+
+void *CStatsBaseScrWrapper::DeletingDestructor(UChar flags) {
+	Call<0x1573B5B>(*raw_ptr<WideChar const *>(this, 0xC));
+	if (flags & 1)
+		Call<0x157347A>(this);
+	return this;
 }

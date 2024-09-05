@@ -231,7 +231,7 @@ void METHOD GenerateAdboards(void *dynShapeGen, DUMMY_ARG, AdboardsData *data) {
     adbNameGen.data = data;
     adbNameGen.counter = 0;
     String adboardFilename = String(data->filenames[0]);
-    Bool combined = adboardFilename.starts_with(L"sponsors\\512x64\\") || adboardFilename.starts_with(L"sponsors\\512x85\\");
+    Bool combined = Utils::StartsWith(adboardFilename, L"sponsors\\512x64\\") || Utils::StartsWith(adboardFilename, L"sponsors\\512x85\\");
     CallVirtualMethod<0>(dynShapeGen,
         CallAndReturnDynGlobal<WideChar const *>(GfxCoreAddress(0x370D17), fshName, 256, data->fifaId, data->field_C), 0,
         combined ? adboardsCombined : adboardsSingle,

@@ -58,121 +58,15 @@
 #include "ClubSponsors.h"
 #include "Achievements.h"
 #include "ReserveNames.h"
+#include "ExtendedCountry.h"
+#include "StatsFifaRanking.h"
+#include "MobilePhone.h"
+#include "ChampionsLeague.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
 
 using namespace plugin;
-
-void GenerateXML() {
-    struct PairBox {
-        int x, y;
-        string name;
-        string text;
-    };
-    vector<PairBox> pairBoxes;
-    ofstream f;
-    f.open("myxml.xml");
-    {
-        int baseW[] = { 21, 1145 };
-        int baseH[] = { 215, 297, 380, 462, 545, 627, 710, 792 };
-        pairBoxes.emplace_back(baseW[0], baseH[0], "TbLast32_1", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[0], "TbLast32_2", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[4], "TbLast32_3", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[4], "TbLast32_4", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[2], "TbLast32_5", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[2], "TbLast32_6", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[6], "TbLast32_7", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[6], "TbLast32_8", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[1], "TbLast32_9", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[1], "TbLast32_10", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[5], "TbLast32_11", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[5], "TbLast32_12", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[3], "TbLast32_13", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[3], "TbLast32_14", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[0], baseH[7], "TbLast32_15", "ID_TOURNAMENT_LAST32");
-        pairBoxes.emplace_back(baseW[1], baseH[7], "TbLast32_16", "ID_TOURNAMENT_LAST32");
-    }
-    {
-        int baseW[] = { 161, 1005 };
-        int baseH[] = { 256, 421, 586, 751 };
-        pairBoxes.emplace_back(baseW[0], baseH[0], "TbLast16_1", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[1], baseH[0], "TbLast16_2", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[0], baseH[2], "TbLast16_3", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[1], baseH[2], "TbLast16_4", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[0], baseH[1], "TbLast16_5", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[1], baseH[1], "TbLast16_6", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[0], baseH[3], "TbLast16_7", "ID_TOURNAMENT_EIGHTFINAL");
-        pairBoxes.emplace_back(baseW[1], baseH[3], "TbLast16_8", "ID_TOURNAMENT_EIGHTFINAL");
-    }
-    {
-        int baseW[] = { 301, 865 };
-        int baseH[] = { 338, 668 };
-        pairBoxes.emplace_back(baseW[0], baseH[0], "TbQuarterFinal_1", "IDCSTR_MATCHINFO_35");
-        pairBoxes.emplace_back(baseW[1], baseH[0], "TbQuarterFinal_2", "IDCSTR_MATCHINFO_35");
-        pairBoxes.emplace_back(baseW[0], baseH[1], "TbQuarterFinal_3", "IDCSTR_MATCHINFO_35");
-        pairBoxes.emplace_back(baseW[1], baseH[1], "TbQuarterFinal_4", "IDCSTR_MATCHINFO_35");
-    }
-    pairBoxes.emplace_back(442, 503, "TbSemiFinal1", "IDCSTR_MATCHINFO_36");
-    pairBoxes.emplace_back(724, 503, "TbSemiFinal2", "IDCSTR_MATCHINFO_36");
-    pairBoxes.emplace_back(583, 503, "TbFinal", "IDCSTR_MATCHINFO_37");
-    pairBoxes.emplace_back(583, 599, "TbThirdPlace", "IDCSTR_MATCHINFO_112");
-
-    for (auto const &p : pairBoxes) {
-        f << "\t\t<Obj Rtti=\"TextBox\" Uid=\"" << p.name << "\" >" << std::endl;
-        f << "\t\t\t<Meta >" << std::endl;
-        f << "\t\t\t\t<Entry Key=\"Design\" Value=\"FM12 ListBox_Static_20px\" />" << std::endl;
-        f << "\t\t\t</Meta>" << std::endl;
-        f << "\t\t\t<Appearance Rect=\"" << p.x << "," << p.y << "," << 116 << "," << 18 << "\" />" << std::endl;
-        f << "\t\t\t<ColText String=\"$" << p.text << "\" Font=\"SubHeadline\" ColorActive=\"0xfff1f1f1\" ColorInactive=\"0xfff1f1f1\" ColorHighlight=\"0xfff1f1f1\" ColorDisabled=\"0xfff1f1f1\" TextModifier=\"UpperCase\" />" << std::endl;
-        f << "\t\t</Obj>" << std::endl; 
-    }
-    int flagId = 1;
-    for (auto const &p : pairBoxes) {
-        for (int i = 0; i < 2; i++) {
-            f << "\t\t<Obj Rtti=\"Image\" Uid=\"TbFlag" << flagId++ << "\" >" << std::endl;
-            f << "\t\t\t<Meta >" << std::endl;
-            f << "\t\t\t\t<Entry Key=\"Design\" Value=\"RoundedRect\" />" << std::endl;
-            f << "\t\t\t\t<Entry Key=\"Design.Control\" Value=\"Tile\" />" << std::endl;
-            f << "\t\t\t</Meta>" << std::endl;
-            f << "\t\t\t<Appearance Rect=\"" << p.x + ((i == 0) ? 9 : 67) << "," << p.y + 11 << "," << 38 << "," << 38 << "\" />" << std::endl;
-            f << "\t\t\t<Behaviour RClick=\"true\" />" << std::endl;
-            f << "\t\t\t<Texture Rect=\"0,0,8,8\" Resrc=\"dark\\art_fm\\screens\\Misc\\Empty.tga\" Color=\"0xffffffff\" ScaleMethod=\"ScaleXY\" />" << std::endl;
-            f << "\t\t</Obj>" << std::endl;
-        }
-    }
-    int tbId = 1;
-    for (auto const &p : pairBoxes) {
-        f << "\t\t<Obj Rtti=\"TextBox\" Uid=\"Tb" << tbId++ << "\" >" << std::endl;
-        f << "\t\t\t<Meta >" << std::endl;
-        f << "\t\t\t\t<Entry Key=\"Design\" Value=\"FM12 ListBox_Static_20px\" />" << std::endl;
-        f << "\t\t\t</Meta>" << std::endl;
-        f << "\t\t\t<Appearance Rect=\"" << p.x << "," << p.y + 44 << "," << 56 << "," << 18 << "\" />" << std::endl;
-        f << "\t\t\t<ColText String=\"GER\" Font=\"SubHeadline\" ColorActive=\"0xfff1f1f1\" ColorInactive=\"0xfff1f1f1\" ColorHighlight=\"0xfff1f1f1\" ColorDisabled=\"0xff717171\" />" << std::endl;
-        f << "\t\t</Obj>" << std::endl;
-        f << "\t\t<Obj Rtti=\"TextBox\" Uid=\"Tb" << tbId++ << "\" >" << std::endl;
-        f << "\t\t\t<Meta >" << std::endl;
-        f << "\t\t\t\t<Entry Key=\"Design\" Value=\"FM12 ListBox_Static_20px\" />" << std::endl;
-        f << "\t\t\t</Meta>" << std::endl;
-        f << "\t\t\t<Appearance Rect=\"" << p.x - 1 << "," << p.y + 44 << "," << 116 << "," << 18 << "\" />" << std::endl;
-        f << "\t\t\t<ColText String=\"$ID_TM_VS\" Font=\"SubHeadline\" ColorActive=\"0xfff1f1f1\" ColorInactive=\"0xfff1f1f1\" ColorHighlight=\"0xfff1f1f1\" ColorDisabled=\"0xff717171\" />" << std::endl;
-        f << "\t\t</Obj>" << std::endl;
-        f << "\t\t<Obj Rtti=\"TextBox\" Uid=\"Tb" << tbId++ << "\" >" << std::endl;
-        f << "\t\t\t<Meta >" << std::endl;
-        f << "\t\t\t\t<Entry Key=\"Design\" Value=\"FM12 ListBox_Static_20px\" />" << std::endl;
-        f << "\t\t\t</Meta>" << std::endl;
-        f << "\t\t\t<Appearance Rect=\"" << p.x + 58 << "," << p.y + 44 << "," << 56 << "," << 18 << "\" />" << std::endl;
-        f << "\t\t\t<ColText String=\"GER\" Font=\"SubHeadline\" ColorActive=\"0xfff1f1f1\" ColorInactive=\"0xfff1f1f1\" ColorHighlight=\"0xfff1f1f1\" ColorDisabled=\"0xff717171\" />" << std::endl;
-        f << "\t\t</Obj>" << std::endl;
-        f << "\t\t<Obj Rtti=\"TextBox\" Uid=\"Tb" << tbId++ << "\" >" << std::endl;
-        f << "\t\t\t<Meta >" << std::endl;
-        f << "\t\t\t\t<Entry Key=\"Design\" Value=\"FM12 ListBox_Static_20px\" />" << std::endl;
-        f << "\t\t\t</Meta>" << std::endl;
-        f << "\t\t\t<Appearance Rect=\"" << p.x << "," << p.y + 59 << "," << 116 << "," << 18 << "\" />" << std::endl;
-        f << "\t\t\t<ColText String=\"(0) 2 - 1 (1)\" Font=\"SubHeadline\" ColorActive=\"0xfff1f1f1\" ColorInactive=\"0xfff1f1f1\" ColorHighlight=\"0xfff1f1f1\" ColorDisabled=\"0xff717171\" />" << std::endl;
-        f << "\t\t</Obj>" << std::endl;
-    }
-}
 
 class UniversalConverterProject {
 public:
@@ -198,7 +92,7 @@ public:
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
-            const UInt SaveGameVersion = 44;
+            const UInt SaveGameVersion = 45;
             patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
             patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
 
@@ -275,6 +169,10 @@ public:
         PatchClubSponsors(v);
         //PatchAchievements(v);
         PatchReserveNames(v);
+		PatchExtendedCountry(v);
+		PatchStatsFifaRanking(v);
+		PatchMobilePhone(v);
+		PatchChampionsLeague(v);
 
     #ifdef BETA
         DoBetaPatches(v);
@@ -304,7 +202,7 @@ String GetPatchName() {
 }
 
 String GetPatchVersion() {
-    return L"1.0";
+    return L"1.1";
 }
 
 String GetFullAppName(Bool upperCase) {

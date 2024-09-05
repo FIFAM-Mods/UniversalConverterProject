@@ -263,9 +263,9 @@ public:
                             if (image || textBox) {
                                 StringA typeStr = ToLower(popupColorType);
                                 Int teamIndex = -1;
-                                if (typeStr.starts_with("home"))
+                                if (Utils::StartsWith(typeStr, "home"))
                                     teamIndex = 0;
-                                else if (typeStr.starts_with("away"))
+                                else if (Utils::StartsWith(typeStr, "away"))
                                     teamIndex = 1;
                                 if (mOneTeam) {
                                     if (teamIndex != -1)
@@ -276,7 +276,7 @@ public:
                                     return 0;
                                 if (mColors[teamIndex].mHasTetamColors) {
                                     for (UInt colorId = 1; colorId <= 10; colorId++) {
-                                        if (typeStr.ends_with("teamcolor" + std::to_string(colorId))) {
+                                        if (Utils::EndsWith(typeStr, "teamcolor" + std::to_string(colorId))) {
                                             if (image)
                                                 SetImageColorRGBA(image, mColors[teamIndex].mTeamColor[colorId - 1]);
                                             else if (textBox)
@@ -288,7 +288,7 @@ public:
                                 }
                                 if (mColors[teamIndex].mHasKitColors) {
                                     for (UInt colorId = 1; colorId <= 2; colorId++) {
-                                        if (typeStr.ends_with("kitcolor" + std::to_string(colorId))) {
+                                        if (Utils::EndsWith(typeStr, "kitcolor" + std::to_string(colorId))) {
                                             if (image)
                                                 SetImageColorRGBA(image, mColors[teamIndex].mKitColor[colorId - 1]);
                                             else if (textBox)
@@ -577,11 +577,11 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
             for (UInt k = 0; k < 2; k++) {
                 if (!hasColors) {
                     UInt teamId = (k == 0) ? team[t]->GetTeamUniqueID() : 0;
-                    if (teamColors.contains(teamId)) {
+                    if (Utils::Contains(teamColors, teamId)) {
                         Int teamKitType = -1;
-                        if (teamColors[teamId].contains(kitType[t]))
+                        if (Utils::Contains(teamColors[teamId], kitType[t]))
                             teamKitType = kitType[t];
-                        else if (teamColors[teamId].contains(4))
+                        else if (Utils::Contains(teamColors[teamId], 4u))
                             teamKitType = 4;
                         if (teamKitType != -1) {
                             colors = teamColors[teamId][teamKitType];
@@ -624,47 +624,47 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
                 for (UInt c = 0; c < 10; c++) {
                     auto clr = ToLower(colors[c]);
                     UInt clrValue = 0;
-                    if (clr.starts_with("team_interface_color"))
+                    if (Utils::StartsWith(clr, "team_interface_color"))
                         clrValue = 0xFF000000 | team[t]->GetColorRGBA(4);
-                    else if (clr.starts_with("team_background"))
+                    else if (Utils::StartsWith(clr, "team_background"))
                         clrValue = clrTeam1;
-                    else if (clr.starts_with("team_foreground")) {
+                    else if (Utils::StartsWith(clr, "team_foreground")) {
                         clrValue = clrTeam2;
                         if (Color::Distance(GenColorFromInt(clrTeam1), GenColorFromInt(clrTeam2)) < 100)
                             clrValue = GetTextColor(clrTeam1);
                     }
-                    else if (clr.starts_with("team_color_1"))
+                    else if (Utils::StartsWith(clr, "team_color_1"))
                         clrValue = clrTeam1;
-                    else if (clr.starts_with("team_color_2"))
+                    else if (Utils::StartsWith(clr, "team_color_2"))
                         clrValue = clrTeam2;
-                    else if (clr.starts_with("kit_background"))
+                    else if (Utils::StartsWith(clr, "kit_background"))
                         clrValue = kitColor.first;
-                    else if (clr.starts_with("kit_foreground")) {
+                    else if (Utils::StartsWith(clr, "kit_foreground")) {
                         clrValue = kitColor.second;
                         if (kitDiff < 100)
                             clrValue = GetTextColor(kitColor.first);
                     }
-                    else if (clr.starts_with("kit_color_1"))
+                    else if (Utils::StartsWith(clr, "kit_color_1"))
                         clrValue = kitColor.first;
-                    else if (clr.starts_with("kit_color_2"))
+                    else if (Utils::StartsWith(clr, "kit_color_2"))
                         clrValue = kitColor.second;
-                    else if (clr.starts_with("epl_color_1"))
+                    else if (Utils::StartsWith(clr, "epl_color_1"))
                         clrValue = epl_1;
-                    else if (clr.starts_with("epl_color_2"))
+                    else if (Utils::StartsWith(clr, "epl_color_2"))
                         clrValue = epl_2;
-                    else if (clr.starts_with("epl_presentation_color"))
+                    else if (Utils::StartsWith(clr, "epl_presentation_color"))
                         clrValue = eplPresentation;
                     else
                         clrValue = Utils::SafeConvertInt<UInt>(clr, true);
-                    if (clr.ends_with("_text") || clr.contains("_text_"))
+                    if (Utils::EndsWith(clr, "_text") || clr.find("_text_") != std::string::npos)
                         clrValue = GetTextColor(clrValue);
-                    if (clr.ends_with("_alt") || clr.contains("_alt_"))
+                    if (Utils::EndsWith(clr, "_alt") || clr.find("_alt_") != std::string::npos)
                         clrValue = GetAltColor(clrValue);
-                    if (clr.ends_with("_onblack") || clr.contains("_onblack_")) {
+                    if (Utils::EndsWith(clr, "_onblack") || clr.find("_onblack_") != std::string::npos) {
                         if (GenColor::Distance(GenColorFromInt(clrValue), BLACK) < 200)
                             clrValue = 0xFFFFFFFF;
                     }
-                    else if (clr.ends_with("_onwhite") || clr.contains("_onwhite_")) {
+                    else if (Utils::EndsWith(clr, "_onwhite") || clr.find("_onwhite_") != std::string::npos) {
                         if (GenColor::Distance(GenColorFromInt(clrValue), WHITE) < 200)
                             clrValue = 0xFF000000;
                     }
@@ -824,7 +824,7 @@ void METHOD OnSetuMatch3DHalfTimeStats(void *screen, DUMMY_ARG, void *data) {
         if (screenName) {
             //Error(screenName);
             StringA screenNameStr = screenName;
-            if (screenNameStr.ends_with("_00000000.xml"))
+            if (Utils::EndsWith(screenNameStr, "_00000000.xml"))
                 process = false;
         }
         if (process)

@@ -15,7 +15,6 @@
 
 using namespace plugin;
 using namespace std::filesystem;
-using namespace nlohmann;
 
 Char *gpUserKitName = nullptr;
 Bool gUsedCustomCaptainArmband = false;
@@ -171,7 +170,7 @@ String GetUserKitNumberTexturePath(String const &directory, UInt compId, UInt cl
                                 compType = compId & 0xFF;
                             else
                                 compType = (compId >> 16) & 0xFF;
-                            if (compType == COMP_FA_CUP || compType == COMP_LE_CUP || compType == COMP_SUPERCUP || compType == COMP_RELEGATION || compType == COMP_FRIENDLY)
+                            if (compType == COMP_FA_CUP || compType == COMP_LE_CUP || compType == COMP_SUPERCUP || compType ==COMP_RELEGATION || compType == COMP_FRIENDLY)
                                 canUseLeagueNumbers = true;
                         }
                         if (canUseLeagueNumbers) {
@@ -661,7 +660,7 @@ void ReadKitsFile() {
     }
 
     Path kitConfigDir = "data\\kitconfig";
-    auto jsonReadNumber = [](json const &node, StringA const &key, int defaultValue) {
+    auto jsonReadNumber = [](nlohmann::json const &node, StringA const &key, int defaultValue) {
         auto it = node.find(key);
         if (it == node.end() || !(*it).is_number())
             return defaultValue;
@@ -687,7 +686,7 @@ void ReadKitsFile() {
                     if (kitTypeId != -1) {
                         try {
                             std::ifstream s(p);
-                            json j;
+							nlohmann::json j;
                             s >> j;
                             Bool isNationalTeam = (teamid & 0xFFFF) == 0xFFFF;
                             SetTeamKitConfig(teamid, kitTypeId,
@@ -1293,13 +1292,13 @@ void METHOD OnGetRefKitId(void *, DUMMY_ARG, const char *, int *outId, int) {
     if (match) {
         CallMethod<0xE80190>(match, &compId);
         Vector<Int> kitIds;
-        if (GetRefereeKits().contains(compId))
+        if (Utils::Contains(GetRefereeKits(), compId))
             kitIds = GetRefereeKits()[compId];
         else {
             UInt smallCompId = (compId >> 16) & 0xFFFF;
-            if (GetRefereeKits().contains(smallCompId))
+            if (Utils::Contains(GetRefereeKits(), smallCompId))
                 kitIds = GetRefereeKits()[smallCompId];
-            else if (GetRefereeKits().contains(0))
+            else if (Utils::Contains(GetRefereeKits(), 0u))
                 kitIds = GetRefereeKits()[0];
         }
         if (!kitIds.empty()) {

@@ -26,6 +26,7 @@ bool ReaderIsVersionGreaterOrEqual(void *reader, UInt year, UShort build) {
 const UInt DEF_PLAYER_SZ = 0x2C0;
 const UInt DEF_CLUB_SZ = 0x391C;
 const UInt DEF_REFEREE_SZ = 0x4A;
+const UInt COUNTRY_FIFARANKING_OFFSET = 0x1B0C;
 
 PlayerExtension *GetPlayerExtension(void *player) {
     return raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
@@ -222,6 +223,53 @@ void METHOD OnWriteRefereeType(void *t, DUMMY_ARG, UChar *in) {
     CallMethod<0x514510>(t, &ext->footballManagerId);
 }
 
+UInt METHOD GetCountryFifaRanking(void *country) {
+	Float *pFifaRanking = raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET);
+	return *(UInt *)pFifaRanking;
+}
+
+void METHOD SetCountryFifaRanking(void *country, DUMMY_ARG, UInt value) {
+	*raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET) = *(Float *)(&value);
+}
+
+void METHOD FifaRankingSetMinMax(void *t, DUMMY_ARG, WPARAM wParam, LPARAM lParam) {
+	CallMethod<0x585050>(t, 0.0f, 5000.0f, 2);
+}
+
+void METHOD FifaRankingSetValue(void *t, DUMMY_ARG, UInt value) {
+	CallMethod<0x584FB0>(t, *(Float *)(&value));
+}
+
+UInt METHOD FifaRankingGetValue(void *t) {
+	Float value = CallMethodAndReturn<Float, 0x585300>(t);
+	return *(UInt *)(&value);
+}
+
+void METHOD OnWriteFifaRanking(void *writer, DUMMY_ARG, void *country) {
+	CallMethod<0x5138B0>(writer, raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET));
+}
+
+Array<Float, 207> FifaRanking2023 = {
+1357.39f,1022.3f,1252.6f,1528.06f,1143.21f,1212.28f,1788.55f,1381.1f,1315.48f,1742.55f,1163.73f,1503.69f,1597.37f,1797.39f,1179.3f,1126.3f,1419.47f,1843.53f,1350.56f,1312.8f,1635.24f,1441.06f,1504.57f,1352.98f,1426.26f,1323.8f,1726.58f,1096.19f,848.82f,1069.98f,1262.72f,972.87f,990.73f,1731.23f,1361.17f,1458.48f,1536.98f,1718.25f,1443.98f,1495.53f,753.11f,1520.25f,1447.05f,1391.04f,1703.45f,1547.12f,1661.13f,1484.46f,1542.32f,1506.03f,1539.04f,1843.73f,1295.09f,1828.27f,1511.31f,1624.9f,1486.47f,1442.64f,1561.2f,1633.13f,1417.24f,995.58f,1107.51f,850.88f,852.87f,984.05f,939.96f,966.27f,804.11f,1454.15f,859.83f,1458.21f,973.21f,904.88f,1036.73f,1317.64f,960.77f,1178.21f,981.69f,1297.13f,1289.02f,1380.26f,1646.62f,938.02f,1265.43f,1074.98f,1420.46f,996.25f,1078.06f,978.91f,938.28f,1073.63f,1213.87f,839.39f,1664.19f,816.59f,1511.15f,1170.76f,1248.12f,1052.38f,1419.18f,1085.06f,1470.97f,1354.65f,1133.5f,930.22f,1190.63f,1433.37f,885.39f,1354.23f,1509.88f,1251.83f,855.56f,1074.47f,1285.34f,1159.82f,1391.13f,1296.75f,1178.93f,1194.9f,1030.99f,1049.94f,1130.75f,1186.09f,1133.36f,1438.01f,1205.18f,936.03f,1655.5f,1165.66f,1175.14f,1129.67f,1486.48f,1089.46f,900.07f,1612.61f,860.13f,1156.11f,854.72f,1369.5f,1122.72f,1058.92f,1138.79f,1144.98f,1516.66f,1246.17f,1290.19f,1138.56f,1020.31f,1282.05f,894.03f,900.64f,891.12f,942.97f,1304.78f,1028.18f,838.33f,1049.73f,1211.67f,1047.46f,1559.53f,1345.22f,1595.96f,1296.3f,1198.25f,1169.96f,1529.29f,1088.28f,1220.82f,899.58f,1200.85f,913.67f,1091.58f,1021.83f,908.71f,1000.26f,958.08f,1336.43f,847.67f,1233.02f,1095.65f,1365.6f,1421.46f,1014.78f,825.25f,1241.62f,1179.54f,1174.37f,1089.78f,1336.28f,1324.64f,1238.22f,1020.37f,900.27f,1530.44f,899.33f,980.48f,1205.82f,1003.28f,894.26f,1097.6f,995.11f,861.81f,986.44f,851.63f,1343.45f,1179.69f
+};
+
+void METHOD OnReadFifaRanking(void *reader, DUMMY_ARG, void *country) {
+	if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xF))
+	    CallMethod<0x5124B0>(reader, raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET));
+	else {
+		UShort value = 0;
+		CallMethod<0x513420>(reader, &value);
+		*raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET) = (Float)value;
+	}
+	// TODO: REMOVE THIS!
+	UInt countryIndex = *raw_ptr<UInt>(country, 0x1A4);
+	*raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET) = FifaRanking2023[countryIndex - 1];
+}
+
+void METHOD OnWriteFifaRankingToMaster(void *binaryFile, DUMMY_ARG, void *country) {
+	CallMethod<0x551160>(binaryFile, *raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET));
+}
+
 void PatchExtendedPlayer(FM::Version v) {
     if (v.id() == VERSION_ED_13) {
         patch::RedirectCall(0x48953C, OnConstructPlayer);
@@ -262,5 +310,22 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::RedirectCall(0x4E9842, OnAllocReferee);
         patch::RedirectCall(0x53FDF5, OnReadRefereeType);
         patch::RedirectCall(0x53FDA1, OnWriteRefereeType);
+
+		// CCountry extension
+		patch::SetUInt(0x4EA26B + 1, 196 - 4);
+		patch::SetUInt(0x4EA27C + 1, 196 - 4);
+		patch::SetUInt(0x4DED12 + 1, 195 - 4);
+		patch::RedirectJump(0x4DEE40, GetCountryFifaRanking);
+		patch::RedirectJump(0x4DEE50, SetCountryFifaRanking);
+		patch::RedirectCall(0x446DDE, FifaRankingSetMinMax);
+		patch::RedirectCall(0x4473DA, FifaRankingSetValue);
+		patch::RedirectCall(0x4471A5, FifaRankingGetValue);
+		patch::Nop(0x4471B0, 1); // cwde
+		patch::SetUChar(0x4E57D3, 0x56); // push esi
+		patch::RedirectCall(0x4E57D6, OnWriteFifaRanking);
+		patch::SetUChar(0x4EA22B, 0x56); // push esi
+		patch::RedirectCall(0x4EA22E, OnReadFifaRanking);
+		patch::SetUChar(0x4E850D, 0x56); // push esi
+		patch::RedirectCall(0x4E8510, OnWriteFifaRankingToMaster);
     }
 }

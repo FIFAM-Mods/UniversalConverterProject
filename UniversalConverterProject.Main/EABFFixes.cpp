@@ -1255,6 +1255,7 @@ void METHOD OnPlayerPlanCareerEndAtGameStart(CDBPlayer *player) {
 }
 
 CRITICAL_SECTION CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel;
+bool bGetPlayerKnowledgeLevelCriticalSectionInitialized = false;
 
 UChar METHOD OnGetPlayerKnowledgeLevel(CDBEmployee *employee, DUMMY_ARG, CDBPlayer *player) {
     EnterCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
@@ -1523,6 +1524,17 @@ void METHOD SetupNewspaperChallengeDelOffensive(void *t) {
         if (team)
             CallMethod<0xECA910>(team, 51, &vec2->begin[i].money, 0);
     }
+}
+
+enum YouthTransfersLevel { LeagueLevel, NationalLevel, ContinentalLevel, IntercontinentalLevel };
+WideChar const *YouthTransfersLevelStr[] = { L"LeagueLevel", L"NationalLevel", L"ContinentalLevel", L"IntercontinentalLevel" };
+
+template<UInt Orig, UInt Level>
+void METHOD YouthTransfsersCollect(void *t, DUMMY_ARG, CDBTeam *team, void *vec) {
+	CallMethod<Orig>(t, team, vec);
+	SafeLog::WriteToFile("youth_transfer_levels.csv",
+		Utils::Format(L"%s,%s,%s", GetCurrentDate().ToStr(), team->GetName(), YouthTransfersLevelStr[Level]),
+		L"Date,Team,Level");
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -2026,6 +2038,7 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xA4BAF2, OnBestGkScreenLeagueGetNumTeams);
 
         InitializeCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
+		bGetPlayerKnowledgeLevelCriticalSectionInitialized = true;
         patch::RedirectCall(0xEB68CC, OnGetPlayerKnowledgeLevel);
         patch::RedirectCall(0xEB9C33, OnGetPlayerKnowledgeLevel);
         patch::RedirectCall(0xEB9C46, OnGetPlayerKnowledgeLevel);
@@ -2070,10 +2083,21 @@ void PatchEABFFixes(FM::Version v) {
 
         patch::RedirectJump(0x6D5BE0, SetupStatsChallengeDelOffensive);
         patch::RedirectJump(0xA375A0, SetupNewspaperChallengeDelOffensive);
+
+		patch::SetPointer(0x103C49B + 1, "NoIntegration"); // fix reading of NoIntegration parameter in Transfer Evaluation.txt
+
+		patch::SetUChar(0x120F57A + 2, 0x36); // fix youth transfer ProbLeagueTransfers/ProbNationalTransfers
+		patch::SetUChar(0x120F592 + 2, 0x37); // fix youth transfer ProbLeagueTransfers/ProbNationalTransfers
+
+		// TODO: test
+		//patch::RedirectCall(0x120F58B, YouthTransfsersCollect<0x120EFD0, LeagueLevel>);
+		//patch::RedirectCall(0x120F5A3, YouthTransfsersCollect<0x120F050, NationalLevel>);
+		//patch::RedirectCall(0x120F5C0, YouthTransfsersCollect<0x120F120, ContinentalLevel>);
+		//patch::RedirectCall(0x120F5CC, YouthTransfsersCollect<0x120F220, IntercontinentalLevel>);
     }
 }
 
 void UnpatchEABFFixes() {
-    if (v.id() == ID_FM_13_1030_RLD)
+    if (bGetPlayerKnowledgeLevelCriticalSectionInitialized)
         DeleteCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
 }
