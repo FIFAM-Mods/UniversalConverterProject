@@ -2670,7 +2670,7 @@ WideChar *ReadCompetitionName(void *file, WideChar *out) {
 
 void METHOD OnSetupAssessmentEntry(CAssessmentTable *table, DUMMY_ARG, UChar countryIndex, UShort y1, UShort y2, UShort y3, UShort y4, UShort y5, UShort y6) {
     if (countryIndex == 207) // Kosovo
-        CallMethod<0x121D410>(table, countryIndex, 0, 250, 150, 183, 233, 287); // done for 2023/2024
+        CallMethod<0x121D410>(table, countryIndex, 250, 150, 183, 233, 287, 300); // done for 2024/2025
     else
         CallMethod<0x121D410>(table, countryIndex, y1, y2, y3, y4, y5, y6);
 }
