@@ -9,6 +9,7 @@
 #include "png.h"
 #include "UcpSettings.h"
 #include "ExtendedPlayerEditor.h"
+#include "shared.h"
 #include <ShlObj.h>
 
 using namespace plugin;
@@ -180,15 +181,7 @@ void OnGetFreeAgentsFilePath(WideChar *dest, WideChar const *format, WideChar co
 }
 
 const wchar_t* GetAppLocalizedName() {
-    return L"FM";
-}
-
-path GetDocumentsPath() {
-    wchar_t documentsDir[MAX_PATH];
-    bool foundDocuments = SHGetSpecialFolderPathW(NULL, documentsDir, CSIDL_MYDOCUMENTS, FALSE);
-    if (foundDocuments)
-        return path(documentsDir) / GetAppLocalizedName();
-    return path();
+    return GetFMDocumentsFolderName().c_str();
 }
 
 UInt __stdcall WasEULAShown(Int) {
@@ -1198,7 +1191,7 @@ void PatchEditor(FM::Version v) {
         patch::SetUChar(0x4C1471, 0xEB);
 
         // Editor name
-        patch::SetPointer(0x414196 + 1, IsWomensDatabase ? "Dialog.DialogC.PopupPrefix_womens" : "Dialog.DialogC.PopupPrefix");
+        patch::SetPointer(0x414196 + 1, IsWomensDatabase() ? "Dialog.DialogC.PopupPrefix_womens" : "Dialog.DialogC.PopupPrefix");
 
         /*
         patch::SetUChar(0x4FB120, 0xC3);
@@ -1597,7 +1590,7 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x4F81D1, OnGetPlayerLevelMul125);
         patch::RedirectCall(0x4F81F9, OnGetPlayerLevelMul12);
 
-        //if (IsWomensDatabase) {
+        //if (IsWomensDatabase()) {
         //    patch::SetPointer(0x4BE2DE + 1, L"Database_womens");
         //    patch::SetPointer(0x4D2112 + 1, L"Database_womens");
         //    patch::SetPointer(0x6C57B0, L"Database_womens");

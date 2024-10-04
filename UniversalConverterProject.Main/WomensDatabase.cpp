@@ -3,11 +3,6 @@
 
 using namespace plugin;
 
-Bool &IsWomensDatabase() {
-    static Bool isWomensDatabase = false;
-    return isWomensDatabase;
-};
-
 void PatchWomensDatabase(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         // database/Master.dat -> database_womens/Master

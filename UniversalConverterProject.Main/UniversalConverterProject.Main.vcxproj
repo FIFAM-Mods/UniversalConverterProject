@@ -13,19 +13,18 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9892c2bc-cc9c-4d53-a2db-e843d4231ccf}</ProjectGuid>
     <RootNamespace>UniversalConverterProject_Main</RootNamespace>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -56,14 +55,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\Projects\DXSDK\9.0c\Include;D:\Projects\fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\ImageMagick-Windows\ImageMagick;D:\Projects\ImageMagick-Windows\ImageMagick\Magick++\lib;D:\Projects\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)shared;$(SolutionDir)shared\fifam-api\include\;$(SolutionDir)..\DXSDK\9.0c\Include;$(SolutionDir)..\fifam\fmapi;$(SolutionDir)..\fifam\generic;$(SolutionDir)..\ImageMagick-Windows\ImageMagick;$(SolutionDir)..\ImageMagick-Windows\ImageMagick\Magick++\lib;$(SolutionDir)..\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;WINDOWS_IGNORE_PACKING_MISMATCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <StructMemberAlignment>4Bytes</StructMemberAlignment>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\ImageMagick-Windows\VisualMagick\lib;D:\Projects\DXSDK\9.0c\Lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\fifam\output\libs;$(SolutionDir)..\ImageMagick-Windows\VisualMagick\lib;$(SolutionDir)..\DXSDK\9.0c\Lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>version.lib;generic.lib;fmapi.lib;CORE_RL_aom_.lib;CORE_RL_brotli_.lib;CORE_RL_bzlib_.lib;CORE_RL_cairo_.lib;CORE_RL_coders_.lib;CORE_RL_croco_.lib;CORE_RL_de265_.lib;CORE_RL_exr_.lib;CORE_RL_ffi_.lib;CORE_RL_filters_.lib;CORE_RL_freetype_.lib;CORE_RL_fribidi_.lib;CORE_RL_glib_.lib;CORE_RL_harfbuzz_.lib;CORE_RL_heif_.lib;CORE_RL_highway_.lib;CORE_RL_jp2_.lib;CORE_RL_jpeg-turbo_.lib;CORE_RL_jpeg-xl_.lib;CORE_RL_lcms_.lib;CORE_RL_lqr_.lib;CORE_RL_lzma_.lib;CORE_RL_Magick++_.lib;CORE_RL_MagickCore_.lib;CORE_RL_MagickWand_.lib;CORE_RL_openjpeg_.lib;CORE_RL_pango_.lib;CORE_RL_pixman_.lib;CORE_RL_png_.lib;CORE_RL_raqm_.lib;CORE_RL_raw_.lib;CORE_RL_rsvg_.lib;CORE_RL_tiff_.lib;CORE_RL_webp_.lib;CORE_RL_xml_.lib;CORE_RL_zip_.lib;CORE_RL_zlib_.lib;d3d9.lib;d3dx9.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <GenerateDebugInformation>Debug</GenerateDebugInformation>
@@ -77,20 +77,20 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;WINDOWS_IGNORE_PACKING_MISMATCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\Projects\DXSDK\9.0c\Include;$(SolutionDir)fifam-api\include\;D:\Projects\fifam\fmapi;D:\Projects\fifam\generic;D:\Projects\ImageMagick-Windows\ImageMagick;D:\Projects\ImageMagick-Windows\ImageMagick\Magick++\lib;D:\Projects\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)shared;$(SolutionDir)shared\fifam-api\include\;$(SolutionDir)..\DXSDK\9.0c\Include;$(SolutionDir)..\fifam\fmapi;$(SolutionDir)..\fifam\generic;$(SolutionDir)..\ImageMagick-Windows\ImageMagick;$(SolutionDir)..\ImageMagick-Windows\ImageMagick\Magick++\lib;$(SolutionDir)..\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <StructMemberAlignment>4Bytes</StructMemberAlignment>
       <ConformanceMode>false</ConformanceMode>
       <WholeProgramOptimization>false</WholeProgramOptimization>
+      <StructMemberAlignment>4Bytes</StructMemberAlignment>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>No</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Projects\fifam\output\libs;D:\Projects\ImageMagick-Windows\VisualMagick\lib;D:\Projects\DXSDK\9.0c\Lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\fifam\output\libs;$(SolutionDir)..\ImageMagick-Windows\VisualMagick\lib;$(SolutionDir)..\DXSDK\9.0c\Lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>version.lib;generic.lib;fmapi.lib;CORE_RL_bzlib_.lib;CORE_RL_cairo_.lib;CORE_RL_coders_.lib;CORE_RL_croco_.lib;CORE_RL_exr_.lib;CORE_RL_ffi_.lib;CORE_RL_filters_.lib;CORE_RL_flif_.lib;CORE_RL_freetype_.lib;CORE_RL_glib_.lib;CORE_RL_jp2_.lib;CORE_RL_jpeg_.lib;CORE_RL_lcms_.lib;CORE_RL_libde265_.lib;CORE_RL_libheif_.lib;CORE_RL_liblzma_.lib;CORE_RL_libraw_.lib;CORE_RL_librsvg_.lib;CORE_RL_libxml_.lib;CORE_RL_lqr_.lib;CORE_RL_Magick++_.lib;CORE_RL_MagickCore_.lib;CORE_RL_MagickWand_.lib;CORE_RL_openjpeg_.lib;CORE_RL_pango_.lib;CORE_RL_pixman_.lib;CORE_RL_png_.lib;CORE_RL_tiff_.lib;CORE_RL_webp_.lib;CORE_RL_zlib_.lib;ImageMagickObject.lib;d3d9.lib;d3dx9.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
@@ -101,6 +101,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
+    <ClCompile Include="..\shared\settings\Settings.cpp" />
+    <ClCompile Include="..\shared\shared.cpp" />
+    <ClCompile Include="..\shared\tinyxml\tinystr.cpp" />
+    <ClCompile Include="..\shared\tinyxml\tinyxml.cpp" />
+    <ClCompile Include="..\shared\tinyxml\tinyxmlerror.cpp" />
+    <ClCompile Include="..\shared\tinyxml\tinyxmlparser.cpp" />
+    <ClCompile Include="..\shared\UcpSettings.cpp" />
     <ClCompile Include="3dAdboardsAndBanners.cpp" />
     <ClCompile Include="3dMatchStandings.cpp" />
     <ClCompile Include="3dModels.cpp" />
@@ -126,7 +134,6 @@
     <ClCompile Include="ForeignersLimit.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="GameInterfaces.cpp" />
-    <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="GenericHeads.cpp" />
     <ClCompile Include="GfxCoreHook.cpp" />
     <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
@@ -154,26 +161,27 @@
     <ClCompile Include="ReserveNames.cpp" />
     <ClCompile Include="Scouting.cpp" />
     <ClCompile Include="ScoutingSystems.cpp" />
-    <ClCompile Include="settings\Settings.cpp" />
     <ClCompile Include="SpareEmployeeFix.cpp" />
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="StatsFifaRanking.cpp" />
     <ClCompile Include="Talent6Stars.cpp" />
     <ClCompile Include="TeamControl.cpp" />
     <ClCompile Include="TheClubScreenExtended.cpp" />
-    <ClCompile Include="tinyxml\tinystr.cpp" />
-    <ClCompile Include="tinyxml\tinyxml.cpp" />
-    <ClCompile Include="tinyxml\tinyxmlerror.cpp" />
-    <ClCompile Include="tinyxml\tinyxmlparser.cpp" />
     <ClCompile Include="TournamentFinalists.cpp" />
     <ClCompile Include="Translation.cpp" />
-    <ClCompile Include="UcpSettings.cpp" />
     <ClCompile Include="WindowedMode.cpp" />
     <ClCompile Include="WomensDatabase.cpp" />
     <ClCompile Include="WorldCup.cpp" />
     <ClCompile Include="YouthGenCountries.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\shared\GenerateBigIdx.h" />
+    <ClInclude Include="..\shared\settings\Settings.h" />
+    <ClInclude Include="..\shared\shared.h" />
+    <ClInclude Include="..\shared\tinyxml\tinystr.h" />
+    <ClInclude Include="..\shared\tinyxml\tinyxml.h" />
+    <ClInclude Include="..\shared\UcpSettings.h" />
+    <ClInclude Include="..\shared\WinHeader.h" />
     <ClInclude Include="3dAdboardsAndBanners.h" />
     <ClInclude Include="3dMatchStandings.h" />
     <ClInclude Include="3dModels.h" />
@@ -199,7 +207,6 @@
     <ClInclude Include="ForeignersLimit.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="GameInterfaces.h" />
-    <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="GenericHeads.h" />
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="IncreaseSalaryOwnedClub.h" />
@@ -226,22 +233,15 @@
     <ClInclude Include="ReserveNames.h" />
     <ClInclude Include="Scouting.h" />
     <ClInclude Include="ScoutingSystems.h" />
-    <ClInclude Include="ScriptsShared.h" />
-    <ClInclude Include="settings\Settings.h" />
-    <ClInclude Include="shared.h" />
     <ClInclude Include="SpareEmployeeFix.h" />
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="StatsFifaRanking.h" />
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="TeamControl.h" />
     <ClInclude Include="TheClubScreenExtended.h" />
-    <ClInclude Include="tinyxml\tinystr.h" />
-    <ClInclude Include="tinyxml\tinyxml.h" />
     <ClInclude Include="TournamentFinalists.h" />
     <ClInclude Include="Translation.h" />
-    <ClInclude Include="UcpSettings.h" />
     <ClInclude Include="WindowedMode.h" />
-    <ClInclude Include="WinHeader.h" />
     <ClInclude Include="WomensDatabase.h" />
     <ClInclude Include="WorldCup.h" />
     <ClInclude Include="YouthGenCountries.h" />

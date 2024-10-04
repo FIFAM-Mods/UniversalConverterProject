@@ -6,11 +6,6 @@
 
 using namespace plugin;
 
-String &GameLanguage() {
-    static String gameLanguage;
-    return gameLanguage;
-}
-
 Bool IsRussianLanguage = false;
 Bool IsUkrainianLanguage = false;
 

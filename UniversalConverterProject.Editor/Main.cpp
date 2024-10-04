@@ -21,10 +21,9 @@
 #include "DatabaseOptions.h"
 #include "CustomShaders.h"
 #include "ReserveNames.h"
+#include "shared.h"
 
 using namespace plugin;
-
-bool IsWomensDatabase = false;
 
 class UniversalConverterProject {
 public:
@@ -32,7 +31,7 @@ public:
         auto v = FM::GetAppVersion();
         if (v.id() == ID_ED_13_1000) {
             Settings::GetInstance().Load();
-            IsWomensDatabase = patch::GetUShort(0x66E7A8) == L'W';
+            IsWomensDatabase() = patch::GetUShort(0x66E7A8) == L'W';
             GenerateBigIdx();
             patch::SetUInt(0x5504D5 + 3, 0x2013000F); // binary database version
             // set version (0x2013)

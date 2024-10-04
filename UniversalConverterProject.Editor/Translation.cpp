@@ -1,13 +1,9 @@
 #include "Translation.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
+#include "shared.h"
 
 using namespace plugin;
-
-String &GameLanguage() {
-    static String gameLanguage;
-    return gameLanguage;
-}
 
 Array<String, 207> &CountryNames() {
     static Array<String, 207> countryNames;

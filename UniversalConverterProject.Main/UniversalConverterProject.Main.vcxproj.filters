@@ -37,18 +37,6 @@
     <ClCompile Include="PlayerAccessories.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Formations.cpp" />
-    <ClCompile Include="tinyxml\tinystr.cpp">
-      <Filter>tinyxml</Filter>
-    </ClCompile>
-    <ClCompile Include="tinyxml\tinyxml.cpp">
-      <Filter>tinyxml</Filter>
-    </ClCompile>
-    <ClCompile Include="tinyxml\tinyxmlerror.cpp">
-      <Filter>tinyxml</Filter>
-    </ClCompile>
-    <ClCompile Include="tinyxml\tinyxmlparser.cpp">
-      <Filter>tinyxml</Filter>
-    </ClCompile>
     <ClCompile Include="WindowedMode.cpp" />
     <ClCompile Include="Pitch.cpp" />
     <ClCompile Include="Beta.cpp" />
@@ -58,7 +46,6 @@
     <ClCompile Include="GenericHeads.cpp" />
     <ClCompile Include="3dAdboardsAndBanners.cpp" />
     <ClCompile Include="CustomStadiums.cpp" />
-    <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="PortraitDialog.cpp" />
     <ClCompile Include="PlayerTalks.cpp" />
     <ClCompile Include="TheClubScreenExtended.cpp" />
@@ -67,10 +54,6 @@
     <ClCompile Include="WomensDatabase.cpp" />
     <ClCompile Include="3dModels.cpp" />
     <ClCompile Include="InterfaceTheme.cpp" />
-    <ClCompile Include="settings\Settings.cpp">
-      <Filter>settings</Filter>
-    </ClCompile>
-    <ClCompile Include="UcpSettings.cpp" />
     <ClCompile Include="DatabaseOptions.cpp" />
     <ClCompile Include="CustomShaders.cpp" />
     <ClCompile Include="YouthGenCountries.cpp" />
@@ -82,6 +65,24 @@
     <ClCompile Include="StatsFifaRanking.cpp" />
     <ClCompile Include="MobilePhone.cpp" />
     <ClCompile Include="ChampionsLeague.cpp" />
+    <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
+    <ClCompile Include="..\shared\shared.cpp" />
+    <ClCompile Include="..\shared\UcpSettings.cpp" />
+    <ClCompile Include="..\shared\settings\Settings.cpp">
+      <Filter>settings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\tinyxml\tinystr.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\tinyxml\tinyxml.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\tinyxml\tinyxmlerror.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\tinyxml\tinyxmlparser.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -91,7 +92,6 @@
     <ClInclude Include="TournamentFinalists.h" />
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="MasterDatLimit.h" />
-    <ClInclude Include="shared.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="PlayerMatchEvents.h" />
     <ClInclude Include="FifaWorldPlayerGala.h" />
@@ -117,18 +117,9 @@
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="MiscFormerCupOpponents.h" />
     <ClInclude Include="GameInterfaces.h" />
-    <ClInclude Include="ScriptsShared.h">
-      <Filter>competition_scripts</Filter>
-    </ClInclude>
     <ClInclude Include="PlayerAccessories.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Formations.h" />
-    <ClInclude Include="tinyxml\tinystr.h">
-      <Filter>tinyxml</Filter>
-    </ClInclude>
-    <ClInclude Include="tinyxml\tinyxml.h">
-      <Filter>tinyxml</Filter>
-    </ClInclude>
     <ClInclude Include="WindowedMode.h" />
     <ClInclude Include="Pitch.h" />
     <ClInclude Include="Beta.h" />
@@ -138,20 +129,14 @@
     <ClInclude Include="GenericHeads.h" />
     <ClInclude Include="3dAdboardsAndBanners.h" />
     <ClInclude Include="CustomStadiums.h" />
-    <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="PortraitDialog.h" />
     <ClInclude Include="PlayerTalks.h" />
-    <ClInclude Include="WinHeader.h" />
     <ClInclude Include="TheClubScreenExtended.h" />
     <ClInclude Include="ExtendedPlayer.h" />
     <ClInclude Include="PlayerNameEdit.h" />
     <ClInclude Include="WomensDatabase.h" />
     <ClInclude Include="3dModels.h" />
     <ClInclude Include="InterfaceTheme.h" />
-    <ClInclude Include="settings\Settings.h">
-      <Filter>settings</Filter>
-    </ClInclude>
-    <ClInclude Include="UcpSettings.h" />
     <ClInclude Include="DatabaseOptions.h" />
     <ClInclude Include="CustomShaders.h" />
     <ClInclude Include="YouthGenCountries.h" />
@@ -163,16 +148,26 @@
     <ClInclude Include="StatsFifaRanking.h" />
     <ClInclude Include="MobilePhone.h" />
     <ClInclude Include="ChampionsLeague.h" />
+    <ClInclude Include="..\shared\GenerateBigIdx.h" />
+    <ClInclude Include="..\shared\shared.h" />
+    <ClInclude Include="..\shared\UcpSettings.h" />
+    <ClInclude Include="..\shared\WinHeader.h" />
+    <ClInclude Include="..\shared\settings\Settings.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\tinyxml\tinystr.h">
+      <Filter>tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\tinyxml\tinyxml.h">
+      <Filter>tinyxml</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="competition_scripts">
-      <UniqueIdentifier>{2c01ca93-1b9a-41b6-9774-74b6bac98e60}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="tinyxml">
-      <UniqueIdentifier>{1164b2a0-d31c-469f-afd5-3f5ac999ab9e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="settings">
       <UniqueIdentifier>{408a07f3-2779-4693-ae85-94632ad2bd04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tinyxml">
+      <UniqueIdentifier>{515b059e-f5e2-4a31-b71a-034e5aeb3343}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

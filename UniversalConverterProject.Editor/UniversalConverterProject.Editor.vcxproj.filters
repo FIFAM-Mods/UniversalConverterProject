@@ -17,18 +17,19 @@
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
-    <ClCompile Include="GenerateBigIdx.cpp" />
     <ClCompile Include="ExtendedPlayerEditor.cpp" />
     <ClCompile Include="WomensDatabase.cpp" />
-    <ClCompile Include="settings\Settings.cpp">
-      <Filter>settings</Filter>
-    </ClCompile>
-    <ClCompile Include="UcpSettings.cpp" />
     <ClCompile Include="GenericKits.cpp" />
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="DatabaseOptions.cpp" />
     <ClCompile Include="CustomShaders.cpp" />
     <ClCompile Include="ReserveNames.cpp" />
+    <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
+    <ClCompile Include="..\shared\UcpSettings.cpp" />
+    <ClCompile Include="..\shared\settings\Settings.cpp">
+      <Filter>settings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\shared.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -46,19 +47,20 @@
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />
-    <ClInclude Include="GenerateBigIdx.h" />
     <ClInclude Include="ExtendedPlayerEditor.h" />
     <ClInclude Include="WomensDatabase.h" />
-    <ClInclude Include="settings\Settings.h">
-      <Filter>settings</Filter>
-    </ClInclude>
-    <ClInclude Include="UcpSettings.h" />
     <ClInclude Include="GenericKits.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="DatabaseOptions.h" />
     <ClInclude Include="CustomShaders.h" />
     <ClInclude Include="ReserveNames.h" />
-    <ClInclude Include="WinHeader.h" />
+    <ClInclude Include="..\shared\GenerateBigIdx.h" />
+    <ClInclude Include="..\shared\UcpSettings.h" />
+    <ClInclude Include="..\shared\WinHeader.h" />
+    <ClInclude Include="..\shared\settings\Settings.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\shared.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">
