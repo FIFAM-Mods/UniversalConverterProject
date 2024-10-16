@@ -12,17 +12,17 @@ struct PhoneExtension {
 	void *BtTheme;
 };
 
-void SetMobilePhoneTheme(void *screen, PhoneExtension *ext, UInt theme) {
-	if (Settings::GetInstance().PhoneTheme < 0 || Settings::GetInstance().PhoneTheme >= Settings::GetInstance().PhoneNumThemes)
-		Settings::GetInstance().PhoneTheme = 0;
-	SetImageFilename(ext->ImgSmartphone, Format(L"art_fm\\screens\\MobilePhone\\Phone%u.tga", theme + 1));
+void ApplyMobilePhoneTheme(void *screen, PhoneExtension *ext) {
+	if (Settings::GetInstance().PhoneTheme < 1 || Settings::GetInstance().PhoneTheme > Settings::GetInstance().PhoneNumThemes)
+		Settings::GetInstance().PhoneTheme = 1;
+	SetImageFilename(ext->ImgSmartphone, Format(L"art_fm\\screens\\MobilePhone\\Phone%u.tga", Settings::GetInstance().PhoneTheme));
 }
 
 void METHOD WidgetHandy_Setup(void *screen) {
 	PhoneExtension *ext = raw_ptr<PhoneExtension>(screen, WidgetHandyStructSize);
 	ext->ImgSmartphone = CallMethodAndReturn<void *, 0xD44380>(screen, "Trfm1|_ImgSmartphone");
 	ext->BtTheme = CallMethodAndReturn<void *, 0xD44360>(screen, "Trfm1|BtTheme");
-	SetMobilePhoneTheme(screen, ext, Settings::GetInstance().PhoneTheme);
+	ApplyMobilePhoneTheme(screen, ext);
 	CallMethod<0x9E9CB0>(screen);
 }
 
@@ -30,7 +30,7 @@ void *METHOD WidgetHandy_ButtonReleased(void *screen, DUMMY_ARG, UInt *pId, UInt
 	PhoneExtension *ext = raw_ptr<PhoneExtension>(screen, WidgetHandyStructSize);
 	if (*pId == CallVirtualMethodAndReturn<UInt, 23>(ext->BtTheme)) {
 		Settings::GetInstance().PhoneTheme += 1;
-		SetMobilePhoneTheme(screen, ext, Settings::GetInstance().PhoneTheme);
+		ApplyMobilePhoneTheme(screen, ext);
 	}
 	return CallMethodAndReturn<void *, 0x9E9780>(screen, pId, a2);
 }

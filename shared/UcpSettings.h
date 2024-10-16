@@ -53,7 +53,7 @@ public:
     SETTINGS_PARAMETER(bool,   ShadersShowWarnings,         "SHADERS_SHOW_WARNINGS",          false);
     SETTINGS_PARAMETER(bool,   ShadersReload,               "SHADERS_RELOAD",                 true);
     SETTINGS_PARAMETER(int,    Max3dFaces,                  "MAX_3D_FACES",                   12000);
-	SETTINGS_PARAMETER(int,    PhoneTheme,                  "PHONE_THEME",                    0);
+	SETTINGS_PARAMETER(int,    PhoneTheme,                  "PHONE_THEME",                    1);
 	SETTINGS_PARAMETER(int,    PhoneNumThemes,              "PHONE_NUM_THEMES",               5);
 
     bool TeamControlDisabledAtGameStart = false;
