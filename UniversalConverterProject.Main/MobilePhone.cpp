@@ -39,6 +39,10 @@ UInt GetPhoneNewsDateColor(UInt) {
 	return 0xFFffa69d;
 }
 
+void METHOD AppendPhoneNewsText(void* pTextControl, DUMMY_ARG, WideChar const *text, UInt) {
+	CallMethod<0xD77F50>(pTextControl, Format(L"<CREF %x>%s</CREF>", 0xFFf1f1f1, text).c_str(), 1); // CFMTextControl::Append();
+}
+
 void PatchMobilePhone(FM::Version v) {
 	if (v.id() == ID_FM_13_1030_RLD) {
 		patch::SetUInt(0x9E9834 + 1, WidgetHandyStructSize + sizeof(PhoneExtension));
@@ -47,5 +51,7 @@ void PatchMobilePhone(FM::Version v) {
 		patch::SetPointer(0x2440514, WidgetHandy_ButtonReleased);
 		//patch::SetUChar(0xA1A87C + 1, 14); // gui color (red) for news date
 		patch::RedirectCall(0xA1A889, GetPhoneNewsDateColor);
+		patch::RedirectCall(0xA1A937, AppendPhoneNewsText); // CMobilePhonePriorityList::News_AddOne
+
 	}
 }
