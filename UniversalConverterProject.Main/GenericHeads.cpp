@@ -256,8 +256,4 @@ void InstallGenericHeads_GfxCore() {
     patch::Nop(GfxCoreAddress(0x920B0), 2);
     patch::SetUShort(GfxCoreAddress(0x920B2), 0xCE8B);
     patch::RedirectCall(GfxCoreAddress(0x920B2 + 2), GetLowMedHairId);
-
-    // FIFA head IDs
-    patch::SetUInt(GfxCoreAddress(0x201DA8 + 2), 500'000);
-    patch::SetUInt(GfxCoreAddress(0x202723 + 1), 500'000);
 }

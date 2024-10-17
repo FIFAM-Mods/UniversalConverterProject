@@ -1349,6 +1349,15 @@ void METHOD RenderVisibleObjects(void *t, DUMMY_ARG, void **objects, UInt count)
     }
 }
 
+UInt METHOD WV_InitPlayer_GetPlayerSpecialFaceID(void *team, DUMMY_ARG, Int playerId) {
+    void* tcmPlayer = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x950B0), team, playerId); // Database::Detail::TeamImpl::GetPlayerWithDbId()
+    return *raw_ptr<UInt>(tcmPlayer, 0x1BC);
+}
+
+int FormatCustomHairTextureName(Char *dst, Char const *format, void *pID) {
+    return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x473B06), dst, format, *raw_ptr<UInt>(pID, 0x20)); // sprintf
+}
+
 void Install3dPatches_FM13() {
 
     //patch::RedirectCall(GfxCoreAddress(0x20484F), OnSetTextureAtId);
@@ -1936,6 +1945,14 @@ void Install3dPatches_FM13() {
     patch::SetPointer(GfxCoreAddress(0x201DD3 + 1), "cmbhair_%d.dds");
     patch::SetPointer(GfxCoreAddress(0x202466 + 1), "cmbhair_%d.dds");
     patch::SetPointer(GfxCoreAddress(0x3706FF + 1), "cmbhair_%d.dds");
+    patch::RedirectCall(GfxCoreAddress(0x201DBB), FormatCustomHairTextureName);
+    patch::RedirectCall(GfxCoreAddress(0x201DD9), FormatCustomHairTextureName);
+    patch::SetUChar(GfxCoreAddress(0x201DB0), 0x56); // push edi > push esi
+    patch::SetUChar(GfxCoreAddress(0x201DCE), 0x56); // push edi > push esi
+    patch::SetUInt(GfxCoreAddress(0x202711 + 2), 0x1064); // replace fifaId by headtype (0x1040 > 0x1064)
+    patch::SetUChar(GfxCoreAddress(0x20424E + 2), 0xF4); // replace fifaId by headtype (0x1040 > 0x1064)
+    patch::Nop(GfxCoreAddress(0x201DAE), 2); // FIFA ID check
+    patch::Nop(GfxCoreAddress(0x202728), 2); // FIFA ID check
 
     //patch::SetPointer(GfxCoreAddress(0x37C45C + 1), "Coordinate4::*::UVOffset0");
     //patch::SetPointer(GfxCoreAddress(0x37C4C6 + 1), "Coordinate4::*::UVOffset1");
@@ -2069,4 +2086,8 @@ void Install3dPatches_FM13() {
 
     // commentary for all players
     patch::Nop(GfxCoreAddress(0x2F779), 40);
+
+    // replace fifaId by specialfaceid for 3D faces
+    patch::RedirectCall(GfxCoreAddress(0x23CF17), WV_InitPlayer_GetPlayerSpecialFaceID);
+    patch::Nop(GfxCoreAddress(0x23CF1C), 3);
 }

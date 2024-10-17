@@ -272,6 +272,7 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::SetUInt(0xDEE0E0 + 1, NEW_PLAYER_SZ);
         //patch::RedirectCall(0xF9765E, OnReadPlayerStartingConditions);
         patch::RedirectCall(0x417D15, OnGetPlayerFifaId);
+        patch::RedirectCall(0x412FD6, OnGetPlayerFifaId);
 
         // stats CL
         //patch::SetPointer(0x23FB214, (void *)0x7951F0);
