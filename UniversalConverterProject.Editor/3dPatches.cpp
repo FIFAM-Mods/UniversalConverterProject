@@ -86,6 +86,17 @@ int OnRenderModel() {
     return CallAndReturnDynGlobal<int>(RendererAddress(0xFFE0));
 }
 
+UInt HeadCamera_XOffset_retn = 0;
+Float HeadCamera_XOffset_x = -1.6f;
+
+void __declspec(naked) HeadCamera_XOffset() {
+    __asm {
+        fld HeadCamera_XOffset_x
+        fstp dword ptr[ebp - 0x20]
+        jmp HeadCamera_XOffset_retn
+    }
+}
+
 void Install3dPatches() {
 
     //patch::RedirectCall(RendererAddress(0x1E750), OnRenderModel);
@@ -117,7 +128,10 @@ void Install3dPatches() {
 
     patch::SetUChar(RendererAddress(0x5EE2), 0xEB);
 
+    // Head camera
     patch::SetDouble(RendererAddress(0x2CC110), 91.0);
+    //HeadCamera_XOffset_retn = RendererAddress(0x83E50);
+    //patch::RedirectJump(RendererAddress(0x83E4B), HeadCamera_XOffset);
 
     // starhead
     patch::RedirectCall(RendererAddress(0x91A18), OnGetHeadResourceName<0x920B1>);

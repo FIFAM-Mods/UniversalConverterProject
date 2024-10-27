@@ -2,6 +2,9 @@
 #include <ShlObj.h>
 #include "shared.h"
 
+const Bool ENABLE_LOG = false;
+const Bool ENABLE_FILE_LOG = false;
+
 String& GameLanguage() {
     static String gameLanguage;
     return gameLanguage;
@@ -16,11 +19,11 @@ String GetAppName() {
 }
 
 String GetPatchName() {
-    return L"2024";
+    return L"2025";
 }
 
 String GetPatchVersion() {
-    return L"1.1";
+    return L"1.0";
 }
 
 String GetFullAppName(Bool upperCase) {
@@ -69,4 +72,37 @@ Bool& IsWomensDatabase() {
 Bool &IsFirstLaunch() {
     static Bool isFirstLaunch = true;
     return isFirstLaunch;
+}
+
+void SafeLog::Write(String const& msg) {
+    if (ENABLE_LOG) {
+        FILE* file = fopen("ucp_safe.log", "at,ccs=UTF-8");
+        if (file) {
+            fputws(msg.c_str(), file);
+            fputws(L"\n", file);
+            fclose(file);
+        }
+    }
+}
+
+void SafeLog::WriteToFile(Path const& fileName, String const& msg, String const& header) {
+    if (ENABLE_FILE_LOG) {
+        static Map<Path, bool> fileCreated;
+        FILE* file = nullptr;
+        if (!Utils::Contains(fileCreated, fileName)) {
+            file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
+            fileCreated[fileName] = true;
+            if (!header.empty()) {
+                fputws(header.c_str(), file);
+                fputws(L"\n", file);
+            }
+        }
+        else
+            file = _wfopen(fileName.c_str(), L"at,ccs=UTF-8");
+        if (file) {
+            fputws(msg.c_str(), file);
+            fputws(L"\n", file);
+            fclose(file);
+        }
+    }
 }

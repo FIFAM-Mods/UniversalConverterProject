@@ -102,7 +102,7 @@ public:
 void METHOD CreateStatsFifaRankingWrapper(void *vec, DUMMY_ARG, void *data) {
 	CallMethod<0x736690>(vec, data);
 	void *mem = CallAndReturn<void *, 0x15738F3>(sizeof(StatsFifaRankingWrapper));
-	StatsFifaRankingWrapper *w = new (mem) StatsFifaRankingWrapper(GetTranslation("IDS_STATS_FIFARANKING_NAME"));
+	StatsFifaRankingWrapper *w = new (mem) StatsFifaRankingWrapper(GetTranslation("IDS_FIFA_RANKING_SCREEN_HEADLINE"));
 	CallMethod<0x736690>(vec, &w);
 }
 
