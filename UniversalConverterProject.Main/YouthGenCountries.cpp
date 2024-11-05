@@ -443,7 +443,7 @@ void METHOD ProcessNTSwitch(void *) {
                     if (age <= 30) {
                         if (age >= 29) {
                             Float levelModifier = (age == 29) ? 0.66f : 0.33f;
-                            potentialLevel = currentLevel + round((Float)(potentialLevel - currentLevel) * levelModifier);
+                            potentialLevel = currentLevel + (UChar)round((Float)(potentialLevel - currentLevel) * levelModifier);
                         }
                     }
                     else

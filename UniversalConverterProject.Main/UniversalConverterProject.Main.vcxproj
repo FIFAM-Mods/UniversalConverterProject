@@ -116,7 +116,7 @@
     <ClCompile Include="Achievements.cpp" />
     <ClCompile Include="Balls.cpp" />
     <ClCompile Include="Beta.cpp" />
-    <ClCompile Include="ChampionsLeague.cpp" />
+    <ClCompile Include="UEFALeaguePhase.cpp" />
     <ClCompile Include="ClubSponsors.cpp" />
     <ClCompile Include="Competitions.cpp" />
     <ClCompile Include="CustomShaders.cpp" />
@@ -189,7 +189,7 @@
     <ClInclude Include="Achievements.h" />
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Beta.h" />
-    <ClInclude Include="ChampionsLeague.h" />
+    <ClInclude Include="UEFALeaguePhase.h" />
     <ClInclude Include="ClubSponsors.h" />
     <ClInclude Include="Competitions.h" />
     <ClInclude Include="CustomShaders.h" />

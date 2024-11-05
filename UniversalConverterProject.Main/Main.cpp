@@ -61,7 +61,7 @@
 #include "ExtendedCountry.h"
 #include "StatsFifaRanking.h"
 #include "MobilePhone.h"
-#include "ChampionsLeague.h"
+#include "UEFALeaguePhase.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -172,7 +172,7 @@ public:
 		PatchExtendedCountry(v);
 		PatchStatsFifaRanking(v);
 		PatchMobilePhone(v);
-		PatchChampionsLeague(v);
+        PatchUEFALeaguePhase(v);
 
     #ifdef BETA
         DoBetaPatches(v);

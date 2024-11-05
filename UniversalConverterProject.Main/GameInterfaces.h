@@ -515,6 +515,19 @@ public:
     UInt GetNumSeats();
 };
 
+class CEAMailData {
+    UChar data[0x278];
+public:
+    CEAMailData();
+    ~CEAMailData();
+    void SetRoundType(UChar roundType);
+    UChar GetRoundType() const;
+    void SetCompetition(CCompID const &compID);
+    CCompID GetCompetition() const;
+    void SetArrayValue(UInt index, Int value);
+    Int GetArrayValue(UInt index) const;
+};
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -523,6 +536,7 @@ public:
     unsigned char GetInternationalPrestige();
     wchar_t *GetName(bool first = true);
     wchar_t *GetShortName(CTeamIndex const &teamID, bool includeYouth = false);
+    wchar_t *GetClickableTeamName(CTeamIndex const &teamID, bool includeYouth = false);
     CTeamSponsor &GetSponsor();
     bool IsRivalWith(CTeamIndex const &teamIndex);
     CDBTeamKit *GetKit();
@@ -541,6 +555,8 @@ public:
     CStadiumDevelopment *GetStadiumDevelopment();
     Int GetManagerId();
     void SetFlag(UInt flag, Bool enable);
+    Char SendMail(UInt mailId, CEAMailData const &mailData, Int flag);
+
 };
 
 struct CAssessmentInfo {
@@ -562,7 +578,7 @@ struct CAssessmentInfo {
 
 class CAssessmentTable {
 public:
-    int m_nNumEntries;
+    unsigned int m_nNumEntries;
     CAssessmentInfo m_aEntries[208];
     CTeamIndex m_fairnessTeamIDs[208];
     char field_2084[1664];
@@ -842,3 +858,6 @@ public:
 	virtual void *CreateScreen(void *guiInstance) = 0;
 	virtual void *DeletingDestructor(UChar flags);
 };
+
+Bool IsLiechtensteinClubFromSwitzerland(CTeamIndex const &teamIndex);
+UChar GetTeamCountryId_LiechtensteinCheck(CTeamIndex const &teamIndex);

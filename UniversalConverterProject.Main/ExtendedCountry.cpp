@@ -39,8 +39,8 @@ bool SortCountriesByFifaRanking(CDBCountry *c1, CDBCountry *c2) {
 }
 
 bool SortCountryIDsByFifaRanking(UShort countryId1, UShort countryId2) {
-	CDBCountry *c1 = GetCountry(countryId1);
-	CDBCountry *c2 = GetCountry(countryId2);
+	CDBCountry *c1 = GetCountry((UChar)countryId1);
+	CDBCountry *c2 = GetCountry((UChar)countryId2);
 	if (!c1 || !c2)
 		return false;
 	return SortCountriesByFifaRanking(c1, c2);
@@ -238,7 +238,7 @@ void METHOD FifaRanking_AddColumnCountryName(void *listBox, DUMMY_ARG, Int64 cou
 	CallMethod<0xD22BE0>(listBox, countryId, color, unk0);
 	Float ranking = 0.0f;
 	if (countryId != 0)
-		ranking = GetCountry(countryId)->GetFifaRanking();
+		ranking = GetCountry((UChar)countryId)->GetFifaRanking();
 	CallMethod<0xD1CE20>(listBox, ranking, color, 0);
 }
 

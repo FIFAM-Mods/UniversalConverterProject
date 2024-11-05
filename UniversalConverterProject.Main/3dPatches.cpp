@@ -1053,7 +1053,7 @@ void METHOD GetCameraParameters(void *tcmCam, DUMMY_ARG, Int a2, Int a3, Int a4,
 
 void OnTextureCopyData(void *texInfo, unsigned char *newData, unsigned int newDataSize) {
     unsigned char *currentData = *raw_ptr<unsigned char *>(texInfo, 0);
-    auto currentDataSize = 0;
+    unsigned int currentDataSize = 0;
     unsigned char *currentSection = currentData;
     if (*(unsigned int *)currentData & 0xFFFFFF00) {
         do {

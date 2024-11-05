@@ -2,6 +2,7 @@
 #include "GfxCoreHook.h"
 #include "Utils.h"
 #include "shared.h"
+#include "FifamCompRegion.h"
 
 using namespace plugin;
 
@@ -890,6 +891,10 @@ wchar_t *CDBTeam::GetShortName(CTeamIndex const &teamID, bool includeYouth) {
     return plugin::CallMethodAndReturn<wchar_t *, 0xEDD3E0>(this, &teamID, includeYouth);
 }
 
+wchar_t *CDBTeam::GetClickableTeamName(CTeamIndex const &teamID, bool includeYouth) {
+    return plugin::CallMethodAndReturn<wchar_t *, 0xEDD3A0>(this, &teamID, includeYouth);
+}
+
 CTeamSponsor &CDBTeam::GetSponsor() {
     return plugin::CallMethodAndReturn<CTeamSponsor &, 0xED5170>(this);
 }
@@ -956,6 +961,10 @@ Int CDBTeam::GetManagerId() {
 
 void CDBTeam::SetFlag(UInt flag, Bool enable) {
     CallMethod<0xEC9590>(this, flag, enable);
+}
+
+Char CDBTeam::SendMail(UInt mailId, CEAMailData const &mailData, Int flag) {
+    return CallMethodAndReturn<Char, 0xEE1F10>(this, mailId, &mailData, flag);
 }
 
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
@@ -1618,4 +1627,57 @@ void *CStatsBaseScrWrapper::DeletingDestructor(UChar flags) {
 	if (flags & 1)
 		Call<0x157347A>(this);
 	return this;
+}
+
+Bool IsLiechtensteinClubFromSwitzerland(CTeamIndex const &teamIndex) {
+    if (teamIndex.countryId == FifamCompRegion::Switzerland) {
+        CDBTeam *team = GetTeam(teamIndex);
+        if (team) {
+            UInt uid = team->GetTeamUniqueID();
+            return uid == 0x002F0013  // FC Vaduz
+                || uid == 0x002F1015  // USV Eschen/Mauren
+                || uid == 0x002F0032; // FC Balzers
+        }
+    }
+    return false;
+}
+
+UChar GetTeamCountryId_LiechtensteinCheck(CTeamIndex const &teamIndex) {
+    if (IsLiechtensteinClubFromSwitzerland(teamIndex))
+        return FifamCompRegion::Liechtenstein;
+    return teamIndex.countryId;
+}
+
+CEAMailData::CEAMailData() {
+    CallMethod<0x1010500>(this);
+}
+
+CEAMailData::~CEAMailData() {
+    CallMethod<0x100D500>(this);
+}
+
+void CEAMailData::SetRoundType(UChar roundType) {
+    CallMethod<0x100DA30>(this, roundType);
+}
+
+UChar CEAMailData::GetRoundType() const {
+    return CallMethodAndReturn<UChar, 0x100DA40>(this);
+}
+
+void CEAMailData::SetCompetition(CCompID const &compID) {
+    CallMethod<0x100F900>(this, &compID);
+}
+
+CCompID CEAMailData::GetCompetition() const {
+    CCompID result;
+    CallMethod<0x100F910>(this, &result);
+    return result;
+}
+
+void CEAMailData::SetArrayValue(UInt index, Int value) {
+    CallMethod<0x1010680>(this, index, value);
+}
+
+Int CEAMailData::GetArrayValue(UInt index) const {
+    return CallMethodAndReturn<Int, 0x1010670>(this, index);
 }

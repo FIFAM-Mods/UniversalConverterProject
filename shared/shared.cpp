@@ -2,8 +2,8 @@
 #include <ShlObj.h>
 #include "shared.h"
 
-const Bool ENABLE_LOG = false;
-const Bool ENABLE_FILE_LOG = false;
+const Bool ENABLE_LOG = true;
+const Bool ENABLE_FILE_LOG = true;
 
 String& GameLanguage() {
     static String gameLanguage;

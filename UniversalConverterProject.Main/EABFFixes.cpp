@@ -476,13 +476,13 @@ UChar METHOD EventDay(void *t, DUMMY_ARG, CJDate *d, UInt type) {
 CJDate *METHOD OnGetTeamHolidaysDate(void *t, DUMMY_ARG, CJDate *out) {
     CallMethod<0x11255E0>(t, out);
     CDBTeam *team = *raw_ptr<CDBTeam *>(t);
-    SafeLog::Write(Utils::Format(L"OnGetTeamHolidaysDate: %08X %d", team->GetTeamUniqueID(), out->Value()));
+    //SafeLog::Write(Utils::Format(L"OnGetTeamHolidaysDate: %08X %d", team->GetTeamUniqueID(), out->Value()));
     if (out->Value() == 0) {
         CJDate newDate;
         newDate.Set(CDBGame::GetInstance()->GetCurrentSeasonStartDate().GetYear() + 1, 6, 1);
         CallMethod<0x112B940>(t, &newDate, 28);
         CallMethod<0x11255E0>(t, out);
-        SafeLog::Write(Utils::Format(L"OnGetTeamHolidaysDate NEW DATE: %08X %02d.%02d.%04d", team->GetTeamUniqueID(), out->GetDays(), out->GetMonth(), out->GetYear()));
+        //SafeLog::Write(Utils::Format(L"OnGetTeamHolidaysDate NEW DATE: %08X %02d.%02d.%04d", team->GetTeamUniqueID(), out->GetDays(), out->GetMonth(), out->GetYear()));
     }
     return out;
 }
@@ -1107,14 +1107,14 @@ UChar METHOD MySetTransferDemandsTaskProcess(void *task, DUMMY_ARG, void *staff)
                         if (coeff < 0.1)
                             coeff = 0.1;
                         if (currDemand > currMV) {
-                            Int64 newValue = currMV + (Double)(currDemand - currMV) * coeff;
+                            Int64 newValue = (Int64)(currMV + (Double)(currDemand - currMV) * coeff);
                             if (newValue < currDemand)
-                                player->SetDemandValue(currMV + (Double)(currDemand - currMV) * coeff);
+                                player->SetDemandValue((Int64)(currMV + (Double)(currDemand - currMV) * coeff));
                         }
                         if (currFee > currMV) {
-                            Int64 newValue = currMV + (Double)(currFee - currMV) * coeff;
+                            Int64 newValue = (Int64)(currMV + (Double)(currFee - currMV) * coeff);
                             if (newValue < currFee)
-                                player->SetMinRelFee(currMV + (Double)(currFee - currMV) * coeff);
+                                player->SetMinRelFee((Int64)(currMV + (Double)(currFee - currMV) * coeff));
                         }
 
                     }

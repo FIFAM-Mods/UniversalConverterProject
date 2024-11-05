@@ -64,7 +64,7 @@
     <ClCompile Include="ExtendedCountry.cpp" />
     <ClCompile Include="StatsFifaRanking.cpp" />
     <ClCompile Include="MobilePhone.cpp" />
-    <ClCompile Include="ChampionsLeague.cpp" />
+    <ClCompile Include="UEFALeaguePhase.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
     <ClCompile Include="..\shared\shared.cpp" />
     <ClCompile Include="..\shared\UcpSettings.cpp" />
@@ -147,7 +147,7 @@
     <ClInclude Include="ExtendedCountry.h" />
     <ClInclude Include="StatsFifaRanking.h" />
     <ClInclude Include="MobilePhone.h" />
-    <ClInclude Include="ChampionsLeague.h" />
+    <ClInclude Include="UEFALeaguePhase.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
     <ClInclude Include="..\shared\shared.h" />
     <ClInclude Include="..\shared\UcpSettings.h" />
