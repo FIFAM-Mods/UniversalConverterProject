@@ -328,7 +328,7 @@ UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds) {
     static UInt compIdsCL[] = { 0xF909000A, 0xF909000B, 0xF909000C, 0xF909000D, 0xF909000E, 0xF909000F, 0xF9090010, 0xF9090011 };
     static UInt compIdsEL[] = { 0xF90A0008, 0xF90A0009, 0xF90A000A, 0xF90A000B, 0xF90A000C, 0xF90A000D, 0xF90A000E, 0xF90A000F };
     static UInt compIdsCO[] = { 0xF933000C, 0xF933000D, 0xF933000E, 0xF933000F, 0xF9330010, 0xF9330011 };
-    static UInt compIdsYL[] = { 0xF9260003, 0xF9260004, 0xF9260005, 0xF9260006, 0xF9260007, 0xF9260008 };
+    static UInt compIdsYL[] = { 0xF9260006, 0xF9260007, 0xF926000B, 0xF9260009, 0xF926000A, 0xF926000B };
     UInt *compIds = nullptr;
     if (compId == 0xF9090000) {
         compIds = compIdsCL;
@@ -352,7 +352,7 @@ UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds) {
 }
 
 Bool IsUEFALeaguePhaseCompID(CCompID const &compID) {
-    return compID.ToInt() == 0xF9090008 || compID.ToInt() == 0xF90A0006 || compID.ToInt() == 0xF933000A || compID.ToInt() == 0xF9260001;
+    return compID.ToInt() == 0xF9090008 || compID.ToInt() == 0xF90A0006 || compID.ToInt() == 0xF933000A || compID.ToInt() == 0xF9260004;
 }
 
 Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
@@ -370,7 +370,7 @@ Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
 
 Int METHOD OnStatsCupFixturesResultsAddOneCompetition(void *t, DUMMY_ARG, UInt *baseCompId, UInt *compId, CDBCompetition *comp) {
     Int result = CallMethodAndReturn<Int, 0x702BC0>(t, baseCompId, compId, comp);
-    if (*compId == 0xF9090011 || *compId == 0xF90A000F || *compId == 0xF9330011 || *compId == 0xF9260008) { // last League Phase matchday ID
+    if (*compId == 0xF9090011 || *compId == 0xF90A000F || *compId == 0xF9330011 || *compId == 0xF926000B) { // last League Phase matchday ID
         void *comboBox = *raw_ptr<void *>(t, 0x4D8);
         CDBCompetition *baseComp = GetCompetition(*baseCompId);
         CallVirtualMethod<83>(comboBox, Format(L"%s (%s)", baseComp->GetName(), GetTranslation("ID_LEAGUE_PHASE_TABLE")).c_str(), *compId & 0xFFFF0000, 0);
@@ -481,41 +481,55 @@ void METHOD OnStatsCupFixturesResultsChangeCompetition(void *t) {
         return;
     void *data = *raw_ptr<void *>(t, 0x19F0);
     UInt compId = *raw_ptr<UInt>(data, 0x24);
-    void *listBox = raw_ptr<void *>(t, 0x1A00);
+    CFMListBox *listBox = raw_ptr<CFMListBox>(t, 0x1A00);
     Bool specialListBox = false;
-    ::Warning(L"%X", compId);
     if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000 || compId == 0xF9260000) {
         specialListBox = true;
-        CallMethod<0xD1AF40>(listBox); // CFMListBox::Clear()
+        UInt colorAdvance1 = GetGuiColor(COL_BG_TABLEPOS_INTCOMP1ST);
+        UInt colorAdvance2 = GetGuiColor(COL_BG_TABLEPOS_INTCOMP2ND);
+        UInt colorAdvance3 = GetGuiColor(COL_BG_TABLEPOS_INTCOMP3RD);
+        listBox->Clear();
         auto vecTeams = SortUEFALeaguePhaseTable(compId, nullptr);
         if (!vecTeams.empty()) {
             for (UInt i = 0; i < vecTeams.size(); i++) {
-                Int lastRowIndex = CallMethodAndReturn<Int, 0xD18640>(listBox) - 1; // CFMListBox::GetMaxRows()
-                if (CallMethodAndReturn<Int, 0xD18600>(listBox) >= lastRowIndex) // CFMListBox::GetRowsCount()
+                Int lastRowIndex = listBox->GetMaxRows() - 1;
+                if (listBox->GetRowsCount() >= lastRowIndex)
                     break;
-                UInt teamId = vecTeams[i].teamId.ToInt();
                 TeamLeaguePhaseInfo &info = vecTeams[i];
-                UInt color = CallMethodAndReturn<UInt, 0xA8BD80>(data, teamId);
-                CallMethod<0xD22BE0>(listBox, (Int64)(i + 1), color, 0); // CFMListBox::AddColumnText() - position
-                CallMethod<0xD1E620>(listBox, &teamId); // CFMListBox::AddTeamWidget
-                CallMethod<0xD1F060>(listBox, &teamId, color, 0); // CFMListBox::AddTeamName
-                CallMethod<0xD22BE0>(listBox, (Int64)(info.wins + info.draws + info.losses), color, 0); // CFMListBox::AddColumnText() - games
-                CallMethod<0xD22BE0>(listBox, (Int64)info.wins, color, 0); // CFMListBox::AddColumnText() - wins
-                CallMethod<0xD22BE0>(listBox, (Int64)info.draws, color, 0); // CFMListBox::AddColumnText() - draws
-                CallMethod<0xD22BE0>(listBox, (Int64)info.losses, color, 0); // CFMListBox::AddColumnText() - loses
-                CallMethod<0xD22BE0>(listBox, (Int64)info.goalsFor, color, 0); // CFMListBox::AddColumnText() - goals scored
-                CallMethod<0xD22BE0>(listBox, (Int64)info.goalsAgainst, color, 0); // CFMListBox::AddColumnText() - goals against
-                CallMethod<0xD22BE0>(listBox, (Int64)(info.goalsFor - info.goalsAgainst), color, 0); // CFMListBox::AddColumnText() - goal diff
-                CallMethod<0xD22BE0>(listBox, (Int64)info.points, color, 0); // CFMListBox::AddColumnText() - points
-                CallMethod<0xD18920>(listBox, 0); // CFMListBox::NextRow()
+                UInt color = CallMethodAndReturn<UInt, 0xA8BD80>(data, vecTeams[i].teamId.ToInt());
+                listBox->AddColumnText(i + 1, color, 0);
+                listBox->AddTeamWidget(vecTeams[i].teamId);
+                listBox->AddTeamName(vecTeams[i].teamId, color, 0);
+                listBox->AddColumnText((info.wins + info.draws + info.losses), color, 0);
+                listBox->AddColumnText(info.wins, color, 0);
+                listBox->AddColumnText(info.draws, color, 0);
+                listBox->AddColumnText(info.losses, color, 0);
+                listBox->AddColumnText(info.goalsFor, color, 0);
+                listBox->AddColumnText(info.goalsAgainst, color, 0);
+                listBox->AddColumnText((info.goalsFor - info.goalsAgainst), color, 0);
+                listBox->AddColumnText(info.points, color, 0);
+                listBox->NextRow(0);
+                if (compId == 0xF9260000) {
+                    if (i < 22)
+                        listBox->SetRowColor(i, colorAdvance1);
+                }
+                else {
+                    if (i < 8)
+                        listBox->SetRowColor(i, colorAdvance1);
+                    else if (i >= 8 && i < 16)
+                        listBox->SetRowColor(i, colorAdvance2);
+                    else if (i >= 16 && i < 24)
+                        listBox->SetRowColor(i, colorAdvance3);
+                }
             }
         }
     }
-    CallVirtualMethod<20>(listBox, specialListBox);
+    listBox->SetVisible(specialListBox);
     if (specialListBox) {
-        CallVirtualMethod<20>(*raw_ptr<void *>(data, 0x4), 0);
-        CallVirtualMethod<20>(*raw_ptr<void *>(data, 0x8), 0);
-        CallVirtualMethod<20>(*raw_ptr<void *>(data, 0x10), 0);
+        (*raw_ptr<CFMListBox *>(data, 0x4))->SetVisible(false);
+        (*raw_ptr<CFMListBox *>(data, 0x8))->SetVisible(false);
+        (*raw_ptr<CFMListBox *>(data, 0x10))->SetVisible(false);
+        CallMethod<0xA8C050>(data);
     }
 }
 
@@ -531,14 +545,14 @@ void *METHOD OnStatsCupFixturesResultsDtor(void *t) {
     return t;
 }
 
-void *METHOD OnStatsCupFixturesCreateUI(void *t) {
-    CallMethod<0xD4F110>(t);
-    void *listBox = raw_ptr<void *>(t, 0x1A00);
-    CallMethod<0xD1EEE0>(listBox, t, "ListBox3"); // CFMListBox::Create()
-    Call<0xD19660>(listBox, 9, 4, 4, 9, 9, 9, 9, 9, 9, 9, 9, 63);
-    Call<0xD196A0>(listBox, 210, 210, 204, 210, 210, 210, 210, 210, 210, 210, 210, 228);
-    CallVirtualMethod<20>(listBox, 0);
-    return t;
+CXgFMPanel *METHOD OnStatsCupFixturesCreateUI(CXgFMPanel *panel) {
+    CallMethod<0xD4F110>(panel);
+    CFMListBox *listBox = raw_ptr<CFMListBox>(panel, 0x1A00);
+    listBox->Create(panel, "ListBox3");
+    CFMListBox::InitColumnTypes(listBox, 9, 4, 4, 9, 9, 9, 9, 9, 9, 9, 9, 63);
+    CFMListBox::InitColumnFormatting(listBox, 210, 210, 204, 210, 210, 210, 210, 210, 210, 210, 210, 228);
+    listBox->SetVisible(false);
+    return panel;
 }
 
 UInt METHOD CupDrawMailMessage_GetNumOfTeams(CDBCompetition *comp) {

@@ -2,6 +2,72 @@
 #include "plugin-std.h"
 #include "FifamTypes.h"
 
+enum eGuiColor {
+    COL_BLANK,
+    COL_TEXT_STANDARD,
+    COL_TEXT_STANDARD_ACTIVE,
+    COL_TEXT_STANDARD_INACTIVE,
+    COL_TEXT_STANDARD_DISABLED,
+    COL_TEXT_STANDARD_MOUSEOVER,
+    COL_TEXT_INVERTED,
+    COL_TEXT_INDICATOR_HIGHLIGHT,
+    COL_TEXT_INDICATOR_LINK,
+    COL_TEXT_TICKER_STANDARD,
+    COL_TEXT_TICKER_RSS,
+    COL_GEN_FINANCES_EARNINGS,
+    COL_GEN_FINANCES_EXPENDITURES,
+    COL_GEN_DISTINCT_1,
+    COL_GEN_DISTINCT_2,
+    COL_GEN_DISTINCT_3,
+    COL_GEN_GRADUAL_VPOS,
+    COL_GEN_GRADUAL_POS,
+    COL_GEN_GRADUAL_AVG,
+    COL_GEN_GRADUAL_NEG,
+    COL_GEN_GRADUAL_VNEG,
+    COL_GEN_GRADUAL_PROGRESS,
+    COL_GEN_CAPTIONCOLOR_1,
+    COL_GEN_CAPTIONCOLOR_2,
+    COL_GEN_CAPTIONCOLOR_3,
+    COL_GEN_CAPTIONCOLOR_4,
+    COL_GEN_CAPTIONCOLOR_5,
+    COL_GEN_CAPTIONCOLOR_6,
+    COL_GEN_CAPTIONCOLOR_7,
+    COL_GEN_CAPTIONCOLOR_8,
+    COL_GEN_CAPTIONCOLOR_9,
+    COL_GEN_CAPTIONCOLOR_10,
+    COL_GEN_CAPTIONCOLOR_11,
+    COL_GEN_CAPTIONCOLOR_12,
+    COL_GEN_CAPTIONCOLOR_1T,
+    COL_GEN_CAPTIONCOLOR_2T,
+    COL_GEN_CAPTIONCOLOR_3T,
+    COL_GEN_CAPTIONCOLOR_4T,
+    COL_GEN_CAPTIONCOLOR_5T,
+    COL_GEN_CAPTIONCOLOR_6T,
+    COL_GEN_CAPTIONCOLOR_7T,
+    COL_GEN_CAPTIONCOLOR_8T,
+    COL_GEN_CAPTIONCOLOR_9T,
+    COL_GEN_CAPTIONCOLOR_10T,
+    COL_GEN_CAPTIONCOLOR_11T,
+    COL_GEN_CAPTIONCOLOR_12T,
+    COL_BG_FILL_EMPTY,
+    COL_BG_FILL_STANDARD,
+    COL_BG_FILL_ACTIVE,
+    COL_BG_FILL_INACTIVE,
+    COL_BG_FILL_DISABLED,
+    COL_BG_FILL_MOUSEOVER,
+    COL_BG_TABLEPOS_CHAMPION,
+    COL_BG_TABLEPOS_INTCOMP1ST,
+    COL_BG_TABLEPOS_INTCOMP2ND,
+    COL_BG_TABLEPOS_INTCOMP3RD,
+    COL_BG_TABLEPOS_PROMOTION,
+    COL_BG_TABLEPOS_PROMOTIONMATCH,
+    COL_BG_TABLEPOS_RELEGATIONMATCH,
+    COL_BG_TABLEPOS_RELEGATION,
+    COL_BG_PLAYERSTATE_FIRST11,
+    COL_BG_PLAYERSTATE_BENCH,
+    COL_BG_PLAYERSTATE_NOTINSQUAD
+};
+
 class CJDate {
     UInt value;
 public:
@@ -874,4 +940,28 @@ struct CompMatchResult {
     Int place;
     UChar roundType;
     Char _pad1D[3];
+};
+
+class CXgFMPanel;
+
+class CFMListBox {
+public:
+    void SetVisible(Bool visible);
+    void Clear();
+    Int GetMaxRows();
+    Int GetRowsCount();
+    void AddColumnText(Int64 value, UInt color, Int unk);
+    void AddTeamWidget(CTeamIndex const &teamID);
+    void AddTeamName(CTeamIndex const &teamID, UInt color, Int unk);
+    void SetRowColor(UInt rowIndex, UInt color);
+    void NextRow(Int unk);
+    void Create(CXgFMPanel *panel, const char *name);
+    template <typename... ArgTypes>
+    static void InitColumnTypes(CFMListBox *listBox, ArgTypes... args) {
+        Call<0xD19660>(listBox, args...);
+    }
+    template <typename... ArgTypes>
+    static void InitColumnFormatting(CFMListBox *listBox, ArgTypes... args) {
+        Call<0xD196A0>(listBox, args...);
+    }
 };

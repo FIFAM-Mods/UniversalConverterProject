@@ -1681,3 +1681,43 @@ void CEAMailData::SetArrayValue(UInt index, Int value) {
 Int CEAMailData::GetArrayValue(UInt index) const {
     return CallMethodAndReturn<Int, 0x1010670>(this, index);
 }
+
+void CFMListBox::SetVisible(Bool visible) {
+    CallVirtualMethod<20>(this, visible);
+}
+
+void CFMListBox::Clear() {
+    CallMethod<0xD1AF40>(this);
+}
+
+Int CFMListBox::GetMaxRows() {
+    return CallMethodAndReturn<Int, 0xD18640>(this);
+}
+
+Int CFMListBox::GetRowsCount() {
+    return CallMethodAndReturn<Int, 0xD18600>(this);
+}
+
+void CFMListBox::AddColumnText(Int64 value, UInt color, Int unk) {
+    CallMethod<0xD22BE0>(this, value, color, unk);
+}
+
+void CFMListBox::AddTeamWidget(CTeamIndex const &teamID) {
+    CallMethod<0xD1E620>(this, &teamID);
+}
+
+void CFMListBox::AddTeamName(CTeamIndex const &teamID, UInt color, Int unk) {
+    CallMethod<0xD1F060>(this, &teamID, color, unk);
+}
+
+void CFMListBox::SetRowColor(UInt rowIndex, UInt color) {
+    CallMethod<0xD18C30>(this, rowIndex, color);
+}
+
+void CFMListBox::NextRow(Int unk) {
+    CallMethod<0xD18920>(this, unk);
+}
+
+void CFMListBox::Create(CXgFMPanel *panel, const char *name) {
+    CallMethod<0xD1EEE0>(this, panel, name);
+}

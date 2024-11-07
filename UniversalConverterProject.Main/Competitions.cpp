@@ -1685,7 +1685,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                             added = AddTeam(league->GetChampion(), Utils::Format(L"%s youth league champion", CountryName(countryId)));
                             if (!added) {
                                 for (UInt p = 0; p < league->GetNumOfTeams(); p++) {
-                                    added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s youth league place %u", CountryName(countryId), p));
+                                    added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s youth league place %u", CountryName(countryId), p + 1));
                                     if (added)
                                         break;
                                 }
@@ -1697,7 +1697,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                                 added = AddTeam(league->GetChampion(), Utils::Format(L"%s league champion", CountryName(countryId)));
                                 if (!added) {
                                     for (UInt p = 0; p < league->GetNumOfTeams(); p++) {
-                                        added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s league place %u", CountryName(countryId), p));
+                                        added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s league place %u", CountryName(countryId), p + 1));
                                         if (added)
                                             break;
                                     }
@@ -1710,13 +1710,14 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     comp->SetNumOfRegisteredTeams(comp->GetNumOfTeams());
                     DumpPool(comp, L"Youth Champions League Pool National Leagues Path pool");
                 }
-                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 2 && comp->GetNumOfTeams() == 216) {
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 5 && comp->GetNumOfTeams() == 216) {
                     CDBCompetition *clLeagueMatches = GetCompetition(FifamCompRegion::Europe, COMP_CHAMPIONSLEAGUE, 9);
                     if (clLeagueMatches) {
                         CTeamIndex *pDst = *raw_ptr<CTeamIndex *>(comp, 0xA0);
                         CTeamIndex *pSrc = *raw_ptr<CTeamIndex *>(clLeagueMatches, 0xA0);
                         for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
                             pDst[i] = pSrc[i];
+                        comp->SetNumOfRegisteredTeams(comp->GetNumOfTeams());
                     }
                     DumpPool(comp, L"Youth League copied matchdays");
                 }
@@ -5514,5 +5515,15 @@ void PatchCompetitions(FM::Version v) {
         // Cup Draw pot/group WC/EC
         //patch::SetUInt(0x249562C + 4, 3); // Euro
         //patch::SetUInt(0x249562C + 4, 6); // WC
+
+        patch::Nop(0x703613, 2); // CStatsCupFixturesResults - TOYOTA
+        patch::Nop(0x9DD558, 6); // WidgetAllClubs - TOYOTA
+        patch::Nop(0x704F13, 2); // CStatsCupResults - TOYOTA
+        patch::Nop(0x7060A8, 6); // CStatsCupTablesFinals - TOYOTA
+        patch::Nop(0xE3EB28, 6); // CStandingsCupResults - TOYOTA
+        patch::Nop(0x977673, 2); // unknown - weekly progress? - TOYOTA
+        patch::Nop(0xAA10E3, 2); // CMatchdayCupResults - TOYOTA
+        patch::Nop(0xACE953, 2); // next matchday info? - TOYOTA
+        patch::Nop(0x129D736, 6); // trophy stickers - TOYOTA
     }
 }
