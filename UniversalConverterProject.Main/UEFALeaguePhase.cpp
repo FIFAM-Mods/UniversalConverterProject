@@ -324,10 +324,11 @@ bool DrawUEFALeaguePhase(CDBCompetition *poolTeams, CDBCompetition *poolFixtures
     return true;
 }
 
-UInt *GetUEFALeaguePhaseCompIDs(UInt compId, UInt &numCompIds) {
+UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds) {
     static UInt compIdsCL[] = { 0xF909000A, 0xF909000B, 0xF909000C, 0xF909000D, 0xF909000E, 0xF909000F, 0xF9090010, 0xF9090011 };
     static UInt compIdsEL[] = { 0xF90A0008, 0xF90A0009, 0xF90A000A, 0xF90A000B, 0xF90A000C, 0xF90A000D, 0xF90A000E, 0xF90A000F };
     static UInt compIdsCO[] = { 0xF933000C, 0xF933000D, 0xF933000E, 0xF933000F, 0xF9330010, 0xF9330011 };
+    static UInt compIdsYL[] = { 0xF9260003, 0xF9260004, 0xF9260005, 0xF9260006, 0xF9260007, 0xF9260008 };
     UInt *compIds = nullptr;
     if (compId == 0xF9090000) {
         compIds = compIdsCL;
@@ -341,16 +342,24 @@ UInt *GetUEFALeaguePhaseCompIDs(UInt compId, UInt &numCompIds) {
         compIds = compIdsCO;
         numCompIds = std::size(compIdsCO);
     }
+    else if (compId == 0xF9260000) {
+        compIds = compIdsYL;
+        numCompIds = std::size(compIdsYL);
+    }
     else
         numCompIds = 0;
     return compIds;
 }
 
 Bool IsUEFALeaguePhaseCompID(CCompID const &compID) {
-    if (compID.type == COMP_CHAMPIONSLEAGUE || compID.type == COMP_UEFA_CUP || compID.type == COMP_CONFERENCE_LEAGUE) {
+    return compID.ToInt() == 0xF9090008 || compID.ToInt() == 0xF90A0006 || compID.ToInt() == 0xF933000A || compID.ToInt() == 0xF9260001;
+}
+
+Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
+    if (compID.type == COMP_CHAMPIONSLEAGUE || compID.type == COMP_UEFA_CUP || compID.type == COMP_CONFERENCE_LEAGUE || compID.type == COMP_YOUTH_CHAMPIONSLEAGUE) {
         UInt compId = compID.ToInt();
         UInt numCompIds = 0;
-        UInt *compIds = GetUEFALeaguePhaseCompIDs(compId & 0xFFFF0000, numCompIds);
+        UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(compId & 0xFFFF0000, numCompIds);
         for (UInt i = 0; i < numCompIds; i++) {
             if (compId == compIds[i])
                 return true;
@@ -361,7 +370,7 @@ Bool IsUEFALeaguePhaseCompID(CCompID const &compID) {
 
 Int METHOD OnStatsCupFixturesResultsAddOneCompetition(void *t, DUMMY_ARG, UInt *baseCompId, UInt *compId, CDBCompetition *comp) {
     Int result = CallMethodAndReturn<Int, 0x702BC0>(t, baseCompId, compId, comp);
-    if (*compId == 0xF9090011 || *compId == 0xF90A000F || *compId == 0xF9330011) { // last League Phase matchday ID
+    if (*compId == 0xF9090011 || *compId == 0xF90A000F || *compId == 0xF9330011 || *compId == 0xF9260008) { // last League Phase matchday ID
         void *comboBox = *raw_ptr<void *>(t, 0x4D8);
         CDBCompetition *baseComp = GetCompetition(*baseCompId);
         CallVirtualMethod<83>(comboBox, Format(L"%s (%s)", baseComp->GetName(), GetTranslation("ID_LEAGUE_PHASE_TABLE")).c_str(), *compId & 0xFFFF0000, 0);
@@ -371,10 +380,10 @@ Int METHOD OnStatsCupFixturesResultsAddOneCompetition(void *t, DUMMY_ARG, UInt *
 
 Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp) {
     Vector<TeamLeaguePhaseInfo> vecTeams;
-    if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000) {
+    if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000 || compId == 0xF9260000) {
         Map<UInt, TeamLeaguePhaseInfo> teams;
         UInt numCompIds = 0;
-        UInt *compIds = GetUEFALeaguePhaseCompIDs(compId, numCompIds);
+        UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(compId, numCompIds);
         for (UInt c = 0; c < numCompIds; c++) {
             CDBCompetition *comp = GetCompetition(compIds[c]);
             if (comp && comp->GetDbType() == DB_ROUND && comp->IsLaunched()) {
@@ -446,7 +455,7 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
             pointsIncrease9to24 = 0.125f;
         for (UInt i = numTeams; i > 0; i--) {
             pTeamIDs[i - 1] = vecTeams[i - 1].teamId;
-            if (table) {
+            if (table && compId != 0xF9260000) {
                 if (i >= 1 && i <= 8)
                     points += pointsIncrease1to8;
                 else if (i >= 9 && i <= 24)
@@ -474,8 +483,10 @@ void METHOD OnStatsCupFixturesResultsChangeCompetition(void *t) {
     UInt compId = *raw_ptr<UInt>(data, 0x24);
     void *listBox = raw_ptr<void *>(t, 0x1A00);
     Bool specialListBox = false;
-    if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000) {
+    ::Warning(L"%X", compId);
+    if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000 || compId == 0xF9260000) {
         specialListBox = true;
+        CallMethod<0xD1AF40>(listBox); // CFMListBox::Clear()
         auto vecTeams = SortUEFALeaguePhaseTable(compId, nullptr);
         if (!vecTeams.empty()) {
             for (UInt i = 0; i < vecTeams.size(); i++) {
@@ -531,7 +542,7 @@ void *METHOD OnStatsCupFixturesCreateUI(void *t) {
 }
 
 UInt METHOD CupDrawMailMessage_GetNumOfTeams(CDBCompetition *comp) {
-    return IsUEFALeaguePhaseCompID(comp->GetCompID()) ? 0 : comp->GetNumOfTeams();
+    return IsUEFALeaguePhaseMatchdayCompID(comp->GetCompID()) ? 0 : comp->GetNumOfTeams();
 }
 
 void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *out) {
@@ -555,6 +566,16 @@ void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *o
         Call<0x14F35B2>(callbackArg, &mailData, out);
 }
 
+Int METHOD CupDrawMailMessage_GetMailID(void *t) {
+    Int mailID = CallMethodAndReturn<Int, 0x100E1E0>(t);
+    if (mailID == 1917) {
+        CEAMailData *mailData = raw_ptr<CEAMailData>(t, 0x18);
+        if (IsUEFALeaguePhaseCompID(mailData->GetCompetition()))
+            return 0;
+    }
+    return mailID;
+}
+
 void PatchUEFALeaguePhase(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0x70403C, OnStatsCupFixturesResultsAddOneCompetition);
@@ -569,5 +590,7 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectCall(0x1045264, CupDrawMailMessage_GetNumOfTeams);
         // update the _TEAM_LIST behavior
         patch::SetPointer(0x309EB78, MyTeamListHandler);
+        // remove the deletion of "Cup Draw: _COMPETITION" e-mail message for CL/EL/CO League Phase matchdays
+        //patch::RedirectCall(0x8CFE45, CupDrawMailMessage_GetMailID);
     }
 }

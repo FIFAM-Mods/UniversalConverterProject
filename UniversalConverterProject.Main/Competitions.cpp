@@ -11,6 +11,7 @@
 #include "FifamContinent.h"
 #include "FifamClubTeamType.h"
 #include "UEFALeaguePhase.h"
+#include "FifamBeg.h"
 
 using namespace plugin;
 
@@ -1129,6 +1130,36 @@ Bool VecContainsMulti(Vector<Vector<T>> &vec, T const &item) {
 	return false;
 }
 
+CTeamIndex GetCompFinalist(UChar region, UChar type, UInt year, Bool runnerUp) {
+    auto compFinal = GetRoundByRoundType(region, type, ROUND_FINAL);
+    if (compFinal) {
+        CompMatchResult *info = CallMethodAndReturn<CompMatchResult *, 0xF89B90>(compFinal, year, ROUND_FINAL);
+        if (info) {
+            UChar result1 = info->result1stLeg[0];
+            UChar result2 = info->result1stLeg[1];
+            if (info->flags & FifamBeg::With2ndLeg) {
+                result1 += info->result2ndtLeg[0];
+                result2 += info->result2ndtLeg[1];
+            }
+            if (result2 > result1)
+                return runnerUp ? info->team1 : info->team2;
+            return runnerUp ? info->team2 : info->team1;
+        }
+    }
+    return CTeamIndex::null();
+};
+
+CTeamIndex GetLeagueTeamAtPlace(CDBLeague *league, UInt place) {
+    if (league && league->GetNumOfTeams() > place) {
+        TeamLeaguePositionData infos[24];
+        league->SortTeams(infos, league->GetEqualPointsSorting(), 0, 120, 0, 120);
+        if (league->GetCompID().countryId < 208)
+            CallMethod<0x1052910>(league, infos);
+        return infos[place].m_teamID;
+    }
+    return CTeamIndex::null();
+}
+
 void OnGetSpare(CDBCompetition **ppComp) {
     const Bool DUMP_TO_LOG = true;
     auto Log = [&DUMP_TO_LOG](String const &message) {
@@ -1148,8 +1179,14 @@ void OnGetSpare(CDBCompetition **ppComp) {
         if (id.countryId == FifamCompRegion::Europe) {
             if (comp->GetDbType() == DB_ROUND) {
                 if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE) {
-                    if (id.index == 12 || id.index == 13) // playoff and last16
-                        comp->RandomizePairs();
+                    if (id.index == 13) { // last32
+                        if (comp->GetNumOfTeams() == 32) {
+                            comp->RandomlySortTeams(0, 6);
+                            comp->RandomlySortTeams(6, 10);
+                            comp->RandomlySortTeams(16, 6);
+                            comp->RandomlySortTeams(22, 10);
+                        }
+                    }
                     else {
                         comp->SortTeams(Europe_YouthChampionsLeagueRoundSorter);
                         comp->RandomizePairs();
@@ -1623,52 +1660,184 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     SortUEFALeaguePhaseTable(0xF9330000, comp);
                     DumpPool(comp, L"Conference League League Phase sorted table");
                 }
-                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 0 && comp->GetNumOfTeams() == 32 && comp->GetNumOfRegisteredTeams() == 0) {
-                    auto compCL = GetCompetition(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 10);
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 0 && comp->GetNumOfTeams() == 52 && comp->GetNumOfRegisteredTeams() == 0) {
+                    auto compCL = GetCompetition(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 8);
                     UInt teamCounter = 0;
                     CTeamIndex* pTeamIDs = *raw_ptr<CTeamIndex*>(comp, 0xA0);
+                    auto AddTeam = [&pTeamIDs, &compCL, &teamCounter](CTeamIndex const &teamID, String const &name) {
+                        if (!teamID.isNull()) {
+                            CTeamIndex teamIDFirst = teamID.firstTeam();
+                            if (!compCL || !compCL->IsTeamPresent(teamIDFirst)) {
+                                pTeamIDs[teamCounter++] = teamIDFirst;
+                                SafeLog::Write(Utils::Format(L"Youth League: added %s - %s", name, TeamName(teamIDFirst)));
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
                     for (UInt i = 1; i <= 55; i++) {
                         UChar countryId = GetAssesmentTable()->GetCountryIdAtPositionLastYear(i);
-                        if (countryId == FifamCompRegion::Russia || countryId == FifamCompRegion::Belarus || countryId == FifamCompRegion::Liechtenstein)
+                        if (countryId == FifamCompRegion::Russia || countryId == FifamCompRegion::Liechtenstein)
                             continue;
-                        CTeamIndex youthChampion = CTeamIndex::null();
+                        Bool added = false;
                         CDBLeague *league = GetLeague(countryId, FifamCompType::League, 32); // Youth League A
-                        if (league)
-                            youthChampion = league->GetChampion();
-                        if (youthChampion.countryId == 0) {
-                            league = GetLeague(countryId, FifamCompType::League, 0);
-                            if (league)
-                                youthChampion = league->GetChampion();
+                        if (league) {
+                            added = AddTeam(league->GetChampion(), Utils::Format(L"%s youth league champion", CountryName(countryId)));
+                            if (!added) {
+                                for (UInt p = 0; p < league->GetNumOfTeams(); p++) {
+                                    added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s youth league place %u", CountryName(countryId), p));
+                                    if (added)
+                                        break;
+                                }
+                            }
                         }
-                        if (youthChampion.countryId != 0) {
-                            youthChampion.type = FifamClubTeamType::First;
-                            if (!compCL || !compCL->IsTeamPresent(youthChampion)) {
-                                pTeamIDs[teamCounter++] = youthChampion;
-                                if (teamCounter == comp->GetNumOfTeams())
-                                    break;
+                        if (!added) {
+                            league = GetLeague(countryId, FifamCompType::League, 0);
+                            if (league) {
+                                added = AddTeam(league->GetChampion(), Utils::Format(L"%s league champion", CountryName(countryId)));
+                                if (!added) {
+                                    for (UInt p = 0; p < league->GetNumOfTeams(); p++) {
+                                        added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s league place %u", CountryName(countryId), p));
+                                        if (added)
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                        if (teamCounter == comp->GetNumOfTeams())
+                            break;
+                    }
+                    comp->SetNumOfRegisteredTeams(comp->GetNumOfTeams());
+                    DumpPool(comp, L"Youth Champions League Pool National Leagues Path pool");
+                }
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 2 && comp->GetNumOfTeams() == 216) {
+                    CDBCompetition *clLeagueMatches = GetCompetition(FifamCompRegion::Europe, COMP_CHAMPIONSLEAGUE, 9);
+                    if (clLeagueMatches) {
+                        CTeamIndex *pDst = *raw_ptr<CTeamIndex *>(comp, 0xA0);
+                        CTeamIndex *pSrc = *raw_ptr<CTeamIndex *>(clLeagueMatches, 0xA0);
+                        for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
+                            pDst[i] = pSrc[i];
+                    }
+                    DumpPool(comp, L"Youth League copied matchdays");
+                }
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 12 && comp->GetNumOfTeams() == 36) {
+                    SortUEFALeaguePhaseTable(0xF9260000, comp);
+                    DumpPool(comp, L"Youth League League Phase sorted table");
+                }
+                else if (id.type == COMP_WORLD_CLUB_CHAMP && id.index == 0 && comp->GetNumOfTeams() == 32) {
+                    // Call<0x121B350>(L"Tournaments.txt"); // test - read Tournaments.txt before competition is processed
+                    auto AddCompFinalist = [&comp](UChar region, UChar type, UInt year, Bool runnerUp) {
+                        CTeamIndex winner = GetCompFinalist(region, type, year, runnerUp);
+                        if (!winner.isNull() && comp->AddTeam(winner)) {
+                            SafeLog::Write(Utils::Format(L"FIFA Club World Cup: Added %s of %s (year %u): %s",
+                                runnerUp ? L"runner-up" : L"winner",
+                                CompetitionTag(GetRoundByRoundType(region, type, ROUND_FINAL)), year, TeamName(winner)));
+                            return true;
+                        }
+                        return false;
+                    };
+                    auto AddBestClubsFromContinent = [&comp](UChar continent, UInt count) {
+                        if (count == 0)
+                            return;
+                        Vector<Pair<UInt, CDBTeam *>> teams;
+                        for (UInt c = 1; c <= 207; c++) {
+                            CDBCountry *country = &GetCountryStore()->m_aCountries[c];
+                            if (country->GetContinent() == continent) {
+                                for (Int t = 1; t <= country->GetLastTeamIndex(); t++) {
+                                    CTeamIndex teamID = CTeamIndex::make(c, FifamClubTeamType::First, t);
+                                    auto team = GetTeam(teamID);
+                                    if (team) {
+                                        teams.emplace_back(
+                                            (team->GetInternationalPrestige() << 24) | (team->GetNationalPrestige() << 16) | CRandom::GetRandomInt(32767),
+                                            team);
+                                    }
+                                }
+                            }
+                        }
+                        if (teams.size() > 1) {
+                            Utils::Sort(teams, [](Pair<UInt, CDBTeam *> const &a, Pair<UInt, CDBTeam *> const &b) {
+                                return a.first >= b.first;
+                            });
+                        }
+                        UInt numAddedTeams = 0;
+                        for (UInt t = 0; t < teams.size(); t++) {
+                            if (comp->AddTeam(teams[t].second->GetTeamID())) {
+                                String continentName;
+                                CDBCountry *teamCountry = teams[t].second->GetCountry();
+                                if (teamCountry)
+                                    continentName = teamCountry->GetContinentName();
+                                SafeLog::Write(Utils::Format(L"FIFA Club World Cup: Added best team from %s - %s (IP: %u, NP: %u)",
+                                    continentName, TeamName(teams[t].second), teams[t].second->GetInternationalPrestige(),
+                                    teams[t].second->GetNationalPrestige()));
+                                numAddedTeams++;
+                                if (numAddedTeams == count)
+                                    return;
+                            }
+                        }
+                    };
+                    const UInt MAX_TEAMS_AFC = 4;
+                    const UInt MAX_TEAMS_CAF = 4;
+                    const UInt MAX_TEAMS_CONCACAF = 4;
+                    const UInt MAX_TEAMS_CONMEBOL = 6;
+                    const UInt MAX_TEAMS_UEFA = 13;
+                    const UInt MAX_TEAMS_OFC = 1;
+                    UChar numAFC = 0, numCAF = 0, numCONCACAF = 0, numCONMEBOL = 0, numUEFA = 0, numOFC = 0;
+                    for (UInt i = 0; i < 2; i++) {
+                        for (UShort y = 0; y < 4; y++) {
+                            if (numAFC < MAX_TEAMS_AFC)
+                                numAFC += AddCompFinalist(FifamCompRegion::Asia, COMP_CHAMPIONSLEAGUE, GetCurrentYear() - y, i);
+                            if (numCAF < MAX_TEAMS_CAF)
+                                numCAF += AddCompFinalist(FifamCompRegion::Africa, COMP_CHAMPIONSLEAGUE, GetCurrentYear() - y, i);
+                            if (numCONCACAF < MAX_TEAMS_CONCACAF)
+                                numCONCACAF += AddCompFinalist(FifamCompRegion::NorthAmerica, COMP_CHAMPIONSLEAGUE, GetCurrentYear() - y, i);
+                            if (numCONMEBOL < MAX_TEAMS_CONMEBOL)
+                                numCONMEBOL += AddCompFinalist(FifamCompRegion::SouthAmerica, COMP_CHAMPIONSLEAGUE, GetCurrentYear() - y, i);
+                            if (numUEFA < MAX_TEAMS_UEFA)
+                                numUEFA += AddCompFinalist(FifamCompRegion::Europe, COMP_CHAMPIONSLEAGUE, GetCurrentYear() - y, i);
+                        }
+                    }
+                    {
+                        Vector<Pair<UInt, CDBTeam *>> ofcWinners;
+                        Set<CDBTeam *> ofcWinnersSet;
+                        for (UShort y = 0; y < 4; y++) {
+                            CTeamIndex winner = GetCompFinalist(FifamCompRegion::Oceania, COMP_CHAMPIONSLEAGUE, GetCurrentYear() - y, false);
+                            if (!winner.isNull()) {
+                                auto team = GetTeam(winner);
+                                if (team && !Utils::Contains(ofcWinnersSet, team)) {
+                                    ofcWinners.emplace_back(
+                                        (team->GetInternationalPrestige() << 24) | (team->GetNationalPrestige() << 16) | CRandom::GetRandomInt(32767),
+                                        team);
+                                    ofcWinnersSet.insert(team);
+                                }
+                            }
+                        }
+                        if (!ofcWinners.empty()) {
+                            if (ofcWinners.size() > 1) {
+                                Utils::Sort(ofcWinners, [](Pair<UInt, CDBTeam *> const &a, Pair<UInt, CDBTeam *> const &b) {
+                                    return a.first >= b.first;
+                                });
+                            }
+                            if (comp->AddTeam(ofcWinners[0].second->GetTeamID())) {
+                                numOFC += 1;
+                                SafeLog::Write(Utils::Format(L"FIFA Club World Cup: Added best winner of OFC Champions League - %s (IP: %u, NP: %u)",
+                                    TeamName(ofcWinners[0].second), ofcWinners[0].second->GetInternationalPrestige(),
+                                    ofcWinners[0].second->GetNationalPrestige()));
                             }
                         }
                     }
-                    comp->SetNumOfRegisteredTeams(comp->GetNumOfTeams());
-                    if (DUMP_TO_LOG) {
-                        SafeLog::Write(L"Modified Youth Champions League Pool");
-                        for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
-                            SafeLog::Write(Utils::Format(L"%2d. %s", i, TeamTagWithCountry(pTeamIDs[i])));
-                    }
-                }
-                else if (id.type == COMP_WORLD_CLUB_CHAMP && id.index == 0 && comp->GetNumOfTeams() == 32) {
-                    auto AddCompWinner = [&comp](CCompID const &compId, UInt year) {
-
-                    };
-                    // AFC - 4 clubs
-                    // CAF - 4 clubs
-                    // CONCACAF - 4 clubs
-                    // CONMEBOL - 6 clubs
-                    // OFC - 1 club
-                    // UEFA - 12 clubs
-                    // Host - 1 club
-
-                    // TODO
+                    if (numAFC < MAX_TEAMS_AFC)
+                        AddBestClubsFromContinent(FifamContinent::Asia, MAX_TEAMS_AFC - numAFC);
+                    if (numCAF < MAX_TEAMS_CAF)
+                        AddBestClubsFromContinent(FifamContinent::Africa, MAX_TEAMS_CAF - numCAF);
+                    if (numCONCACAF < MAX_TEAMS_CONCACAF)
+                        AddBestClubsFromContinent(FifamContinent::NorthAmerica, MAX_TEAMS_CONCACAF - numCONCACAF);
+                    if (numCONMEBOL < MAX_TEAMS_CONMEBOL)
+                        AddBestClubsFromContinent(FifamContinent::SouthAmerica, MAX_TEAMS_CONMEBOL - numCONMEBOL);
+                    if (numUEFA < MAX_TEAMS_UEFA)
+                        AddBestClubsFromContinent(FifamContinent::Europe, MAX_TEAMS_UEFA - numUEFA);
+                    if (numOFC < MAX_TEAMS_OFC)
+                        AddBestClubsFromContinent(FifamContinent::Oceania, MAX_TEAMS_OFC - numOFC);
+                    DumpPool(comp, L"FIFA Club World Cup participants");
                 }
                 else if (id.type == COMP_TOYOTA && id.index == 0 && comp->GetNumOfTeams() == 6) {
                     Bool doSwap = true;

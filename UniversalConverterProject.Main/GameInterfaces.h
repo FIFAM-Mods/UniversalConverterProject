@@ -861,3 +861,17 @@ public:
 
 Bool IsLiechtensteinClubFromSwitzerland(CTeamIndex const &teamIndex);
 UChar GetTeamCountryId_LiechtensteinCheck(CTeamIndex const &teamIndex);
+
+struct CompMatchResult {
+    CTeamIndex team1;
+    CTeamIndex team2;
+    UShort year;
+    UChar result1stLeg[2];
+    UChar result2ndtLeg[2];
+    Char _padE[2];
+    Int flags;
+    CTeamIndex firstPlaceTeam;
+    Int place;
+    UChar roundType;
+    Char _pad1D[3];
+};

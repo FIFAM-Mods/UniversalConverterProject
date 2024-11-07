@@ -1,9 +1,7 @@
 #include "WinHeader.h"
 #include <ShlObj.h>
 #include "shared.h"
-
-const Bool ENABLE_LOG = true;
-const Bool ENABLE_FILE_LOG = true;
+#include "UcpSettings.h"
 
 String& GameLanguage() {
     static String gameLanguage;
@@ -74,9 +72,22 @@ Bool &IsFirstLaunch() {
     return isFirstLaunch;
 }
 
+Path &SafeLogPath() {
+    static Path safeLogPath = "ucp_safe.log";
+    return safeLogPath;
+}
+
+void SafeLog::Clear() {
+    if (Settings::GetInstance().EnableMainLog) {
+        std::error_code ec;
+        if (exists(SafeLogPath(), ec))
+            remove(SafeLogPath(), ec);
+    }
+}
+
 void SafeLog::Write(String const& msg) {
-    if (ENABLE_LOG) {
-        FILE* file = fopen("ucp_safe.log", "at,ccs=UTF-8");
+    if (Settings::GetInstance().EnableMainLog) {
+        FILE* file = _wfopen(SafeLogPath().c_str(), L"at,ccs=UTF-8");
         if (file) {
             fputws(msg.c_str(), file);
             fputws(L"\n", file);
@@ -86,7 +97,7 @@ void SafeLog::Write(String const& msg) {
 }
 
 void SafeLog::WriteToFile(Path const& fileName, String const& msg, String const& header) {
-    if (ENABLE_FILE_LOG) {
+    if (Settings::GetInstance().EnableAllLogFiles) {
         static Map<Path, bool> fileCreated;
         FILE* file = nullptr;
         if (!Utils::Contains(fileCreated, fileName)) {

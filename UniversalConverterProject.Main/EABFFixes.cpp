@@ -2094,6 +2094,8 @@ void PatchEABFFixes(FM::Version v) {
 		//patch::RedirectCall(0x120F5A3, YouthTransfsersCollect<0x120F050, NationalLevel>);
 		//patch::RedirectCall(0x120F5C0, YouthTransfsersCollect<0x120F120, ContinentalLevel>);
 		//patch::RedirectCall(0x120F5CC, YouthTransfsersCollect<0x120F220, IntercontinentalLevel>);
+
+        patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
     }
 }
 

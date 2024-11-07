@@ -11,6 +11,7 @@ struct TeamLeaguePhaseInfo {
 };
 
 bool DrawUEFALeaguePhase(CDBCompetition *poolTeams, CDBCompetition *poolFixtures, UInt numPots, UInt numMatchdays);
-UInt *GetUEFALeaguePhaseCompIDs(UInt compId, UInt &numCompIds);
 Bool IsUEFALeaguePhaseCompID(CCompID const &compID);
+UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds);
+Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID);
 Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp);

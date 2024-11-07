@@ -16,6 +16,7 @@ void SaveTestFile();
 
 class SafeLog {
 public:
+    static void Clear();
     static void Write(String const& msg);
     static void WriteToFile(Path const& fileName, String const& msg, String const& header = String());
 };
