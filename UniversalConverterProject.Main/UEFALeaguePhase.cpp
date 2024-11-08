@@ -318,7 +318,7 @@ bool DrawUEFALeaguePhase(CDBCompetition *poolTeams, CDBCompetition *poolFixtures
             UInt numOpponents = Utils::Min(opponents.size(), maxMatchdays);
             for (UInt i = 0; i < numOpponents; i++)
                 mailData.SetArrayValue(i, opponents[i].ToInt());
-            team->SendMail(1917, mailData, 1); // In the next round you have been drawn against: _TEAM_LIST.
+            team->SendMail(3439, mailData, 1); // In the next round you have been drawn against: _TEAM_LIST.
         }
     }
     return true;
@@ -366,16 +366,6 @@ Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
         }
     }
     return false;
-}
-
-Int METHOD OnStatsCupFixturesResultsAddOneCompetition(void *t, DUMMY_ARG, UInt *baseCompId, UInt *compId, CDBCompetition *comp) {
-    Int result = CallMethodAndReturn<Int, 0x702BC0>(t, baseCompId, compId, comp);
-    if (*compId == 0xF9090011 || *compId == 0xF90A000F || *compId == 0xF9330011 || *compId == 0xF926000B) { // last League Phase matchday ID
-        void *comboBox = *raw_ptr<void *>(t, 0x4D8);
-        CDBCompetition *baseComp = GetCompetition(*baseCompId);
-        CallVirtualMethod<83>(comboBox, Format(L"%s (%s)", baseComp->GetName(), GetTranslation("ID_LEAGUE_PHASE_TABLE")).c_str(), *compId & 0xFFFF0000, 0);
-    }
-    return result;
 }
 
 Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp) {
@@ -475,13 +465,16 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
     return vecTeams;
 }
 
-void METHOD OnStatsCupFixturesResultsChangeCompetition(void *t) {
-    CallMethod<0x7024C0>(t);
-    if (*raw_ptr<UInt>(t, 0x490) == 0)
-        return;
-    void *data = *raw_ptr<void *>(t, 0x19F0);
+void AddUEFALeaguePhaseCompetitionToComboBox(void *comboBox, UInt compId) {
+    if (compId == 0xF9090011 || compId == 0xF90A000F || compId == 0xF9330011 || compId == 0xF926000B) { // last League Phase matchday ID
+        CDBCompetition *baseComp = GetCompetition(compId & 0xFFFF0000);
+        if (baseComp)
+            CallVirtualMethod<83>(comboBox, Format(L"%s (%s)", baseComp->GetName(), GetTranslation("ID_LEAGUE_PHASE_TABLE")).c_str(), compId & 0xFFFF0000, 0);
+    }
+}
+
+Bool UEFALeaguePhaseChangeCompetition(CFMListBox *listBox, void *data) {
     UInt compId = *raw_ptr<UInt>(data, 0x24);
-    CFMListBox *listBox = raw_ptr<CFMListBox>(t, 0x1A00);
     Bool specialListBox = false;
     if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000 || compId == 0xF9260000) {
         specialListBox = true;
@@ -531,6 +524,20 @@ void METHOD OnStatsCupFixturesResultsChangeCompetition(void *t) {
         (*raw_ptr<CFMListBox *>(data, 0x10))->SetVisible(false);
         CallMethod<0xA8C050>(data);
     }
+    return specialListBox;
+}
+
+Int METHOD OnStatsCupFixturesResultsAddOneCompetition(void *t, DUMMY_ARG, UInt *baseCompId, UInt *compId, CDBCompetition *comp) {
+    Int result = CallMethodAndReturn<Int, 0x702BC0>(t, baseCompId, compId, comp);
+    AddUEFALeaguePhaseCompetitionToComboBox(*raw_ptr<void *>(t, 0x4D8), *compId);
+    return result;
+}
+
+void METHOD OnStatsCupFixturesResultsChangeCompetition(void *t) {
+    CallMethod<0x7024C0>(t);
+    if (*raw_ptr<UInt>(t, 0x490) == 0)
+        return;
+    UEFALeaguePhaseChangeCompetition(raw_ptr<CFMListBox>(t, 0x1A00), *raw_ptr<void *>(t, 0x19F0));
 }
 
 void *METHOD OnStatsCupFixturesResultsCtor(void *t, DUMMY_ARG, void *guiInstance, UInt flags) {
@@ -548,6 +555,95 @@ void *METHOD OnStatsCupFixturesResultsDtor(void *t) {
 CXgFMPanel *METHOD OnStatsCupFixturesCreateUI(CXgFMPanel *panel) {
     CallMethod<0xD4F110>(panel);
     CFMListBox *listBox = raw_ptr<CFMListBox>(panel, 0x1A00);
+    listBox->Create(panel, "ListBox3");
+    CFMListBox::InitColumnTypes(listBox, 9, 4, 4, 9, 9, 9, 9, 9, 9, 9, 9, 63);
+    CFMListBox::InitColumnFormatting(listBox, 210, 210, 204, 210, 210, 210, 210, 210, 210, 210, 210, 228);
+    listBox->SetVisible(false);
+    return panel;
+}
+
+
+Int METHOD OnStandingsCupResultsAddOneCompetition(void *comboBox, DUMMY_ARG, WideChar const *name, UInt compId, Int unk) {
+    Int result = CallVirtualMethodAndReturn<Int, 83>(comboBox, name, compId, unk);
+    AddUEFALeaguePhaseCompetitionToComboBox(comboBox, compId);
+    return result;
+}
+
+void __declspec(naked) OnStandingsCupResultsAddOneCompetition_Exe() {
+    __asm {
+        push eax
+        call OnStandingsCupResultsAddOneCompetition
+        mov edx, 0xE3E68E
+        jmp edx
+    }
+}
+
+void METHOD OnStandingsCupResultsChangeCompetition(void *t) {
+    CallMethod<0xE3EE70>(t);
+    if (*raw_ptr<UInt>(t, 0x20D4) == 0)
+        return;
+    if (UEFALeaguePhaseChangeCompetition(raw_ptr<CFMListBox>(t, 0x2104), *raw_ptr<void *>(t, 0x20C4))) {
+        CallMethod<0x4F2350>(t, "GrResults", false);
+        CallMethod<0x4F2350>(t, "GrResultsTable", false);
+    }
+}
+
+void *METHOD OnStandingsCupResultsCtor(void *t, DUMMY_ARG, void *guiInstance) {
+    CallMethod<0xD527C0>(t, guiInstance); // CXgFMPanel::CXgFMPanel()
+    CallMethod<0xD1AC00>(raw_ptr<void *>(t, 0x2104)); // CFMListBox::CFMListBox()
+    return t;
+}
+
+void *METHOD OnStandingsCupResultsDtor(void *t) {
+    CallMethod<0xD182F0>(raw_ptr<void *>(t, 0x2104)); // CFMListBox::~CFMListBox()
+    CallMethod<0xD54220>(t); // CXgFMPanel::~CXgFMPanel()
+    return t;
+}
+
+CXgFMPanel *METHOD OnStandingsCupResultsCreateUI(CXgFMPanel *panel) {
+    CallMethod<0xD4F110>(panel);
+    CFMListBox *listBox = raw_ptr<CFMListBox>(panel, 0x2104);
+    listBox->Create(panel, "ListBox3");
+    CFMListBox::InitColumnTypes(listBox, 9, 4, 4, 9, 9, 9, 9, 9, 9, 9, 9, 63);
+    CFMListBox::InitColumnFormatting(listBox, 210, 210, 204, 210, 210, 210, 210, 210, 210, 210, 210, 228);
+    listBox->SetVisible(false);
+    return panel;
+}
+
+Int METHOD OnMatchdayCupResultsAddOneCompetition(CFMListBox *listBox, DUMMY_ARG, WideChar const *text, UInt color, UInt compId, void *unk, UInt flags) {
+    Int result = CallMethodAndReturn<Int, 0xD1EA20>(listBox, text, color, compId, unk, flags);
+    if (result != -1) {
+        if (compId == 0xF9090011 || compId == 0xF90A000F || compId == 0xF9330011 || compId == 0xF926000B) { // last League Phase matchday ID
+            CDBCompetition *baseComp = GetCompetition(compId & 0xFFFF0000);
+            if (baseComp)
+                result = CallMethodAndReturn<Int, 0xD1EA20>(listBox, Format(L"%s (%s)", baseComp->GetName(), GetTranslation("ID_LEAGUE_PHASE_TABLE")).c_str(), color, compId & 0xFFFF0000, 0, 0);
+        }
+    }
+    return result;
+}
+
+void METHOD OnMatchdayCupResultsChangeCompetition(void *t) {
+    CallMethod<0xAA0C90>(t);
+    if (*raw_ptr<UInt>(t, 0x20C8) == 0)
+        return;
+    UEFALeaguePhaseChangeCompetition(raw_ptr<CFMListBox>(t, 0x20F4), *raw_ptr<void *>(t, 0x20C0));
+}
+
+void *METHOD OnMatchdayCupResultsCtor(void *t, DUMMY_ARG, void *guiInstance) {
+    CallMethod<0xD527C0>(t, guiInstance); // CXgFMPanel::CXgFMPanel()
+    CallMethod<0xD1AC00>(raw_ptr<void *>(t, 0x20F4)); // CFMListBox::CFMListBox()
+    return t;
+}
+
+void *METHOD OnMatchdayCupResultsDtor(void *t) {
+    CallMethod<0xD182F0>(raw_ptr<void *>(t, 0x20F4)); // CFMListBox::~CFMListBox()
+    CallMethod<0xD54220>(t); // CXgFMPanel::~CXgFMPanel()
+    return t;
+}
+
+CXgFMPanel *METHOD OnMatchdayCupResultsCreateUI(CXgFMPanel *panel) {
+    CallMethod<0xD4F110>(panel);
+    CFMListBox *listBox = raw_ptr<CFMListBox>(panel, 0x20F4);
     listBox->Create(panel, "ListBox3");
     CFMListBox::InitColumnTypes(listBox, 9, 4, 4, 9, 9, 9, 9, 9, 9, 9, 9, 63);
     CFMListBox::InitColumnFormatting(listBox, 210, 210, 204, 210, 210, 210, 210, 210, 210, 210, 210, 228);
@@ -592,6 +688,7 @@ Int METHOD CupDrawMailMessage_GetMailID(void *t) {
 
 void PatchUEFALeaguePhase(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        // CStatsCupFixturesResults
         patch::RedirectCall(0x70403C, OnStatsCupFixturesResultsAddOneCompetition);
         patch::SetPointer(0x23F18D8, OnStatsCupFixturesResultsChangeCompetition);
         patch::SetUInt(0x703DA4 + 1, 0x1A00 + 0x704);
@@ -599,6 +696,27 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectCall(0x703BA7, OnStatsCupFixturesResultsCtor);
         patch::RedirectCall(0x703D13, OnStatsCupFixturesResultsDtor);
         patch::RedirectCall(0x702135, OnStatsCupFixturesCreateUI);
+        // CStandingsCupResults
+        patch::RedirectJump(0xE3E689, OnStandingsCupResultsAddOneCompetition_Exe);
+        patch::RedirectCall(0xE3F600, OnStandingsCupResultsChangeCompetition);
+        patch::RedirectCall(0xE3F61B, OnStandingsCupResultsChangeCompetition);
+        patch::RedirectCall(0xE3F673, OnStandingsCupResultsChangeCompetition);
+        patch::RedirectCall(0xE3F6C6, OnStandingsCupResultsChangeCompetition);
+        patch::RedirectCall(0xE3F706, OnStandingsCupResultsChangeCompetition);
+        patch::SetUInt(0xE430D4 + 1, 0x2104 + 0x704);
+        patch::SetUInt(0xE430DB + 1, 0x2104 + 0x704);
+        patch::RedirectCall(0xE3E397, OnStandingsCupResultsCtor);
+        patch::RedirectCall(0xE3E1D8, OnStandingsCupResultsDtor);
+        patch::RedirectJump(0xE3CF39, OnStandingsCupResultsCreateUI);
+        // CMatchdayCupResults
+        patch::RedirectCall(0xAA19AC, OnMatchdayCupResultsAddOneCompetition);
+        patch::RedirectCall(0xAA0EF6, OnMatchdayCupResultsChangeCompetition);
+        patch::RedirectCall(0xAA1CB1, OnMatchdayCupResultsChangeCompetition);
+        patch::SetUInt(0xA96664 + 1, 0x20F4 + 0x704);
+        patch::SetUInt(0xA9666B + 1, 0x20F4 + 0x704);
+        patch::RedirectCall(0xAA16C5, OnMatchdayCupResultsCtor);
+        patch::RedirectCall(0xAA0B30, OnMatchdayCupResultsDtor);
+        patch::RedirectCall(0xAA13E6, OnMatchdayCupResultsCreateUI);
 
         // disable "Cup Draw: _COMPETITION" e-mail message for CL/EL/CO League Phase matchdays
         patch::RedirectCall(0x1045264, CupDrawMailMessage_GetNumOfTeams);
