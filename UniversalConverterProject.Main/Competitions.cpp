@@ -4708,6 +4708,35 @@ CDBRound *GetWorldClubCupFinalForTransitionScreen(CCompID const &compID) {
     return GetRoundByRoundType(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP, ROUND_FINAL);
 }
 
+CDBRound *gMyDBRound_RegisterMatch_Round = nullptr;
+
+void METHOD MyDBRound_RegisterMatch(CDBRound *round, DUMMY_ARG, Int eventStartIndex, CDBOneMatch *match) {
+    gMyDBRound_RegisterMatch_Round = round;
+    CallMethod<0x1043BC0>(round, eventStartIndex, match);
+    RoundPair const &pair = round->GetRoundPair(match->GetRoundPairIndex());
+    if (pair.IsFinished()) {
+        if (IsUEFALeaguePhaseMatchdayCompID(round->GetCompID()))
+            UEFALeaguePhaseMatchdayProcessBonuses(round, pair);
+        else {
+            CTeamIndex loserID = pair.GetLoser();
+            if (!loserID.isNull()) {
+                CDBTeam *loserTeam = GetTeam(loserID);
+                if (loserTeam) {
+                    EAGMoney bonus = round->GetBonus(2);
+                    if (bonus != 0) {
+                        loserTeam->ChangeMoney(5, bonus, 0);
+                        CEAMailData mailData;
+                        mailData.SetMoney(bonus);
+                        loserTeam->SendMail(3441, mailData, 1); // As a loser, you earned _MONEY in the previous cup match.
+                        SafeLog::Write(Utils::Format(L"%s: team %s loser bonus - %I64d", CompetitionName(round), TeamName(loserTeam), bonus));
+                    }
+                }
+            }
+        }
+    }
+    gMyDBRound_RegisterMatch_Round = nullptr;
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectJump(0xF909BE, CupDraw_Clear);
@@ -5525,5 +5554,7 @@ void PatchCompetitions(FM::Version v) {
         patch::Nop(0xAA10E3, 2); // CMatchdayCupResults - TOYOTA
         patch::Nop(0xACE953, 2); // next matchday info? - TOYOTA
         patch::Nop(0x129D736, 6); // trophy stickers - TOYOTA
+
+        patch::SetPointer(0x24AD3B8, MyDBRound_RegisterMatch); // use 3rd bonus in DB_ROUND as a payment for round loser
     }
 }

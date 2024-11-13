@@ -2,6 +2,7 @@
 #include "FifamTypes.h"
 #include "GameInterfaces.h"
 #include "UcpSettings.h"
+#include "Competitions.h"
 #include "shared.h"
 #include <random>
 #include <chrono>
@@ -371,6 +372,7 @@ Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
 Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp) {
     Vector<TeamLeaguePhaseInfo> vecTeams;
     if (compId == 0xF9090000 || compId == 0xF90A0000 || compId == 0xF9330000 || compId == 0xF9260000) {
+        UInt numDraws = 0;
         Map<UInt, TeamLeaguePhaseInfo> teams;
         UInt numCompIds = 0;
         UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(compId, numCompIds);
@@ -404,6 +406,7 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                             team2.draws += 1;
                             team1.points += 1;
                             team2.points += 1;
+                            numDraws++;
                         }
                     }
                 }
@@ -432,37 +435,144 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                 return true;
             });
         }
-    }
-    if (comp) {
-        UInt numTeams = Utils::Min(comp->GetNumOfTeams(), vecTeams.size());
-        CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
-        memset(pTeamIDs, 0, comp->GetNumOfTeams() * 4);
-        CAssessmentTable *table = GetAssesmentTable();
-        Float points = 0.0f;
-        Float pointsIncrease1to8 = 0.25f;
-        Float pointsIncrease9to24 = 0.25f;
-        if (compId == 0xF9330000)
-            pointsIncrease9to24 = 0.125f;
-        for (UInt i = numTeams; i > 0; i--) {
-            pTeamIDs[i - 1] = vecTeams[i - 1].teamId;
-            if (table && compId != 0xF9260000) {
-                if (i >= 1 && i <= 8)
-                    points += pointsIncrease1to8;
-                else if (i >= 9 && i <= 24)
-                    points += pointsIncrease9to24;
-                if (points > 0.0f) {
-                    UChar countryId = GetTeamCountryId_LiechtensteinCheck(pTeamIDs[i - 1]);
-                    if (countryId >= 1 && countryId <= 207) {
-                        table->GetInfoForCountry(countryId)->AddPoints(points);
-                        SafeLog::Write(Utils::Format(L"Added %g points for %s (team: %s)",
-                            points, CountryName(countryId), TeamName(GetTeam(pTeamIDs[i - 1]))));
+        if (comp) {
+            UInt numTeams = Utils::Min(comp->GetNumOfTeams(), vecTeams.size());
+            CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
+            memset(pTeamIDs, 0, comp->GetNumOfTeams() * 4);
+            CAssessmentTable *table = GetAssesmentTable();
+            Float points = 0.0f;
+            Float pointsIncrease1to8 = 0.25f;
+            Float pointsIncrease9to24 = 0.25f;
+            Int64 shareBonusBase = 275'000;
+            Int64 drawBonus = 700'000;
+            Int64 bonus1to8 = 2'000'000;
+            Int64 bonus9to16 = 1'000'000;
+            if (compId == 0xF90A0000) {
+                shareBonusBase = 75'000;
+                drawBonus = 150'000;
+                bonus1to8 = 600'000;
+                bonus9to16 = 300'000;
+            }
+            else if (compId == 0xF9330000) {
+                pointsIncrease9to24 = 0.125f;
+                shareBonusBase = 28'000;
+                drawBonus = 133'000;
+                bonus1to8 = 400'000;
+                bonus9to16 = 200'000;
+            }
+            Int64 shareBonus = shareBonusBase + (Int64)((Double)(drawBonus * numDraws) / 666.0);
+            if (compId != 0xF9260000)
+                SafeLog::Write(Utils::Format(L"%s: share bonus %I64d (%u draws)", CompetitionName(comp), shareBonus, numDraws));
+            for (UInt teamPlace = numTeams; teamPlace > 0; teamPlace--) {
+                UInt teamIndex = teamPlace - 1;
+                pTeamIDs[teamIndex] = vecTeams[teamIndex].teamId;
+                if (compId != 0xF9260000) {
+                    CDBTeam *team = GetTeam(pTeamIDs[teamIndex]);
+                    if (team) {
+                        Int64 teamBonus1 = shareBonus * (numTeams - teamIndex);
+                        Int64 teamBonus2 = 0;
+                        if (teamPlace >= 1 && teamPlace <= 8)
+                            teamBonus2 = bonus1to8;
+                        else if (teamPlace >= 9 && teamPlace <= 16)
+                            teamBonus2 = bonus9to16;
+                        team->ChangeMoney(5, teamBonus1 + teamBonus2, 0);
+                        CEAMailData mailData;
+                        mailData.SetMoney(teamBonus1 + teamBonus2);
+                        mailData.SetCompetition(comp->GetCompID());
+                        team->SendMail(3440, mailData, 0); // _COMPETITION: you have earned a bonus of _MONEY.
+                        SafeLog::Write(Utils::Format(L"%s: team %s bonus - %I64d (%I64d + %I64d)",
+                            CompetitionName(comp), TeamName(team), teamBonus1 + teamBonus2, teamBonus1, teamBonus2));
+
+                        if (teamPlace >= 25) {
+                            if (comp->GetCompetitionType() != COMP_CONFERENCE_LEAGUE) { // not yet implemented for Conference League
+                                team->OnCompetitionElimination(comp->GetCompID(), 0); // budget reduce/income
+                                SafeLog::Write(Utils::Format(L"%s: team %s was eliminated", CompetitionName(comp), TeamName(team)));
+                            }
+                            if (team->GetInternationalPrestige() > 11 && vecTeams[teamIndex].points < 5 &&
+                                !CallMethodAndReturn<Bool, 0xEDE770>(team) // TODO: research - this probably works only for CL/EL
+                                )
+                            {
+                                UChar previousIP = team->GetInternationalPrestige();
+                                if (vecTeams[teamIndex].points >= 3)
+                                    team->SetInternationalPrestige(team->GetInternationalPrestige() - 1);
+                                else
+                                    team->SetInternationalPrestige(team->GetInternationalPrestige() - 2);
+                                CEAMailData mailData2;
+                                mailData2.SetCompetition(comp->GetCompID());
+                                team->SendMail(2786, mailData2, 1); // Your results in the _COMPETITION were a joke, and you lost international prestige.
+                                SafeLog::Write(Utils::Format(L"%s: decreased team %s IP from %u to %u - bad results",
+                                    CompetitionName(comp), TeamName(team), previousIP, team->GetInternationalPrestige()));
+                            }
+                            if (team->GetInternationalPrestige() < 10) {
+                                if (CRandom::GetRandomInt(100) < 80) {
+                                    team->SetInternationalPrestige(team->GetInternationalPrestige() + 1);
+                                    team->SetNationalPrestige(team->GetNationalPrestige() + 1);
+                                    SafeLog::Write(Utils::Format(L"%s: increased team %s IP and NP by 1 point", CompetitionName(comp), TeamName(team)));
+                                }
+                            }
+                            else if (team->GetInternationalPrestige() <= 15) {
+                                if (CRandom::GetRandomInt(100) < 10) {
+                                    team->SetInternationalPrestige(team->GetInternationalPrestige() - 1);
+                                    SafeLog::Write(Utils::Format(L"%s: decreased team %s IP by 1 point", CompetitionName(comp), TeamName(team)));
+                                }
+                            }
+                            else {
+                                if (CRandom::GetRandomInt(100) < 20) {
+                                    team->SetInternationalPrestige(team->GetInternationalPrestige() - 1);
+                                    SafeLog::Write(Utils::Format(L"%s: decreased team %s IP by 1 point", CompetitionName(comp), TeamName(team)));
+                                }
+                            }
+                        }
+                    }
+                    if (table) {
+                        if (teamPlace >= 1 && teamPlace <= 8)
+                            points += pointsIncrease1to8;
+                        else if (teamPlace >= 9 && teamPlace <= 24)
+                            points += pointsIncrease9to24;
+                        if (points > 0.0f) {
+                            UChar countryId = GetTeamCountryId_LiechtensteinCheck(pTeamIDs[teamIndex]);
+                            if (countryId >= 1 && countryId <= 207) {
+                                table->GetInfoForCountry(countryId)->AddPoints(points);
+                                SafeLog::Write(Utils::Format(L"Added %g points for %s (team: %s)",
+                                    points, CountryName(countryId), TeamName(GetTeam(pTeamIDs[teamIndex]))));
+                            }
+                        }
                     }
                 }
             }
+            comp->SetNumOfRegisteredTeams(numTeams);
         }
-        comp->SetNumOfRegisteredTeams(numTeams);
     }
     return vecTeams;
+}
+
+void UEFALeaguePhaseMatchdayProcessBonuses(CDBRound *round, RoundPair const &pair) {
+    auto GiveBonus = [&round](CTeamIndex const &teamID, EAGMoney const &money, UInt mailID) {
+        if (money != 0 && !teamID.isNull()) {
+            CDBTeam *team = GetTeam(teamID);
+            if (team) {
+                team->ChangeMoney(5, money, 0);
+                CEAMailData mailData;
+                mailData.SetMoney(money);
+                team->SendMail(mailID, mailData, 1);
+                SafeLog::Write(Utils::Format(L"%s: team %s League Phase matchday bonus - %I64d", CompetitionName(round), TeamName(team), money));
+            }
+        }
+    };
+    if (pair.result1[0] == pair.result2[0]) {
+        GiveBonus(pair.m_n1stTeam, round->GetBonus(2), 3442); // You have earned a draw bonus in the previous cup match of _MONEY.
+        GiveBonus(pair.m_n2ndTeam, round->GetBonus(2), 3442); // You have earned a draw bonus in the previous cup match of _MONEY.
+    }
+    else
+        GiveBonus(pair.GetWinner(), round->GetBonus(1), 2602); // You have earned a win bonus in the previous cup match of _MONEY.
+}
+
+CTeamIndex const & METHOD OnDBRoundRegisterMatch_GetWinner(RoundPair const &pair) {
+    if (gMyDBRound_RegisterMatch_Round && IsUEFALeaguePhaseMatchdayCompID(gMyDBRound_RegisterMatch_Round->GetCompID())) {
+        static CTeamIndex nullTeam = CTeamIndex::null();
+        return nullTeam;
+    }
+    return pair.GetWinner();
 }
 
 void AddUEFALeaguePhaseCompetitionToComboBox(void *comboBox, UInt compId) {
@@ -651,13 +761,12 @@ CXgFMPanel *METHOD OnMatchdayCupResultsCreateUI(CXgFMPanel *panel) {
     return panel;
 }
 
-UInt METHOD CupDrawMailMessage_GetNumOfTeams(CDBCompetition *comp) {
+UInt METHOD UEFALeaguePhase_GetNumOfTeams(CDBCompetition *comp) {
     return IsUEFALeaguePhaseMatchdayCompID(comp->GetCompID()) ? 0 : comp->GetNumOfTeams();
 }
 
 void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *out) {
     if (IsUEFALeaguePhaseCompID(mailData.GetCompetition())) {
-        *out = L'\0';
         UInt numTeams = 0;
         for (UInt i = 0; i < 8; ++i) {
             CTeamIndex teamID = CTeamIndex::make(mailData.GetArrayValue(i));
@@ -674,16 +783,6 @@ void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *o
     }
     else
         Call<0x14F35B2>(callbackArg, &mailData, out);
-}
-
-Int METHOD CupDrawMailMessage_GetMailID(void *t) {
-    Int mailID = CallMethodAndReturn<Int, 0x100E1E0>(t);
-    if (mailID == 1917) {
-        CEAMailData *mailData = raw_ptr<CEAMailData>(t, 0x18);
-        if (IsUEFALeaguePhaseCompID(mailData->GetCompetition()))
-            return 0;
-    }
-    return mailID;
 }
 
 void PatchUEFALeaguePhase(FM::Version v) {
@@ -718,11 +817,9 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectCall(0xAA0B30, OnMatchdayCupResultsDtor);
         patch::RedirectCall(0xAA13E6, OnMatchdayCupResultsCreateUI);
 
-        // disable "Cup Draw: _COMPETITION" e-mail message for CL/EL/CO League Phase matchdays
-        patch::RedirectCall(0x1045264, CupDrawMailMessage_GetNumOfTeams);
-        // update the _TEAM_LIST behavior
-        patch::SetPointer(0x309EB78, MyTeamListHandler);
-        // remove the deletion of "Cup Draw: _COMPETITION" e-mail message for CL/EL/CO League Phase matchdays
-        //patch::RedirectCall(0x8CFE45, CupDrawMailMessage_GetMailID);
+        patch::RedirectCall(0x1045264, UEFALeaguePhase_GetNumOfTeams); // disable "Cup Draw: _COMPETITION" e-mail message for League Phase matchdays
+        patch::RedirectCall(0x10470E6, UEFALeaguePhase_GetNumOfTeams); // disable round-finish logic (manager bio, IP change, budget reduce) for League Phase matchdays
+        patch::SetPointer(0x309FFD4, MyTeamListHandler); // update the _TEAM_LIST behavior
+        patch::RedirectCall(0x1043DFB, OnDBRoundRegisterMatch_GetWinner); // disable default win bonus for League Phase matchdays
     }
 }

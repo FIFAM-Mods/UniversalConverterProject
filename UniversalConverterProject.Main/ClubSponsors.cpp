@@ -40,7 +40,7 @@ EAGMoney *METHOD OnClubSponsorConstructMoney(EAGMoney *t, DUMMY_ARG, UInt value,
 }
 
 void METHOD OnClubSponsorSetMoneyAmount(void *t, DUMMY_ARG, EAGMoney *money) {
-    if (*money != 0)
+    if (money->GetValue() != 0)
         CallMethod<0x1276120>(t, money);
 }
 

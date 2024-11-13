@@ -546,6 +546,17 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         Settings::GetInstance().Save();
         SaveTestFile();
     }
+    else if (uCmd == WM_GETMINMAXINFO) {
+        static Bool initialized = false;
+        if (!initialized) {
+            HICON hIcon = (HICON)LoadImageA(NULL, "Manager.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
+            if (hIcon != NULL) {
+                SendMessageA(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+                SendMessageA(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+            }
+            initialized = true;
+        }
+    }
     return CallMethodAndReturnDynGlobal<Int>(gOriginalWndProc, 0, hWnd, uCmd, wParam, lParam);
 }
 

@@ -295,7 +295,7 @@ EAGMoney *SetBaseNationalTeamSalaryBudget2(EAGMoney *out, EAGMoney *base, EAGMon
                 if (leagueAvg < 15)
                     leagueAvg = 15;
                 UInt64 newSalaries = leagueAvg * leagueAvg * leagueAvg * Settings::GetInstance().NTBudgetMultiplier;
-                EAGMoney newBase = 0;
+                EAGMoney newBase;
                 CallMethod<0x149C282>(&newBase, newSalaries, 0);
                 Call<0x149D7D0>(out, &newBase, current);
                 calculated = true;
@@ -1095,10 +1095,10 @@ UChar METHOD MySetTransferDemandsTaskProcess(void *task, DUMMY_ARG, void *staff)
                 break;
             CDBPlayer *player = GetPlayer(team->GetPlayer(i));
             if (player && player->GetCurrentTeam() == teamIndex) {
-                auto currMV = player->GetMarketValue();
+                auto currMV = player->GetMarketValue().GetValue();
                 if (currMV > 0) {
-                    auto currDemand = player->GetDemandValue();
-                    auto currFee = player->GetMinRelFee();
+                    auto currDemand = player->GetDemandValue().GetValue();
+                    auto currFee = player->GetMinRelFee().GetValue();
                     const Int64 ValueMin = 70'000'000'000;
                     const Int64 ValueMax = 150'000'000'000;
                     const Int64 ValueDiff = ValueMax - ValueMin;
@@ -2096,6 +2096,8 @@ void PatchEABFFixes(FM::Version v) {
 		//patch::RedirectCall(0x120F5CC, YouthTransfsersCollect<0x120F220, IntercontinentalLevel>);
 
         patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
+
+        patch::Nop(0x45BF5A, 19); // Fix FM icon
     }
 }
 

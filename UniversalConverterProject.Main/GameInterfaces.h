@@ -87,7 +87,65 @@ public:
 	String ToStr();
 };
 
-using EAGMoney = Int64;
+enum eCurrency : Int {
+    CURRENCY_EUR = 0,
+    CURRENCY_USD = 1,
+    CURRENCY_GBP = 2,
+    CURRENCY_PLN = 3
+};
+
+class EAGMoney {
+public:
+    Int64 value;
+
+    EAGMoney();
+    EAGMoney(Int value, eCurrency currency = CURRENCY_EUR);
+    EAGMoney(Int64 value, eCurrency currency = CURRENCY_EUR);
+    EAGMoney(Double value, eCurrency currency = CURRENCY_EUR);
+    Int64 GetValue();
+    Bool Set(Int64 value, eCurrency currency = CURRENCY_EUR);
+    Bool IsValidCurrency(eCurrency currency = CURRENCY_EUR);
+    Int64 GetValueInCurrency(eCurrency currency = CURRENCY_EUR);
+    EAGMoney &operator=(Int64 rhs);
+    EAGMoney operator-();
+};
+
+Bool operator<(EAGMoney const &a, EAGMoney const &b);
+Bool operator>(EAGMoney const &a, EAGMoney const &b);
+Bool operator<=(EAGMoney const &a, EAGMoney const &b);
+Bool operator>=(EAGMoney const &a, EAGMoney const &b);
+Bool operator==(EAGMoney const &a, EAGMoney const &b);
+Bool operator!=(EAGMoney const &a, EAGMoney const &b);
+Bool operator>(Int64 a, EAGMoney const &b);
+Bool operator==(Int64 a, EAGMoney const &b);
+Bool operator<(EAGMoney const &a, Int64 b);
+Bool operator>(EAGMoney const &a, Int64 b);
+Bool operator<=(EAGMoney const &a, Int64 b);
+Bool operator>=(EAGMoney const &a, Int64 b);
+Bool operator==(EAGMoney const &a, Int64 b);
+Bool operator!=(EAGMoney const &a, Int64 b);
+EAGMoney operator+(EAGMoney const &a, EAGMoney const &b);
+EAGMoney &operator+=(EAGMoney &a, EAGMoney const &b);
+EAGMoney operator+(EAGMoney const &a, Int64 b);
+EAGMoney operator+(EAGMoney const &a, Int b);
+EAGMoney &operator+=(EAGMoney &a, Int64 b);
+EAGMoney &operator+=(EAGMoney &a, Int b);
+EAGMoney operator+(EAGMoney const &a, Double b);
+EAGMoney &operator+=(EAGMoney &a, Double b);
+EAGMoney operator-(EAGMoney const &a, EAGMoney const &b);
+EAGMoney &operator-=(EAGMoney &a, EAGMoney const &b);
+EAGMoney operator-(EAGMoney const &a, Int64 b);
+EAGMoney operator-(EAGMoney const &a, Int b);
+EAGMoney &operator-=(EAGMoney &a, Int64 b);
+EAGMoney &operator-=(EAGMoney &a, Int b);
+EAGMoney &operator-=(EAGMoney &a, Double b);
+EAGMoney operator*(EAGMoney const &a, Double b);
+EAGMoney operator*(Double a, EAGMoney const &b);
+EAGMoney &operator*=(EAGMoney &a, Double b);
+EAGMoney operator/(EAGMoney const &a, Double b);
+EAGMoney &operator/=(EAGMoney &a, Double b);
+EAGMoney &operator/=(EAGMoney &a, EAGMoney const &b);
+EAGMoney operator-(EAGMoney const &rhs);
 
 enum eMetricCode {
     METRIC_NONE = 0,
@@ -427,6 +485,7 @@ public:
     Bool IsContinental();
     Bool IsLaunched();
 	Bool IsFinished();
+    EAGMoney GetBonus(UInt bonusId);
 };
 
 enum CompDbType {
@@ -487,8 +546,11 @@ struct RoundPair {
     int m_anMatchEventsStartIndex[3];
 
     RoundPair();
-    bool AreTeamsValid();
-    void *GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name);
+    Bool AreTeamsValid() const;
+    void *GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name) const;
+    Bool IsFinished() const;
+    CTeamIndex const &GetWinner() const;
+    CTeamIndex const &GetLoser() const;
 };
 
 struct MatchGoalInfo {
@@ -506,6 +568,7 @@ class CDBRound : public CDBCompetition {
 public:
     unsigned int GetNumOfPairs();
     void GetRoundPair(unsigned int pairIndex, RoundPair &out);
+    RoundPair &GetRoundPair(unsigned int pairIndex);
 };
 
 class CDBCup : public CDBCompetition {};
@@ -590,6 +653,8 @@ public:
     UChar GetRoundType() const;
     void SetCompetition(CCompID const &compID);
     CCompID GetCompetition() const;
+    void SetMoney(EAGMoney const &money);
+    EAGMoney GetMoney() const;
     void SetArrayValue(UInt index, Int value);
     Int GetArrayValue(UInt index) const;
 };
@@ -599,7 +664,9 @@ public:
     CTeamIndex GetTeamID();
     unsigned int GetTeamUniqueID();
     unsigned char GetNationalPrestige();
+    void SetNationalPrestige(UChar prestige);
     unsigned char GetInternationalPrestige();
+    void SetInternationalPrestige(UChar prestige);
     wchar_t *GetName(bool first = true);
     wchar_t *GetShortName(CTeamIndex const &teamID, bool includeYouth = false);
     wchar_t *GetClickableTeamName(CTeamIndex const &teamID, bool includeYouth = false);
@@ -622,7 +689,8 @@ public:
     Int GetManagerId();
     void SetFlag(UInt flag, Bool enable);
     Char SendMail(UInt mailId, CEAMailData const &mailData, Int flag);
-
+    void ChangeMoney(UInt type, EAGMoney const &money, UInt flag);
+    void OnCompetitionElimination(CCompID const &compID, UInt cupRoundId);
 };
 
 struct CAssessmentInfo {
@@ -802,6 +870,8 @@ String TeamTag(CTeamIndex const& teamId);
 String TeamTagWithCountry(CTeamIndex const& teamId);
 String CompetitionTag(CDBCompetition* comp);
 String CompetitionTag(CCompID const& compId);
+String CompetitionName(CDBCompetition *comp);
+String CompetitionName(CCompID const &compId);
 String CountryName(UChar countryId);
 String CountryTag(UChar countryId);
 
@@ -825,6 +895,7 @@ public:
     CDBTeam *GetAwayTeam();
 	Bool CheckFlag(UInt flag);
 	void GetResult(UChar &outHome, UChar &outAway);
+    UInt GetRoundPairIndex();
 };
 
 CDBOneMatch *GetCurrentMatch();

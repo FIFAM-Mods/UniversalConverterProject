@@ -15,3 +15,4 @@ Bool IsUEFALeaguePhaseCompID(CCompID const &compID);
 UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds);
 Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID);
 Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp);
+void UEFALeaguePhaseMatchdayProcessBonuses(CDBRound *, RoundPair const &pair);

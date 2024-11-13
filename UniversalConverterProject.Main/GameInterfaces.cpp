@@ -408,6 +408,12 @@ Bool CDBCompetition::IsFinished() {
 	return CallVirtualMethodAndReturn<Bool, 2>(this);
 }
 
+EAGMoney CDBCompetition::GetBonus(UInt bonusId) {
+    EAGMoney result;
+    CallVirtualMethod<27>(this, &result, bonusId);
+    return result;
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -780,6 +786,16 @@ String CompetitionTag(CCompID const& compId) {
     return CompetitionTag(GetCompetition(compId));
 }
 
+String CompetitionName(CDBCompetition *comp) {
+    if (comp)
+        return Utils::Format(L"%s", comp->GetName());
+    return L"n/a";
+}
+
+String CompetitionName(CCompID const &compId) {
+    return CompetitionTag(GetCompetition(compId));
+}
+
 String CountryName(UChar countryId) {
     if (countryId >= 1 && countryId <= 207)
         return GetCountryStore()->m_aCountries[countryId].GetName();
@@ -879,8 +895,16 @@ unsigned char CDBTeam::GetNationalPrestige() {
     return plugin::CallMethodAndReturn<unsigned char, 0xED1480>(this);
 }
 
+void CDBTeam::SetNationalPrestige(UChar prestige) {
+    plugin::CallMethod<0xED1490>(this, prestige);
+}
+
 unsigned char CDBTeam::GetInternationalPrestige() {
     return plugin::CallMethodAndReturn<unsigned char, 0xED14B0>(this);
+}
+
+void CDBTeam::SetInternationalPrestige(UChar prestige) {
+    plugin::CallMethod<0xED14C0>(this, prestige);
 }
 
 wchar_t *CDBTeam::GetName(bool first) {
@@ -967,6 +991,14 @@ Char CDBTeam::SendMail(UInt mailId, CEAMailData const &mailData, Int flag) {
     return CallMethodAndReturn<Char, 0xEE1F10>(this, mailId, &mailData, flag);
 }
 
+void CDBTeam::ChangeMoney(UInt type, EAGMoney const &money, UInt flag) {
+    CallMethod<0xECA910>(this, type, &money, flag);
+}
+
+void CDBTeam::OnCompetitionElimination(CCompID const &compID, UInt cupRoundId) {
+    CallMethod<0xEEE0B0>(this, &compID, cupRoundId);
+}
+
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
     for (UInt i = 0; i < GetNumPlayers(); i++) {
         if (GetPlayer(i) == playerId)
@@ -1014,6 +1046,155 @@ CTeamIndex CTeamIndex::null() {
     result.countryId = 0;
     result.index = 0;
     result.type = 0;
+    return result;
+}
+
+Bool operator<(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149CFFA>(&a, &b); }
+
+Bool operator>(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D03A>(&a, &b); }
+
+Bool operator<=(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D07A>(&a, &b); }
+
+Bool operator>=(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D0BA>(&a, &b); }
+
+Bool operator==(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D0FA>(&a, &b); }
+
+Bool operator!=(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D138>(&a, &b); }
+
+Bool operator>(Int64 a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D1BA>(a, &b); }
+
+Bool operator==(Int64 a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149D286>(a, &b); }
+
+Bool operator<(EAGMoney const &a, Int64 b) { return CallAndReturn<Bool, 0x0149D30A>(&a, b); }
+
+Bool operator>(EAGMoney const &a, Int64 b) { return CallAndReturn<Bool, 0x0149D34E>(&a, b); }
+
+Bool operator<=(EAGMoney const &a, Int64 b) { return CallAndReturn<Bool, 0x0149D392>(&a, b); }
+
+Bool operator>=(EAGMoney const &a, Int64 b) { return CallAndReturn<Bool, 0x0149D3D6>(&a, b); }
+
+Bool operator==(EAGMoney const &a, Int64 b) { return CallAndReturn<Bool, 0x0149D41A>(&a, b); }
+
+Bool operator!=(EAGMoney const &a, Int64 b) { return CallAndReturn<Bool, 0x0149D45C>(&a, b); }
+
+EAGMoney operator+(EAGMoney const &a, EAGMoney const &b) {
+    EAGMoney result;
+    Call<0x0149D49E>(&result, &a, &b);
+    return result;
+}
+
+EAGMoney &operator+=(EAGMoney &a, EAGMoney const &b) {
+    Call<0x0149D4D8>(&a, &b);
+    return a;
+}
+
+EAGMoney operator+(EAGMoney const &a, Int64 b) {
+    EAGMoney result;
+    Call<0x0149D515>(&result, &a, b);
+    return result;
+}
+
+EAGMoney operator+(EAGMoney const &a, Int b) {
+    EAGMoney result;
+    Call<0x0149D5A1>(&result, &a, b);
+    return result;
+}
+
+EAGMoney &operator+=(EAGMoney &a, Int64 b) {
+    Call<0x0149D644>(&a, b);
+    return a;
+}
+
+EAGMoney &operator+=(EAGMoney &a, Int b) {
+    Call<0x0149D670>(&a, b);
+    return a;
+}
+
+EAGMoney operator+(EAGMoney const &a, Double b) {
+    EAGMoney result;
+    Call<0x0149D69C>(&result, &a, b);
+    return result;
+}
+
+EAGMoney &operator+=(EAGMoney &a, Double b) {
+    Call<0x0149D77A>(&a, b);
+    return a;
+}
+
+EAGMoney operator-(EAGMoney const &a, EAGMoney const &b) {
+    EAGMoney result;
+    Call<0x0149D7D0>(&result, &a, &b);
+    return result;
+}
+
+EAGMoney &operator-=(EAGMoney &a, EAGMoney const &b) {
+    Call<0x0149D80A>(&a, &b);
+    return a;
+}
+
+EAGMoney operator-(EAGMoney const &a, Int64 b) {
+    EAGMoney result;
+    Call<0x0149D82A>(&result, &a, b);
+    return result;
+}
+
+EAGMoney operator-(EAGMoney const &a, Int b) {
+    EAGMoney result;
+    Call<0x0149D8B8>(&result, &a, b);
+    return result;
+}
+
+EAGMoney &operator-=(EAGMoney &a, Int64 b) {
+    Call<0x0149D902>(&a, b);
+    return a;
+}
+
+EAGMoney &operator-=(EAGMoney &a, Int b) {
+    Call<0x0149D976>(&a, b);
+    return a;
+}
+
+EAGMoney &operator-=(EAGMoney &a, Double b) {
+    Call<0x0149D9A6>(&a, b);
+    return a;
+}
+
+EAGMoney operator*(EAGMoney const &a, Double b) {
+    EAGMoney result;
+    Call<0x0149DAE0>(&result, &a, b);
+    return result;
+}
+
+EAGMoney operator*(Double a, EAGMoney const &b) {
+    EAGMoney result;
+    Call<0x0149DB17>(&result, a, &b);
+    return result;
+}
+
+EAGMoney &operator*=(EAGMoney &a, Double b) {
+    Call<0x0149DB4E>(&a, b);
+    return a;
+}
+
+EAGMoney operator/(EAGMoney const &a, Double b) {
+    EAGMoney result;
+    Call<0x0149DB6B>(&result, &a, b);
+    return result;
+}
+
+EAGMoney &operator/=(EAGMoney &a, Double b) {
+    Call<0x0149DBA2>(&a, b);
+    return a;
+}
+
+EAGMoney &operator/=(EAGMoney &a, EAGMoney const &b) {
+    Call<0x0149DBBF>(&a, &b);
+    return a;
+}
+
+EAGMoney operator-(EAGMoney const &rhs) {
+    EAGMoney result;
+    Call<0x0149DBD0>(&result, &rhs);
     return result;
 }
 
@@ -1328,6 +1509,10 @@ void CDBOneMatch::GetResult(UChar & outHome, UChar & outAway) {
 	CallMethod<0xE7FF20>(this, &outHome, &outAway);
 }
 
+UInt CDBOneMatch::GetRoundPairIndex() {
+    return CallMethodAndReturn<UInt, 0xE801B0>(this);
+}
+
 CDBOneMatch *GetCurrentMatch() {
     return *(CDBOneMatch **)0x3124748;
 }
@@ -1542,16 +1727,32 @@ void CDBRound::GetRoundPair(unsigned int pairIndex, RoundPair &out) {
     plugin::CallMethod<0x1043BA0>(this, pairIndex, &out);
 }
 
+RoundPair &CDBRound::GetRoundPair(unsigned int pairIndex) {
+    return *raw_ptr<RoundPair>(this, 0x2088 + sizeof(RoundPair) * pairIndex);
+}
+
 RoundPair::RoundPair() {
     plugin::CallMethod<0x10ED6C0>(this);
 }
 
-bool RoundPair::AreTeamsValid() {
+Bool RoundPair::AreTeamsValid() const {
     return plugin::CallMethodAndReturn<bool, 0x10EDE40>(this);
 }
 
-void *RoundPair::GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name) {
+void *RoundPair::GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name) const {
     return plugin::CallMethodAndReturn<void *, 0x10ED930>(this, str, flags, team1name, team2name);
+}
+
+Bool RoundPair::IsFinished() const {
+    return CallMethodAndReturn<Bool, 0x10ED450>(this);
+}
+
+CTeamIndex const &RoundPair::GetWinner() const {
+    return CallMethodAndReturn<CTeamIndex const &, 0x10EDD80>(this);
+}
+
+CTeamIndex const &RoundPair::GetLoser() const {
+    return CallMethodAndReturn<CTeamIndex const &, 0x10EDE00>(this);
 }
 
 SyncFile::SyncFile() {
@@ -1674,6 +1875,16 @@ CCompID CEAMailData::GetCompetition() const {
     return result;
 }
 
+void CEAMailData::SetMoney(EAGMoney const &money) {
+    CallMethod<0x100DA70>(this, &money);
+}
+
+EAGMoney CEAMailData::GetMoney() const {
+    EAGMoney result;
+    CallMethod<0x100DA90>(this, &result);
+    return result;
+}
+
 void CEAMailData::SetArrayValue(UInt index, Int value) {
     CallMethod<0x1010680>(this, index, value);
 }
@@ -1720,4 +1931,47 @@ void CFMListBox::NextRow(Int unk) {
 
 void CFMListBox::Create(CXgFMPanel *panel, const char *name) {
     CallMethod<0xD1EEE0>(this, panel, name);
+}
+
+EAGMoney::EAGMoney() {
+    value = 0;
+}
+
+EAGMoney::EAGMoney(Int value, eCurrency currency) {
+    CallMethod<0x149C16C>(this, value, currency);
+}
+
+EAGMoney::EAGMoney(Int64 value, eCurrency currency) {
+    CallMethod<0x149C282>(this, value, currency);
+}
+
+EAGMoney::EAGMoney(Double value, eCurrency currency) {
+    CallMethod<0x149C4AE>(this, value, currency);
+}
+
+Int64 EAGMoney::GetValue() {
+    return value;
+}
+
+Bool EAGMoney::Set(Int64 value, eCurrency currency) {
+    return CallMethodAndReturn<Bool, 0x149C6BB>(this, value, currency);
+}
+
+Bool EAGMoney::IsValidCurrency(eCurrency currency) {
+    return CallMethodAndReturn<Bool, 0x149CF59>(this, currency);
+}
+
+Int64 EAGMoney::GetValueInCurrency(eCurrency currency) {
+    return CallMethodAndReturn<Int64, 0x149C9D7>(this, currency);
+}
+
+EAGMoney &EAGMoney::operator=(Int64 rhs) {
+    value = rhs;
+    return *this;
+}
+
+EAGMoney EAGMoney::operator-() {
+    EAGMoney result;
+    CallMethod<0x149CF0A>(this, &result);
+    return result;
 }
