@@ -83,6 +83,7 @@
     <ClCompile Include="..\shared\tinyxml\tinyxmlparser.cpp">
       <Filter>tinyxml</Filter>
     </ClCompile>
+    <ClCompile Include="Assessment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InternationalCupsFix.h" />
@@ -161,6 +162,7 @@
     <ClInclude Include="..\shared\tinyxml\tinyxml.h">
       <Filter>tinyxml</Filter>
     </ClInclude>
+    <ClInclude Include="Assessment.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

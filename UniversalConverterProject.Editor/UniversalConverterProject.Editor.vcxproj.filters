@@ -30,6 +30,7 @@
       <Filter>settings</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\shared.cpp" />
+    <ClCompile Include="Assessment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -61,6 +62,7 @@
       <Filter>settings</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\shared.h" />
+    <ClInclude Include="Assessment.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

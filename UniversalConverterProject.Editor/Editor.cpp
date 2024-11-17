@@ -1509,6 +1509,8 @@ void PatchEditor(FM::Version v) {
             L"database\\script\\CountryScript*.sav",
             L"database\\AppearanceDefs.sav",
             L"database\\Assessment.sav",
+            L"database\\AssessmentAFC.sav",
+            L"database\\AssessmentCAF.sav",
             L"database\\Countries.sav",
             L"database\\Master.dat",
             L"database\\Rules.sav",

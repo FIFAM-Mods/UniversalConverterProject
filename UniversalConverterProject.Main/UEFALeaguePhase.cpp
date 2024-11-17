@@ -767,6 +767,7 @@ UInt METHOD UEFALeaguePhase_GetNumOfTeams(CDBCompetition *comp) {
 
 void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *out) {
     if (IsUEFALeaguePhaseCompID(mailData.GetCompetition())) {
+        *out = L'\0';
         UInt numTeams = 0;
         for (UInt i = 0; i < 8; ++i) {
             CTeamIndex teamID = CTeamIndex::make(mailData.GetArrayValue(i));

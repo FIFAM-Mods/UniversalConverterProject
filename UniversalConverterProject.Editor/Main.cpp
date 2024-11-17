@@ -21,6 +21,7 @@
 #include "DatabaseOptions.h"
 #include "CustomShaders.h"
 #include "ReserveNames.h"
+#include "Assessment.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -33,7 +34,7 @@ public:
             Settings::GetInstance().Load();
             IsWomensDatabase() = patch::GetUShort(0x66E7A8) == L'W';
             GenerateBigIdx();
-            patch::SetUInt(0x5504D5 + 3, 0x2013000F); // binary database version
+            patch::SetUInt(0x5504D5 + 3, 0x20130010); // TODO: binary database version
             // set version (0x2013)
             patch::SetUChar(0x4C7ACA + 1, 0xF); // CClub::Write
             patch::SetUChar(0x4E4F66 + 1, 0xF); // CCountry::SaveFileData
@@ -66,6 +67,7 @@ public:
         PatchKits(v);
         PatchDatabaseOptions(v);
         PatchReserveNames(v);
+        PatchAssessment(v);
     }
 
     ~UniversalConverterProject() {

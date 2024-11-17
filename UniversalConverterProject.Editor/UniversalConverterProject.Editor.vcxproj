@@ -103,6 +103,7 @@
     <ClCompile Include="..\shared\shared.cpp" />
     <ClCompile Include="..\shared\UcpSettings.cpp" />
     <ClCompile Include="3dPatches.cpp" />
+    <ClCompile Include="Assessment.cpp" />
     <ClCompile Include="ClubIDs.cpp" />
     <ClCompile Include="Competitions.cpp" />
     <ClCompile Include="Country207.cpp" />
@@ -133,6 +134,7 @@
     <ClInclude Include="..\shared\UcpSettings.h" />
     <ClInclude Include="..\shared\WinHeader.h" />
     <ClInclude Include="3dPatches.h" />
+    <ClInclude Include="Assessment.h" />
     <ClInclude Include="ClubIDs.h" />
     <ClInclude Include="Competitions.h" />
     <ClInclude Include="Country207.h" />

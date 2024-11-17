@@ -793,7 +793,7 @@ String CompetitionName(CDBCompetition *comp) {
 }
 
 String CompetitionName(CCompID const &compId) {
-    return CompetitionTag(GetCompetition(compId));
+    return CompetitionName(GetCompetition(compId));
 }
 
 String CountryName(UChar countryId) {
@@ -1561,6 +1561,22 @@ void BinaryReaderReadUInt32(void *reader, UInt *out) {
     CallMethod<0x1338B10>(reader, out);
 }
 
+bool BinaryReaderCheckFourcc(void *reader, UInt fourcc) {
+    return CallMethodAndReturn<bool, 0x1338EC0>(reader, fourcc);
+}
+
+void BinaryReaderReadUInt16(void *reader, UShort *out) {
+    CallMethod<0x13389E0>(reader, out);
+}
+
+void BinaryReaderReadUInt8(void *reader, UChar *out) {
+    CallMethod<0x1338890>(reader, out);
+}
+
+void BinaryReaderReadFloat(void *reader, Float *out) {
+    CallMethod<0x1338BF0>(reader, out);
+}
+
 void SaveGameReadString(void *save, WideChar *out, UInt maxLen) {
     CallMethod<0x1080EB0>(save, out, maxLen);
 }
@@ -1581,12 +1597,32 @@ UInt SaveGameReadInt32(void *save) {
     return CallMethodAndReturn<UInt, 0x10802F0>(save);
 }
 
+void SaveGameReadFloat(void *save, Float &out) {
+    CallMethod<0x1080650>(save, &out);
+}
+
+Float SaveGameReadFloat(void *save) {
+    return CallMethodAndReturn<Float, 0x1080670>(save);
+}
+
+void SaveGameReadFloatArray(void *save, Float *values, UInt count) {
+    CallMethod<0x1080630>(save, values, count);
+}
+
 void SaveGameWriteInt8(void *save, UChar value) {
     CallMethod<0x107F400>(save, value);
 }
 
 void SaveGameWriteInt32(void *save, UInt value) {
     CallMethod<0x107F380>(save, value);
+}
+
+void SaveGameWriteFloat(void *save, Float value) {
+    CallMethod<0x107F5F0>(save, value);
+}
+
+void SaveGameWriteFloatArray(void *save, Float *values, UInt count) {
+    CallMethod<0x107F5D0>(save, values, count);
 }
 
 UInt SaveGameLoadGetVersion(void *save) {
