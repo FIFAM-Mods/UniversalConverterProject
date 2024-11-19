@@ -3079,51 +3079,50 @@ void EuropeanCompsParticipantsInitColumns(UInt lb, int, int, int, int, int, int,
 }
 
 void *OnGetGameInstanceSetupCompetitionWinners() {
-    CDBRound *r = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Spain, 0, 1));
-    r = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::UefaCup, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::England, 0, 1));
-    r = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::ConferenceLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion()))) {
-        CDBTeam* olympiacos = GetTeamByUniqueID(0x00160008);
-        if (olympiacos)
-            r->SetChampion(olympiacos->GetTeamID());
-        else
-            r->SetChampion(CTeamIndex::make(FifamCompRegion::Italy, 0, 1));
-    }
-    r = GetRoundByRoundType(FifamCompRegion::SouthAmerica, FifamCompType::ChampionsLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Argentina, 0, 1));
-    r = GetRoundByRoundType(FifamCompRegion::SouthAmerica, FifamCompType::UefaCup, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Brazil, 0, 1));
-
-    r = GetRoundByRoundType(FifamCompRegion::NorthAmerica, FifamCompType::ChampionsLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Mexico, 0, 1));
-    r = GetRoundByRoundType(FifamCompRegion::NorthAmerica, FifamCompType::UefaCup, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::United_States, 0, 1));
-
-    r = GetRoundByRoundType(FifamCompRegion::Asia, FifamCompType::ChampionsLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Japan, 0, 1));
-    r = GetRoundByRoundType(FifamCompRegion::Asia, FifamCompType::UefaCup, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::China_PR, 0, 1));
-
-    r = GetRoundByRoundType(FifamCompRegion::Africa, FifamCompType::ChampionsLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Morocco, 0, 1));
-    r = GetRoundByRoundType(FifamCompRegion::Africa, FifamCompType::UefaCup, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::Egypt, 0, 1));
-
-    r = GetRoundByRoundType(FifamCompRegion::Oceania, FifamCompType::ChampionsLeague, 15);
-    if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion())))
-        r->SetChampion(CTeamIndex::make(FifamCompRegion::New_Zealand, 0, 1));
+    auto SetDefaultWinners = [](UChar region, Vector<UChar> const &defaultCountries) {
+        if (defaultCountries.size() != 3)
+            return;
+        Array<CTeamIndex, 3> defaultChampions;
+        Array<CDBRound *, 3> rounds;
+        Array<UChar, 3> roundTypes = { FifamCompType::ChampionsLeague, FifamCompType::UefaCup,  FifamCompType::ConferenceLeague };
+        Array<CTeamIndex, 3> champions;
+        for (UInt i = 0; i < 3; i++) {
+            defaultChampions[i] = CTeamIndex::make(defaultCountries[i], 0, 1);
+            rounds[i] = GetRoundByRoundType(region, roundTypes[i], ROUND_FINAL);
+            champions[i] = (rounds[i] && rounds[i]->GetChampion().countryId && GetTeam(rounds[i]->GetChampion())) ?
+                rounds[i]->GetChampion() : CTeamIndex::null();
+        }
+        if (region == FifamCompRegion::Europe && rounds[2] && champions[2].isNull()) {
+            CDBTeam *olympiacos = GetTeamByUniqueID(0x00160008);
+            if (olympiacos && olympiacos->GetTeamID() != champions[0] && olympiacos->GetTeamID() != champions[1]) {
+                rounds[2]->SetChampion(olympiacos->GetTeamID());
+                champions[2] = olympiacos->GetTeamID();
+            }
+        }
+        Set<UInt> addedChampions;
+        for (UInt i = 0; i < 3; i++) {
+            if (!champions[i].isNull())
+                addedChampions.insert(champions[i].ToInt());
+        }
+        for (UInt i = 0; i < 3; i++) {
+            if (rounds[i] && champions[i].isNull()) {
+                for (auto const &t : defaultChampions) {
+                    if (!t.isNull() && !Utils::Contains(addedChampions, t.ToInt())) {
+                        rounds[i]->SetChampion(t);
+                        addedChampions.insert(t.ToInt());
+                        SafeLog::Write(Utils::Format(L"Set default champion for %s - %s", rounds[i]->GetName(), TeamTag(t)));
+                        break;
+                    }
+                }
+            }
+        }
+    };
+    SetDefaultWinners(FifamCompRegion::Europe, { FifamCompRegion::Spain, FifamCompRegion::England, FifamCompRegion::Italy });
+    SetDefaultWinners(FifamCompRegion::SouthAmerica, { FifamCompRegion::Brazil, FifamCompRegion::Argentina, FifamCompRegion::Colombia });
+    SetDefaultWinners(FifamCompRegion::NorthAmerica, { FifamCompRegion::Mexico, FifamCompRegion::United_States, FifamCompRegion::Canada });
+    SetDefaultWinners(FifamCompRegion::Asia, { FifamCompRegion::United_Arab_Emirates, FifamCompRegion::Japan, FifamCompRegion::Korea_Republic });
+    SetDefaultWinners(FifamCompRegion::Africa, { FifamCompRegion::Egypt, FifamCompRegion::Tunisia, FifamCompRegion::DR_Congo });
+    SetDefaultWinners(FifamCompRegion::Oceania, { FifamCompRegion::New_Zealand, FifamCompRegion::Fiji, FifamCompRegion::Papua_New_Guinea });
 
     CDBCompetition *liechtensteinCup = GetCompetition(FifamCompRegion::Switzerland, FifamCompType::LeagueCup, 0);
     if (liechtensteinCup) {
