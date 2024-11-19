@@ -2442,7 +2442,7 @@ CDBRound *GetECFinalForSimulation(Int, Int, Int) {
         compType = COMP_ASIA_CUP;
     else if (region == FifamCompRegion::Oceania)
         compType = COMP_OFC_CUP;
-    return GetRoundByRoundType(255, compType, 15);
+    return GetRoundByRoundType(255, compType, ROUND_FINAL);
 }
 
 CDBCompetition *GetECPoolForSimulation(Int, Int, Int) {
@@ -3087,9 +3087,9 @@ void *OnGetGameInstanceSetupCompetitionWinners() {
         r->SetChampion(CTeamIndex::make(FifamCompRegion::England, 0, 1));
     r = GetRoundByRoundType(FifamCompRegion::Europe, FifamCompType::ConferenceLeague, 15);
     if (r && (!r->GetChampion().countryId || !GetTeam(r->GetChampion()))) {
-        CDBTeam* westHam = GetTeamByUniqueID(0x000E0007);
-        if (westHam)
-            r->SetChampion(westHam->GetTeamID());
+        CDBTeam* olympiacos = GetTeamByUniqueID(0x00160008);
+        if (olympiacos)
+            r->SetChampion(olympiacos->GetTeamID());
         else
             r->SetChampion(CTeamIndex::make(FifamCompRegion::Italy, 0, 1));
     }
@@ -4705,7 +4705,7 @@ CDBRound *WorldCupGetFinal(UInt region, UInt compType, UShort index) {
 }
 
 CDBRound *GetWorldClubCupFinalForTransitionScreen(CCompID const &compID) {
-    return GetRoundByRoundType(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP, ROUND_FINAL);
+    return GetRoundByRoundType(FifamCompRegion::Europe, COMP_TOYOTA, ROUND_FINAL);
 }
 
 CDBRound *gMyDBRound_RegisterMatch_Round = nullptr;
