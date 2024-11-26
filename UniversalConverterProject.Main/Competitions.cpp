@@ -5555,5 +5555,14 @@ void PatchCompetitions(FM::Version v) {
         patch::Nop(0x129D736, 6); // trophy stickers - TOYOTA
 
         patch::SetPointer(0x24AD3B8, MyDBRound_RegisterMatch); // use 3rd bonus in DB_ROUND as a payment for round loser
+
+        // Club WC hosting teams
+        static UInt ClubWorldCupHostTeams[4] = {
+            0x009B0003, // Beijing Guoan FC
+            0x00B70002, // Al Hilal
+            0x005F2149, // Atlanta
+            0x00B60004  // Al-Rayyan SC
+        };
+        patch::SetPointer(0x1044A87 + 3, ClubWorldCupHostTeams);
     }
 }
