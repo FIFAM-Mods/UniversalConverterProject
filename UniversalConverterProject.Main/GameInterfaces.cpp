@@ -1621,7 +1621,7 @@ void SaveGameWriteFloat(void *save, Float value) {
     CallMethod<0x107F5F0>(save, value);
 }
 
-void SaveGameWriteFloatArray(void *save, Float *values, UInt count) {
+void SaveGameWriteFloatArray(void *save, Float const *values, UInt count) {
     CallMethod<0x107F5D0>(save, values, count);
 }
 
@@ -1945,8 +1945,16 @@ Int CFMListBox::GetRowsCount() {
     return CallMethodAndReturn<Int, 0xD18600>(this);
 }
 
-void CFMListBox::AddColumnText(Int64 value, UInt color, Int unk) {
+void CFMListBox::AddColumnInt(Int64 value, UInt color, Int unk) {
     CallMethod<0xD22BE0>(this, value, color, unk);
+}
+
+void CFMListBox::AddColumnFloat(Float value, UInt color, Int unk) {
+    CallMethod<0xD1CE20>(this, value, color, unk);
+}
+
+void CFMListBox::AddColumnString(WideChar const *str, UInt color, Int unk) {
+    CallMethod<0xD1EF40>(this, str, color, unk);
 }
 
 void CFMListBox::AddTeamWidget(CTeamIndex const &teamID) {
@@ -1955,6 +1963,14 @@ void CFMListBox::AddTeamWidget(CTeamIndex const &teamID) {
 
 void CFMListBox::AddTeamName(CTeamIndex const &teamID, UInt color, Int unk) {
     CallMethod<0xD1F060>(this, &teamID, color, unk);
+}
+
+void CFMListBox::AddCountryFlag(UInt countryId, Int unk) {
+    CallMethod<0xD1E7F0>(this, countryId, unk);
+}
+
+void CFMListBox::AddColumnImage(WideChar const *imagePath) {
+    CallMethod<0xD1E4C0>(this, imagePath);
 }
 
 void CFMListBox::SetRowColor(UInt rowIndex, UInt color) {
@@ -1967,6 +1983,14 @@ void CFMListBox::NextRow(Int unk) {
 
 void CFMListBox::Create(CXgFMPanel *panel, const char *name) {
     CallMethod<0xD1EEE0>(this, panel, name);
+}
+
+Int64 CFMListBox::GetCellValue(UInt row, UInt column) {
+    return CallMethodAndReturn<Int64, 0xD189A0>(this, row, column);
+}
+
+void CFMListBox::SetCellValue(UInt row, UInt column, Int64 value) {
+    return CallMethod<0xD18A00>(this, row, column, value);
 }
 
 EAGMoney::EAGMoney() {

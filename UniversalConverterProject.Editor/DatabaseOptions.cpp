@@ -286,6 +286,9 @@ void *CreateDatabaseOptionsDialog() {
 }
 
 void PatchDatabaseOptions(FM::Version v) {
-    if (v.id() == ID_ED_13_1000)
+    if (v.id() == ID_ED_13_1000) {
+        DatabaseID[0] = L'\0';
+        wcscpy(DatabaseFolderName, L"database");
         patch::RedirectCall(0x4C1307, CreateDatabaseOptionsDialog);
+    }
 }

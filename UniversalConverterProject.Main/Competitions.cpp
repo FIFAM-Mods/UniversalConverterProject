@@ -10,8 +10,9 @@
 #include "Random.h"
 #include "FifamContinent.h"
 #include "FifamClubTeamType.h"
-#include "UEFALeaguePhase.h"
+#include "FifamNation.h"
 #include "FifamBeg.h"
+#include "UEFALeaguePhase.h"
 
 using namespace plugin;
 
@@ -502,11 +503,6 @@ bool METHOD TakesPlaceInThisYear(CDBCompetition *comp, DUMMY_ARG, int) {
         if (year % 4 == 3)
             return true;
         break;
-    case COMP_NAM_NL:
-    case COMP_NAM_NL_Q:
-        if (year % 2 == 1)
-            return true;
-        break;
     case COMP_QUALI_WC: // QUALI_WC
     case COMP_CONFED_CUP: // CONFED_CUP
     case COMP_FINALISSIMA: // FINALISSIMA
@@ -521,6 +517,8 @@ bool METHOD TakesPlaceInThisYear(CDBCompetition *comp, DUMMY_ARG, int) {
     case COMP_NAM_CUP:
     case COMP_U20_WC_Q:
     case COMP_U20_WORLD_CUP: // U20_WORLD_CUP
+    case COMP_NAM_NL:
+    case COMP_NAM_NL_Q:
         if (year % 2 == 0)
             return true;
         break;
@@ -619,7 +617,7 @@ void LaunchCompetitions() {
     void *game = CallAndReturn<void *, 0xF61410>();
     unsigned short year = CallMethodAndReturn<unsigned short, 0xF498C0>(game);
     if (year % 2 == 1) {
-        LaunchCompetition(255, COMP_NAM_NL_Q, 0);
+        //LaunchCompetition(255, COMP_NAM_NL_Q, 0);
         //LaunchCompetition(255, COMP_NAM_NL, 0);
     }
     if (year % 4 == 2) {
@@ -632,6 +630,7 @@ void LaunchCompetitions() {
         LaunchCompetition(255, COMP_OFC_CUP, 0);
     }
     if (year % 2 == 0) {
+        LaunchCompetition(255, COMP_NAM_NL_Q, 0);
         LaunchCompetition(255, COMP_EURO_NL_Q, 0);
         //LaunchCompetition(255, COMP_EURO_NL, 0);
         LaunchCompetition(255, COMP_AFRICA_CUP_Q, 0);
@@ -1158,6 +1157,147 @@ CTeamIndex GetLeagueTeamAtPlace(CDBLeague *league, UInt place) {
         return infos[place].m_teamID;
     }
     return CTeamIndex::null();
+}
+
+UInt StadiumCapacity(CDBTeam *team) {
+    void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(team);
+    if (stadiumDevelopment)
+        return CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
+    return 0;
+}
+
+String StadiumStringId(CDBTeam *team) {
+    void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(team);
+    if (stadiumDevelopment) {
+        UInt stadiumCapacity = CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
+        if (stadiumCapacity > 0) {
+            String stadiumName = CallMethodAndReturn<WideChar const *, 0xF73BD0>(stadiumDevelopment, true);
+            if (!stadiumName.empty())
+                return stadiumName + Utils::Format(L"%u", stadiumCapacity);
+        }
+    }
+    return String();
+}
+
+UInt GetMinCapacityForCompetitionFinal(CCompID const &compId) {
+    switch (compId.countryId) {
+    case FifamCompRegion::Europe:
+        if (compId.type == COMP_CHAMPIONSLEAGUE)
+            return 50'000;
+        return 40'000;
+    case FifamCompRegion::SouthAmerica:
+        if (compId.type == COMP_CHAMPIONSLEAGUE)
+            return 70'000;
+        return 50'000;
+    case FifamCompRegion::NorthAmerica:
+        if (compId.type == COMP_CHAMPIONSLEAGUE)
+            return 25'000;
+        return 20'000;
+    case FifamCompRegion::Africa:
+        if (compId.type == COMP_CHAMPIONSLEAGUE)
+            return 60'000;
+        return 20'000;
+    case FifamCompRegion::Asia:
+        if (compId.type == COMP_CHAMPIONSLEAGUE)
+            return 40'000;
+        return 20'000;
+    case FifamCompRegion::Oceania:
+        return 10'000;
+    }
+    return 30'000;
+}
+
+Set<String> GetExcludedStadiums(Bool isEurope) {
+    Set<String> excludedStadiums;
+    if (isEurope) {
+        void *hosts = CallAndReturn<void *, 0x117C830>();
+        UInt clHostId = CallMethodAndReturn<UInt, 0x117A560>(hosts);
+        if (clHostId > 0) {
+            auto clHostTeam = GetTeam(CTeamIndex::make(clHostId));
+            if (clHostTeam) {
+                String id = StadiumStringId(clHostTeam);
+                if (!id.empty())
+                    excludedStadiums.insert(id);
+            }
+        }
+        UInt elHostId = CallMethodAndReturn<UInt, 0x117A570>(hosts);
+        if (elHostId > 0) {
+            auto elHostTeam = GetTeam(CTeamIndex::make(elHostId));
+            if (elHostTeam) {
+                String id = StadiumStringId(elHostTeam);
+                if (!id.empty())
+                    excludedStadiums.insert(id);
+            }
+        }
+    }
+    return excludedStadiums;
+}
+
+void SelectWCCHostTeam(CDBCompetition *comp) {
+    CTeamIndex hostTeam = CTeamIndex::null();
+    FifamNation countriesList[] = {
+        FifamNation::United_States,
+        FifamNation::Saudi_Arabia,
+        FifamNation::China_PR,
+        FifamNation::Qatar
+    };
+    CDBCountry *hostCountry = GetCountry(countriesList[CRandom::GetRandomInt(std::size(countriesList))].ToInt());
+    if (hostCountry) {
+        Vector<Pair<UInt, CDBTeam *>> teams;
+        for (Int t = 1; t <= hostCountry->GetLastTeamIndex(); t++) {
+            auto team = GetTeam(CTeamIndex::make(hostCountry->GetCountryId(), FifamClubTeamType::First, t));
+            if (team) {
+                teams.emplace_back(
+                    (team->GetInternationalPrestige() << 24) | (team->GetNationalPrestige() << 16) | CRandom::GetRandomInt(32767),
+                    team);
+            }
+        }
+        if (!teams.empty()) {
+            Utils::Sort(teams, [](Pair<UInt, CDBTeam *> const &a, Pair<UInt, CDBTeam *> const &b) { return a.first >= b.first; });
+            hostTeam = teams[CRandom::GetRandomInt(Utils::Min(3u, teams.size()))].second->GetTeamID();
+        }
+    }
+    if (hostTeam.isNull())
+        hostTeam = CTeamIndex::make(FifamNation::United_States, FifamClubTeamType::First, 1);
+    comp->AddTeam(hostTeam);
+}
+
+void SelectWCCHostStadiums(CDBCompetition *comp) {
+    CDBPool *hostTeamPool = GetPool(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP, 0);
+    if (!hostTeamPool)
+        return;
+    if (hostTeamPool->GetNumOfRegisteredTeams() == 0) {
+        SelectWCCHostTeam(hostTeamPool);
+        if (hostTeamPool->GetNumOfRegisteredTeams() == 0)
+            return;
+    }
+    CDBTeam *hostTeam = GetTeam(hostTeamPool->GetTeamID(0));
+    if (!hostTeam)
+        return;
+    CDBCountry *hostCountry = hostTeam->GetCountry();
+    if (!hostCountry)
+        return;
+    Set<String> excludedStadiums = GetExcludedStadiums(hostCountry->GetContinent() == FifamContinent::Europe);
+    Map<String, CDBTeam *> uniqueStadiums;
+    for (Int t = 1; t <= hostCountry->GetLastTeamIndex(); t++) {
+        auto team = GetTeam(CTeamIndex::make(hostCountry->GetCountryId(), FifamClubTeamType::First, t));
+        if (team) {
+            String id = StadiumStringId(team);
+            if (!id.empty() && !Utils::Contains(excludedStadiums, id))
+                uniqueStadiums[id] = team;
+        }
+    }
+    if (uniqueStadiums.empty())
+        return;
+    Vector<CDBTeam *> stadiumsSorted;
+    for (auto const &[s, team] : uniqueStadiums)
+        stadiumsSorted.push_back(team);
+    Utils::Sort(stadiumsSorted, [](CDBTeam *a, CDBTeam *b) {
+        return StadiumCapacity(a) > StadiumCapacity(b);
+    });
+    Utils::Shuffle(stadiumsSorted, 3);
+    for (UInt i = 0; i < comp->GetNumOfTeams(); i++)
+        comp->AddTeam(stadiumsSorted[i % Utils::Min(12u, stadiumsSorted.size())]->GetTeamID());
 }
 
 void OnGetSpare(CDBCompetition **ppComp) {
@@ -1725,7 +1865,18 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     SortUEFALeaguePhaseTable(0xF9260000, comp);
                     DumpPool(comp, L"Youth League League Phase sorted table");
                 }
-                else if (id.type == COMP_WORLD_CLUB_CHAMP && id.index == 0 && comp->GetNumOfTeams() == 32) {
+                else if (id.type == COMP_WORLD_CLUB_CHAMP && id.index == 0 && comp->GetNumOfTeams() == 1) {
+                    SelectWCCHostTeam(comp);
+                    DumpPool(comp, L"FIFA Club World Cup host team");
+                }
+                else if (id.type == COMP_WORLD_CLUB_CHAMP && id.index == 1 && comp->GetNumOfTeams() == 16) {
+                    SelectWCCHostStadiums(comp);
+                    DumpPool(comp, L"FIFA Club World Cup host stadiums");
+                }
+                else if (id.type == COMP_WORLD_CLUB_CHAMP && id.index == 2 && comp->GetNumOfTeams() == 32) {
+                    CDBPool *hostStadiumsPool = GetPool(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP, 1);
+                    if (hostStadiumsPool && hostStadiumsPool->GetNumOfRegisteredTeams() == 0)
+                        SelectWCCHostStadiums(hostStadiumsPool);
                     // Call<0x121B350>(L"Tournaments.txt"); // test - read Tournaments.txt before competition is processed
                     auto AddCompFinalist = [&comp](UChar region, UChar type, UInt year, Bool runnerUp) {
                         CTeamIndex winner = GetCompFinalist(region, type, year, runnerUp);
@@ -1780,7 +1931,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     const UInt MAX_TEAMS_CAF = 4;
                     const UInt MAX_TEAMS_CONCACAF = 4;
                     const UInt MAX_TEAMS_CONMEBOL = 6;
-                    const UInt MAX_TEAMS_UEFA = 13;
+                    const UInt MAX_TEAMS_UEFA = 12;
                     const UInt MAX_TEAMS_OFC = 1;
                     UChar numAFC = 0, numCAF = 0, numCONCACAF = 0, numCONMEBOL = 0, numUEFA = 0, numOFC = 0;
                     for (UInt i = 0; i < 2; i++) {
@@ -1818,11 +1969,15 @@ void OnGetSpare(CDBCompetition **ppComp) {
                                     return a.first >= b.first;
                                 });
                             }
-                            if (comp->AddTeam(ofcWinners[0].second->GetTeamID())) {
-                                numOFC += 1;
-                                SafeLog::Write(Utils::Format(L"FIFA Club World Cup: Added best winner of OFC Champions League - %s (IP: %u, NP: %u)",
-                                    TeamName(ofcWinners[0].second), ofcWinners[0].second->GetInternationalPrestige(),
-                                    ofcWinners[0].second->GetNationalPrestige()));
+                            for (UInt o = 0; o < ofcWinners.size(); o++) {
+                                if (comp->AddTeam(ofcWinners[o].second->GetTeamID())) {
+                                    numOFC += 1;
+                                    SafeLog::Write(Utils::Format(L"FIFA Club World Cup: Added best winner of OFC Champions League - %s (IP: %u, NP: %u)",
+                                        TeamName(ofcWinners[o].second), ofcWinners[o].second->GetInternationalPrestige(),
+                                        ofcWinners[o].second->GetNationalPrestige()));
+                                    if (numOFC >= MAX_TEAMS_OFC)
+                                        break;
+                                }
                             }
                         }
                     }
@@ -4021,12 +4176,12 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
                         0x5F0002, // Columbus Crew
                         0x5F214B, // Inter Miami CF
                         0x5F340C, // Club de Foot Montreal
-                        0x5F2073, // Nashville SC
                         0x5F000A, // New England Revolution
                         0x5F1020, // New York City FC
                         0x5F0006, // New York Red Bulls
                         0x5F1001, // Orlando City SC
                         0x5F1003, // Philadelphia Union
+                        0x5F0003, // D.C. United
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !Utils::Contains(eastTeams, team->GetTeamUniqueID()))
@@ -4044,18 +4199,18 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             else if (compId.index == 1) { // West - bottom 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> westTeams = {
-                        0x5F3285, // Austin FC
-                        0x5F0009, // Colorado Rapids
                         0x5F0008, // FC Dallas
                         0x5F0004, // Sporting Kansas City
                         0x5F214A, // Los Angeles Football Club
-                        0x5F0005, // LA Galaxy
                         0x5F1004, // Minnesota United FC
                         0x5F0012, // Portland Timbers
                         0x5F000B, // Real Salt Lake
                         0x5F0016, // Seattle Sounders FC
                         0x5F000D, // Vancouver Whitecaps FC
-                        0x5F0001, // Chicago Fire FC
+                        0x5F3421, // St. Louis City SC
+                        0x5F0007, // Houston Dynamo FC
+                        0x5F0024, // San Jose Earthquakes
+                        0x5F2073, // Nashville SC
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !Utils::Contains(westTeams, team->GetTeamUniqueID()))
@@ -4428,80 +4583,11 @@ void __declspec(naked) OnWidgetAllClubs() {
     }
 }
 
-UInt StadiumCapacity(CDBTeam *team) {
-    void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(team);
-    if (stadiumDevelopment)
-        return CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
-    return 0;
-}
-
-String StadiumStringId(CDBTeam *team) {
-    void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(team);
-    if (stadiumDevelopment) {
-        UInt stadiumCapacity = CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
-        if (stadiumCapacity > 0) {
-            String stadiumName = CallMethodAndReturn<WideChar const *, 0xF73BD0>(stadiumDevelopment, true);
-            if (!stadiumName.empty())
-                return stadiumName + Utils::Format(L"%u", stadiumCapacity);
-        }
-    }
-    return String();
-}
-
-UInt GetMinCapacityForCompetitionFinal(CCompID const &compId) {
-    switch (compId.countryId) {
-    case FifamCompRegion::Europe:
-        if (compId.type == COMP_CHAMPIONSLEAGUE)
-            return 50'000;
-        return 40'000;
-    case FifamCompRegion::SouthAmerica:
-        if (compId.type == COMP_CHAMPIONSLEAGUE)
-            return 70'000;
-        return 50'000;
-    case FifamCompRegion::NorthAmerica:
-        if (compId.type == COMP_CHAMPIONSLEAGUE)
-            return 25'000;
-        return 20'000;
-    case FifamCompRegion::Africa:
-        if (compId.type == COMP_CHAMPIONSLEAGUE)
-            return 60'000;
-        return 20'000;
-    case FifamCompRegion::Asia:
-        if (compId.type == COMP_CHAMPIONSLEAGUE)
-            return 40'000;
-        return 20'000;
-    case FifamCompRegion::Oceania:
-        return 10'000;
-    }
-    return 30'000;
-}
-
 UInt GetStadiumForContinentalCompetition(FifamContinent const &continent) {
     //SafeLog::WriteToFile(L"comp_hosts.txt", Utils::Format(L"Select stadium for competition %08X (%s)", gCompRound->GetCompID().ToInt(), gCompRound->GetName()));
     if (continent != FifamContinent::None) {
         // Step 1 - find excluded stadiums
-        Set<String> excludedStadiums;
-        if (continent == FifamContinent::Europe) {
-            void *hosts = CallAndReturn<void *, 0x117C830>();
-            UInt clHostId = CallMethodAndReturn<UInt, 0x117A560>(hosts);
-            if (clHostId > 0) {
-                auto clHostTeam = GetTeam(CTeamIndex::make(clHostId));
-                if (clHostTeam) {
-                    String id = StadiumStringId(clHostTeam);
-                    if (!id.empty())
-                        excludedStadiums.insert(id);
-                }
-            }
-            UInt elHostId = CallMethodAndReturn<UInt, 0x117A570>(hosts);
-            if (elHostId > 0) {
-                auto elHostTeam = GetTeam(CTeamIndex::make(elHostId));
-                if (elHostTeam) {
-                    String id = StadiumStringId(elHostTeam);
-                    if (!id.empty())
-                        excludedStadiums.insert(id);
-                }
-            }
-        }
+        Set<String> excludedStadiums = GetExcludedStadiums(continent == FifamContinent::Europe);
         //if (!excludedStadiums.empty()) {
         //    SafeLog::WriteToFile(L"comp_hosts.txt", L"  Excluded stadiums:");
         //    for (auto const &s : excludedStadiums)

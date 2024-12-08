@@ -928,7 +928,7 @@ void SaveGameReadFloatArray(void *save, Float *values, UInt count);
 void SaveGameWriteInt8(void *save, UChar value);
 void SaveGameWriteInt32(void *save, UInt value);
 void SaveGameWriteFloat(void *save, Float value);
-void SaveGameWriteFloatArray(void *save, Float *values, UInt count);
+void SaveGameWriteFloatArray(void *save, Float const *values, UInt count);
 UInt SaveGameLoadGetVersion(void *save);
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID);
 
@@ -1024,18 +1024,42 @@ struct CompMatchResult {
 
 class CXgFMPanel;
 
+enum FMListBoxColumnType {
+    LBT_COUNTRY = 1,
+    LBT_FLAG = 2,
+    LBT_CLUB = 4,
+    LBT_INT = 9,
+    LBT_FLOAT = 12,
+    LBT_IMAGE = 58,
+    LBT_END = 63
+};
+
+enum FMListBoxColumnFormatting {
+    LBF_FLOAT = 200,
+    LBF_SHORTNAME = 203,
+    LBF_NAME = 204,
+    LBF_NONE = 210,
+    LBF_END = 228
+};
+
 class CFMListBox {
 public:
     void SetVisible(Bool visible);
     void Clear();
     Int GetMaxRows();
     Int GetRowsCount();
-    void AddColumnText(Int64 value, UInt color, Int unk);
+    void AddColumnInt(Int64 value, UInt color, Int unk);
+    void AddColumnFloat(Float value, UInt color, Int unk);
+    void AddColumnString(WideChar const *str, UInt color, Int unk);
     void AddTeamWidget(CTeamIndex const &teamID);
     void AddTeamName(CTeamIndex const &teamID, UInt color, Int unk);
+    void AddCountryFlag(UInt countryId, Int unk);
+    void AddColumnImage(WideChar const *imagePath);
     void SetRowColor(UInt rowIndex, UInt color);
     void NextRow(Int unk);
     void Create(CXgFMPanel *panel, const char *name);
+    Int64 GetCellValue(UInt row, UInt column);
+    void SetCellValue(UInt row, UInt column, Int64 value);
     template <typename... ArgTypes>
     static void InitColumnTypes(CFMListBox *listBox, ArgTypes... args) {
         Call<0xD19660>(listBox, args...);

@@ -1312,10 +1312,10 @@ Short METHOD OnExtendStadium(CStadiumDevelopment *stad, DUMMY_ARG, Float factor,
 void METHOD OnClubStaffMarketScreen(void *t) {
     void *cb = *raw_ptr<void *>(t, 0x53C); // CClubStaffMarket::m_pCbCountry
     Int sorter[4]; // CXgTableSortByString
-    void *items = CallVirtualMethodAndReturn<void *, 68>(cb); // CXgComboBox::GetItems()
-    CallMethod<0x547270>(sorter, items, 0, 0); // CXgTableSortByString::CXgTableSortByString()
+    void *table = CallVirtualMethodAndReturn<void *, 68>(cb); // CXgComboBox::GetTable()
+    CallMethod<0x547270>(sorter, table, 0, 0); // CXgTableSortByString::CXgTableSortByString()
     Int itemCount = CallVirtualMethodAndReturn<Int, 69>(cb); // CXgComboBox::GetItemCount()
-    CallVirtualMethod<91>(items, sorter, 0, 0, itemCount); // CXgTableItems?::SetSorting()
+    CallVirtualMethod<91>(table, sorter, 0, 0, itemCount); // CXgTable::Sort()
     CallMethod<0x68DC20>(t); // original func
 }
 

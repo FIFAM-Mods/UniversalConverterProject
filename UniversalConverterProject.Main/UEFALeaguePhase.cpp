@@ -600,17 +600,17 @@ Bool UEFALeaguePhaseChangeCompetition(CFMListBox *listBox, void *data) {
                     break;
                 TeamLeaguePhaseInfo &info = vecTeams[i];
                 UInt color = CallMethodAndReturn<UInt, 0xA8BD80>(data, vecTeams[i].teamId.ToInt());
-                listBox->AddColumnText(i + 1, color, 0);
+                listBox->AddColumnInt(i + 1, color, 0);
                 listBox->AddTeamWidget(vecTeams[i].teamId);
                 listBox->AddTeamName(vecTeams[i].teamId, color, 0);
-                listBox->AddColumnText((info.wins + info.draws + info.losses), color, 0);
-                listBox->AddColumnText(info.wins, color, 0);
-                listBox->AddColumnText(info.draws, color, 0);
-                listBox->AddColumnText(info.losses, color, 0);
-                listBox->AddColumnText(info.goalsFor, color, 0);
-                listBox->AddColumnText(info.goalsAgainst, color, 0);
-                listBox->AddColumnText((info.goalsFor - info.goalsAgainst), color, 0);
-                listBox->AddColumnText(info.points, color, 0);
+                listBox->AddColumnInt((info.wins + info.draws + info.losses), color, 0);
+                listBox->AddColumnInt(info.wins, color, 0);
+                listBox->AddColumnInt(info.draws, color, 0);
+                listBox->AddColumnInt(info.losses, color, 0);
+                listBox->AddColumnInt(info.goalsFor, color, 0);
+                listBox->AddColumnInt(info.goalsAgainst, color, 0);
+                listBox->AddColumnInt((info.goalsFor - info.goalsAgainst), color, 0);
+                listBox->AddColumnInt(info.points, color, 0);
                 listBox->NextRow(0);
                 if (compId == 0xF9260000) {
                     if (i < 22)
