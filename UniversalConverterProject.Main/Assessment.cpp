@@ -2,10 +2,85 @@
 #include "GameInterfaces.h"
 #include "FifamContinent.h"
 #include "FifamCompRegion.h"
+#include "shared.h"
+
+Set<UChar> &GetAsianWestCountries() {
+    static Set<UChar> countriesWest = {
+        FifamCompRegion::Qatar,
+        FifamCompRegion::Saudi_Arabia,
+        FifamCompRegion::Iran,
+        FifamCompRegion::United_Arab_Emirates,
+        FifamCompRegion::Iraq,
+        FifamCompRegion::Uzbekistan,
+        FifamCompRegion::Jordan,
+        FifamCompRegion::India,
+        FifamCompRegion::Tajikistan,
+        FifamCompRegion::Turkmenistan,
+        FifamCompRegion::Lebanon,
+        FifamCompRegion::Syria,
+        FifamCompRegion::Bahrain,
+        FifamCompRegion::Bangladesh,
+        FifamCompRegion::Maldives,
+        FifamCompRegion::Oman,
+        FifamCompRegion::Palestinian_Authority,
+        FifamCompRegion::Kyrgyzstan,
+        FifamCompRegion::Kuwait,
+        FifamCompRegion::Nepal,
+        FifamCompRegion::Sri_Lanka,
+        FifamCompRegion::Bhutan,
+        FifamCompRegion::Afghanistan,
+        FifamCompRegion::Yemen,
+        FifamCompRegion::Pakistan
+    };
+    return countriesWest;
+}
+
+Set<UChar> &GetAsianEastCountries() {
+    static Set<UChar> countriesEast = {
+        FifamCompRegion::China_PR,
+        FifamCompRegion::Japan,
+        FifamCompRegion::Korea_Republic,
+        FifamCompRegion::Thailand,
+        FifamCompRegion::Australia,
+        FifamCompRegion::Philippines,
+        FifamCompRegion::Korea_DPR,
+        FifamCompRegion::Vietnam,
+        FifamCompRegion::Malaysia,
+        FifamCompRegion::Singapore,
+        FifamCompRegion::Hong_Kong,
+        FifamCompRegion::Myanmar,
+        FifamCompRegion::Indonesia,
+        FifamCompRegion::Cambodia,
+        FifamCompRegion::Macao,
+        FifamCompRegion::Laos,
+        FifamCompRegion::Taiwan,
+        FifamCompRegion::Mongolia,
+        FifamCompRegion::Brunei_Darussalam,
+        FifamCompRegion::Guam
+    };
+    return countriesEast;
+}
+
+Bool IsAsianWestCountry(UChar countryId) {
+    return Utils::Contains(GetAsianWestCountries(), countryId);
+}
+
+Bool IsAsianEastCountry(UChar countryId) {
+    return Utils::Contains(GetAsianEastCountries(), countryId);
+}
+
+AsianRegion GetAsianCountryRegion(UChar countryId) {
+    if (IsAsianWestCountry(countryId))
+        return AsianRegion::West;
+    if (IsAsianEastCountry(countryId))
+        return AsianRegion::East;
+    return AsianRegion::None;
+}
 
 template<UChar Continent, UInt NumEntries>
 struct AssessmentInfo {
     UChar position = 0;
+    UChar regionalPosition = 0;
     Float total = 0.0f;
     Float coeff[NumEntries] = {};
     UInt randomValue = 0;
@@ -36,6 +111,26 @@ struct Assessment {
         return (Utils::Contains(info, countryId)) ? info.at(countryId).position : 255;
     }
 
+    UChar GetCountryRegionalPosition(UChar countryId) const {
+        return (Utils::Contains(info, countryId)) ? info.at(countryId).regionalPosition : 255;
+    }
+
+    UChar GetCountryAtPosition(UChar position) const {
+        for (auto &[countryId, countryInfo] : info) {
+            if (countryInfo.position == position)
+                return countryId;
+        }
+        return 255;
+    }
+
+    UChar GetCountryAtRegionalPosition(UChar position) const {
+        for (auto &[countryId, countryInfo] : info) {
+            if (countryInfo.regionalPosition == position)
+                return countryId;
+        }
+        return 255;
+    }
+
     void Rotate() {
         for (auto &[countryId, countryInfo] : info)
             countryInfo.total = countryInfo.CalcTotal();
@@ -57,8 +152,23 @@ struct Assessment {
             }
             return a.second.randomValue > b.second.randomValue;
         });
-        for (UInt i = 0; i < vec.size(); i++)
-            info[vec[i].first].position = i + 1;
+        if (Continent == FifamContinent::Asia) {
+            UInt westCounter = 1;
+            UInt eastCounter = 1;
+            for (UInt i = 0; i < vec.size(); i++) {
+                info[vec[i].first].position = i + 1;
+                if (IsAsianWestCountry(vec[i].first))
+                    info[vec[i].first].regionalPosition = westCounter++;
+                else if (IsAsianEastCountry(vec[i].first))
+                    info[vec[i].first].regionalPosition = 100 + eastCounter++;
+                else
+                    info[vec[i].first].regionalPosition = 0;
+            }
+        }
+        else {
+            for (UInt i = 0; i < vec.size(); i++)
+                info[vec[i].first].position = info[vec[i].first].regionalPosition = i + 1;
+        }
         for (auto &[countryId, countryInfo] : info) {
             for (UInt v = 0; v < (NumEntries - 1); v++)
                 countryInfo.coeff[v] = countryInfo.coeff[v + 1];
@@ -129,6 +239,30 @@ AssessmentAFC &GetAssessmentInfoAFC() {
 AssessmentCAF &GetAssessmentInfoCAF() {
     static AssessmentCAF assessmentCAF;
     return assessmentCAF;
+}
+
+UChar GetAfricanCountryAssessmentPosition(UChar countryId) {
+    return GetAssessmentInfoCAF().GetCountryPosition(countryId);
+}
+
+UChar GetAsianCountryAssessmentPosition(UChar countryId) {
+    return GetAssessmentInfoAFC().GetCountryPosition(countryId);
+}
+
+UChar GetAsianCountryAssessmentRegionalPosition(UChar countryId) {
+    return GetAssessmentInfoAFC().GetCountryRegionalPosition(countryId);
+}
+
+UChar GetAfricanAssessmentCountryAtPosition(UChar position) {
+    return GetAssessmentInfoCAF().GetCountryAtPosition(position);
+}
+
+UChar GetAsianAssessmentCountryAtPosition(UChar position) {
+    return GetAssessmentInfoAFC().GetCountryAtPosition(position);
+}
+
+UChar GetAsianAssessmentCountryAtRegionalPosition(UChar position) {
+    return GetAssessmentInfoAFC().GetCountryAtRegionalPosition(position);
 }
 
 void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, void *reader) {
@@ -255,55 +389,6 @@ public:
                 }
             }
             UInt color = CallMethodAndReturn<UInt, 0x6E22E0>(t); // CStatsBaseScr::GetTextColor()
-            static Set<UChar> countriesWest = {
-                FifamCompRegion::Qatar,
-                FifamCompRegion::Saudi_Arabia,
-                FifamCompRegion::Iran,
-                FifamCompRegion::United_Arab_Emirates,
-                FifamCompRegion::Iraq,
-                FifamCompRegion::Uzbekistan,
-                FifamCompRegion::Jordan,
-                FifamCompRegion::India,
-                FifamCompRegion::Tajikistan,
-                FifamCompRegion::Turkmenistan,
-                FifamCompRegion::Lebanon,
-                FifamCompRegion::Syria,
-                FifamCompRegion::Bahrain,
-                FifamCompRegion::Bangladesh,
-                FifamCompRegion::Maldives,
-                FifamCompRegion::Oman,
-                FifamCompRegion::Palestinian_Authority,
-                FifamCompRegion::Kyrgyzstan,
-                FifamCompRegion::Kuwait,
-                FifamCompRegion::Nepal,
-                FifamCompRegion::Sri_Lanka,
-                FifamCompRegion::Bhutan,
-                FifamCompRegion::Afghanistan,
-                FifamCompRegion::Yemen,
-                FifamCompRegion::Pakistan
-            };
-            static Set<UChar> countriesEast = {
-                FifamCompRegion::China_PR,
-                FifamCompRegion::Japan,
-                FifamCompRegion::Korea_Republic,
-                FifamCompRegion::Thailand,
-                FifamCompRegion::Australia,
-                FifamCompRegion::Philippines,
-                FifamCompRegion::Korea_DPR,
-                FifamCompRegion::Vietnam,
-                FifamCompRegion::Malaysia,
-                FifamCompRegion::Singapore,
-                FifamCompRegion::Hong_Kong,
-                FifamCompRegion::Myanmar,
-                FifamCompRegion::Indonesia,
-                FifamCompRegion::Cambodia,
-                FifamCompRegion::Macao,
-                FifamCompRegion::Laos,
-                FifamCompRegion::Taiwan,
-                FifamCompRegion::Mongolia,
-                FifamCompRegion::Brunei_Darussalam,
-                FifamCompRegion::Guam
-            };
             UInt westCounter = 1;
             UInt eastCounter = 1;
             String westFormat = GetTranslation("IDS_REGION_WEST_FORMAT");
@@ -316,13 +401,13 @@ public:
                 listBox->AddCountryFlag(entries[i].countryId, 0);
                 listBox->AddColumnInt(entries[i].countryId, color, 0);
                 UInt sorterIndexRegion = 0;
-                if (Utils::Contains(countriesWest, entries[i].countryId)) {
+                if (IsAsianWestCountry(entries[i].countryId)) {
                     listBox->AddColumnString(Utils::Format(westFormat, westCounter).c_str(), color, 0);
                     sorterIndexRegion = (eastFormat < westFormat) ? 10'000 : 0;
                     sorterIndexRegion += westCounter;
                     westCounter++;
                 }
-                else if (Utils::Contains(countriesEast, entries[i].countryId)) {
+                else if (IsAsianEastCountry(entries[i].countryId)) {
                     listBox->AddColumnString(Utils::Format(eastFormat, eastCounter).c_str(), color, 0);
                     sorterIndexRegion = (eastFormat < westFormat) ? 0 : 10'000;
                     sorterIndexRegion += eastCounter;
@@ -448,7 +533,7 @@ public:
                 listBox->NextRow(0);
                 listBox->SetCellValue(i, 0, entries[i].sorterIndex);
                 listBox->SetCellValue(i, 11, entries[i].sorterIndexLastSeason);
-                if (i < 12 && entries[i].newTotal != 0.0f)
+                if (i < 11 && entries[i].newTotal != 0.0f)
                     listBox->SetRowColor(i, yellowColor);
             }
         }
@@ -515,11 +600,19 @@ void METHOD CreateStatsAssessmentWrapper(void *vec, DUMMY_ARG, void *data) {
     }
 }
 
+void METHOD OnAssessmentStartNewSeason(void *assessment) {
+    CallMethod<0x121DDE0>(assessment);
+    GetAssessmentInfoAFC().Rotate();
+    GetAssessmentInfoCAF().Rotate();
+    SafeLog::Write(Utils::Format(L"%s - Updated AFC and CAF assessment tables", CDBGame::GetInstance()->GetCurrentDate().ToStr()));
+}
+
 void PatchAssessment(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0xF9767C, OnReadAssessmentFromBinaryDatabase);
         patch::RedirectCall(0x1084433, OnLoadAssessmentTable);
         patch::RedirectCall(0x108376F, OnSaveAssessmentTable);
         patch::RedirectCall(0x736BCA, CreateStatsAssessmentWrapper);
+        patch::RedirectCall(0xF67D55, OnAssessmentStartNewSeason);
     }
 }
