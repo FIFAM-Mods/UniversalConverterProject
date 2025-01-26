@@ -863,8 +863,13 @@ CXgFMPanel *METHOD OnMatchdayCupResultsCreateUI(CXgFMPanel *panel) {
     return panel;
 }
 
-UInt METHOD UEFALeaguePhase_GetNumOfTeams(CDBCompetition *comp) {
-    return IsUEFALeaguePhaseMatchdayCompID(comp->GetCompID()) ? 0 : comp->GetNumOfTeams();
+UInt METHOD RoundLaunch_UEFALeaguePhase_GetNumOfTeams(CDBRound *round) {
+    return IsUEFALeaguePhaseMatchdayCompID(round->GetCompID()) ? 0 : round->GetNumOfTeams();
+}
+
+UInt METHOD RoundFinish_UEFALeaguePhase_GetNumOfTeams(CDBRound *round) {
+    Assessment_AddPointsOnRoundFinish(round);
+    return IsUEFALeaguePhaseMatchdayCompID(round->GetCompID()) ? 0 : round->GetNumOfTeams();
 }
 
 void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *out) {
@@ -920,8 +925,8 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectCall(0xAA0B30, OnMatchdayCupResultsDtor);
         patch::RedirectCall(0xAA13E6, OnMatchdayCupResultsCreateUI);
 
-        patch::RedirectCall(0x1045264, UEFALeaguePhase_GetNumOfTeams); // disable "Cup Draw: _COMPETITION" e-mail message for League Phase matchdays
-        patch::RedirectCall(0x10470E6, UEFALeaguePhase_GetNumOfTeams); // disable round-finish logic (manager bio, IP change, budget reduce) for League Phase matchdays
+        patch::RedirectCall(0x1045264, RoundLaunch_UEFALeaguePhase_GetNumOfTeams); // disable "Cup Draw: _COMPETITION" e-mail message for League Phase matchdays
+        patch::RedirectCall(0x10470E6, RoundFinish_UEFALeaguePhase_GetNumOfTeams); // disable round-finish logic (manager bio, IP change, budget reduce) for League Phase matchdays
         patch::SetPointer(0x309FFD4, MyTeamListHandler); // update the _TEAM_LIST behavior
         patch::RedirectCall(0x1043DFB, OnDBRoundRegisterMatch_GetWinner); // disable default win bonus for League Phase matchdays
     }

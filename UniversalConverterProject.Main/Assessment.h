@@ -22,3 +22,7 @@ Set<UChar> &GetAsianEastCountries();
 Bool IsAsianWestCountry(UChar countryId);
 Bool IsAsianEastCountry(UChar countryId);
 AsianRegion GetAsianCountryRegion(UChar countryId);
+UInt GetAfricanAssessmentNumCountries();
+UInt GetAsianAssessmentNumCountries();
+void AddAfricanAssessmentCountryPoints(UChar countryId, Float points);
+void AddAsianAssessmentCountryPoints(UChar countryId, Float points);

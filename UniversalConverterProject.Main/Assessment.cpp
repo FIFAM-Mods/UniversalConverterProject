@@ -88,6 +88,10 @@ struct AssessmentInfo {
     Float CalcTotal() const {
         return 0.0f;
     }
+
+    void AddPoints(Float points) {
+        coeff[NumEntries - 1] += points;
+    }
 };
 
 template<>
@@ -131,6 +135,11 @@ struct Assessment {
         return 255;
     }
 
+    void AddPoints(UChar countryId, Float points) {
+        if (Utils::Contains(info, countryId))
+            info.at(countryId).AddPoints(points);
+    }
+
     void Rotate() {
         for (auto &[countryId, countryInfo] : info)
             countryInfo.total = countryInfo.CalcTotal();
@@ -169,11 +178,13 @@ struct Assessment {
             for (UInt i = 0; i < vec.size(); i++)
                 info[vec[i].first].position = info[vec[i].first].regionalPosition = i + 1;
         }
+        SafeLog::Write((Continent == FifamContinent::Africa) ? L"Ranking CAF" : L"Ranking AFC");
         for (auto &[countryId, countryInfo] : info) {
             for (UInt v = 0; v < (NumEntries - 1); v++)
                 countryInfo.coeff[v] = countryInfo.coeff[v + 1];
             countryInfo.coeff[(NumEntries - 1)] = 0.0f;
             countryInfo.randomValue = CRandom::GetRandomInt(INT32_MAX);
+            SafeLog::Write(Utils::Format(L"%2d. (%2d.) %s", countryInfo.position, countryInfo.regionalPosition, CountryName(countryId)));
         }
     }
 
@@ -224,7 +235,6 @@ struct Assessment {
         }
         for (auto &[countryId, info] : info)
             info.randomValue = CRandom::GetRandomInt(INT32_MAX);
-        Rotate();
     }
 };
 
@@ -263,6 +273,22 @@ UChar GetAsianAssessmentCountryAtPosition(UChar position) {
 
 UChar GetAsianAssessmentCountryAtRegionalPosition(UChar position) {
     return GetAssessmentInfoAFC().GetCountryAtRegionalPosition(position);
+}
+
+UInt GetAfricanAssessmentNumCountries() {
+    return GetAssessmentInfoCAF().info.size();
+}
+
+UInt GetAsianAssessmentNumCountries() {
+    return GetAssessmentInfoAFC().info.size();
+}
+
+void AddAfricanAssessmentCountryPoints(UChar countryId, Float points) {
+    GetAssessmentInfoCAF().AddPoints(countryId, points);
+}
+
+void AddAsianAssessmentCountryPoints(UChar countryId, Float points) {
+    GetAssessmentInfoAFC().AddPoints(countryId, points);
 }
 
 void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, void *reader) {

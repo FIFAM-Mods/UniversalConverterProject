@@ -486,6 +486,8 @@ public:
     Bool IsLaunched();
 	Bool IsFinished();
     EAGMoney GetBonus(UInt bonusId);
+    class CDBRound *AsRound();
+    class CDBRoot *GetRoot();
 };
 
 enum CompDbType {
@@ -547,10 +549,14 @@ struct RoundPair {
 
     RoundPair();
     Bool AreTeamsValid() const;
+    void GetResult(UChar &outResult1, UChar &outResult2, UInt &outFlags, UChar flags) const;
     void *GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name) const;
     Bool IsFinished() const;
     CTeamIndex const &GetWinner() const;
     CTeamIndex const &GetLoser() const;
+    Bool TestFlag(UInt flag) const;
+    CTeamIndex const &Get1stTeam() const;
+    CTeamIndex const &Get2ndTeam() const;
 };
 
 struct MatchGoalInfo {
@@ -569,6 +575,7 @@ public:
     unsigned int GetNumOfPairs();
     void GetRoundPair(unsigned int pairIndex, RoundPair &out);
     RoundPair &GetRoundPair(unsigned int pairIndex);
+    Bool GetTeamResult(CTeamIndex teamID, UChar &goalsFor, UChar &goalsAgainst, Bool &home);
 };
 
 class CDBCup : public CDBCompetition {};
@@ -772,6 +779,9 @@ CDBLeague *GetLeague(CCompID const &id);
 CDBLeague *GetLeague(unsigned int *id);
 CDBLeague *GetLeague(unsigned int id);
 CDBRound *GetRound(unsigned char region, unsigned char type, unsigned short index);
+CDBRound *GetRound(CCompID const &id);
+CDBRound *GetRound(unsigned int *id);
+CDBRound *GetRound(unsigned int id);
 CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType);
 CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index);
 

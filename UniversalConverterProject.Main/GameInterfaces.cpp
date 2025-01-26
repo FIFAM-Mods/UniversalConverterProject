@@ -414,6 +414,14 @@ EAGMoney CDBCompetition::GetBonus(UInt bonusId) {
     return result;
 }
 
+CDBRound *CDBCompetition::AsRound() {
+    return CallMethodAndReturn<CDBRound *, 0xF84780>(this);
+}
+
+CDBRoot *CDBCompetition::GetRoot() {
+    return CallMethodAndReturn<CDBRoot *, 0xF8B680>(this);
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -468,6 +476,18 @@ CDBLeague *GetLeague(unsigned int id) {
 
 CDBRound *GetRound(unsigned char region, unsigned char type, unsigned short index) {
     return plugin::CallAndReturn<CDBRound *, 0xF8B150>(region, type, index);
+}
+
+CDBRound *GetRound(CCompID const &id) {
+    return plugin::CallAndReturn<CDBRound *, 0xF8B130>(&id);
+}
+
+CDBRound *GetRound(unsigned int *id) {
+    return plugin::CallAndReturn<CDBRound *, 0xF8B130>(id);
+}
+
+CDBRound *GetRound(unsigned int id) {
+    return plugin::CallAndReturn<CDBRound *, 0xF8B130>(&id);
 }
 
 CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType) {
@@ -1767,12 +1787,20 @@ RoundPair &CDBRound::GetRoundPair(unsigned int pairIndex) {
     return *raw_ptr<RoundPair>(this, 0x2088 + sizeof(RoundPair) * pairIndex);
 }
 
+Bool CDBRound::GetTeamResult(CTeamIndex teamID, UChar &goalsFor, UChar &goalsAgainst, Bool &home) {
+    return CallMethodAndReturn<Bool, 0x1043360>(this, teamID, &goalsFor, &goalsAgainst, &home);
+}
+
 RoundPair::RoundPair() {
     plugin::CallMethod<0x10ED6C0>(this);
 }
 
 Bool RoundPair::AreTeamsValid() const {
     return plugin::CallMethodAndReturn<bool, 0x10EDE40>(this);
+}
+
+void RoundPair::GetResult(UChar &outResult1, UChar &outResult2, UInt &outFlags, UChar flags) const {
+    CallMethod<0x10ED490>(this, &outResult1, &outResult2, &outFlags, flags);
 }
 
 void *RoundPair::GetResultString(void *str, UChar flags, const wchar_t *team1name, const wchar_t *team2name) const {
@@ -1789,6 +1817,18 @@ CTeamIndex const &RoundPair::GetWinner() const {
 
 CTeamIndex const &RoundPair::GetLoser() const {
     return CallMethodAndReturn<CTeamIndex const &, 0x10EDE00>(this);
+}
+
+Bool RoundPair::TestFlag(UInt flag) const {
+    return CallMethodAndReturn<Bool, 0x10ED420>(this, flag);
+}
+
+CTeamIndex const &RoundPair::Get1stTeam() const {
+    return CallMethodAndReturn<CTeamIndex const &, 0x10ED3F0>(this);
+}
+
+CTeamIndex const &RoundPair::Get2ndTeam() const {
+    return CallMethodAndReturn<CTeamIndex const &, 0x10ED400>(this);
 }
 
 SyncFile::SyncFile() {
