@@ -169,6 +169,12 @@ CCompID CCompID::Make(unsigned char _country, unsigned char _type, unsigned shor
     return result;
 }
 
+CCompID CCompID::Make(unsigned int value) {
+    CCompID result;
+    result.SetFromInt(value);
+    return result;
+}
+
 unsigned int CDBCompetition::GetCompetitionType() {
     return plugin::CallMethodAndReturn<unsigned int, 0xF81C50>(this);
 }
@@ -794,6 +800,67 @@ String TeamTagWithCountry(CTeamIndex const& teamId) {
     if (team)
         return Utils::Format(L"%08X %s (%s)", teamId.ToInt(), team->GetName(), GetCountryStore()->m_aCountries[teamId.countryId].GetName());
     return L"n/a";
+}
+
+String ThousandSeparators(unsigned int value) {
+    String str = std::to_wstring(value);
+    int len = str.length();
+    int dlen = 3;
+    while (len > dlen) {
+        str.insert(len - dlen, 1, '\'');
+        dlen += 4;
+        len += 1;
+    }
+    return str;
+}
+
+String StadiumNameWithCapacity(CStadiumDevelopment *stadium) {
+    return Utils::Format(L"%s (%s)", stadium->GetStadiumName(), ThousandSeparators(stadium->GetNumSeats()));
+}
+
+String StadiumName(CDBTeam *team) {
+    if (team) {
+        return Utils::Format(L"%s (%s)", team->GetStadiumDevelopment()->GetStadiumName(),
+            ThousandSeparators(team->GetStadiumDevelopment()->GetNumSeats()));
+    }
+    return L"n/a";
+}
+
+String StadiumNameWithCountry(CDBTeam *team) {
+    if (team) {
+        return Utils::Format(L"%s (%s, %s)", team->GetStadiumDevelopment()->GetStadiumName(),
+            ThousandSeparators(team->GetStadiumDevelopment()->GetNumSeats()),
+            CountryName(team->GetCountryId()));
+    }
+    return L"n/a";
+}
+
+String StadiumTag(CDBTeam *team) {
+    if (team)
+        return Utils::Format(L"%08X %s", team->GetTeamID().ToInt(), StadiumName(team));
+    return L"n/a";
+}
+
+String StadiumTagWithCountry(CDBTeam *team) {
+    if (team)
+        return Utils::Format(L"%08X %s", team->GetTeamID().ToInt(), StadiumNameWithCountry(team));
+    return L"n/a";
+}
+
+String StadiumName(CTeamIndex const &teamId) {
+    return StadiumName(GetTeam(teamId));
+}
+
+String StadiumNameWithCountry(CTeamIndex const &teamId) {
+    return StadiumNameWithCountry(GetTeam(teamId));
+}
+
+String StadiumTag(CTeamIndex const &teamId) {
+    return StadiumTag(GetTeam(teamId));
+}
+
+String StadiumTagWithCountry(CTeamIndex const &teamId) {
+    return StadiumTagWithCountry(GetTeam(teamId));
 }
 
 String CompetitionTag(CDBCompetition* comp) {
@@ -1687,6 +1754,10 @@ void NetComStorageNext(NetComStorageIterator &it) {
 
 UInt CStadiumDevelopment::GetNumSeats() {
     return CallMethodAndReturn<UInt, 0xF74220>(this);
+}
+
+const WideChar *CStadiumDevelopment::GetStadiumName(Bool withSponsor) {
+    return CallMethodAndReturn<const WideChar *, 0xF73BD0>(this, withSponsor);
 }
 
 CDBTeam *CStadiumDevelopment::GetTeam() {

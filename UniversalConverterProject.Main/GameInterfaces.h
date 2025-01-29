@@ -435,6 +435,7 @@ struct CCompID {
     unsigned int ToInt() const;
     std::wstring ToStr() const;
     static CCompID Make(unsigned char _country, unsigned char _type, unsigned short _index);
+    static CCompID Make(unsigned int value);
 };
 
 struct CScriptCommand {
@@ -649,6 +650,7 @@ class CStadiumDevelopment {
 public:
     CDBTeam *GetTeam();
     UInt GetNumSeats();
+    const WideChar *GetStadiumName(Bool withSponsor = true);
 };
 
 class CEAMailData {
@@ -878,6 +880,14 @@ String TeamName(CTeamIndex const &teamId);
 String TeamNameWithCountry(CTeamIndex const &teamId);
 String TeamTag(CTeamIndex const& teamId);
 String TeamTagWithCountry(CTeamIndex const& teamId);
+String StadiumName(CDBTeam *team);
+String StadiumNameWithCountry(CDBTeam *team);
+String StadiumTag(CDBTeam *team);
+String StadiumTagWithCountry(CDBTeam *team);
+String StadiumName(CTeamIndex const &teamId);
+String StadiumNameWithCountry(CTeamIndex const &teamId);
+String StadiumTag(CTeamIndex const &teamId);
+String StadiumTagWithCountry(CTeamIndex const &teamId);
 String CompetitionTag(CDBCompetition* comp);
 String CompetitionTag(CCompID const& compId);
 String CompetitionName(CDBCompetition *comp);

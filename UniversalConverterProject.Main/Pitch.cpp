@@ -138,10 +138,7 @@ Int OnReadLightingFile(char const *filename) {
             hostTeam = GetTeam(hostTeamId);
             if (hostTeam) {
                 stadiumData = GetTeamStadiumData(hostTeam->GetTeamUniqueID(), hostTeamId.type);
-                void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(hostTeam);
-                if (stadiumDevelopment) {
-                    stadiumCapacity = CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
-                }
+                stadiumCapacity = hostTeam->GetStadiumDevelopment()->GetNumSeats();
             }
         }
     }
@@ -373,16 +370,14 @@ void OnSetupStadiumPitch() {
         if (hostTeam) {
             if (!stadiumData || !stadiumData->isSynthetic) {
             //UChar teamDivision = CallMethodAndReturn<UChar, 0xECC430>(hostTeam, hostTeamId.type);
-                void *stadiumDevelopment = CallMethodAndReturn<void *, 0xECFFC0>(hostTeam);
-                if (stadiumDevelopment) {
-                    UInt stadiumCapacity = CallMethodAndReturn<UInt, 0xF74220>(stadiumDevelopment);
-                    if (stadiumCapacity < 5000)
-                        patch::SetUInt(GfxCoreAddress(0xAE0B38), 3, false);
-                    else if (stadiumCapacity < 10000)
-                        patch::SetUInt(GfxCoreAddress(0xAE0B38), 2, false);
-                    else if (stadiumCapacity < 15000)
-                        patch::SetUInt(GfxCoreAddress(0xAE0B38), 1, false);
-                }
+                CStadiumDevelopment *stadiumDevelopment = hostTeam->GetStadiumDevelopment();
+                UInt stadiumCapacity = stadiumDevelopment->GetNumSeats();
+                if (stadiumCapacity < 5000)
+                    patch::SetUInt(GfxCoreAddress(0xAE0B38), 3, false);
+                else if (stadiumCapacity < 10000)
+                    patch::SetUInt(GfxCoreAddress(0xAE0B38), 2, false);
+                else if (stadiumCapacity < 15000)
+                    patch::SetUInt(GfxCoreAddress(0xAE0B38), 1, false);
             }
         }
     }

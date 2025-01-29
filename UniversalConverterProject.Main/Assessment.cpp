@@ -77,6 +77,21 @@ AsianRegion GetAsianCountryRegion(UChar countryId) {
     return AsianRegion::None;
 }
 
+UChar GetNumClubsInContinentalCompetitions(FifamCompRegion region, UChar countryId) {
+    UChar compTypes[] = { COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE };
+    UChar result = 0;
+    for (auto type : compTypes) {
+        auto pool = GetPool(region.ToInt(), type, 0);
+        if (pool) {
+            for (UInt i = 0; i < pool->GetNumOfRegisteredTeams(); i++) {
+                if (pool->GetTeamID(i).countryId == countryId)
+                    result++;
+            }
+        }
+    }
+    return result;
+}
+
 template<UChar Continent, UInt NumEntries>
 struct AssessmentInfo {
     UChar position = 0;
@@ -141,8 +156,15 @@ struct Assessment {
     }
 
     void Rotate() {
-        for (auto &[countryId, countryInfo] : info)
+        for (auto &[countryId, countryInfo] : info) {
+            if (Continent == FifamContinent::Asia) {
+                UInt numClubs = GetNumClubsInContinentalCompetitions(FifamCompRegion::Asia, countryId);
+                if (numClubs == 0)
+                    numClubs = 1;
+                countryInfo.coeff[NumEntries - 1] /= (Float)numClubs;
+            }
             countryInfo.total = countryInfo.CalcTotal();
+        }
         Vector<Pair<UChar, InfoType>> vec;
         for (const auto &e : info)
             vec.push_back(e);
@@ -344,21 +366,6 @@ public:
         FillTable(t);
     }
 
-    static UChar GetNumClubsInContinentalCompetitions(FifamCompRegion region, UChar countryId) {
-        UChar compTypes[] = { COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE };
-        UChar result = 0;
-        for (auto type : compTypes) {
-            auto pool = GetPool(region.ToInt(), type, 0);
-            if (pool) {
-                for (UInt i = 0; i < pool->GetNumOfRegisteredTeams(); i++) {
-                    if (pool->GetTeamID(i).countryId == countryId)
-                        result++;
-                }
-            }
-        }
-        return result;
-    }
-
     static void METHOD FillTable(StatsAssesment *t) {
         CFMListBox *listBox = (CFMListBox *)t->listBox;
         listBox->Clear();
@@ -443,10 +450,15 @@ public:
                     sorterIndexRegion = 20'000 + i;
                     listBox->AddColumnString(L"—", color, 0);
                 }
-                for (UInt v = 0; v < 10; v++)
+                for (UInt v = 0; v < 9; v++)
                     listBox->AddColumnFloat(entries[i].info.coeff[v], color, 0);
+                UInt numClubs = GetNumClubsInContinentalCompetitions(FifamCompRegion::Asia, entries[i].countryId);
+                Float pointsCurrSeason = entries[i].info.coeff[9];
+                if (numClubs > 0)
+                    pointsCurrSeason /= (Float)numClubs;
+                listBox->AddColumnFloat(pointsCurrSeason, color, 0);
                 listBox->AddColumnFloat(entries[i].newTotal, color, 0);
-                listBox->AddColumnInt(GetNumClubsInContinentalCompetitions(FifamCompRegion::Asia, entries[i].countryId), color, 0);
+                listBox->AddColumnInt(numClubs, color, 0);
                 listBox->AddColumnInt(entries[i].oldPosition, color, 0);
                 Int posChange = entries[i].oldPosition - entries[i].newPosition;
                 if (posChange > 0) {

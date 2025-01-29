@@ -19,7 +19,9 @@ void __declspec(naked) MiscFormerCupOpponents_CompTypeCheck() {
 }
 
 const Char *GetMiscFormerCupOpponentsScreenName(CCompID compId) {
-    if (compId.type == COMP_CHAMPIONSLEAGUE || compId.type == COMP_UEFA_CUP || compId.type == COMP_CONFERENCE_LEAGUE)
+    if (compId.type == COMP_CHAMPIONSLEAGUE || compId.type == COMP_UEFA_CUP)
+        return "Screens/12MiscFormerCupOpponents2.xml";
+    else if (compId.type == COMP_CONFERENCE_LEAGUE)
         return "Screens/12MiscFormerCupOpponents3.xml";
     return "Screens/12MiscFormerCupOpponents.xml";
 }
@@ -41,12 +43,15 @@ Bool MiscFormerCupOpponents_SetupUEFA(void *t, CCompID compId, CTeamIndex teamID
     }
     if (teams[0].isNull() || teams[1].isNull())
         return false;
-    CallMethod<0x896950>(t, 24, 32);// MiscFormerCupOpponents::SetupTextBoxesAndFixtures
+    if (compId.type == COMP_CONFERENCE_LEAGUE)
+        CallMethod<0x896950>(t, 20, 28);// MiscFormerCupOpponents::SetupTextBoxesAndFixtures
+    else
+        CallMethod<0x896950>(t, 24, 32);// MiscFormerCupOpponents::SetupTextBoxesAndFixtures
     CallMethod<0x896A90>(t, compId, teams[0], teams[1]); // MiscFormerCupOpponents::SetupCompAndTeamNames
     UInt numCompIds = 0;
     UInt baseCompID = compId.ToInt() & 0xFFFF0000;
     UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(baseCompID, numCompIds);
-    Vector<UInt> leaguePhaseIDs(8, 0);
+    Vector<UInt> leaguePhaseIDs((compId.type == COMP_CONFERENCE_LEAGUE) ? 6 : 8, 0);
     for (UInt i = 0; i < Utils::Min(leaguePhaseIDs.size(), numCompIds); i++)
         leaguePhaseIDs[i] = compIds[i];
     UInt roundTypes[] = { ROUND_2, ROUND_LAST_16, ROUND_QUARTERFINAL, ROUND_SEMIFINAL, ROUND_FINAL };
@@ -54,16 +59,21 @@ Bool MiscFormerCupOpponents_SetupUEFA(void *t, CCompID compId, CTeamIndex teamID
     for (UInt i = 0; i < std::size(roundTypes); i++) {
         CDBRound *r = GetRoundByRoundType(compId.countryId, compId.type, roundTypes[i]);
         koRoundIDs[i] = (r ? r->GetCompID().ToInt() : baseCompID);
-        ::Warning("%08X", koRoundIDs[i]);
     }
     for (UInt teamIndex = 0; teamIndex < 2; teamIndex++) {
-        for (UInt roundIndex = 0; roundIndex < leaguePhaseIDs.size(); roundIndex++) {
-            CallMethod<0x8973C0>(t, teamIndex + roundIndex * 2, teamIndex + roundIndex * 2,
-                leaguePhaseIDs[roundIndex], teams[teamIndex]); // MiscFormerCupOpponents::AddRoundFixture
+        UInt tbIndex = 0;
+        UInt fixtureIndex = 0;
+        for (UInt i = 0; i < leaguePhaseIDs.size(); i++) {
+            CallMethod<0x8973C0>(t, teamIndex + tbIndex, teamIndex + tbIndex,
+                leaguePhaseIDs[i], teams[teamIndex]); // MiscFormerCupOpponents::AddRoundFixture
+            tbIndex += 2;
+            fixtureIndex += 2;
         }
-        for (UInt roundIndex = 0; roundIndex < koRoundIDs.size(); roundIndex++) {
-            CallMethod<0x8973C0>(t, teamIndex + roundIndex * 2, teamIndex + roundIndex * 4,
-                koRoundIDs[roundIndex], teams[teamIndex]); // MiscFormerCupOpponents::AddRoundFixture
+        for (UInt i = 0; i < koRoundIDs.size(); i++) {
+            CallMethod<0x8973C0>(t, teamIndex + tbIndex, teamIndex + fixtureIndex,
+                koRoundIDs[i], teams[teamIndex]); // MiscFormerCupOpponents::AddRoundFixture
+            tbIndex += 2;
+            fixtureIndex += 4;
         }
     }
     return true;
