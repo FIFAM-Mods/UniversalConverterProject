@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="InternationalCupsFix.cpp" />
     <ClCompile Include="NationalTeamManagers.cpp" />
     <ClCompile Include="WorldCup.cpp" />
     <ClCompile Include="LeagueSelection.cpp" />
@@ -86,7 +85,6 @@
     <ClCompile Include="Assessment.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="InternationalCupsFix.h" />
     <ClInclude Include="NationalTeamManagers.h" />
     <ClInclude Include="WorldCup.h" />
     <ClInclude Include="LeagueSelection.h" />

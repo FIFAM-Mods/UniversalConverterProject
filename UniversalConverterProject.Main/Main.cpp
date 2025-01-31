@@ -2,7 +2,6 @@
 #include "license_check/license_check.h"
 #include "shared.h"
 #include "UcpSettings.h"
-#include "InternationalCupsFix.h"
 #include "WorldCup.h"
 #include "LeagueSelection.h"
 #include "MasterDatLimit.h"
@@ -116,7 +115,6 @@ public:
                 }
             }
         }
-        PatchInternationalCups(v);
         PatchWorldCup(v);
         PatchLeagueSelection(v);
         PatchMasterDatLimit(v);

@@ -139,7 +139,6 @@
     <ClCompile Include="GfxCoreHook.cpp" />
     <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
     <ClCompile Include="InterfaceTheme.cpp" />
-    <ClCompile Include="InternationalCupsFix.cpp" />
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="LeagueSelection.cpp" />
     <ClCompile Include="LoansLimit.cpp" />
@@ -213,7 +212,6 @@
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="IncreaseSalaryOwnedClub.h" />
     <ClInclude Include="InterfaceTheme.h" />
-    <ClInclude Include="InternationalCupsFix.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="LeagueSelection.h" />
     <ClInclude Include="LoansLimit.h" />

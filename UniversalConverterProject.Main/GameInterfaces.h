@@ -436,6 +436,7 @@ struct CCompID {
     std::wstring ToStr() const;
     static CCompID Make(unsigned char _country, unsigned char _type, unsigned short _index);
     static CCompID Make(unsigned int value);
+    CCompID BaseCompID() const;
 };
 
 struct CScriptCommand {
@@ -758,7 +759,7 @@ public:
     const WideChar *GetName();
     const WideChar *GetAbbr();
     const WideChar *GetContinentName();
-    const Int GetLastTeamIndex();
+    const Int GetNumClubs();
     const UInt GetNumRegenPlayers();
     const UChar GetLanguage(UChar number);
     const Bool IsPlayerInNationalTeam(UInt playerId);
@@ -863,7 +864,14 @@ unsigned char SetImageFilename(void *widget, wchar_t const *filename, int u1, in
 
 class CRandom {
 public:
+    void SetSeed(Int seed1, Int seed2);
+    void GetSeed(Int &seed1, Int &seed2);
+    // Returns a random integer in [0, maxExclusive)
     static Int GetRandomInt(Int maxExclusive);
+    // Returns a random integer in [min, max] (16-bit clamped)
+    Int GetRandomBetween(Int min, Int max);
+    // Returns a random float in [0.0f, maxExclusive)
+    Float GetRandomFloat(Float maxExclusive);
 };
 
 class CParameterFiles {
@@ -895,6 +903,8 @@ String CompetitionName(CDBCompetition *comp);
 String CompetitionName(CCompID const &compId);
 String CountryName(UChar countryId);
 String CountryTag(UChar countryId);
+
+String FlagsToStr(UInt value);
 
 Bool GetHour();
 Bool GetIsCloudy();
@@ -1090,3 +1100,24 @@ public:
         Call<0xD196A0>(listBox, args...);
     }
 };
+
+class CompetitionHosts {
+public:
+    void AddHostCountries(CCompID const &compId, UShort year, UChar hostCountry1, UChar hostCountry2);
+    UChar GetHostCountry(CCompID const &compId, UShort year, UInt hostIndex);
+    UChar GetFirstHostCountry(CCompID const &compId, UShort year);
+    UChar GetSecondHostCountry(CCompID const &compId, UShort year);
+    UChar GetNumberOfHostCountries(CCompID const &compId, UShort year);
+    Bool AddHostStadium(CCompID const &compId, UShort year, CTeamIndex teamID);
+    Bool CountryHostedTournament(CCompID const &compId, UChar countryId);
+    Bool IsNationalTeamHost(CCompID const &compId, UShort year, CTeamIndex const &teamID);
+    UInt GetNumOfStadiums(CCompID const &compId, UShort year);
+    CTeamIndex GetHostStadium(CCompID const &compId, UShort year, UInt stadiumIndex);
+    void SelectHostStadiums();
+    void SelectHostStadiums(CCompID const &compId, UShort year);
+    CTeamIndex GetChampionsLeagueHost();
+    CTeamIndex GetUefaCupHost();
+    CTeamIndex GetEuroSupercupHost();
+};
+
+CompetitionHosts *GetCompHosts();

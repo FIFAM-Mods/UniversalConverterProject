@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include "shared.h"
 #include "FifamCompRegion.h"
+#include "FifamBeg.h"
 
 using namespace plugin;
 
@@ -173,6 +174,11 @@ CCompID CCompID::Make(unsigned int value) {
     CCompID result;
     result.SetFromInt(value);
     return result;
+}
+
+CCompID CCompID::BaseCompID() const {
+    CCompID compId = CCompID::Make(ToInt() & 0xFFFF0000);
+    return compId;
 }
 
 unsigned int CDBCompetition::GetCompetitionType() {
@@ -895,6 +901,22 @@ String CountryTag(UChar countryId) {
     return L"n/a";
 }
 
+String FlagsToStr(UInt value) {
+    Vector<String> vecFlags;
+    FifamBeg beg = FifamBeg::MakeFromInt(value);
+    beg.ToStr();
+    for (UInt i = 0; i < 32; i++) {
+        UInt f = 1 << i;
+        if (value & f) {
+            if (FifamBeg::Present(f))
+                vecFlags.push_back(FifamBeg::MakeFromInt(f).ToStr());
+            else
+                vecFlags.push_back(Utils::Format(L"UNKNOWN_", f));
+        }
+    }
+    return Utils::Join(vecFlags, L',');
+}
+
 Bool GetHour() {
     void *match = *(void **)0x3124748;
     if (match)
@@ -1318,7 +1340,7 @@ const WideChar *CDBCountry::GetContinentName() {
     return plugin::CallMethodAndReturn<const WideChar *, 0xFD68D0>(this);
 }
 
-const Int CDBCountry::GetLastTeamIndex() {
+const Int CDBCountry::GetNumClubs() {
     return CallMethodAndReturn<Int, 0xFD6910>(this);
 }
 
@@ -1517,8 +1539,24 @@ void CAssessmentInfo::AddPoints(float points) {
     CallMethod<0x121DE60>(this, points);
 }
 
+void CRandom::SetSeed(Int seed1, Int seed2) {
+    Call<0x149E2F6>(seed1, seed2);
+}
+
+void CRandom::GetSeed(Int &seed1, Int &seed2) {
+    Call<0x149E30B>(&seed1, &seed2);
+}
+
 Int CRandom::GetRandomInt(Int maxExclusive) {
     return CallAndReturn<Int, 0x149E320>(maxExclusive);
+}
+
+Int CRandom::GetRandomBetween(Int min, Int max) {
+    return CallAndReturn<Int, 0x149E332>(min, max);
+}
+
+Float CRandom::GetRandomFloat(Float maxExclusive) {
+    return CallAndReturn<Float, 0x149E347>(maxExclusive);
 }
 
 CTeamIndex CDBOneMatch::GetHostTeamID() {
@@ -2149,4 +2187,68 @@ EAGMoney EAGMoney::operator-() {
     EAGMoney result;
     CallMethod<0x149CF0A>(this, &result);
     return result;
+}
+
+void CompetitionHosts::AddHostCountries(CCompID const &compId, UShort year, UChar hostCountry1, UChar hostCountry2) {
+    CallMethod<0x117C040>(this, &compId, year, hostCountry1, hostCountry2);
+}
+
+UChar CompetitionHosts::GetHostCountry(CCompID const &compId, UShort year, UInt hostIndex) {
+    return CallMethodAndReturn<UChar, 0x1179F80>(this, &compId, year, hostIndex);
+}
+
+UChar CompetitionHosts::GetFirstHostCountry(CCompID const &compId, UShort year) {
+    return CallMethodAndReturn<UChar, 0x117A030>(this, &compId, year);
+}
+
+UChar CompetitionHosts::GetSecondHostCountry(CCompID const &compId, UShort year) {
+    return CallMethodAndReturn<UChar, 0x117A050>(this, &compId, year);
+}
+
+UChar CompetitionHosts::GetNumberOfHostCountries(CCompID const &compId, UShort year) {
+    return CallMethodAndReturn<UChar, 0x117A070>(this, &compId, year);
+}
+
+Bool CompetitionHosts::AddHostStadium(CCompID const &compId, UShort year, CTeamIndex teamID) {
+    return CallMethodAndReturn<Bool, 0x117C0A0>(this, &compId, year, teamID);
+}
+
+Bool CompetitionHosts::CountryHostedTournament(CCompID const &compId, UChar countryId) {
+    return CallMethodAndReturn<Bool, 0x1179ED0>(this, &compId, countryId);
+}
+
+Bool CompetitionHosts::IsNationalTeamHost(CCompID const &compId, UShort year, CTeamIndex const &teamID) {
+    return CallMethodAndReturn<Bool, 0x117A230>(this, &compId, year, &teamID);
+}
+
+UInt CompetitionHosts::GetNumOfStadiums(CCompID const &compId, UShort year) {
+    return CallMethodAndReturn<UInt, 0x117A250>(this, &compId, year);
+}
+
+CTeamIndex CompetitionHosts::GetHostStadium(CCompID const &compId, UShort year, UInt stadiumIndex) {
+    return CallMethodAndReturn<CTeamIndex, 0x117A310>(this, &compId, year, stadiumIndex);
+}
+
+void CompetitionHosts::SelectHostStadiums() {
+    CallMethod<0x117C560>(this);
+}
+
+void CompetitionHosts::SelectHostStadiums(CCompID const &compId, UShort year) {
+    CallMethod<0x117C760>(this, &compId, year);
+}
+
+CTeamIndex CompetitionHosts::GetChampionsLeagueHost() {
+    return CallMethodAndReturn<CTeamIndex, 0x117A560>(this);
+}
+
+CTeamIndex CompetitionHosts::GetUefaCupHost() {
+    return CallMethodAndReturn<CTeamIndex, 0x117A570>(this);
+}
+
+CTeamIndex CompetitionHosts::GetEuroSupercupHost() {
+    return CallMethodAndReturn<CTeamIndex, 0x1177730>(this);
+}
+
+CompetitionHosts *GetCompHosts() {
+    return CallAndReturn<CompetitionHosts *, 0x117C830>();
 }
