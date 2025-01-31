@@ -1,4 +1,5 @@
 #include "Assessment.h"
+#include "ExtendedCountry.h"
 #include "GameInterfaces.h"
 #include "FifamContinent.h"
 #include "FifamCompRegion.h"
@@ -98,14 +99,18 @@ struct AssessmentInfo {
     UChar regionalPosition = 0;
     Float total = 0.0f;
     Float coeff[NumEntries] = {};
+    Float prelimStagePoints = 0.0f;
     UInt randomValue = 0;
 
     Float CalcTotal() const {
         return 0.0f;
     }
 
-    void AddPoints(Float points) {
-        coeff[NumEntries - 1] += points;
+    void AddPoints(Float points, Bool prelimStage = false) {
+        if (prelimStage)
+            prelimStagePoints += points;
+        else
+            coeff[NumEntries - 1] += points;
     }
 };
 
@@ -150,9 +155,9 @@ struct Assessment {
         return 255;
     }
 
-    void AddPoints(UChar countryId, Float points) {
+    void AddPoints(UChar countryId, Float points, Bool prelimStage = false) {
         if (Utils::Contains(info, countryId))
-            info.at(countryId).AddPoints(points);
+            info.at(countryId).AddPoints(points, prelimStage);
     }
 
     void Rotate() {
@@ -162,8 +167,12 @@ struct Assessment {
                 if (numClubs == 0)
                     numClubs = 1;
                 countryInfo.coeff[NumEntries - 1] /= (Float)numClubs;
+                countryInfo.coeff[NumEntries - 1] += countryInfo.prelimStagePoints;
+                countryInfo.coeff[NumEntries - 1] = round(countryInfo.coeff[NumEntries - 1] * 1000.0f) / 1000.0f;
             }
             countryInfo.total = countryInfo.CalcTotal();
+            if (Continent == FifamContinent::Asia)
+                countryInfo.total = round(countryInfo.total * 1000.0f) / 1000.0f;
         }
         Vector<Pair<UChar, InfoType>> vec;
         for (const auto &e : info)
@@ -173,11 +182,20 @@ struct Assessment {
                 return true;
             if (a.second.total < b.second.total)
                 return false;
-            if (Continent == FifamContinent::Africa) {
-                for (UInt i = 0; i < (NumEntries - 1); i++) { // first entry is not counted here
-                    if (a.second.coeff[(NumEntries - 1) - i] > b.second.coeff[(NumEntries - 1) - i])
+            if (Continent == FifamContinent::Asia) {
+                for (UInt i = 1; i < 9; i++) { // first and last entries are not counted here
+                    if (a.second.coeff[9 - i] > b.second.coeff[9 - i])
                         return true;
-                    if (a.second.coeff[(NumEntries - 1) - i] < b.second.coeff[(NumEntries - 1) - i])
+                    if (a.second.coeff[9 - i] < b.second.coeff[9 - i])
+                        return false;
+                }
+                return SortCountryIDsByFifaRanking(a.first, b.first);
+            }
+            else {
+                for (UInt i = 0; i < 5; i++) { // first entry is not counted here
+                    if (a.second.coeff[5 - i] > b.second.coeff[5 - i])
+                        return true;
+                    if (a.second.coeff[5 - i] < b.second.coeff[5 - i])
                         return false;
                 }
             }
@@ -220,6 +238,7 @@ struct Assessment {
             SaveGameReadInt8(save, _info.position);
             SaveGameReadFloat(save, _info.total);
             SaveGameReadFloatArray(save, _info.coeff, NumEntries);
+            SaveGameReadFloat(save, _info.prelimStagePoints);
             SaveGameReadInt32(save, _info.randomValue);
             info[countryId] = _info;
         }
@@ -232,6 +251,7 @@ struct Assessment {
             SaveGameWriteInt8(save, _info.position);
             SaveGameWriteFloat(save, _info.total);
             SaveGameWriteFloatArray(save, _info.coeff, NumEntries);
+            SaveGameWriteFloat(save, _info.prelimStagePoints);
             SaveGameWriteInt32(save, _info.randomValue);
         }
     }
@@ -309,8 +329,8 @@ void AddAfricanAssessmentCountryPoints(UChar countryId, Float points) {
     GetAssessmentInfoCAF().AddPoints(countryId, points);
 }
 
-void AddAsianAssessmentCountryPoints(UChar countryId, Float points) {
-    GetAssessmentInfoAFC().AddPoints(countryId, points);
+void AddAsianAssessmentCountryPoints(UChar countryId, Float points, Bool prelimStage) {
+    GetAssessmentInfoAFC().AddPoints(countryId, points, prelimStage);
 }
 
 void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, void *reader) {
@@ -407,7 +427,13 @@ public:
                     return true;
                 if (a.newTotal < b.newTotal)
                     return false;
-                return a.info.randomValue > b.info.randomValue;
+                for (UInt i = 1; i < 9; i++) { // first and last entries are not counted here
+                    if (a.info.coeff[9 - i] > b.info.coeff[9 - i])
+                        return true;
+                    if (a.info.coeff[9 - i] < b.info.coeff[9 - i])
+                        return false;
+                }
+                return SortCountryIDsByFifaRanking(a.countryId, b.countryId);
             });
             lastPosition = 1;
             for (UInt i = 0; i < entries.size(); i++) {
@@ -456,6 +482,7 @@ public:
                 Float pointsCurrSeason = entries[i].info.coeff[9];
                 if (numClubs > 0)
                     pointsCurrSeason /= (Float)numClubs;
+                pointsCurrSeason += entries[i].info.prelimStagePoints;
                 listBox->AddColumnFloat(pointsCurrSeason, color, 0);
                 listBox->AddColumnFloat(entries[i].newTotal, color, 0);
                 listBox->AddColumnInt(numClubs, color, 0);

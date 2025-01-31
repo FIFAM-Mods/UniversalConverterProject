@@ -577,6 +577,7 @@ public:
     void GetRoundPair(unsigned int pairIndex, RoundPair &out);
     RoundPair &GetRoundPair(unsigned int pairIndex);
     Bool GetTeamResult(CTeamIndex teamID, UChar &goalsFor, UChar &goalsAgainst, Bool &home);
+    UInt GetLegFlags(UInt leg) const;
 };
 
 class CDBCup : public CDBCompetition {};

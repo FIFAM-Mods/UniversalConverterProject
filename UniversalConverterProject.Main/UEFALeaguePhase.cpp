@@ -300,6 +300,21 @@ draw(DrawType drawType, size_t numPots, size_t numMatchdays, vector<Team> const 
 
 }
 
+Vector<UChar> &MediaMarketCountries() {
+    static Vector<UChar> countries;
+    return countries;
+}
+
+UInt GetCountryMediaMarketRanking(UChar countryId) {
+    UInt position = 1;
+    for (UChar c : MediaMarketCountries()) {
+        if (c == countryId)
+            return position;
+        position++;
+    }
+    return position;
+}
+
 bool DrawUEFALeaguePhase(CDBCompetition *poolTeams, CDBCompetition *poolFixtures, UInt numPots, UInt numMatchdays) {
     using namespace cldraw;
     if (poolTeams->GetNumOfRegisteredTeams() != poolTeams->GetNumOfTeams())
@@ -641,6 +656,121 @@ void UEFALeaguePhaseMatchdayProcessBonuses(CDBRound *round, RoundPair const &pai
         GiveBonus(pair.GetWinner(), round->GetBonus(1), 2602); // You have earned a win bonus in the previous cup match of _MONEY.
 }
 
+void MakeCoefficientBasedPayments(CDBCompetition *comp) {
+    Int64 bonusOneShareEuropean = 960'000;
+    Int64 bonusOneShareNonEuropean = 320'000;
+    if (comp->GetCompetitionType() == COMP_UEFA_CUP) {
+        bonusOneShareEuropean = 223'000;
+        bonusOneShareNonEuropean = 74'000;
+    }
+    else if (comp->GetCompetitionType() == COMP_CONFERENCE_LEAGUE) {
+        bonusOneShareEuropean = 64'000;
+        bonusOneShareNonEuropean = 21'000;
+    }
+    Int64 bonusValueEuropean = bonusOneShareEuropean * 36;
+    Int64 bonusValueNonEuropean = bonusOneShareNonEuropean * 36;
+    struct TeamPaymentInfo {
+        CDBTeam *team = nullptr;
+        UChar IP = 0;
+        UChar NP = 0;
+        UChar historyPoints = 0;
+        UChar totalPointsEuropean = 0;
+        UChar totalPointsNonEuropean = 0;
+        UChar countryMarketRanking = 0;
+    };
+    Vector<TeamPaymentInfo> teams;
+    Vector<CTeamIndex> winners[3];
+    Vector<CTeamIndex> runnerUps[3];
+    static UChar winnerPoints[3] = { 10, 4, 2 };
+    static UChar runnerUpPoints[3] = { 5, 2, 1 };
+    UChar compsToCheck[3] = { COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE };
+    for (UInt y = 0; y < 10; y++) {
+        for (UInt i = 0; i < 3; i++) {
+            CTeamIndex winner = GetCompFinalist(
+                FifamCompRegion::Europe, compsToCheck[i], GetCurrentYear() - y, false);
+            if (!winner.isNull())
+                winners[i].push_back(winner);
+            CTeamIndex runnerUp = GetCompFinalist(
+                FifamCompRegion::Europe, compsToCheck[i], GetCurrentYear() - y, true);
+            if (!runnerUp.isNull())
+                runnerUps[i].push_back(runnerUp);
+        }
+    }
+    for (UInt i = 0; i < comp->GetNumOfTeams(); i++) {
+        CTeamIndex teamID = comp->GetTeamID(i);
+        if (!teamID.isNull()) {
+            CDBTeam *team = GetTeam(teamID);
+            if (team) {
+                TeamPaymentInfo teamInfo;
+                teamInfo.team = team;
+                teamInfo.IP = team->GetInternationalPrestige();
+                teamInfo.NP = team->GetNationalPrestige();
+                teamInfo.historyPoints = 0;
+                for (UInt i = 0; i < 3; i++) {
+                    for (auto const &w : winners[i]) {
+                        if (teamID == w)
+                            teamInfo.historyPoints += winnerPoints[i];
+                    }
+                    for (auto const &r : runnerUps[i]) {
+                        if (teamID == r)
+                            teamInfo.historyPoints += runnerUpPoints[i];
+                    }
+                }
+                teamInfo.totalPointsEuropean = teamInfo.IP * 2 + teamInfo.NP;
+                teamInfo.totalPointsNonEuropean = teamInfo.IP * 2 + teamInfo.historyPoints;
+                teamInfo.countryMarketRanking = GetCountryMediaMarketRanking(teamID.countryId);
+                teams.push_back(teamInfo);
+            }
+        }
+    }
+    if (!teams.empty()) {
+        Utils::Sort(teams, [](TeamPaymentInfo const &a, TeamPaymentInfo const &b) {
+            if (a.countryMarketRanking > b.countryMarketRanking)
+                return true;
+            if (b.countryMarketRanking > a.countryMarketRanking)
+                return false;
+            if (a.totalPointsEuropean > b.totalPointsEuropean)
+                return true;
+            if (b.totalPointsEuropean > a.totalPointsEuropean)
+                return false;
+            return Europe_ChampionsLeagueRoundSorter(a.team, b.team);
+        });
+        for (auto const &t : teams) {
+            if (bonusValueEuropean > 0) {
+                t.team->ChangeMoney(5, bonusValueEuropean, 0);
+                CEAMailData mailData;
+                mailData.SetMoney(bonusValueEuropean);
+                mailData.SetCompetition(CCompID::Make(comp->GetCompID().ToInt() & 0xFFFF0000));
+                t.team->SendMail(3443, mailData, 0); // As a participant in the League Phase of the _COMPETITION, you have received a coefficient-based payment of _MONEY (European Part).
+                SafeLog::Write(Utils::Format(
+                    L"%s Coefficient-based Payments (European): team %s bonus - %I64d (countryPlace %d totalPoints %d (IP %d / NP %d))",
+                    CompetitionName(comp), TeamName(t.team), bonusValueEuropean, t.countryMarketRanking, t.totalPointsEuropean, t.IP, t.NP));
+                bonusValueEuropean -= bonusOneShareEuropean;
+            }
+        }
+        Utils::Sort(teams, [](TeamPaymentInfo const &a, TeamPaymentInfo const &b) {
+            if (a.totalPointsNonEuropean > b.totalPointsNonEuropean)
+                return true;
+            if (b.totalPointsNonEuropean > a.totalPointsNonEuropean)
+                return false;
+            return Europe_ChampionsLeagueRoundSorter(a.team, b.team);
+        });
+        for (auto const &t : teams) {
+            if (bonusValueNonEuropean > 0) {
+                t.team->ChangeMoney(5, bonusValueNonEuropean, 0);
+                CEAMailData mailData;
+                mailData.SetMoney(bonusValueNonEuropean);
+                mailData.SetCompetition(CCompID::Make(comp->GetCompID().ToInt() & 0xFFFF0000));
+                t.team->SendMail(3444, mailData, 0); // As a participant in the League Phase of the _COMPETITION, you have received a coefficient-based payment of _MONEY (Non-European Part).
+                SafeLog::Write(Utils::Format(
+                    L"%s Coefficient-based Payments (Non-European): team %s bonus - %I64d (totalPoints %d (prestige %d / historyPoints %d))",
+                    CompetitionName(comp), TeamName(t.team), bonusValueNonEuropean, t.totalPointsNonEuropean, t.IP, t.historyPoints));
+                bonusValueNonEuropean -= bonusOneShareNonEuropean;
+            }
+        }
+    }
+}
+
 CTeamIndex const & METHOD OnDBRoundRegisterMatch_GetWinner(RoundPair const &pair) {
     if (gMyDBRound_RegisterMatch_Round && IsUEFALeaguePhaseMatchdayCompID(gMyDBRound_RegisterMatch_Round->GetCompID())) {
         static CTeamIndex nullTeam = CTeamIndex::null();
@@ -929,5 +1059,24 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectCall(0x10470E6, RoundFinish_UEFALeaguePhase_GetNumOfTeams); // disable round-finish logic (manager bio, IP change, budget reduce) for League Phase matchdays
         patch::SetPointer(0x309FFD4, MyTeamListHandler); // update the _TEAM_LIST behavior
         patch::RedirectCall(0x1043DFB, OnDBRoundRegisterMatch_GetWinner); // disable default win bonus for League Phase matchdays
+
+        // remove original marketing pool
+        patch::Nop(0xF6EE23, 5); // CDBMarketingPool::ProcessChampionsLeagueFinal
+        patch::Nop(0x1045567, 5); // CDBMarketingPool::ProcessUEFACupQuarterfinal
+        patch::Nop(0x10455E2, 5); // CDBMarketingPool::ProcessUEFACupFinal
+        patch::Nop(0x10F1B92, 6); // CDBMarketingPool::ProcessChampionsLeagueGroupStage
+
+        FifamReader r("fmdata\\ParameterFiles\\Media Markets.txt");
+        if (r.Available()) {
+            while (!r.IsEof()) {
+                if (!r.EmptyLine()) {
+                    UChar countryId = r.ReadLine<UChar>();
+                    if (countryId >= 1 && countryId <= 207)
+                        MediaMarketCountries().push_back(countryId);
+                }
+                else
+                    r.SkipLine();
+            }
+        }
     }
 }

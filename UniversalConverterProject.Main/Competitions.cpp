@@ -1640,79 +1640,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     comp->RandomlySortTeams(18, 9);
                     comp->RandomlySortTeams(27, 9);
                     DumpComp(comp, L"Champions League teams sorted by pots");
-                    // Coefficient-based Payments
-                    struct TeamPaymentInfo {
-                        CDBTeam *team = nullptr;
-                        UChar prestige = 0;
-                        UChar historyPoints = 0;
-                        UChar totalPoints = 0;
-                    };
-                    Vector<TeamPaymentInfo> teams;
-                    Vector<CTeamIndex> winners[3];
-                    Vector<CTeamIndex> runnerUps[3];
-                    static UChar winnerPoints[3] = { 10, 4, 2 };
-                    static UChar runnerUpPoints[3] = { 5, 2, 1 };
-                    UChar compsToCheck[3] = { COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE };
-                    for (UInt y = 0; y < 10; y++) {
-                        for (UInt i = 0; i < 3; i++) {
-                            CTeamIndex winner = GetCompFinalist(
-                                FifamCompRegion::Europe, compsToCheck[i], GetCurrentYear() - y, false);
-                            if (!winner.isNull())
-                                winners[i].push_back(winner);
-                            CTeamIndex runnerUp = GetCompFinalist(
-                                FifamCompRegion::Europe, compsToCheck[i], GetCurrentYear() - y, true);
-                            if (!runnerUp.isNull())
-                                runnerUps[i].push_back(runnerUp);
-                        }
-                    }
-                    for (UInt i = 0; i < comp->GetNumOfTeams(); i++) {
-                        CTeamIndex teamID = comp->GetTeamID(i);
-                        if (!teamID.isNull()) {
-                            CDBTeam *team = GetTeam(teamID);
-                            if (team) {
-                                TeamPaymentInfo teamInfo;
-                                teamInfo.team = team;
-                                teamInfo.prestige = team->GetInternationalPrestige();
-                                teamInfo.historyPoints = 0;
-                                for (UInt i = 0; i < 3; i++) {
-                                    for (auto const &w : winners[i]) {
-                                        if (teamID == w)
-                                            teamInfo.historyPoints += winnerPoints[i];
-                                    }
-                                    for (auto const &r : runnerUps[i]) {
-                                        if (teamID == r)
-                                            teamInfo.historyPoints += runnerUpPoints[i];
-                                    }
-                                }
-                                teamInfo.totalPoints = teamInfo.prestige * 2 + teamInfo.historyPoints;
-                                teams.push_back(teamInfo);
-                            }
-                        }
-                    }
-                    if (!teams.empty()) {
-                        Utils::Sort(teams, [](TeamPaymentInfo const &a, TeamPaymentInfo const &b) {
-                            if (a.totalPoints > b.totalPoints)
-                                return true;
-                            if (b.totalPoints > a.totalPoints)
-                                return false;
-                            return Europe_ChampionsLeagueRoundSorter(a.team, b.team);
-                        });
-                        const Int64 bonusOneShare = 320'000;
-                        Int64 bonusValue = bonusOneShare * 36; // TODO: update the value with the real one
-                        for (auto const &t : teams) {
-                            if (bonusValue > 0) {
-                                t.team->ChangeMoney(5, bonusValue, 0);
-                                CEAMailData mailData;
-                                mailData.SetMoney(bonusValue);
-                                mailData.SetCompetition(CCompID::Make(id.ToInt() & 0xFFFF0000));
-                                t.team->SendMail(3443, mailData, 0); // As a participant in the League Phase of the _COMPETITION, you have received a coefficient-based payment of _MONEY.
-                                SafeLog::Write(Utils::Format(
-                                    L"Champions League Coefficient-based Payments: team %s bonus - %I64d (totalPoints %d (prestige %d / historyPoints %d))",
-                                    TeamName(t.team), bonusValue, t.totalPoints, t.prestige, t.historyPoints));
-                                bonusValue -= bonusOneShare;
-                            }
-                        }
-                    }
+                    MakeCoefficientBasedPayments(comp);
                 }
                 else if (id.type == COMP_CHAMPIONSLEAGUE && id.index == 9 && comp->GetNumOfTeams() == 288) {
                     GenerateUEFALeaguePhaseMatches(L"Champions League", GetPool(FifamCompRegion::Europe, COMP_CHAMPIONSLEAGUE, 8), comp, 4, 8);
@@ -3372,9 +3300,16 @@ UChar METHOD OnClearInternationalCompsEvents_Check(CDBCompetition *comp) {
 void METHOD OnClearInternationalCompsEvents_Clear(void *vec, DUMMY_ARG, UInt *pId) {
     auto year = GetCurrentYear();
     for (auto const &[baseId, info] : GetCompetitionLaunchInfos()) {
-        if (LaunchesInCurrentYear(CCompID::Make(info.qualiCompId ? info.qualiCompId : baseId))) {
+        UInt finalTournamentId = 0;
+        for (auto const &[baseId2, info2] : GetCompetitionLaunchInfos()) {
+            if (info.qualiCompId == baseId) {
+                finalTournamentId = baseId2;
+                break;
+            }
+        }
+        if (LaunchesInYear(CCompID::Make(finalTournamentId ? finalTournamentId : baseId), year - 1)) {
             CallMethod<0x6E3FD0>(vec, &baseId);
-            SafeLog::Write(Utils::Format(L"Cleared events of %s on %s",
+            SafeLog::Write(Utils::Format(L"OnClearInternationalCompsEvents_Clear: %s on %s",
                 CompetitionTag(CCompID::Make(baseId)), GetCurrentDate().ToStr()));
         }
     }
@@ -4471,19 +4406,17 @@ void METHOD AssessmentTable_AddPointsOnCompetitionLaunch(CAssessmentTable* table
                     points = 1.0f;
             }
             else if (type == COMP_CONFERENCE_LEAGUE) { // ACL Challenge League
-                if (rt == ROUND_QUALI || rt == ROUND_QUALI2 || rt == ROUND_QUALI3 || rt == ROUND_PREROUND1)
-                    points = 0.5f;
-                else if (rt == ROUND_QUARTERFINAL)
-                    points = 1.5f;
+                if (rt == ROUND_QUARTERFINAL)
+                    points = 1.65f;
                 else if (rt == ROUND_SEMIFINAL || rt == ROUND_FINAL)
-                    points = 0.75f;
+                    points = 0.825f;
             }
         }
         else if (comp->GetDbType() == DB_LEAGUE) {
             if (type == COMP_UEFA_CUP) // ACL Two
                 points = 2.0f;
             else if (type == COMP_CONFERENCE_LEAGUE) // ACL Challenge League
-                points = 1.5f;
+                points = 1.65f;
         }
     }
     if (points != 0.0f) {
@@ -4515,6 +4448,7 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
     {
         Float pointsForWin = 0.0f;
         Float pointsForDraw = 0.0f;
+        Bool prelimStage = false;
         CDBCompetition *comp = GetCompetition(compID);
         if (compID.countryId == FifamCompRegion::Europe) {
             points = 1.0f;
@@ -4524,12 +4458,7 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
             pointsForDraw = points;
         }
         else if (compID.countryId == FifamCompRegion::Asia) {
-            if (comp->GetDbType() == DB_ROUND &&
-                comp->GetRoundType() == ROUND_QUALI ||
-                comp->GetRoundType() == ROUND_QUALI2 ||
-                comp->GetRoundType() == ROUND_QUALI3 ||
-                comp->GetRoundType() == ROUND_PREROUND1)
-            {
+            if (comp->GetDbType() == DB_ROUND && comp->GetRoundType() == ROUND_PREROUND1) {
                 if (compID.type == COMP_CHAMPIONSLEAGUE) {
                     pointsForWin = 0.3f;
                     pointsForDraw = 0.15f;
@@ -4538,9 +4467,10 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
                     pointsForWin = 0.2f;
                     pointsForDraw = 0.1f;
                 }
-                else {
-                    pointsForWin = 0.15f;
-                    pointsForDraw = 0.075f;
+                else if (compID.type == COMP_CONFERENCE_LEAGUE) {
+                    pointsForWin = 0.1f;
+                    pointsForDraw = 0.05f;
+                    prelimStage = true;
                 }
             }
             else {
@@ -4550,15 +4480,15 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
                 }
                 else if (compID.type == COMP_UEFA_CUP) {
                     pointsForWin = 2.0f;
-                    pointsForDraw = 0.667f;
+                    pointsForDraw = 0.6666667f;
                 }
-                else {
-                    pointsForWin = 1.5f;
-                    pointsForDraw = 0.5f;
+                else if (compID.type == COMP_CONFERENCE_LEAGUE) {
+                    pointsForWin = 1.65f;
+                    pointsForDraw = 0.55f;
                 }
             }
         }
-        auto AddPoints = [&compID, &table](CTeamIndex teamID, Float points) {
+        auto AddPoints = [&compID, &table, &prelimStage](CTeamIndex teamID, Float points) {
             if (teamID.countryId != 0 && points != 0.0f) {
                 if (compID.countryId == FifamCompRegion::Europe) {
                     table->GetInfoForCountry(GetTeamCountryId_LiechtensteinCheck(teamID))->AddPoints(points);
@@ -4567,39 +4497,90 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
                         CountryName(GetTeamCountryId_LiechtensteinCheck(teamID)), points));
                 }
                 else if (compID.countryId == FifamCompRegion::Asia) {
-                    AddAsianAssessmentCountryPoints(teamID.countryId, points);
+                    AddAsianAssessmentCountryPoints(teamID.countryId, points, prelimStage);
                     SafeLog::Write(Utils::Format(L"AssessmentTable_AddPointsForMatch (%s): %s - %g points",
                         CompetitionName(compID), TeamNameWithCountry(teamID), points));
                 }
             }
         };
         UChar result1 = 0, result2 = 0;
+        UInt flags = 0;
         CTeamIndex team1 = rp.Get1stTeam();
         CTeamIndex team2 = rp.Get2ndTeam();
-        if (rp.TestFlag(0x4000)) { // WON_ON_PENALTY
-            if (rp.TestFlag(2)) {
-                CDBRound *round = comp->AsRound();
-                Bool home = false;
-                round->GetTeamResult(rp.Get1stTeam(), result1, result2, home);
-                if (result1 == result2) {
-                    AddPoints(team1, pointsForDraw);
-                    AddPoints(team2, pointsForDraw);
+        auto FlagsToStr = [](UInt value) {
+            Vector<String> vecFlags;
+            FifamBeg beg = FifamBeg::MakeFromInt(value);
+            beg.ToStr();
+            for (UInt i = 0; i < 32; i++) {
+                UInt f = 1 << i;
+                if (value & f) {
+                    if (FifamBeg::Present(f))
+                        vecFlags.push_back(FifamBeg::MakeFromInt(f).ToStr());
+                    else
+                        vecFlags.push_back(Utils::Format(L"UNKNOWN_", f));
                 }
-                else if (result1 < result2) // TODO: verify this
-                    AddPoints(team1, pointsForWin);
-                else
-                    AddPoints(team2, pointsForWin);
+            }
+            return Utils::Join(vecFlags, L',');
+        };
+        // TODO: remove this
+        SafeLog::WriteToFile("testMatches.txt",
+            Utils::Format(L"%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\t%s\t%s",
+            CompetitionTag(comp), TeamName(team1), TeamName(team2), rp.result1[0], rp.result2[0], rp.result1[1], rp.result2[1],
+            FlagsToStr(rp.m_nFlags), FlagsToStr(comp->AsRound()->GetLegFlags(0)), FlagsToStr(comp->AsRound()->GetLegFlags(1))),
+            L"Competition\tTeam1\tTeam2\tLeg1_t1\tLeg1_t2\tLeg2_t1\tLeg2_t2\tPairFlags\tLef1_Flags\tLeg2_Flags"
+        );
+        if (compID.countryId == FifamCompRegion::Asia) {
+            if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
+                if (rp.TestFlag(FifamBeg::ExtraTime)) { // ignore extra-time goals for AFC ranking
+                    if (rp.TestFlag(FifamBeg::_2ndPlayed)) { // if 2 matches were played
+                        rp.GetResult(result1, result2, flags, FifamBeg::_1stLeg); // get result of first leg
+                        if (result1 > result2) // if team1 won in first leg, then team2 won in second leg
+                            AddPoints(team2, pointsForWin);
+                        else if (result2 > result1) // if team2 won in first leg, then team1 won in second leg
+                            AddPoints(team1, pointsForWin);
+                        else { // if first leg ended in a draw, then second leg also ended in a draw
+                            AddPoints(team1, pointsForDraw);
+                            AddPoints(team2, pointsForDraw);
+                        }
+                    }
+                    else { // if extra-time was played in first leg - then it was a draw
+                        AddPoints(team1, pointsForDraw);
+                        AddPoints(team2, pointsForDraw);
+                    }
+                }
+                else {
+                    rp.GetResult(result1, result2, flags, rp.TestFlag(FifamBeg::_2ndPlayed) ? FifamBeg::_2ndLeg : FifamBeg::_1stLeg);
+                    if (result1 > result2)
+                        AddPoints(team1, pointsForWin);
+                    else if (result2 > result1)
+                        AddPoints(team2, pointsForWin);
+                    else {
+                        AddPoints(team1, pointsForDraw);
+                        AddPoints(team2, pointsForDraw);
+                    }
+                }
             }
         }
         else {
-            UInt flags = 0;
-            rp.GetResult(result1, result2, flags, 0);
-            if (result1 == result2) {
-                AddPoints(team1, pointsForDraw);
-                AddPoints(team2, pointsForDraw);
-            }
-            else
+            if (comp->GetRoundType() == ROUND_FINAL) {
+                // we expect there's always one leg in the final and there's always a winner in the final.
+                // Winner gets 2 points, no matter if it's penalties or not.
                 AddPoints(rp.GetWinner(), pointsForWin);
+            }
+            else {
+                // TODO: handle forfeited matches?
+                if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
+                    rp.GetResult(result1, result2, flags, rp.TestFlag(FifamBeg::_2ndPlayed) ? FifamBeg::_2ndLeg : FifamBeg::_1stLeg);
+                    if (result1 > result2)
+                        AddPoints(team1, pointsForWin);
+                    else if (result2 > result1)
+                        AddPoints(team2, pointsForWin);
+                    else {
+                        AddPoints(team1, pointsForDraw);
+                        AddPoints(team2, pointsForDraw);
+                    }
+                }
+            }
         }
     }
 }
@@ -4608,7 +4589,7 @@ void Assessment_AddPointsOnRoundFinish(CDBRound *round) { // called from UEFALea
     if (round->GetCompID().countryId == FifamCompRegion::Africa) {
         Float points = 0.0f;
         UInt rt = round->GetRoundType();
-        UChar type = round->GetCompID().type;
+        UChar type = round->GetCompetitionType();
         if (rt == ROUND_QUARTERFINAL)
             points = (type == COMP_CHAMPIONSLEAGUE) ? 3.0f : 2.0f;
         else if (rt == ROUND_SEMIFINAL)
@@ -4633,6 +4614,20 @@ void Assessment_AddPointsOnRoundFinish(CDBRound *round) { // called from UEFALea
                         SafeLog::Write(Utils::Format(L"Assessment_AddPointsOnRoundFinish (%s): %s - %g points",
                             CompetitionName(round), TeamNameWithCountry(winnerTeam), championPoints));
                     }
+                }
+            }
+        }
+    }
+    else if (round->GetCompID().countryId == FifamCompRegion::Asia) {
+        if (round->GetCompetitionType() == COMP_CONFERENCE_LEAGUE && round->GetRoundType() == ROUND_PREROUND1) {
+            for (UInt p = 0; p < round->GetNumOfPairs(); p++) {
+                RoundPair pair;
+                round->GetRoundPair(p, pair);
+                CTeamIndex loserTeam = pair.GetLoser();
+                if (!loserTeam.isNull()) {
+                    AddAsianAssessmentCountryPoints(loserTeam.countryId, 0.5f, true);
+                    SafeLog::Write(Utils::Format(L"Assessment_AddPointsOnRoundFinish (%s): %s - %g points",
+                        CompetitionName(round), TeamNameWithCountry(loserTeam), 0.5f));
                 }
             }
         }
@@ -5824,7 +5819,5 @@ void PatchCompetitions(FM::Version v) {
         patch::Nop(0x129D736, 6); // trophy stickers - TOYOTA
 
         patch::SetPointer(0x24AD3B8, MyDBRound_RegisterMatch); // use 3rd bonus in DB_ROUND as a payment for round loser
-
-        // 
     }
 }

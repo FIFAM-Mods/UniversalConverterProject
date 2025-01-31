@@ -1862,6 +1862,10 @@ Bool CDBRound::GetTeamResult(CTeamIndex teamID, UChar &goalsFor, UChar &goalsAga
     return CallMethodAndReturn<Bool, 0x1043360>(this, teamID, &goalsFor, &goalsAgainst, &home);
 }
 
+UInt CDBRound::GetLegFlags(UInt leg) const {
+    return CallMethodAndReturn<UInt, 0x10423C0>(this, leg);
+}
+
 RoundPair::RoundPair() {
     plugin::CallMethod<0x10ED6C0>(this);
 }

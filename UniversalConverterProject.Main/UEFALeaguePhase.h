@@ -1,6 +1,6 @@
 #pragma once
-#include "FifamTypes.h"
 #include "plugin-std.h"
+#include "FifamTypes.h"
 #include "GameInterfaces.h"
 
 void PatchUEFALeaguePhase(FM::Version v);
@@ -16,3 +16,5 @@ UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds);
 Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID);
 Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp);
 void UEFALeaguePhaseMatchdayProcessBonuses(CDBRound *, RoundPair const &pair);
+
+void MakeCoefficientBasedPayments(CDBCompetition *comp);

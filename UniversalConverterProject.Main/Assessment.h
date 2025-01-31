@@ -25,4 +25,4 @@ AsianRegion GetAsianCountryRegion(UChar countryId);
 UInt GetAfricanAssessmentNumCountries();
 UInt GetAsianAssessmentNumCountries();
 void AddAfricanAssessmentCountryPoints(UChar countryId, Float points);
-void AddAsianAssessmentCountryPoints(UChar countryId, Float points);
+void AddAsianAssessmentCountryPoints(UChar countryId, Float points, Bool prelimStage = false);
