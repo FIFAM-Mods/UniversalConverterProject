@@ -532,14 +532,18 @@ Bool LaunchesInCurrentYear(CCompID const &compId) {
     return LaunchesInYear(compId, GetCurrentYear());
 }
 
-Bool LaunchesInThisSeason(CCompID const &compId) {
+Bool LaunchesInSeason(CCompID const &compId, UShort seasonStartYear) {
     auto &info = GetCompetitionLaunchInfo(compId.countryId, compId.type);
     if (info.period == 0 || info.period == 1)
         return true;
-    UInt year = GetCurrentSeasonStartYear();
+    UInt year = seasonStartYear;
     if (info.seasonPart == SEASON_END)
         year += 1;
     return (year % info.period) == (info.year % info.period);
+}
+
+Bool LaunchesInThisSeason(CCompID const &compId) {
+    return LaunchesInSeason(compId, GetCurrentSeasonStartYear());
 }
 
 Bool METHOD CDBCompetition_LaunchesInThisSeason(CDBCompetition *comp, DUMMY_ARG, int) {
@@ -1419,15 +1423,20 @@ void GetHostTeamsForCompetition(CCompID const &compId, UChar &first, UChar &seco
     UShort year = GetCompetitionNextLaunchYear(finalID.countryId, finalID.type);
     first = GetCompHosts()->GetFirstHostCountry(finalID, year);
     second = GetCompHosts()->GetSecondHostCountry(finalID, year);
-    SafeLog::Write(Utils::Format(L"%s. GetHostTeamsForCompetition: %s (final %s) year %d hosts: %s %s",
-        GetCurrentDate().ToStr(), CompetitionName(compId), CompetitionName(finalID), year, CountryName(first), CountryName(second)));
+    //SafeLog::Write(Utils::Format(L"%s. GetHostTeamsForCompetition: %s (final %s) year %d hosts: %s %s",
+    //    GetCurrentDate().ToStr(), CompetitionName(compId), CompetitionName(finalID), year, CountryName(first), CountryName(second)));
 }
 
 void __declspec(naked) GetHostTeamsForCompetition_Exe() {
     __asm {
+        mov ecx, [esp + 4]
+        mov edx, [esp + 8]
+        push edx
+        push ecx
         push eax
         call GetHostTeamsForCompetition
-        retn 4
+        add esp, 12
+        retn
     }
 }
 
@@ -3313,15 +3322,15 @@ UChar METHOD GetCountryAtAssessmentPositionLastYear(CAssessmentTable* table, DUM
         }
         else if (region == FifamCompRegion::Africa) {
             UChar result = GetAfricanAssessmentCountryAtPosition(position);
-            SafeLog::Write(Utils::Format(L"CAF Assessment table (%s): Position %d - %s",
-                CompetitionTag(gCurrentScriptComp), position, CountryName(result)));
+            //SafeLog::Write(Utils::Format(L"CAF Assessment table (%s): Position %d - %s",
+            //    CompetitionTag(gCurrentScriptComp), position, CountryName(result)));
             if (result != 255)
                 return result;
         }
         else if (region == FifamCompRegion::Asia) {
             UChar result = GetAsianAssessmentCountryAtRegionalPosition(position);
-            SafeLog::Write(Utils::Format(L"AFC Assessment table (%s): Position %d - %s",
-                CompetitionTag(gCurrentScriptComp), position, CountryName(result)));
+            //SafeLog::Write(Utils::Format(L"AFC Assessment table (%s): Position %d - %s",
+            //    CompetitionTag(gCurrentScriptComp), position, CountryName(result)));
             if (result != 255)
                 return result;
         }
@@ -3464,7 +3473,7 @@ UChar METHOD OnClearInternationalCompsEvents_Check(CDBCompetition *comp) {
 }
 
 void METHOD OnClearInternationalCompsEvents_Clear(void *vec, DUMMY_ARG, UInt *pId) {
-    auto year = GetCurrentYear();
+    auto year = GetCurrentSeasonStartYear();
     for (auto const &[baseId, info] : GetCompetitionLaunchInfos()) {
         UInt finalTournamentId = 0;
         for (auto const &[baseId2, info2] : GetCompetitionLaunchInfos()) {
@@ -3473,10 +3482,10 @@ void METHOD OnClearInternationalCompsEvents_Clear(void *vec, DUMMY_ARG, UInt *pI
                 break;
             }
         }
-        if (LaunchesInYear(CCompID::Make(finalTournamentId ? finalTournamentId : baseId), year - 1)) {
+        if (LaunchesInSeason(CCompID::Make(finalTournamentId ? finalTournamentId : baseId), GetCurrentSeasonStartYear() - 1)) {
             CallMethod<0x6E3FD0>(vec, &baseId);
-            SafeLog::Write(Utils::Format(L"OnClearInternationalCompsEvents_Clear: %s on %s",
-                CompetitionTag(CCompID::Make(baseId)), GetCurrentDate().ToStr()));
+            //SafeLog::Write(Utils::Format(L"OnClearInternationalCompsEvents_Clear: %s on %s",
+            //    CompetitionTag(CCompID::Make(baseId)), GetCurrentDate().ToStr()));
         }
     }
 }
@@ -5414,16 +5423,16 @@ void __declspec(naked) OnRoundLaunchCreateMatch2() {
     }
 }
 
-void *METHOD OnDBMatchEntryConstruction(void *t, DUMMY_ARG, CCompID const &compID, UShort matchDay, UShort pair, UInt flags,
+void *METHOD OnDBMatchEntryConstruction(void *t, DUMMY_ARG, CCompID compID, UShort matchDay, UShort pair, UInt flags,
     CTeamIndex team1, CTeamIndex team2, CJDate date, CJDate matchDate, CTeamIndex host, Int referee, UShort roundType, UInt teamType)
 {
     SafeLog::WriteToFile("log_matches.txt",
-        Utils::Format(L"CurrDate\tMatchDate\tCompetition\tMatchday\tPair\tTeam1\tTeam2\tHost\tRoundType\tFlags",
-        L"%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s",
-        GetCurrentDate().ToStr(), date.ToStr(), CompetitionName(compID), matchDay, pair + 1, TeamTag(team1), TeamTag(team2),
-        StadiumTagWithCountry(host), FifamRoundID::MakeFromInt((UChar)roundType).ToStr(), FlagsToStr(flags))
+        Utils::Format(L"%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s",
+        GetCurrentDate().ToStr(), date.ToStr(), CompetitionName(compID), matchDay + 1, pair + 1, TeamTag(team1), TeamTag(team2),
+        StadiumTagWithCountry(host), FifamRoundID::MakeFromInt((UChar)roundType).ToStr(), FlagsToStr(flags)),
+        L"CurrDate\tMatchDate\tCompetition\tMatchday\tPair\tTeam1\tTeam2\tHost\tRoundType\tFlags"
     );
-    return CallMethodAndReturn<void *, 0xE817F0>(t, &compID, matchDay, pair, flags, team1, team2, date, matchDate, host,
+    return CallMethodAndReturn<void *, 0xE817F0>(t, compID, matchDay, pair, flags, team1, team2, date, matchDate, host,
         referee, roundType, teamType);
 }
 
@@ -6265,7 +6274,5 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x1043DBD, OnDBMatchEntryConstruction); // CDBRound::RegisterMatch
         patch::RedirectCall(0x1044CAA, OnDBMatchEntryConstruction); // CDBRound::Launch
         patch::RedirectCall(0x1044FC4, OnDBMatchEntryConstruction); // CDBRound::Launch
-        patch::RedirectCall(0x105E1E6, OnDBMatchEntryConstruction); // CDBLeague::InitMatches
-        patch::RedirectCall(0x105E85C, OnDBMatchEntryConstruction); // CDBLeague::InitMatches
     }
 }
