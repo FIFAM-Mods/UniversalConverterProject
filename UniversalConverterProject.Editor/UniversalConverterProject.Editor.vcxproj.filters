@@ -31,6 +31,7 @@
     </ClCompile>
     <ClCompile Include="..\shared\shared.cpp" />
     <ClCompile Include="Assessment.cpp" />
+    <ClCompile Include="..\shared\AssetLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -63,6 +64,7 @@
     </ClInclude>
     <ClInclude Include="..\shared\shared.h" />
     <ClInclude Include="Assessment.h" />
+    <ClInclude Include="..\shared\AssetLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

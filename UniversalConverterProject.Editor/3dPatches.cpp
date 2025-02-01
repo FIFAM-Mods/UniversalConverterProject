@@ -4,14 +4,7 @@
 #include "Utils.h"
 #include "FifamTypes.h"
 #include "Kits.h"
-
-void *METHOD OnCreateFileIO(void *fileIO) {
-    CallMethodDynGlobal(RendererAddress(0x108230), fileIO);
-    std::wstring zdataPath = FM::GetGameDir() + L"data\\assets\\";
-    wchar_t const *paths[] = { zdataPath.c_str() };
-    CallMethodDynGlobal(RendererAddress(0x108540), fileIO, paths, 1);
-    return fileIO;
-}
+#include "AssetLoader.h"
 
 bool METHOD OnSetFifaTexture(void *t, DUMMY_ARG, int samplerIndex) {
     void *device = *(void **)RendererAddress(0x39AAA4);
@@ -55,8 +48,8 @@ void METHOD OnLoadFifaPlayer(void *player, DUMMY_ARG, void *playerInfo, void *re
 
 int METHOD OnGetPlayerEffTexture(void *t, DUMMY_ARG, char const *name, bool cached, bool cube) {
     if (gCurrentPlayerLoadPlayerId != 0) {
-        auto customEffTexPath = "data\\assets\\eff_" + Utils::Format("%d", gCurrentPlayerLoadPlayerId) + ".dds";
-        if (exists(customEffTexPath))
+        auto customEffTexPath = AssetFileName("eff_" + Utils::Format("%d", gCurrentPlayerLoadPlayerId) + ".dds");
+        if (!customEffTexPath.empty())
             return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB9FE), t, customEffTexPath.c_str(), false, cube);
     }
     return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB9FE), t, name, cached, cube);
@@ -71,7 +64,7 @@ template<UInt Func>
 Char const* METHOD OnGetHeadResourceName(void* t, DUMMY_ARG, Char *filename, Int a3, Bool* bExists) {
     UInt headId = *raw_ptr<UInt>(t, 4);
     void* pT = t;
-    if (headId != 0 && !exists("data\\assets\\" + Utils::Format("m228__%d.o", headId))) {
+    if (headId != 0 && !AssetExists(Utils::Format("m228__%d.o", headId))) {
         static UChar buf[60];
         memcpy(buf, t, 60);
         pT = buf;
@@ -99,10 +92,12 @@ void __declspec(naked) HeadCamera_XOffset() {
 
 void Install3dPatches() {
 
+    FindAssets(ASSETS_DIR, "");
+
     //patch::RedirectCall(RendererAddress(0x1E750), OnRenderModel);
 
     //Error("%X", RendererAddress(0));
-    patch::RedirectCall(RendererAddress(0x92579), OnCreateFileIO);
+    patch::RedirectJump(RendererAddress(0x108100), FileIO_GetFilePath);
 
     patch::SetChar(RendererAddress(0xAB61B + 3), 't');
     patch::SetChar(RendererAddress(0xAB625 + 3), 'g');

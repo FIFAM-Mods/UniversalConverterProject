@@ -8,6 +8,7 @@
 #include "Random.h"
 #include "shared.h"
 #include "UcpSettings.h"
+#include "AssetLoader.h"
 
 using namespace plugin;
 
@@ -494,7 +495,7 @@ void METHOD OnSetupStadiumEnvironment(void *t, DUMMY_ARG, UInt element, Int inde
 Bool MyIsValidFifaStadium(int id) {
     static UInt lightingIDs[] = { 0, 1, 3 };
     for (UInt i = 0; i < std::size(lightingIDs); i++) {
-        if (FmFileExists(Utils::Format(L"m716__%d_%d.o", id, i)) || FmFileExists(Utils::Format(L"data\\assets\\m716__%d_%d.o", id, i)))
+        if (FmFileExists(Utils::Format(L"m716__%d_%d.o", id, i)) || AssetExists(Utils::Format("m716__%d_%d.o", id, i)))
             return true;
     }
     return false;

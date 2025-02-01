@@ -101,6 +101,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
     <ClCompile Include="..\shared\settings\Settings.cpp" />
     <ClCompile Include="..\shared\shared.cpp" />
@@ -175,6 +176,7 @@
     <ClCompile Include="YouthGenCountries.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
     <ClInclude Include="..\shared\settings\Settings.h" />
     <ClInclude Include="..\shared\shared.h" />

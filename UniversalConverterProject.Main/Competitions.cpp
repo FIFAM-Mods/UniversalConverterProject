@@ -1354,7 +1354,7 @@ UInt METHOD GetCompetitionNextLaunchYear_League(CDBCompetition *comp) {
     return GetCompetitionNextLaunchYear(comp);
 }
 
-CCompID *OnShowMatchReport_SelectNextTournamentHost(CDBOneMatch *match, DUMMY_ARG, CCompID *out) {
+CCompID *METHOD OnShowMatchReport_SelectNextTournamentHost(CDBOneMatch *match, DUMMY_ARG, CCompID *out) {
     CCompID compId = match->GetCompID();
     UChar compType = compId.type;
     if (compType == COMP_EURO_NL || compType == COMP_NAM_NL || compType == COMP_NAM_CUP || compType == COMP_ASIA_CUP
@@ -5735,14 +5735,14 @@ void PatchCompetitions(FM::Version v) {
         //patch::SetUInt(0x837738 + 4, 120);
 
         // international hosts - national team
-        patch::RedirectCall(0x1044950, GetCompetitionTypeForNationalTeamHost); // round
-        patch::Nop(0x104468A, 13);
-        patch::RedirectCall(0x1044685, GetCompetitionNextLaunchYear_Round);
-        patch::RedirectCall(0x105E619, GetCompetitionTypeForNationalTeamHost); // league
-        patch::RedirectJump(0x105E291, (void *)0x105E2E3);
-        patch::RedirectCall(0x105E28C, GetCompetitionNextLaunchYear_League);
-        patch::RedirectCall(0xF6C783, OnShowMatchReport_SelectNextTournamentHost);
-        patch::RedirectJump(0x139D690, GetHostTeamsForCompetition_Exe);
+       patch::RedirectCall(0x1044950, GetCompetitionTypeForNationalTeamHost); // round
+       patch::Nop(0x104468A, 13);
+       patch::RedirectCall(0x1044685, GetCompetitionNextLaunchYear_Round);
+       patch::RedirectCall(0x105E619, GetCompetitionTypeForNationalTeamHost); // league
+       patch::RedirectJump(0x105E291, (void *)0x105E2E3);
+       patch::RedirectCall(0x105E28C, GetCompetitionNextLaunchYear_League);
+       patch::RedirectCall(0xF6C783, OnShowMatchReport_SelectNextTournamentHost);
+       patch::RedirectJump(0x139D690, GetHostTeamsForCompetition_Exe);
 
         // Euro
         const UInt NumEuroTeams = 24;

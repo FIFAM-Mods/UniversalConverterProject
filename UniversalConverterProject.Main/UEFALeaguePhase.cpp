@@ -725,9 +725,9 @@ void MakeCoefficientBasedPayments(CDBCompetition *comp) {
     }
     if (!teams.empty()) {
         Utils::Sort(teams, [](TeamPaymentInfo const &a, TeamPaymentInfo const &b) {
-            if (a.countryMarketRanking > b.countryMarketRanking)
+            if (a.countryMarketRanking < b.countryMarketRanking)
                 return true;
-            if (b.countryMarketRanking > a.countryMarketRanking)
+            if (b.countryMarketRanking < a.countryMarketRanking)
                 return false;
             if (a.totalPointsEuropean > b.totalPointsEuropean)
                 return true;

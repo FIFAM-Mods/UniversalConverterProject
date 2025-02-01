@@ -11,6 +11,7 @@
 #include "Translation.h"
 #include "Random.h"
 #include "ExtendedTeam.h"
+#include "AssetLoader.h"
 
 const UInt NUM_LANGUAGES = 105;
 
@@ -824,7 +825,7 @@ UInt METHOD OnGetPlayerSpecialFaceId(CDBPlayer* player) {
     UInt specialFaceID = *raw_ptr<UInt>(player, 0xDC);
     Error(L"Player face: %d", specialFaceID);
     if (specialFaceID != 0) {
-        if (!exists("data\\assets\\" + Utils::Format("m228__%d.o", specialFaceID))) {
+        if (!AssetExists(Utils::Format("m228__%d.o", specialFaceID))) {
             Error(L"Not present");
             return 0;
         }
@@ -834,7 +835,7 @@ UInt METHOD OnGetPlayerSpecialFaceId(CDBPlayer* player) {
 
 void METHOD OnReadPlayerSpecialFaceId(void *reader, DUMMY_ARG, UInt *out) {
     CallMethod<0x1338B10>(reader, out);
-    if (*out != 0 && !exists("data\\assets\\" + Utils::Format("m228__%d.o", *out)))
+    if (*out != 0 && !AssetExists(Utils::Format("m228__%d.o", *out)))
         *out = 0;
 }
 

@@ -83,6 +83,7 @@
       <Filter>tinyxml</Filter>
     </ClCompile>
     <ClCompile Include="Assessment.cpp" />
+    <ClCompile Include="..\shared\AssetLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -161,6 +162,7 @@
       <Filter>tinyxml</Filter>
     </ClInclude>
     <ClInclude Include="Assessment.h" />
+    <ClInclude Include="..\shared\AssetLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

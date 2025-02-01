@@ -13,6 +13,7 @@
 #include "FifamReadWrite.h"
 #include "Utils.h"
 #include "PlayerAccessories.h"
+#include "AssetLoader.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -206,82 +207,6 @@ void METHOD MyGeneratePlayerPortrait(void *t, DUMMY_ARG, int a2) {
     gRenderPlayerHead = true;
     CallMethodDynGlobal(GfxCoreAddress(0x378E3D), t, a2);
     gRenderPlayerHead = false;
-}
-
-void *METHOD OnCreateFileIO(void *fileIO) {
-    CallMethodDynGlobal(GfxCoreAddress(0x3C6820), fileIO);
-    std::wstring zdataPath = FM::GetGameDir() + L"data\\assets\\";
-    wchar_t const *paths[] = { zdataPath.c_str() };
-    CallMethodDynGlobal(GfxCoreAddress(0x3C4CB0), fileIO, paths, 1);
-    return fileIO;
-}
-
-Bool32 CachedExists(char const *filename) {
-    return exists(filename);
-    
-    //static Set<StringA> cache;
-    //StringA filenameStr = filename;
-    //if (Utils::Contains(cache, filenameStr))
-    //    return true;
-    //Bool32 exists = CallAndReturnDynGlobal<Bool32>(GfxCoreAddress(0x19E60), filename);
-    //if (exists != 0)
-    //    cache.insert(filenameStr);
-    //return exists;
-}
-
-UInt CachedSize(char const *filename) {
-    return UInt(file_size(filename));
-
-    //static Map<StringA, UInt> cache;
-    //StringA filenameStr = filename;
-    //auto it = cache.find(filenameStr);
-    //if (it != cache.end())
-    //    return (*it).second;
-    //UInt size = CallAndReturnDynGlobal<UInt>(GfxCoreAddress(0x19E70), filename);
-    //cache[filenameStr] = size;
-    //return size;
-}
-
-char const *GetFilePathForAsynchLoader(char const *srcFilePath, Bool32 *exists, UInt *size) {
-    if (strlen(srcFilePath) > 1 && srcFilePath[1] == ':')
-        return srcFilePath;
-    //if (CallAndReturnDynGlobal<Bool32>(GfxCoreAddress(0x19E60), srcFilePath)) {
-    //    if (exists)
-    //        *exists = true;
-    //    if (size)
-    //        *size = CallAndReturnDynGlobal<UInt>(GfxCoreAddress(0x19E70), srcFilePath);
-    //    return srcFilePath;
-    //}
-    static std::string zdataPath = "data\\assets\\";
-    std::string testPath = zdataPath + srcFilePath;
-    static char staticFilename[1024];
-    strcpy(staticFilename, testPath.c_str());
-    if (CachedExists(staticFilename)) {
-        if (exists)
-            *exists = true;
-        if (size)
-            *size = CachedSize(staticFilename);
-        return staticFilename;
-    }
-    return srcFilePath;
-}
-
-void OnFileNameGet(char *filepath) {
-    Bool32 exists = false;
-    char const *newPath = GetFilePathForAsynchLoader(filepath, &exists, nullptr);
-    if (exists)
-        strcpy(filepath, newPath);
-    _strlwr(filepath);
-}
-
-void METHOD OnFileIoSetupPaths(void *fileIO, DUMMY_ARG, const wchar_t **paths, unsigned int numPaths) {
-    Vector<const wchar_t *> myPaths;
-    if (numPaths > 7)
-        numPaths = 7;
-    for (unsigned int i = 0; i < numPaths; i++)
-        myPaths.push_back(paths[i]);
-    myPaths.push_back(L"data\\assets\\");
-    CallMethodDynGlobal(GfxCoreAddress(0x3C4CB0), fileIO, myPaths.data(), myPaths.size());
 }
 
 StringA modelName;
@@ -600,8 +525,8 @@ void METHOD OnLoadFifaPlayer1(void *player, DUMMY_ARG, void *playerInfo, void *r
 
 int METHOD OnGetPlayerEffTexture1(void *t, DUMMY_ARG, char const *name, bool cached, bool cube) {
     if (gCurrentPlayerLoadPlayerId1 != 0) {
-        auto customEffTexPath = "data\\assets\\eff_" + Utils::Format("%d", gCurrentPlayerLoadPlayerId1) + ".dds";
-        if (exists(customEffTexPath))
+        auto customEffTexPath = AssetFileName("eff_" + Utils::Format("%d", gCurrentPlayerLoadPlayerId1) + ".dds");
+        if (!customEffTexPath.empty())
             return CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x39DEFA), t, customEffTexPath.c_str(), false, cube);
     }
     return CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x39DEFA), t, name, cached, cube);
@@ -615,8 +540,8 @@ void OnLoadFifaPlayer2(void *playerInfo, unsigned int playerId) {
 
 int OnGetPlayerEffTexture2(char const *name) {
     if (gCurrentPlayerLoadPlayerId2 != 0) {
-        auto customEffTexPath = "data\\assets\\eff_" + Utils::Format("%d", gCurrentPlayerLoadPlayerId2) + ".dds";
-        if (exists(customEffTexPath))
+        auto customEffTexPath = AssetFileName("eff_" + Utils::Format("%d", gCurrentPlayerLoadPlayerId2) + ".dds");
+        if (!customEffTexPath.empty())
             return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x459040), customEffTexPath.c_str());
     }
     return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x459040), name);
@@ -629,8 +554,8 @@ void OnPreLoadFifaPlayerTex(char const *name, int a, bool b) {
         unsigned int fifaId = *raw_ptr<unsigned int>(playerDesc, 0x1044);
         unsigned int useGenHead = *raw_ptr<unsigned int>(playerDesc, 0x1058);
         if (!useGenHead && fifaId < 500'000) {
-            auto customEffTexPath = "data\\assets\\eff_" + Utils::Format("%d", fifaId) + ".dds";
-            if (exists(customEffTexPath))
+            auto customEffTexPath = AssetFileName("eff_" + Utils::Format("%d", fifaId) + ".dds");
+            if (!customEffTexPath.empty())
                 CallDynGlobal(GfxCoreAddress(0x4590F0), customEffTexPath.c_str(), a, b);
             else
                 loadDefaultEff = true;
@@ -1360,6 +1285,8 @@ int FormatCustomHairTextureName(Char *dst, Char const *format, void *pID) {
 
 void Install3dPatches_FM13() {
 
+    FindAssets(ASSETS_DIR, "");
+
     //patch::RedirectCall(GfxCoreAddress(0x20484F), OnSetTextureAtId);
     //patch::RedirectCall(GfxCoreAddress(0x20486B), OnSetTextureAtId);
     //patch::RedirectCall(GfxCoreAddress(0x204889), OnSetTextureAtId);
@@ -1826,15 +1753,23 @@ void Install3dPatches_FM13() {
         //Error("Enabled Hardware Acceleration Fix");
     }
 
-    patch::SetPointer(GfxCoreAddress(0x5504A8), OnFileIoSetupPaths);
-
-    patch::RedirectJump(GfxCoreAddress(0x4811AF), OnFileNameGet);
+    patch::RedirectCall(GfxCoreAddress(0x44C616), OnFileNameGet);
+    patch::RedirectCall(GfxCoreAddress(0x44C756), OnFileNameGet);
+    patch::RedirectCall(GfxCoreAddress(0x44D850), OnFileNameGet);
+    patch::RedirectCall(GfxCoreAddress(0x44DB32), OnFileNameGet);
+    patch::RedirectJump(GfxCoreAddress(0x3C4B80), FileIO_GetFilePath);
 
     // loadingType == 2 check
-    patch::Nop(GfxCoreAddress(0x44DB54), 6);
-    patch::Nop(GfxCoreAddress(0x44C621), 6);
-    patch::Nop(GfxCoreAddress(0x44C761), 6);
-    patch::Nop(GfxCoreAddress(0x44D86D), 2);
+    patch::Nop(GfxCoreAddress(0x44DB54), 6); // AsynchLoader::AddFileLoadRequestAt
+    patch::Nop(GfxCoreAddress(0x44C621), 6); // AsynchLoader::FileExists
+    patch::Nop(GfxCoreAddress(0x44C761), 6); // AsynchLoader::GetFileSize
+    patch::Nop(GfxCoreAddress(0x44D86D), 2); // AsynchLoader::AddFileLoadRequest
+
+    patch::RedirectCall(GfxCoreAddress(0x44DB5B), FileIO_AssetExists); // AsynchLoader::AddFileLoadRequestAt
+    patch::RedirectCall(GfxCoreAddress(0x44C62C), FileIO_AssetExists); // AsynchLoader::FileExists
+    patch::RedirectCall(GfxCoreAddress(0x44C76C), FileIO_AssetExists); // AsynchLoader::GetFileSize
+    patch::RedirectCall(GfxCoreAddress(0x44D870), FileIO_AssetExists); // AsynchLoader::AddFileLoadRequest
+    patch::RedirectCall(GfxCoreAddress(0x44C85F), FileIO_AssetSize); // AsynchLoader::GetFileSize
 
     patch::RedirectCall(GfxCoreAddress(0x45868D), OnTextureCopyData); // done
     patch::SetUShort(GfxCoreAddress(0x458688), 0xC68B); // mov eax, [esi] => mov eax, esi // done
@@ -1994,9 +1929,6 @@ void Install3dPatches_FM13() {
     // DO NOT ENABLE
     //patch::SetUChar(GfxCoreAddress(0x646048), 0);
     //patch::SetUChar(GfxCoreAddress(0x23144E + 6), 0);
-
-    //patch::RedirectJump(GfxCoreAddress(0x19E60), CachedExists);
-    //patch::RedirectJump(GfxCoreAddress(0x19E70), CachedSize);
 
     if (Settings::GetInstance().EnableCommentaryPatches) {
         patch::SetUInt(GfxCoreAddress(0x231a0f + 1), GfxCoreAddress(0x51d0a8));
