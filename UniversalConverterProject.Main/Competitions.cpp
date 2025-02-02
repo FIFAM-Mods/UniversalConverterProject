@@ -939,15 +939,25 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
     int numTeams = 0;
     CDBCompetition *comp = nullptr;
     UChar region = comp->GetCompID().countryId;
+
+    auto IsCountryAtAssessmentPosition = [](UChar _countryId, UChar _region, UInt _position) {
+        if (_region == FifamCompRegion::Asia)
+            return _countryId == GetAsianAssessmentCountryAtRegionalPosition(_position);
+        else if (_region == FifamCompRegion::Africa)
+            return _countryId == GetAfricanCountryAssessmentPosition(_position);
+        else
+            return _countryId == GetCountryAtAssessmentPosition(_position, _region);
+    };
+
     for (int i = 0; i < pool->GetNumOfScriptCommands(); i++) {
         auto command = pool->GetScriptCommand(i);
         switch (command->m_nCommandId) {
         case 2: // RESERVE_ASSESSMENT_TEAMS
-            if (countryId == GetCountryAtAssessmentPosition(_loword(command->m_params), region))
+            if (IsCountryAtAssessmentPosition(countryId, region, _loword(command->m_params)))
                 numTeams += _hiword(command->m_params);
             break;
         case 4: // GET_EUROPEAN_ASSESSMENT_TEAMS
-            if (countryId == GetCountryAtAssessmentPosition(_loword(command->m_params), region))
+            if (IsCountryAtAssessmentPosition(countryId, region, _loword(command->m_params)))
                 numTeams += _hibyte(command->m_params);
             break;
         case 7: // GET_TAB_X_TO_Y
@@ -955,7 +965,7 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
                 numTeams += _hibyte(command->m_params);
             break;
         case 12: // GET_EUROPEAN_ASSESSMENT_CUPWINNER
-            if (countryId == GetCountryAtAssessmentPosition(_loword(command->m_params), region))
+            if (IsCountryAtAssessmentPosition(countryId, region, _loword(command->m_params)))
                 --numTeams;
             break;
         case 28: // GET_INTERNATIONAL_TEAMS
