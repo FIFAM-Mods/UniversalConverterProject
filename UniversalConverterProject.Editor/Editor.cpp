@@ -9,6 +9,7 @@
 #include "png.h"
 #include "UcpSettings.h"
 #include "ExtendedPlayerEditor.h"
+#include "CompetitionsShared.h"
 #include "shared.h"
 #include <ShlObj.h>
 
@@ -1038,7 +1039,7 @@ void METHOD OnDlgClubStadiumSave(void *t) {
     if (club) {
         SendMessageW(ComboBoxHWND(CbSponsorName), CB_GETCURSEL, 0, 0);
         Int sponsorIndex = ComboBoxGetCurrentItem(CbSponsorName, 0);
-        if (sponsorIndex > 0 && sponsorIndex <= GetSponsorNames().size()) {
+        if (sponsorIndex > 0 && sponsorIndex <= (Int)GetSponsorNames().size()) {
             auto it = GetSponsorNames().begin();
             advance(it, sponsorIndex - 1);
             Call<0x54B310>(raw_ptr<const WideChar>(club, 0x1124), (*it).c_str(), 29);

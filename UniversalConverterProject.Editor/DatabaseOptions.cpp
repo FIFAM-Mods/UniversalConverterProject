@@ -258,7 +258,7 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 int selectedIndex = SendMessageW(cbDatabase, CB_GETCURSEL, 0, 0);
                 if (selectedIndex > 0) {
                     int vecIndex = selectedIndex - 1;
-                    if (vecIndex < DatabaseIDs().size())
+                    if (vecIndex < (int)DatabaseIDs().size())
                         SetDatabaseID(AtoW(DatabaseIDs()[vecIndex].first));
                 }
                 EndDialog(hwndDlg, 1);

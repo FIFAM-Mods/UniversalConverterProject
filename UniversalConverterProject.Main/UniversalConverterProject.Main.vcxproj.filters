@@ -84,6 +84,7 @@
     </ClCompile>
     <ClCompile Include="Assessment.cpp" />
     <ClCompile Include="..\shared\AssetLoader.cpp" />
+    <ClCompile Include="..\shared\CompetitionsShared.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -163,6 +164,7 @@
     </ClInclude>
     <ClInclude Include="Assessment.h" />
     <ClInclude Include="..\shared\AssetLoader.h" />
+    <ClInclude Include="..\shared\CompetitionsShared.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

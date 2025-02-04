@@ -1,4 +1,5 @@
 #include "Competitions.h"
+#include "CompetitionsShared.h"
 #include "Utils.h"
 #include "FifamTypes.h"
 #include "UcpSettings.h"
@@ -54,51 +55,9 @@ CompTypeNameDesc gNewCompTypeNames[] = {
      { nullptr, 0, 0 }
 };
 
-bool METHOD TakesPlaceInThisYear(void *comp, DUMMY_ARG, int year) {
-    switch (*raw_ptr<unsigned char>(comp, 10)) {
-    case COMP_QUALI_EC: // QUALI_EC
-    case COMP_ASIA_CUP:
-    case COMP_ASIA_CUP_Q:
-        if (year % 4 == 2)
-            return true;
-        break;
-    case COMP_WORLD_CUP: // WORLD_CUP
-        if (year % 4 == 1)
-            return true;
-        break;
-    case COMP_EURO_CUP: // EURO_CUP
-    case COMP_COPA_AMERICA: // COPA_AMERICA
-    case COMP_OFC_CUP:
-        if (year % 4 == 3)
-            return true;
-        break;
-    case COMP_NAM_NL:
-    case COMP_NAM_NL_Q:
-        if (year % 2 == 1)
-            return true;
-        break;
-    case COMP_QUALI_WC: // QUALI_WC
-    case COMP_CONFED_CUP: // CONFED_CUP
-    case COMP_FINALISSIMA: // FINALISSIMA
-        if (year % 4 == 0)
-            return true;
-        break;
-    case COMP_EURO_NL_Q: // EURO_QUALI_NATIONSLEAGUE
-    case COMP_EURO_NL: // EURO_NATIONSLEAGUE
-    case COMP_AFRICA_CUP:
-    case COMP_AFRICA_CUP_Q:
-    case COMP_NAM_CUP:
-    case COMP_U20_WC_Q:
-    case COMP_U20_WORLD_CUP: // U20_WORLD_CUP
-        if (year % 2 == 0)
-            return true;
-        break;
-    case COMP_YOUTH_CHAMPIONSLEAGUE:
-        return false;
-    default:
-        return true;
-    }
-    return false;
+bool METHOD CDBCompetition_LaunchesInSeason(void *comp, DUMMY_ARG, int seasonStartYear) {
+    UInt compId = *raw_ptr<unsigned int>(comp, 8);
+    return LaunchesInSeason((compId >> 24) & 0xFF, (compId >> 16) & 0xFF, seasonStartYear);
 }
 
 struct ExternalScriptDesc {
@@ -251,7 +210,7 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x5048BE + 1, gNewCompTypeNames);
         patch::SetPointer(0x504AA1 + 1, gNewCompTypeNames);
 
-        patch::RedirectJump(0x4FD380, TakesPlaceInThisYear);
+        patch::RedirectJump(0x4FD380, CDBCompetition_LaunchesInSeason);
 
         static unsigned char gInternationalCompsCalendars[93440 * std::size(gExternalScripts)];
 

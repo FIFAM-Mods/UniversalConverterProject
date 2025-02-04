@@ -160,9 +160,9 @@ struct Assessment {
             info.at(countryId).AddPoints(points, prelimStage);
     }
 
-    void Rotate() {
+    void Update(Bool rotate) {
         for (auto &[countryId, countryInfo] : info) {
-            if (Continent == FifamContinent::Asia) {
+            if (rotate && Continent == FifamContinent::Asia) {
                 UInt numClubs = GetNumClubsInContinentalCompetitions(FifamCompRegion::Asia, countryId);
                 if (numClubs == 0)
                     numClubs = 1;
@@ -218,13 +218,28 @@ struct Assessment {
             for (UInt i = 0; i < vec.size(); i++)
                 info[vec[i].first].position = info[vec[i].first].regionalPosition = i + 1;
         }
+        if (rotate) {
+            for (auto &[countryId, countryInfo] : info) {
+                for (UInt v = 0; v < (NumEntries - 1); v++)
+                    countryInfo.coeff[v] = countryInfo.coeff[v + 1];
+                countryInfo.coeff[(NumEntries - 1)] = 0.0f;
+                countryInfo.randomValue = CRandom::GetRandomInt(INT32_MAX);
+            }
+        }
+        Vector<Pair<UChar, InfoType>> sortedCountries;
+        for (auto const &i : info)
+            sortedCountries.push_back(i);
+        Utils::Sort(sortedCountries, [](Pair<UChar, InfoType> const &a, Pair<UChar, InfoType> &b) {
+            return a.second.position < b.second.position;
+        });
         SafeLog::Write((Continent == FifamContinent::Africa) ? L"Ranking CAF" : L"Ranking AFC");
-        for (auto &[countryId, countryInfo] : info) {
-            for (UInt v = 0; v < (NumEntries - 1); v++)
-                countryInfo.coeff[v] = countryInfo.coeff[v + 1];
-            countryInfo.coeff[(NumEntries - 1)] = 0.0f;
-            countryInfo.randomValue = CRandom::GetRandomInt(INT32_MAX);
-            SafeLog::Write(Utils::Format(L"%2d. (%2d.) %s", countryInfo.position, countryInfo.regionalPosition, CountryName(countryId)));
+        for (auto &[countryId, countryInfo] : sortedCountries) {
+            String regionalPosition;
+            if (Continent == FifamContinent::Asia) {
+                regionalPosition = Utils::Format(L" (%s %d)", IsAsianWestCountry(countryId) ? L"West" : L"East",
+                    (countryInfo.regionalPosition > 100) ? (countryInfo.regionalPosition - 100) : countryInfo.regionalPosition);
+            }
+            SafeLog::Write(Utils::Format(L"%2d. %s%s", countryInfo.position, CountryName(countryId), regionalPosition));
         }
     }
 
@@ -277,6 +292,7 @@ struct Assessment {
         }
         for (auto &[countryId, info] : info)
             info.randomValue = CRandom::GetRandomInt(INT32_MAX);
+        Update(false);
     }
 };
 
@@ -667,9 +683,11 @@ void METHOD CreateStatsAssessmentWrapper(void *vec, DUMMY_ARG, void *data) {
 
 void METHOD OnAssessmentStartNewSeason(void *assessment) {
     CallMethod<0x121DDE0>(assessment);
-    GetAssessmentInfoAFC().Rotate();
-    GetAssessmentInfoCAF().Rotate();
-    SafeLog::Write(Utils::Format(L"%s - Updated AFC and CAF assessment tables", CDBGame::GetInstance()->GetCurrentDate().ToStr()));
+    if (GetCurrentYear() != GetStartingYear()) {
+        GetAssessmentInfoAFC().Update(true);
+        GetAssessmentInfoCAF().Update(true);
+        SafeLog::Write(Utils::Format(L"%s - Updated AFC and CAF assessment tables", CDBGame::GetInstance()->GetCurrentDate().ToStr()));
+    }
 }
 
 void PatchAssessment(FM::Version v) {

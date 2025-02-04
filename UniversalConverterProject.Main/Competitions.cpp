@@ -1,4 +1,5 @@
 #include "Competitions.h"
+#include "CompetitionsShared.h"
 #include "GameInterfaces.h"
 #include "FifamCompID.h"
 #include "FifamRoundID.h"
@@ -216,8 +217,6 @@ UInt NorthAmerica_ParticipantsCountries[] = {
     FifamCompRegion::US_Virgin_Islands
 };
 
-#define COMP_BASE_ID(region, type) ((UInt)(((region) << 24) | ((type) << 16)))
-
 struct CompTypeNameDesc { const wchar_t *name; unsigned int id; };
 
 CompTypeNameDesc gNewCompTypeNames[] = {
@@ -287,62 +286,6 @@ unsigned int gNewIntlComps[] = { 36, 37 };
 
 unsigned int gInternationalCompsTypes[] = { COMP_EURO_NL_Q, 15, 16, COMP_EURO_NL, 17, 18, 32, 33, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP,
     COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q, COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP, COMP_FINALISSIMA }; // for NT matches info screen
-
-enum CompetitionLaunchSeasonPart : UChar {
-    SEASON_START,
-    SEASON_END
-};
-
-struct CompetitionLaunchInfo {
-    UShort year;
-    CompetitionLaunchSeasonPart seasonPart;
-    UChar period;
-    UInt qualiCompId;
-};
-
-Map<UInt, CompetitionLaunchInfo> &GetCompetitionLaunchInfos() {
-    static Map<UInt, CompetitionLaunchInfo> infos = {
-        { COMP_BASE_ID(255, COMP_WORLD_CUP),     { 2026, SEASON_END, 4, COMP_BASE_ID(255, COMP_QUALI_WC) } },
-        { COMP_BASE_ID(255, COMP_QUALI_EC),      { 2026, SEASON_START, 4, 0 } },
-        { COMP_BASE_ID(255, COMP_ASIA_CUP_Q),    { 2026, SEASON_START, 4, 0 } },
-        { COMP_BASE_ID(255, COMP_ASIA_CUP),      { 2027, SEASON_END, 4, COMP_BASE_ID(255, COMP_ASIA_CUP_Q) } },
-        { COMP_BASE_ID(255, COMP_EURO_CUP),      { 2028, SEASON_END, 4, COMP_BASE_ID(255, COMP_QUALI_EC) } },
-        { COMP_BASE_ID(255, COMP_COPA_AMERICA),  { 2028, SEASON_END, 4, 0 } },
-        { COMP_BASE_ID(255, COMP_OFC_CUP),       { 2028, SEASON_END, 4, 0 } },
-        { COMP_BASE_ID(255, COMP_QUALI_WC),      { 2028, SEASON_START, 4, 0 } },
-        { COMP_BASE_ID(255, COMP_CONFED_CUP),    { 2029, SEASON_END, 4, 0 } },
-        { COMP_BASE_ID(255, COMP_FINALISSIMA),   { 2029, SEASON_END, 4, 0 } },
-
-        { COMP_BASE_ID(255, COMP_EURO_NL_Q),     { 2026, SEASON_START, 2, 0 } },
-        { COMP_BASE_ID(255, COMP_AFRICA_CUP_Q),  { 2026, SEASON_START, 2, 0 } },
-        { COMP_BASE_ID(255, COMP_U20_WC_Q),      { 2026, SEASON_START, 2, 0 } },
-        { COMP_BASE_ID(255, COMP_NAM_NL_Q),      { 2026, SEASON_START, 2, 0 } },
-        { COMP_BASE_ID(255, COMP_EURO_NL),       { 2027, SEASON_END, 2, COMP_BASE_ID(255, COMP_EURO_NL_Q) } },
-        { COMP_BASE_ID(255, COMP_AFRICA_CUP),    { 2027, SEASON_END, 2, COMP_BASE_ID(255, COMP_AFRICA_CUP_Q) } },
-        { COMP_BASE_ID(255, COMP_NAM_CUP),       { 2027, SEASON_END, 2, 0 } },
-        { COMP_BASE_ID(255, COMP_U20_WORLD_CUP), { 2027, SEASON_END, 2, COMP_BASE_ID(255, COMP_U20_WC_Q) } },
-        { COMP_BASE_ID(255, COMP_NAM_NL),        { 2027, SEASON_END, 2, COMP_BASE_ID(255, COMP_NAM_NL_Q) } },
-
-        { COMP_BASE_ID(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP), { 2029, SEASON_END, 4, 0 } },
-        { COMP_BASE_ID(FifamCompRegion::SouthAmerica, COMP_YOUTH_CHAMPIONSLEAGUE), { 2026, SEASON_START, 2, 0 } }
-    };
-    return infos;
-}
-
-CompetitionLaunchInfo &GetCompetitionLaunchInfo(UChar region, UChar type) {
-    UInt baseId = COMP_BASE_ID(region, type);
-    if (Utils::Contains(GetCompetitionLaunchInfos(), baseId))
-        return GetCompetitionLaunchInfos()[baseId];
-    static CompetitionLaunchInfo dummyInfo = { 0, SEASON_START, 0, 0 };
-    return dummyInfo;
-}
-
-UChar GetCompetitionLaunchPeriod(UChar region, UChar type) {
-    auto const &info = GetCompetitionLaunchInfo(region, type);
-    if (info.period > 0)
-        return info.period;
-    return 1;
-}
 
 UChar GetCompetitionLaunchPeriod(CDBCompetition *comp) {
     return GetCompetitionLaunchPeriod(comp->GetCompID().countryId, comp->GetCompID().type);
@@ -522,10 +465,7 @@ void METHOD OnSetupRootInternational(void *root, DUMMY_ARG, int id) {
 }
 
 Bool LaunchesInYear(CCompID const &compId, UShort year) {
-    auto &info = GetCompetitionLaunchInfo(compId.countryId, compId.type);
-    if (info.period == 0 || info.period == 1)
-        return true;
-    return (year % info.period) == (info.year % info.period);
+    return LaunchesInYear(compId.countryId, compId.type, year);
 }
 
 Bool LaunchesInCurrentYear(CCompID const &compId) {
@@ -533,13 +473,7 @@ Bool LaunchesInCurrentYear(CCompID const &compId) {
 }
 
 Bool LaunchesInSeason(CCompID const &compId, UShort seasonStartYear) {
-    auto &info = GetCompetitionLaunchInfo(compId.countryId, compId.type);
-    if (info.period == 0 || info.period == 1)
-        return true;
-    UInt year = seasonStartYear;
-    if (info.seasonPart == SEASON_END)
-        year += 1;
-    return (year % info.period) == (info.year % info.period);
+    return LaunchesInSeason(compId.countryId, compId.type, seasonStartYear);
 }
 
 Bool LaunchesInThisSeason(CCompID const &compId) {
@@ -938,26 +872,16 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
 #define _loword(a) (a&0xFFFF)
     int numTeams = 0;
     CDBCompetition *comp = nullptr;
-    UChar region = comp->GetCompID().countryId;
-
-    auto IsCountryAtAssessmentPosition = [](UChar _countryId, UChar _region, UInt _position) {
-        if (_region == FifamCompRegion::Asia)
-            return _countryId == GetAsianAssessmentCountryAtRegionalPosition(_position);
-        else if (_region == FifamCompRegion::Africa)
-            return _countryId == GetAfricanCountryAssessmentPosition(_position);
-        else
-            return _countryId == GetCountryAtAssessmentPosition(_position, _region);
-    };
-
+    UChar region = pool->GetCompID().countryId;
     for (int i = 0; i < pool->GetNumOfScriptCommands(); i++) {
         auto command = pool->GetScriptCommand(i);
         switch (command->m_nCommandId) {
         case 2: // RESERVE_ASSESSMENT_TEAMS
-            if (IsCountryAtAssessmentPosition(countryId, region, _loword(command->m_params)))
+            if (countryId == GetCountryAtAssessmentPosition(_loword(command->m_params), region))
                 numTeams += _hiword(command->m_params);
             break;
         case 4: // GET_EUROPEAN_ASSESSMENT_TEAMS
-            if (IsCountryAtAssessmentPosition(countryId, region, _loword(command->m_params)))
+            if (countryId == GetCountryAtAssessmentPosition(_loword(command->m_params), region))
                 numTeams += _hibyte(command->m_params);
             break;
         case 7: // GET_TAB_X_TO_Y
@@ -965,7 +889,7 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
                 numTeams += _hibyte(command->m_params);
             break;
         case 12: // GET_EUROPEAN_ASSESSMENT_CUPWINNER
-            if (IsCountryAtAssessmentPosition(countryId, region, _loword(command->m_params)))
+            if (countryId == GetCountryAtAssessmentPosition(_loword(command->m_params), region))
                 --numTeams;
             break;
         case 28: // GET_INTERNATIONAL_TEAMS
@@ -5436,12 +5360,14 @@ void __declspec(naked) OnRoundLaunchCreateMatch2() {
 void *METHOD OnDBMatchEntryConstruction(void *t, DUMMY_ARG, CCompID compID, UShort matchDay, UShort pair, UInt flags,
     CTeamIndex team1, CTeamIndex team2, CJDate date, CJDate matchDate, CTeamIndex host, Int referee, UShort roundType, UInt teamType)
 {
-    SafeLog::WriteToFile("log_matches.txt",
-        Utils::Format(L"%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s",
-        GetCurrentDate().ToStr(), date.ToStr(), CompetitionName(compID), matchDay + 1, pair + 1, TeamTag(team1), TeamTag(team2),
-        StadiumTagWithCountry(host), FifamRoundID::MakeFromInt((UChar)roundType).ToStr(), FlagsToStr(flags)),
-        L"CurrDate\tMatchDate\tCompetition\tMatchday\tPair\tTeam1\tTeam2\tHost\tRoundType\tFlags"
-    );
+    if (compID.countryId >= 249) { // log only international/continental matches
+        SafeLog::WriteToFile("log_matches.txt",
+            Utils::Format(L"%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s",
+            GetCurrentDate().ToStr(), date.ToStr(), CompetitionName(compID), matchDay + 1, pair + 1, TeamTag(team1), TeamTag(team2),
+            StadiumTagWithCountry(host), FifamRoundID::MakeFromInt((UChar)roundType).ToStr(), FlagsToStr(flags)),
+            L"CurrDate\tMatchDate\tCompetition\tMatchday\tPair\tTeam1\tTeam2\tHost\tRoundType\tFlags"
+        );
+    }
     return CallMethodAndReturn<void *, 0xE817F0>(t, compID, matchDay, pair, flags, team1, team2, date, matchDate, host,
         referee, roundType, teamType);
 }
@@ -6284,5 +6210,7 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x1043DBD, OnDBMatchEntryConstruction); // CDBRound::RegisterMatch
         patch::RedirectCall(0x1044CAA, OnDBMatchEntryConstruction); // CDBRound::Launch
         patch::RedirectCall(0x1044FC4, OnDBMatchEntryConstruction); // CDBRound::Launch
+        patch::RedirectCall(0x105E1E6, OnDBMatchEntryConstruction); // CDBLeague::InitMatches
+        patch::RedirectCall(0x105E85C, OnDBMatchEntryConstruction); // CDBLeague::InitMatches
     }
 }

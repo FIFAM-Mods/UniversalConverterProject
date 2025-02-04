@@ -218,8 +218,8 @@ void ReadKitsFile() {
 }
 
 void METHOD OnLoadClubKit(void *kitCtrl, DUMMY_ARG, void *kitData, UInt fifaKitId, Bool bHome) {
-    if (Settings::GetInstance().ShadersReload)
-        ReloadShaders();
+    //if (Settings::GetInstance().ShadersReload)
+    //    ReloadShaders();
     if (Settings::GetInstance().ReloadKitConfig) {
         GetTeamKitsMap().clear();
         ReadKitsFile();
@@ -251,8 +251,8 @@ void METHOD OnLoadClubKit(void *kitCtrl, DUMMY_ARG, void *kitData, UInt fifaKitI
 }
 
 void METHOD OnLoadHeadScene(void *dlg) {
-    if (Settings::GetInstance().ShadersReload)
-        ReloadShaders();
+    //if (Settings::GetInstance().ShadersReload)
+    //    ReloadShaders();
     if (Settings::GetInstance().ReloadKitConfig) {
         GetTeamKitsMap().clear();
         ReadKitsFile();
