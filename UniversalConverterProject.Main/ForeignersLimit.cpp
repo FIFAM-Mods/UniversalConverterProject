@@ -543,8 +543,6 @@ void PatchForeignersLimit(FM::Version v) {
         patch::SetUChar(0x13D2DF2 + 2, 11);
 
 		patch::SetUChar(0x11F2D5C + 1, 0); // SetupNoOfNonEUPlayers
-		// TODO: remove this
-		patch::RedirectJump(0xF81970, CDBCompetition_GetNoOfNonEUPlayers); // temporary fix for FM24
 
 		// Fix: Rotation line-up collector didn't use youth players in first team
 		static void *MyFilterTeamForRotationCollector_Vtable[] = {

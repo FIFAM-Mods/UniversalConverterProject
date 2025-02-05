@@ -911,7 +911,7 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
                     }
                     else if (pool->GetCompetitionType() == COMP_UEFA_CUP) {
                         // Associations 5-10 delegate a cup winner in AFC Champions League Two
-                        if (position >= 1 && position <= 4)
+                        if (position >= 5 && position <= 10)
                             --numTeams;
                     }
                     else if (pool->GetCompetitionType() == COMP_CONFERENCE_LEAGUE) {
@@ -1424,14 +1424,13 @@ void OnGetSpare(CDBCompetition **ppComp) {
     };
     auto AddTeamsWithPerCountryLimit = [](Vector<CTeamIndex> &newTeams, Vector<CTeamIndex> const &oldTeams, UInt maxTeamsPerCountry) {
         Map<UChar, UChar> teamsPerCountry;
+        for (auto const &t : newTeams)
+            teamsPerCountry[t.countryId]++;
         Vector<CTeamIndex> removedTeams;
         for (UInt i = 0; i < oldTeams.size(); i++) {
             CTeamIndex const &t = oldTeams[i];
             if (!t.isNull()) {
-                if (!Utils::Contains(teamsPerCountry, t.countryId))
-                    teamsPerCountry[t.countryId] = 1;
-                else
-                    teamsPerCountry[t.countryId]++;
+                teamsPerCountry[t.countryId]++;
                 if (teamsPerCountry[t.countryId] <= maxTeamsPerCountry)
                     newTeams.push_back(t);
                 else
@@ -5122,8 +5121,64 @@ CDBRound *WorldCupGetFinal(UInt region, UInt compType, UShort index) {
     return GetRoundByRoundType(region, compType, ROUND_FINAL);
 }
 
-CDBRound *GetWorldClubCupFinalForTransitionScreen(CCompID const &compID) {
+void *gEndOfSeasonSummaryScreen = nullptr;
+UChar gTransitionScreenRegion = 0;
+
+void METHOD OnEndOfSeasonSummaryFill(void *t) {
+    gEndOfSeasonSummaryScreen = t;
+    gTransitionScreenRegion = 0;
+    CallMethod<0x886C20>(t);
+    gEndOfSeasonSummaryScreen = nullptr;
+    gTransitionScreenRegion = 0;
+}
+
+CTeamIndex *METHOD OnEndOfSeasonSummaryGetChampion4thCup(CDBCompetition *comp, DUMMY_ARG, Bool checkIntl) {
+    if (gEndOfSeasonSummaryScreen)
+        SetText(*raw_ptr<void *>(gEndOfSeasonSummaryScreen, 0xBF0), comp->GetName());
+    return &comp->GetChampion(checkIntl);
+}
+
+CDBCompetition *GetFIFAClubCupInThisYear() {
+    CDBCompetition *wcc = GetRoundByRoundType(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP, ROUND_FINAL);
+    if (wcc && LaunchesInCurrentYear(wcc->GetCompID()))
+        return wcc;
     return GetRoundByRoundType(FifamCompRegion::Europe, COMP_TOYOTA, ROUND_FINAL);
+}
+
+CDBCompetition *EndOfSeasonSummaryGetFirstCompetition(UChar region, UChar type, UChar roundType) {
+    gTransitionScreenRegion = region;
+    return GetRoundByRoundType(gTransitionScreenRegion, COMP_CHAMPIONSLEAGUE, ROUND_FINAL);
+}
+
+CDBCompetition *EndOfSeasonSummaryGetSecondCompetition(UChar region, UChar type, UChar roundType) {
+    if (gTransitionScreenRegion == FifamCompRegion::Oceania)
+        return GetFIFAClubCupInThisYear();
+    return GetRoundByRoundType(gTransitionScreenRegion, COMP_UEFA_CUP, ROUND_FINAL);
+}
+
+CDBCompetition *EndOfSeasonSummaryGetThirdCompetition(UChar region, UChar type, UShort index) {
+    if (gTransitionScreenRegion == FifamCompRegion::SouthAmerica || gTransitionScreenRegion == FifamCompRegion::Africa)
+        return GetCompetition(gTransitionScreenRegion, COMP_EURO_SUPERCUP, 0);
+    else if (gTransitionScreenRegion == FifamCompRegion::Oceania) {
+        auto wcc = GetFIFAClubCupInThisYear();
+        if (wcc && wcc->GetCompetitionType() == COMP_WORLD_CLUB_CHAMP)
+            return GetRoundByRoundType(FifamCompRegion::Europe, COMP_TOYOTA, ROUND_FINAL);
+        return nullptr;
+    }
+    return GetRoundByRoundType(region, COMP_CONFERENCE_LEAGUE, ROUND_FINAL);
+}
+
+CDBCompetition *EndOfSeasonSummaryGetFourthCompetition(CCompID const &compID) {
+    if (gTransitionScreenRegion == FifamCompRegion::Europe)
+        return GetCompetition(gTransitionScreenRegion, COMP_EURO_SUPERCUP, 0);
+    else if (gTransitionScreenRegion == FifamCompRegion::NorthAmerica) {
+        auto leaguesCup = GetRoundByRoundType(gTransitionScreenRegion, COMP_CONTINENTAL_2, ROUND_FINAL);
+        if (leaguesCup)
+            return leaguesCup;
+    }
+    else if (gTransitionScreenRegion == FifamCompRegion::Oceania)
+        return nullptr;
+    return GetFIFAClubCupInThisYear();
 }
 
 void METHOD MyDBRound_RegisterMatch(CDBRound *round, DUMMY_ARG, Int eventStartIndex, CDBOneMatch *match) {
@@ -5875,12 +5930,8 @@ void PatchCompetitions(FM::Version v) {
         patch::SetUInt(0x1043AA7 + 2, 0xF9000000);
         patch::RedirectCall(0x10439EC, IsCLELQuali);
 
-        // Marketing pool for Conference League? TODO
-        patch::SetUInt(0x10454AD + 2, 0xF9090017);
-
+        // Champions League group stage
         patch::SetUInt(0x10F17B2 + 2, 0xF9090012);
-
-        patch::SetUInt(0x10F1B51 + 2, 0xF9090008);
 
         // DONE: add Conference League
         patch::SetUInt(0x1132451 + 6, 0xF909000A);
@@ -6124,8 +6175,13 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x651669, OnFillClubInfoFixturesList);
         patch::RedirectCall(0x6516CC, OnFillClubInfoFixturesList_NT);
 
-        // World Club Cup for season transition screen
-        patch::RedirectCall(0x8875D2, GetWorldClubCupFinalForTransitionScreen);
+        // Season transition overview screen
+        patch::SetPointer(0x2419274, OnEndOfSeasonSummaryFill);
+        patch::RedirectCall(0x887693, OnEndOfSeasonSummaryGetChampion4thCup);
+        patch::RedirectCall(0x887176, EndOfSeasonSummaryGetFirstCompetition);
+        patch::RedirectCall(0x887301, EndOfSeasonSummaryGetSecondCompetition);
+        patch::RedirectCall(0x88745E, EndOfSeasonSummaryGetThirdCompetition);
+        patch::RedirectCall(0x8875D2, EndOfSeasonSummaryGetFourthCompetition);
 
         // remove loading of all clubs when all league levels selected
        // patch::Nop(0xF954DC, 1);

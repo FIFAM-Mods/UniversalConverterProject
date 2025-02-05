@@ -17,7 +17,7 @@ using namespace plugin;
 
 //#define EDITOR_READ_TEXT
 //#define EDITOR_WRITE_TEXT
-#define UPDATE_CLUB_BUDGETS
+//#define UPDATE_CLUB_BUDGETS
 
 enum FmLanguage {
     English,

@@ -160,9 +160,9 @@ struct Assessment {
             info.at(countryId).AddPoints(points, prelimStage);
     }
 
-    void Update(Bool rotate) {
+    void Update(Bool init) {
         for (auto &[countryId, countryInfo] : info) {
-            if (rotate && Continent == FifamContinent::Asia) {
+            if (!init && Continent == FifamContinent::Asia) {
                 UInt numClubs = GetNumClubsInContinentalCompetitions(FifamCompRegion::Asia, countryId);
                 if (numClubs == 0)
                     numClubs = 1;
@@ -218,13 +218,11 @@ struct Assessment {
             for (UInt i = 0; i < vec.size(); i++)
                 info[vec[i].first].position = info[vec[i].first].regionalPosition = i + 1;
         }
-        if (rotate) {
-            for (auto &[countryId, countryInfo] : info) {
-                for (UInt v = 0; v < (NumEntries - 1); v++)
-                    countryInfo.coeff[v] = countryInfo.coeff[v + 1];
-                countryInfo.coeff[(NumEntries - 1)] = 0.0f;
-                countryInfo.randomValue = CRandom::GetRandomInt(INT32_MAX);
-            }
+        for (auto &[countryId, countryInfo] : info) {
+            for (UInt v = 0; v < (NumEntries - 1); v++)
+                countryInfo.coeff[v] = countryInfo.coeff[v + 1];
+            countryInfo.coeff[(NumEntries - 1)] = 0.0f;
+            countryInfo.randomValue = CRandom::GetRandomInt(INT32_MAX);
         }
         Vector<Pair<UChar, InfoType>> sortedCountries;
         for (auto const &i : info)
@@ -290,9 +288,7 @@ struct Assessment {
             if (country && country->GetContinent() == Continent && !Utils::Contains(info, countryId))
                 info[countryId] = InfoType();
         }
-        for (auto &[countryId, info] : info)
-            info.randomValue = CRandom::GetRandomInt(INT32_MAX);
-        Update(false);
+        Update(true);
     }
 };
 
@@ -684,8 +680,8 @@ void METHOD CreateStatsAssessmentWrapper(void *vec, DUMMY_ARG, void *data) {
 void METHOD OnAssessmentStartNewSeason(void *assessment) {
     CallMethod<0x121DDE0>(assessment);
     if (GetCurrentYear() != GetStartingYear()) {
-        GetAssessmentInfoAFC().Update(true);
-        GetAssessmentInfoCAF().Update(true);
+        GetAssessmentInfoAFC().Update(false);
+        GetAssessmentInfoCAF().Update(false);
         SafeLog::Write(Utils::Format(L"%s - Updated AFC and CAF assessment tables", CDBGame::GetInstance()->GetCurrentDate().ToStr()));
     }
 }

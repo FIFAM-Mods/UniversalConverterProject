@@ -1061,6 +1061,7 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectCall(0x1043DFB, OnDBRoundRegisterMatch_GetWinner); // disable default win bonus for League Phase matchdays
 
         // remove original marketing pool
+        patch::SetUChar(0x10454B3, 0xEB);
         patch::Nop(0xF6EE23, 5); // CDBMarketingPool::ProcessChampionsLeagueFinal
         patch::Nop(0x1045567, 5); // CDBMarketingPool::ProcessUEFACupQuarterfinal
         patch::Nop(0x10455E2, 5); // CDBMarketingPool::ProcessUEFACupFinal
