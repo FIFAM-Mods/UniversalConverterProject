@@ -271,6 +271,7 @@ struct CTeamIndex {
     unsigned int ToInt() const;
     CTeamIndex firstTeam() const;
     bool isNull() const;
+    void clear();
     static CTeamIndex make(unsigned char CountryId, unsigned char Type, unsigned short Index);
     static CTeamIndex make(unsigned int value);
     static CTeamIndex null();
@@ -409,6 +410,7 @@ public:
     void SortTeamIDs(Function<Bool(CTeamIndex const &, CTeamIndex const &)> const &sorter);
     void SortTeams(Function<Bool(CDBTeam *, CDBTeam *)> const &sorter);
     void RandomlySortTeams(UInt startPos = 0, UInt numTeams = 0);
+    void SortTeamsForKORoundAfterGroupStage();
     void RandomizeHomeAway();
     void RandomizePairs();
     void RandomizePairs4x4();
@@ -425,6 +427,15 @@ public:
     EAGMoney GetBonus(UInt bonusId);
     class CDBRound *AsRound();
     class CDBRoot *GetRoot();
+    CTeamIndex *Teams();
+    Vector<CTeamIndex> GetTeams();
+    Vector<CTeamIndex> GetTeams(UInt startPos, UInt count);
+    Vector<CTeamIndex> GetRegisteredTeams();
+    void SetTeams(Vector<CTeamIndex> const &teams, UInt numRegisteredTeams);
+    void SetTeams(Vector<CTeamIndex> const &teams);
+    void SetRegisteredTeams(Vector<CTeamIndex> const &teams);
+    CDBCompetition *PrevContinental();
+    CDBCompetition *NextContinental();
 };
 
 enum CompDbType {
@@ -504,7 +515,12 @@ struct MatchGoalInfo {
     bool isOwnGoal;
 };
 
-class CDBRoot : public CDBCompetition {};
+class CDBRoot : public CDBCompetition {
+public:
+    CCompID GetFirstContinentalCompetition();
+    void SetFirstContinentalCompetition(CDBCompetition *comp);
+};
+
 class CDBPool : public CDBCompetition {};
 
 class CDBRound : public CDBCompetition {

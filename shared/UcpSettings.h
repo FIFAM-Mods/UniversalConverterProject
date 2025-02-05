@@ -57,6 +57,7 @@ public:
 	SETTINGS_PARAMETER(int,    PhoneNumThemes,              "PHONE_NUM_THEMES",               5);
     SETTINGS_PARAMETER(bool,   EnableMainLog,               "ENABLE_MAIN_LOG",                false);
     SETTINGS_PARAMETER(bool,   EnableAllLogFiles,           "ENABLE_ALL_LOG_FILES",           false);
+    SETTINGS_PARAMETER(bool,   LogMatches,                  "LOG_MATCHES",                    false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

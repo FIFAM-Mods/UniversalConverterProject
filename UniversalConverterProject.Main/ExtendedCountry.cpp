@@ -46,10 +46,10 @@ bool SortCountryIDsByFifaRanking(UShort countryId1, UShort countryId2) {
 	return SortCountriesByFifaRanking(c1, c2);
 }
 
-bool SortTeamsByCountryFifaRanking(CTeamIndex const *t1, CTeamIndex const *t2) {
-	if (!t1->countryId || !t2->countryId)
+bool SortTeamsByCountryFifaRanking(CTeamIndex const &t1, CTeamIndex const &t2) {
+	if (!t1.countryId || !t2.countryId)
 		return false;
-	return SortCountryIDsByFifaRanking(t1->countryId, t2->countryId);
+	return SortCountryIDsByFifaRanking(t1.countryId, t2.countryId);
 }
 
 void METHOD SetCountryFifaRanking_Dummy(CDBCountry *country, DUMMY_ARG, UShort value, UChar year) {

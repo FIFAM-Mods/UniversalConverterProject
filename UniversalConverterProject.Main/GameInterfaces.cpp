@@ -311,22 +311,56 @@ void CDBCompetition::SortTeams(Function<Bool(CDBTeam *, CDBTeam *)> const &sorte
 void CDBCompetition::RandomlySortTeams(UInt startPos, UInt numTeams) {
     auto numRegisteredTeams = GetNumOfRegisteredTeams();
     if (numRegisteredTeams > 1 && startPos < numRegisteredTeams) {
-        if (numTeams == 0 || ((startPos + numTeams) > numRegisteredTeams))
+        if (numTeams == 0 || (startPos + numTeams) > numRegisteredTeams)
             numTeams = numRegisteredTeams - startPos;
         if (numTeams > 1) {
-            if (numTeams == 2) {
-                if (GetRandomInt(2) == 1)
-                    SwapTeams(startPos, startPos + 1);
-            }
-            else {
-                for (UInt i = 0; i < numTeams / 2 + 1; i++) {
-                    Int rnd1 = GetRandomInt(numTeams);
-                    Int rnd2 = GetRandomInt(numTeams);
-                    SwapTeams(startPos + rnd1, startPos + rnd2);
-                }
+            for (UInt i = numTeams - 1; i > 0; --i) {
+                UInt j = GetRandomInt(i + 1);
+                SwapTeams(startPos + i, startPos + j);
             }
         }
     }
+}
+
+void CDBCompetition::SortTeamsForKORoundAfterGroupStage() {
+    if (GetNumOfTeams() <= 2 || GetNumOfRegisteredTeams() != GetNumOfTeams() || (GetNumOfTeams() % 2) == 1)
+        return;
+    struct TeamWithGroup {
+        CTeamIndex teamID = CTeamIndex::null();
+        UChar group = 0;
+    };
+    auto teamIDs = GetTeams();
+    UInt numTeamsToSort = teamIDs.size() / 2;
+    Vector<TeamWithGroup> teams(teamIDs.size());
+    for (UInt i = 0; i < teams.size(); i++) {
+        teams[i].teamID = teamIDs[i];
+        teams[i].group = (i % numTeamsToSort) + 1;
+    }
+    UInt numIterations = 0;
+    Utils::Shuffle(teams, 0, numTeamsToSort);
+    Utils::Shuffle(teams, numTeamsToSort, numTeamsToSort);
+    for (; numIterations < 10'000; numIterations++) {
+        Bool valid = true;
+        for (UInt i = 0; i < numTeamsToSort; i++) {
+            if (teams[i].group == teams[numTeamsToSort + i].group) {
+                valid = false;
+                break;
+            }
+        }
+        if (valid)
+            break;
+        Utils::Shuffle(teams, 0, numTeamsToSort);
+    }
+    SafeLog::Write(Utils::Format(L"SortTeamsForKORoundAfterGroupStage numIterations: %d", numIterations));
+    for (UInt i = 0; i < teamIDs.size(); i++) {
+        teamIDs[i] = teams[i].teamID;
+        if (i < numTeamsToSort) {
+            SafeLog::Write(Utils::Format(L"%s (%c) - %s (%c)",
+                TeamName(teamIDs[i]), teams[i].group + 'A' - 1,
+                TeamName(teamIDs[numTeamsToSort + i]), teams[numTeamsToSort + i].group + 'A' - 1));
+        }
+    }
+    SetTeams(teamIDs);
 }
 
 void CDBCompetition::RandomizeHomeAway() {
@@ -432,6 +466,59 @@ CDBRound *CDBCompetition::AsRound() {
 
 CDBRoot *CDBCompetition::GetRoot() {
     return CallMethodAndReturn<CDBRoot *, 0xF8B680>(this);
+}
+
+CTeamIndex *CDBCompetition::Teams() {
+    return *raw_ptr<CTeamIndex *>(this, 0xA0);
+}
+
+Vector<CTeamIndex> CDBCompetition::GetTeams() {
+    Vector<CTeamIndex> result(GetNumOfTeams());
+    for (UInt i = 0; i < result.size(); i++)
+        result[i] = Teams()[i];
+    return result;
+}
+
+Vector<CTeamIndex> CDBCompetition::GetTeams(UInt startPos, UInt count) {
+    Vector<CTeamIndex> result(count);
+    UInt counter = 0;
+    for (UInt i = startPos; i < (startPos + count); i++)
+        result[counter++] = Teams()[i];
+    return result;
+}
+
+Vector<CTeamIndex> CDBCompetition::GetRegisteredTeams() {
+    Vector<CTeamIndex> result(GetNumOfRegisteredTeams());
+    for (UInt i = 0; i < result.size(); i++)
+        result[i] = Teams()[i];
+    return result;
+}
+
+void CDBCompetition::SetTeams(Vector<CTeamIndex> const &teams, UInt numRegisteredTeams) {
+    UInt numTeamsToCopy = Utils::Min(GetNumOfTeams(), teams.size());
+    for (UInt i = 0; i < numTeamsToCopy; i++)
+        Teams()[i] = teams[i];
+    if (numTeamsToCopy < GetNumOfTeams()) {
+        for (UInt i = numTeamsToCopy; i < GetNumOfTeams(); i++)
+            Teams()[i].clear();
+    }
+    SetNumOfRegisteredTeams(numRegisteredTeams);
+}
+
+void CDBCompetition::SetTeams(Vector<CTeamIndex> const &teams) {
+    SetTeams(teams, GetNumOfTeams());
+}
+
+void CDBCompetition::SetRegisteredTeams(Vector<CTeamIndex> const &teams) {
+    SetTeams(teams, teams.size());
+}
+
+CDBCompetition *CDBCompetition::PrevContinental() {
+    return CallMethodAndReturn<CDBCompetition *, 0xF8B6B0>(this);
+}
+
+CDBCompetition *CDBCompetition::NextContinental() {
+    return CallMethodAndReturn<CDBCompetition *, 0xF8B6C0>(this);
 }
 
 void CDBLeague::SetStartDate(CJDate date) {
@@ -1136,6 +1223,12 @@ bool CTeamIndex::isNull() const {
     return countryId == 0;
 }
 
+void CTeamIndex::clear() {
+    index = 0;
+    countryId = 0;
+    type = 0;
+}
+
 CTeamIndex CTeamIndex::make(unsigned char CountryId, unsigned char Type, unsigned short Index) {
     CTeamIndex result;
     result.countryId = CountryId;
@@ -1152,9 +1245,7 @@ CTeamIndex CTeamIndex::make(unsigned int value) {
 
 CTeamIndex CTeamIndex::null() {
     CTeamIndex result;
-    result.countryId = 0;
-    result.index = 0;
-    result.type = 0;
+    result.clear();
     return result;
 }
 
@@ -2251,4 +2342,14 @@ CTeamIndex CompetitionHosts::GetEuroSupercupHost() {
 
 CompetitionHosts *GetCompHosts() {
     return CallAndReturn<CompetitionHosts *, 0x117C830>();
+}
+
+CCompID CDBRoot::GetFirstContinentalCompetition() {
+    CCompID result;
+    CallMethod<0x11F0A10>(this, &result);
+    return result;
+}
+
+void CDBRoot::SetFirstContinentalCompetition(CDBCompetition *comp) {
+    CallMethod<0x11F09F0>(this, comp);
 }
