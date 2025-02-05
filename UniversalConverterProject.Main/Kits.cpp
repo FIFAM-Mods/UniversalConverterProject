@@ -1258,7 +1258,6 @@ void METHOD SetupJerseyNumberHotspot(UInt _this, DUMMY_ARG, void *playerDesc) {
     UInt offsety = 0;
 
     if (kitDesc && kitDesc->used) {
-        
         if (kitDesc->jerseynumbersize == 0)
             height = 120;
         else if (kitDesc->jerseynumbersize <= 10)

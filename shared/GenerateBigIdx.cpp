@@ -195,7 +195,8 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
     for (auto& [hash, fileDesc] : filesMap) {
         for (unsigned int i = 0; i < fileDesc.size(); i++) {
             fwrite(&fileDesc[i], 4, 1, idxFile);
-            fwrite(&hash, 4, 1, idxFile);
+            unsigned int hashCopy = hash;
+            fwrite(&hashCopy, 4, 1, idxFile);
         }
     }
     for (auto const& name : fileNamesList)

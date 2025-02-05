@@ -98,7 +98,7 @@ public:
     }
 
     template<typename SrcT>
-    static float StrToFloat(SrcT const &str, float &dst) {
+    static bool StrToFloat(SrcT const &str, float &dst) {
         bool result = false;
         try {
             dst = std::stof(str);
@@ -109,7 +109,7 @@ public:
     }
 
     template<typename SrcT>
-    static double StrToDouble(SrcT const &str, double &dst) {
+    static bool StrToDouble(SrcT const &str, double &dst) {
         bool result = false;
         try {
             dst = std::stod(str);

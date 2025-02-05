@@ -33,9 +33,9 @@ bool SortCountriesByFifaRanking(CDBCountry *c1, CDBCountry *c2) {
 	Float value2 = c2->GetFifaRanking();
 	if (value1 > value2)
 		return true;
-	if (value1 == value2)
-		return CallAndReturn<Int, 0x1493FCB>(c1->GetName(), c2->GetName()) < 0;
-	return false;
+	if (value2 > value1)
+		return false;
+	return CallAndReturn<Int, 0x1493FCB>(c1->GetName(), c2->GetName()) < 0;
 }
 
 bool SortCountryIDsByFifaRanking(UShort countryId1, UShort countryId2) {

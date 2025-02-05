@@ -177,10 +177,10 @@ Int OnReadLightingFile(char const *filename) {
         gUnkColor1->a = 0.0f;
         
         // TODO: mistake? gUnkColor2 must be used?
-        gUnkColor1->r = 0.0f;
-        gUnkColor1->g = 0.0f;
-        gUnkColor1->b = 0.0f;
-        gUnkColor1->a = 0.0f;
+        //gUnkColor1->r = 0.0f;
+        //gUnkColor1->g = 0.0f;
+        //gUnkColor1->b = 0.0f;
+        //gUnkColor1->a = 0.0f;
 
     }
     else {
@@ -453,14 +453,19 @@ void GetTeamStadiumEnvironment(CDBTeam *team, UInt &environment) {
             switch (stadiumData->environment) {
             case 1:
                 environment = (environment & 0xFFFF) | (9028 << 16);
+                break;
             case 2:
                 environment = (environment & 0xFFFF) | (9029 << 16);
+                break;
             case 3:
                 environment = (environment & 0xFFFF) | (9030 << 16);
+                break;
             case 4:
                 environment = (environment & 0xFFFF) | (9049 << 16);
+                break;
             case 5:
                 environment = (environment & 0xFFFF) | (9051 << 16);
+                break;
             }
         }
         else if (teamId.countryId == FifamNation::Iceland)

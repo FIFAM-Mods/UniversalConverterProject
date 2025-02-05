@@ -199,9 +199,6 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x50351B + 1, gNewCompTypeNames);
         patch::SetPointer(0x50352D + 3, gNewCompTypeNames);
         patch::SetPointer(0x503535 + 3, gNewCompTypeNames);
-        patch::SetPointer(0x50351B + 1, gNewCompTypeNames);
-        patch::SetPointer(0x50352D + 3, gNewCompTypeNames);
-        patch::SetPointer(0x503535 + 3, gNewCompTypeNames);
         patch::SetPointer(0x50386C + 2, gNewCompTypeNames);
         patch::SetPointer(0x503879 + 1, gNewCompTypeNames);
         patch::SetPointer(0x503891 + 3, gNewCompTypeNames);

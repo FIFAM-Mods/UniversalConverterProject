@@ -1481,23 +1481,25 @@ void OnGetSpare(CDBCompetition **ppComp) {
                             comp->RandomlySortTeams(i, 2);
                         DumpComp(comp, Utils::Format(L"UEFA KO round (%s): after randomizing", CompetitionTag(comp)));
                     }
-                    comp->SortTeams(Europe_ChampionsLeagueRoundSorter);
-                    //comp->RandomizePairs();
-                    if (comp->GetNumOfTeams() == comp->GetNumOfRegisteredTeams()) {
-                        comp->RandomlySortTeams(0, comp->GetNumOfRegisteredTeams() / 2);
-                        comp->RandomlySortTeams(comp->GetNumOfRegisteredTeams() / 2);
-                    }
-                    else if (comp->GetNumOfRegisteredTeams() >= comp->GetNumOfTeams() / 2) {
-                        UInt numTeamsToSort = comp->GetNumOfTeams() / 2 - (comp->GetNumOfTeams() - comp->GetNumOfRegisteredTeams());
-                        CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
-                        std::reverse(&pTeamIDs[0], &pTeamIDs[comp->GetNumOfTeams() / 2]);
-                        if (numTeamsToSort != 0) {
-                            comp->RandomlySortTeams(0, numTeamsToSort);
-                            comp->RandomlySortTeams(comp->GetNumOfTeams() / 2, numTeamsToSort);
+                    else {
+                        comp->SortTeams(Europe_ChampionsLeagueRoundSorter);
+                        //comp->RandomizePairs();
+                        if (comp->GetNumOfTeams() == comp->GetNumOfRegisteredTeams()) {
+                            comp->RandomlySortTeams(0, comp->GetNumOfRegisteredTeams() / 2);
+                            comp->RandomlySortTeams(comp->GetNumOfRegisteredTeams() / 2);
                         }
+                        else if (comp->GetNumOfRegisteredTeams() >= comp->GetNumOfTeams() / 2) {
+                            UInt numTeamsToSort = comp->GetNumOfTeams() / 2 - (comp->GetNumOfTeams() - comp->GetNumOfRegisteredTeams());
+                            CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
+                            std::reverse(&pTeamIDs[0], &pTeamIDs[comp->GetNumOfTeams() / 2]);
+                            if (numTeamsToSort != 0) {
+                                comp->RandomlySortTeams(0, numTeamsToSort);
+                                comp->RandomlySortTeams(comp->GetNumOfTeams() / 2, numTeamsToSort);
+                            }
+                        }
+                        else
+                            comp->RandomlySortTeams(0, comp->GetNumOfRegisteredTeams());
                     }
-                    else
-                        comp->RandomlySortTeams(0, comp->GetNumOfRegisteredTeams());
                 }
             }
             else if (comp->GetDbType() == DB_POOL) {
@@ -1863,7 +1865,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                         Log(L"Conference League - Liechtenstein Cup is not available");
                     if (liechtensteinCupWinner.countryId == 0) { // no cup available - find all Liechtenstein clubs and select random
                         Vector<CTeamIndex> liechtensteinClubs;
-                        CDBCountry* country = &GetCountryStore()->m_aCountries[FifamCompRegion::Switzerland];
+                        CDBCountry* country = GetCountry(FifamCompRegion::Switzerland);
                         if (country) {
                             for (Int t = 1; t <= country->GetNumClubs(); t++) {
                                 CTeamIndex teamIndex = CTeamIndex::make(FifamCompRegion::Switzerland, FifamClubTeamType::First, t);
@@ -2156,7 +2158,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     DumpComp(comp, L"FIFA Club World Cup participants");
                 }
                 else if (id.type == COMP_TOYOTA && id.index == 0 && comp->GetNumOfTeams() == 6) {
-                    if ((GetCurrentYear() & 2) == 1) { // swap only in odd-numbered years
+                    if ((GetCurrentYear() % 2) == 1) { // swap only in odd-numbered years
                         CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
                         // team 3. is CAF winner
                         // team 4. is AFC winner
@@ -2356,7 +2358,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
         else if (id.countryId == FifamCompRegion::Switzerland) {
             if (id.type == COMP_LE_CUP && id.index == 0 && comp->GetNumOfTeams() == 14 && comp->GetNumOfRegisteredTeams() == 0) {
                 Vector<CTeamIndex> liechtensteinClubs;
-                CDBCountry* country = &GetCountryStore()->m_aCountries[FifamCompRegion::Switzerland];
+                CDBCountry* country = GetCountry(FifamCompRegion::Switzerland);
                 if (country) {
                     for (Int t = 1; t <= country->GetNumClubs(); t++) {
                         CTeamIndex teamIndex = CTeamIndex::make(FifamCompRegion::Switzerland, FifamClubTeamType::First, t);
@@ -2369,9 +2371,12 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     if (GetTeam(teamIndex))
                         liechtensteinClubs.push_back(teamIndex);
                 }
-                for (CTeamIndex teamIndex : liechtensteinClubs) {
+                UInt numClubs = liechtensteinClubs.size();
+                liechtensteinClubs.resize(numClubs * 2);
+                for (UInt i = 0; i < numClubs; i++) {
+                    CTeamIndex teamIndex = liechtensteinClubs[i];
                     teamIndex.type = FifamClubTeamType::Reserve;
-                    liechtensteinClubs.push_back(teamIndex);
+                    liechtensteinClubs[numClubs + i] = teamIndex;
                 }
                 if (liechtensteinClubs.size() > comp->GetNumOfTeams())
                     liechtensteinClubs.resize(comp->GetNumOfTeams());

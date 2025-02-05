@@ -2238,7 +2238,7 @@ void CFMListBox::SetCellValue(UInt row, UInt column, Int64 value) {
 }
 
 EAGMoney::EAGMoney() {
-    value = 0;
+    mValue = 0;
 }
 
 EAGMoney::EAGMoney(Int value, eCurrency currency) {
@@ -2254,7 +2254,7 @@ EAGMoney::EAGMoney(Double value, eCurrency currency) {
 }
 
 Int64 EAGMoney::GetValue() {
-    return value;
+    return mValue;
 }
 
 Bool EAGMoney::Set(Int64 value, eCurrency currency) {

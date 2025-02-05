@@ -215,15 +215,15 @@ draw(DrawType drawType, size_t numPots, size_t numMatchdays, vector<Team> const 
 #ifdef CL_DRAWING_TEST
         iterCount++;
 #endif
-        DrawResult d = drawIteration(drawType, i, numPots, numMatchdays, teams);
+        DrawResult temp = drawIteration(drawType, i, numPots, numMatchdays, teams);
         vector<pair<unsigned char, unsigned char>> errors;
-        CalcDrawResultScore(d, teams, errors);
-        if (d.score <= best) {
-            if (d.score < best) {
-                best = d.score;
+        CalcDrawResultScore(temp, teams, errors);
+        if (temp.score <= best) {
+            if (temp.score < best) {
+                best = temp.score;
                 drawResults.clear();
             }
-            drawResults.push_back(d);
+            drawResults.push_back(temp);
 #ifdef CL_DRAWING_TEST
             if (drawResults.size() > drawResultsMaxSize)
                 drawResultsMaxSize = drawResults.size();
@@ -438,17 +438,21 @@ Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
             UInt afcBaseCompIDs[] = { 0xFD090003, 0xFD09000D };
             for (UInt id = 0; id < 2; id++) {
                 UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(afcBaseCompIDs[id], numCompIds);
-                for (UInt i = 0; i < numCompIds; i++) {
-                    if (compId == compIds[i])
-                        return true;
+                if (compIds) {
+                    for (UInt i = 0; i < numCompIds; i++) {
+                        if (compId == compIds[i])
+                            return true;
+                    }
                 }
             }
         }
         else {
             UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(baseCompId, numCompIds);
-            for (UInt i = 0; i < numCompIds; i++) {
-                if (compId == compIds[i])
-                    return true;
+            if (compIds) {
+                for (UInt i = 0; i < numCompIds; i++) {
+                    if (compId == compIds[i])
+                        return true;
+                }
             }
         }
     }

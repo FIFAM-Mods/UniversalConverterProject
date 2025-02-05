@@ -97,7 +97,7 @@ enum eCurrency : Int {
 
 class EAGMoney {
 public:
-    Int64 value;
+    Int64 mValue;
 
     EAGMoney();
     EAGMoney(Int value, eCurrency currency = CURRENCY_EUR);
