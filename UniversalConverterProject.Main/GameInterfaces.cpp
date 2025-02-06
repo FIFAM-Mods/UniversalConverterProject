@@ -185,6 +185,10 @@ unsigned int CDBCompetition::GetCompetitionType() {
     return plugin::CallMethodAndReturn<unsigned int, 0xF81C50>(this);
 }
 
+UChar CDBCompetition::GetRegion() {
+    return CallMethodAndReturn<UChar, 0xF81C40>(this);
+}
+
 unsigned int CDBCompetition::GetDbType() {
     return plugin::CallMethodAndReturn<unsigned int, 0xF81960>(this);
 }
@@ -2270,7 +2274,7 @@ Int64 EAGMoney::GetValueInCurrency(eCurrency currency) {
 }
 
 EAGMoney &EAGMoney::operator=(Int64 rhs) {
-    value = rhs;
+    mValue = rhs;
     return *this;
 }
 
@@ -2352,4 +2356,12 @@ CCompID CDBRoot::GetFirstContinentalCompetition() {
 
 void CDBRoot::SetFirstContinentalCompetition(CDBCompetition *comp) {
     CallMethod<0x11F09F0>(this, comp);
+}
+
+Bool CDBRoot::LaunchesInThisSeason(UInt phase) {
+    return CallMethodAndReturn<Bool, 0x11F03C0>(this, phase);
+}
+
+CDBMatchEventEntries *CDBRoot::GetEvents() {
+    return *raw_ptr<CDBMatchEventEntries *>(this, 0x2128);
 }

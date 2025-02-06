@@ -3431,29 +3431,53 @@ CDBCompetition *GetPoolForGameStartNationalTeam(CCompID *compId) {
     return GetCompetition(FifamCompRegion::International, COMP_QUALI_EC, 0);
 }
 
-UChar METHOD OnClearInternationalCompsEvents_Check(CDBCompetition *comp) {
-    for (auto const &[baseId, info] : GetCompetitionLaunchInfos()) {
-        if (info.period > 1)
-            return 255;
-    }
-    return 0;
-}
-
 void METHOD OnClearInternationalCompsEvents_Clear(void *vec, DUMMY_ARG, UInt *pId) {
-    auto year = GetCurrentSeasonStartYear();
-    for (auto const &[baseId, info] : GetCompetitionLaunchInfos()) {
-        UInt finalTournamentId = 0;
-        for (auto const &[baseId2, info2] : GetCompetitionLaunchInfos()) {
-            if (info2.qualiCompId == baseId) {
-                finalTournamentId = baseId2;
-                break;
+    static const UChar internationalCompTypes[] = {
+        COMP_EURO_NL_Q, COMP_QUALI_WC, COMP_QUALI_EC, COMP_EURO_NL, COMP_WORLD_CUP, COMP_EURO_CUP, COMP_CONFED_CUP,
+        COMP_COPA_AMERICA, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP, COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q,
+        COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP, COMP_FINALISSIMA, COMP_U20_WC_Q, COMP_U20_WORLD_CUP
+    };
+    for (auto type : internationalCompTypes) {
+        UInt baseId = COMP_BASE_ID(FifamCompRegion::International, type);
+        auto info = GetCompetitionLaunchInfo(FifamCompRegion::International, type);
+        if (info.period <= 1)
+            CallMethod<0x6E3FD0>(vec, &baseId);
+        else {
+            UInt finalTournamentId = 0;
+            for (auto const &[baseId2, info2] : GetCompetitionLaunchInfos()) {
+                if (info2.qualiCompId == baseId) {
+                    finalTournamentId = baseId2;
+                    break;
+                }
+            }
+            if (LaunchesInSeason(CCompID::Make(finalTournamentId ? finalTournamentId : baseId), GetCurrentSeasonStartYear() - 1)) {
+                CallMethod<0x6E3FD0>(vec, &baseId);
+                SafeLog::Write(Utils::Format(L"OnClearInternationalCompsEvents_Clear: %s on %s",
+                    CompetitionTag(CCompID::Make(baseId)), GetCurrentDate().ToStr()));
             }
         }
-        if (LaunchesInSeason(CCompID::Make(finalTournamentId ? finalTournamentId : baseId), GetCurrentSeasonStartYear() - 1)) {
-            CallMethod<0x6E3FD0>(vec, &baseId);
-            //SafeLog::Write(Utils::Format(L"OnClearInternationalCompsEvents_Clear: %s on %s",
-            //    CompetitionTag(CCompID::Make(baseId)), GetCurrentDate().ToStr()));
+    }
+}
+
+void METHOD OnClearFirstTeamCompetitionsRoot(CDBRoot *root, DUMMY_ARG, UInt phase) {
+    Bool international = root->LaunchesInThisSeason(phase) /* && root->GetRegion() == FifamCompRegion::International*/;
+    UInt sizeBefore = 0, capacityBefore = 0;
+    if (international && root->GetEvents()) {
+        sizeBefore = root->GetEvents()->size();
+        capacityBefore = root->GetEvents()->capacity();
+    }
+    CallMethod<0x11F4270>(root, phase);
+    if (international) {
+        UInt sizeAfter = 0, capacityAfter = 0;
+        if (international && root->GetEvents()) {
+            sizeAfter = root->GetEvents()->size();
+            capacityAfter = root->GetEvents()->capacity();
         }
+        //SafeLog::Write(Utils::Format(L"%s. International root events: before - size %u capacity %u, after - size %u capacity %u",
+        //    GetCurrentDate().ToStr(), sizeBefore, capacityBefore, sizeAfter, capacityAfter));
+        SafeLog::WriteToFile(L"root_events.csv",
+            Utils::Format(L"%s,%u,%u,%u,%u", root->GetCompID().ToStr(), sizeBefore, capacityBefore, sizeAfter, capacityAfter),
+            L"root,sizeBefore,capacityBefore,sizeAfter,capacityAfter");
     }
 }
 
@@ -6027,9 +6051,12 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x24B184C, OnPoolLaunch);
 
         // match events for international comps
-        patch::RedirectCall(0x11F42CB, OnClearInternationalCompsEvents_Check);
         patch::RedirectJump(0x11F4311, (void *)0x11F43B0);
         patch::RedirectCall(0x11F43C1, OnClearInternationalCompsEvents_Clear);
+        //patch::RedirectCall(0xF8FB0C, OnClearFirstTeamCompetitionsRoot);
+        //patch::RedirectCall(0xF8FB88, OnClearFirstTeamCompetitionsRoot);
+        //patch::RedirectCall(0xF8FC04, OnClearFirstTeamCompetitionsRoot);
+        //patch::RedirectCall(0xF8FC80, OnClearFirstTeamCompetitionsRoot);
 
         // club info achievements
         patch::RedirectCall(0x658A7D, OnGetTeamForClubAchievementsScreen);

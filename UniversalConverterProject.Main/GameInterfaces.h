@@ -243,6 +243,29 @@ public:
 };
 #pragma pack(pop)
 
+template<typename T>
+class SimpleContainer {
+    T *mData;
+    UInt mSize;
+    UInt mCapacity;
+public:
+    UInt size() {
+        return mSize;
+    }
+
+    UInt capacity() {
+        return mCapacity;
+    }
+
+    Bool empty() {
+        return !mData || mSize == 0;
+    }
+
+    T *operator[](UInt index) {
+        return &mData[index];
+    }
+};
+
 class CDBGameOptions {
 public:
     bool CheckFlag(unsigned int flag);
@@ -384,6 +407,7 @@ struct CScriptCommand {
 class CDBCompetition {
 public:
     unsigned int GetCompetitionType();
+    UChar GetRegion();
     unsigned int GetDbType();
     wchar_t const *GetName();
     CCompID GetCompID();
@@ -515,10 +539,28 @@ struct MatchGoalInfo {
     bool isOwnGoal;
 };
 
+class CDBMatchEventEntry {
+public:
+    UChar flags;
+    UChar minute;
+    UShort eventType;
+    Int playerScorerId;
+    Int playerAssistantId;
+    Int field_C;
+    UChar reason1_or_value;
+    UChar reason2;
+    UChar goalsHome;
+    UChar goalsAway;
+};
+
+using CDBMatchEventEntries = SimpleContainer<CDBMatchEventEntry>;
+
 class CDBRoot : public CDBCompetition {
 public:
     CCompID GetFirstContinentalCompetition();
     void SetFirstContinentalCompetition(CDBCompetition *comp);
+    Bool LaunchesInThisSeason(UInt phase);
+    CDBMatchEventEntries *GetEvents();
 };
 
 class CDBPool : public CDBCompetition {};
