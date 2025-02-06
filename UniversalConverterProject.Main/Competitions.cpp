@@ -3,6 +3,7 @@
 #include "GameInterfaces.h"
 #include "FifamCompID.h"
 #include "FifamRoundID.h"
+#include "FifamCompDbType.h"
 #include "shared.h"
 #include "Log.h"
 #include <map>
@@ -613,9 +614,9 @@ UChar METHOD LaunchCompetitionsContinental(CDBRoot *root) {
                     LaunchCompetition(compId);
             }
         }
-        //compId = CCompID::Make(region, COMP_YOUTH_CHAMPIONSLEAGUE, 0);
-        //if (!Utils::Contains(comps, compId.ToInt()) && LaunchesInThisSeason(compId))
-        //    LaunchCompetition(compId);
+        compId = CCompID::Make(region, COMP_YOUTH_CHAMPIONSLEAGUE, 0);
+        if (!Utils::Contains(comps, compId.ToInt()) && LaunchesInThisSeason(compId))
+            LaunchCompetition(compId);
     }
     return region;
 }
@@ -4608,7 +4609,6 @@ void METHOD AssessmentTable_AddPointsOnCompetitionLaunch(CAssessmentTable* table
 }
 
 void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG, CCompID const &compID, RoundPair const &rp) {
-    Float points = 0.0f;
     if ((compID.countryId == FifamCompRegion::Europe || compID.countryId == FifamCompRegion::Asia) &&
         (compID.type == COMP_CHAMPIONSLEAGUE || compID.type == COMP_UEFA_CUP || compID.type == COMP_CONFERENCE_LEAGUE))
     {
@@ -4617,11 +4617,14 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
         Bool prelimStage = false;
         CDBCompetition *comp = GetCompetition(compID);
         if (compID.countryId == FifamCompRegion::Europe) {
-            points = 1.0f;
-            if (comp->GetDbType() == DB_ROUND && (comp->GetRoundType() == ROUND_QUALI || comp->GetRoundType() == ROUND_QUALI2))
-                points = 0.5f;
-            pointsForWin = points * 2;
-            pointsForDraw = points;
+            if (comp->GetDbType() == DB_ROUND && (comp->GetRoundType() == ROUND_QUALI || comp->GetRoundType() == ROUND_QUALI2)) {
+                pointsForWin = 1.0f;
+                pointsForDraw = 0.5f;
+            }
+            else {
+                pointsForWin = 2.0f;
+                pointsForDraw = 1.0f;
+            }
         }
         else if (compID.countryId == FifamCompRegion::Asia) {
             if (comp->GetDbType() == DB_ROUND && comp->GetRoundType() == ROUND_PREROUND1) {
@@ -4673,17 +4676,6 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
         UInt flags = 0;
         CTeamIndex team1 = rp.Get1stTeam();
         CTeamIndex team2 = rp.Get2ndTeam();
-        if (Settings::GetInstance().LogMatches && comp->GetDbType() == DB_ROUND) {
-            if (rp.TestFlag(FifamBeg::_2ndPlayed))
-            SafeLog::WriteToFile("log_pairs.txt",
-                Utils::Format(L"%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s",
-                    GetCurrentDate().ToStr(), CompetitionTag(comp), TeamName(team1), TeamName(team2),
-                    rp.result1[rp.TestFlag(FifamBeg::_2ndPlayed)], rp.result2[rp.TestFlag(FifamBeg::_2ndPlayed)],
-                    rp.result1[0], rp.result2[0], rp.result1[1], rp.result2[1],
-                    FlagsToStr(rp.m_nFlags), FlagsToStr(comp->AsRound()->GetLegFlags(0)), FlagsToStr(comp->AsRound()->GetLegFlags(1))),
-                L"CurrDate\tCompetition\tTeam1\tTeam2\tResult1\tResult2\tLeg1_t1\tLeg1_t2\tLeg2_t1\tLeg2_t2\tPairFlags\tLef1_Flags\tLeg2_Flags"
-            );
-        }
         if (compID.countryId == FifamCompRegion::Asia) {
             if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
                 if (rp.TestFlag(FifamBeg::ExtraTime)) { // ignore extra-time goals for AFC ranking
@@ -4736,6 +4728,23 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
                     }
                 }
             }
+        }
+    }
+    if (Settings::GetInstance().LogMatches && compID.countryId >= 249) {
+        CDBCompetition *comp = GetCompetition(compID);
+        if (comp) {
+            String flags1, flags2;
+            if (comp->GetDbType() == DB_ROUND) {
+                flags1 = FlagsToStr(comp->AsRound()->GetLegFlags(0));
+                flags2 = FlagsToStr(comp->AsRound()->GetLegFlags(1));
+            }
+            SafeLog::WriteToFile("log_pairs.txt",
+                Utils::Format(L"%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s",
+                    GetCurrentDate().ToStr(), CompetitionName(comp), CompetitionType(comp), TeamTag(rp.Get1stTeam()), TeamTag(rp.Get2ndTeam()),
+                    rp.result1[rp.TestFlag(FifamBeg::_2ndPlayed)], rp.result2[rp.TestFlag(FifamBeg::_2ndPlayed)],
+                    rp.result1[0], rp.result2[0], rp.result1[1], rp.result2[1], FlagsToStr(rp.m_nFlags), flags1, flags2),
+                L"CurrDate\tCompetition\tType\tTeam1\tTeam2\tResult1\tResult2\tLeg1_t1\tLeg1_t2\tLeg2_t1\tLeg2_t2\tPairFlags\tLeg1_Flags\tLeg2_Flags"
+            );
         }
     }
 }
@@ -5479,10 +5488,11 @@ void *METHOD OnDBMatchEntryConstruction(void *t, DUMMY_ARG, CCompID compID, USho
 {
     if (Settings::GetInstance().LogMatches && compID.countryId >= 249) { // log only international/continental matches
         SafeLog::WriteToFile("log_matches.txt",
-            Utils::Format(L"%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s",
-            GetCurrentDate().ToStr(), date.ToStr(), CompetitionName(compID), matchDay + 1, pair + 1, TeamTag(team1), TeamTag(team2),
-            StadiumTagWithCountry(host), FifamRoundID::MakeFromInt((UChar)roundType).ToStr(), FlagsToStr(flags)),
-            L"CurrDate\tMatchDate\tCompetition\tMatchday\tPair\tTeam1\tTeam2\tHost\tRoundType\tFlags"
+            Utils::Format(L"%s\t%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s",
+            GetCurrentDate().ToStr(), date.ToStr(), CompetitionName(compID), CompetitionType(GetCompetition(compID)),
+                matchDay + 1, pair + 1, TeamTag(team1), TeamTag(team2), StadiumTagWithCountry(host),
+                FifamRoundID::MakeFromInt((UChar)roundType).ToStr(), FlagsToStr(flags)),
+            L"CurrDate\tMatchDate\tCompetition\tType\tMatchday\tPair\tTeam1\tTeam2\tHost\tRoundType\tFlags"
         );
     }
     return CallMethodAndReturn<void *, 0xE817F0>(t, compID, matchDay, pair, flags, team1, team2, date, matchDate, host,

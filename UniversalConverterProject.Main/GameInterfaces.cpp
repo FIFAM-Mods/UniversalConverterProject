@@ -1008,6 +1008,19 @@ String FlagsToStr(UInt value) {
     return Utils::Join(vecFlags, L',');
 }
 
+String CompetitionType(CDBCompetition *comp) {
+    static const wchar_t *compTypeNames[] = {
+        L"DB_ROOT", L"DB_LEAGUE", L"DB_SPARE", L"DB_CUP", L"DB_ROUND", L"DB_POOL", L"DB_FRIENDLY", L"DB_CUSTOM"
+    };
+    if (comp) {
+        UChar type = comp->GetDbType();
+        if (type < std::size(compTypeNames))
+            return compTypeNames[type];
+        return Utils::Format(L"UNKNOWN_%u", type);
+    }
+    return String();
+}
+
 Bool GetHour() {
     void *match = *(void **)0x3124748;
     if (match)

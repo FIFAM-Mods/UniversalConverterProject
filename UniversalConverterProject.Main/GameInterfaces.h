@@ -898,6 +898,7 @@ String CountryName(UChar countryId);
 String CountryTag(UChar countryId);
 
 String FlagsToStr(UInt value);
+String CompetitionType(CDBCompetition *comp);
 
 Bool GetHour();
 Bool GetIsCloudy();
