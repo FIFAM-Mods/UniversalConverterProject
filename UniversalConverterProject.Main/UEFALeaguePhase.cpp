@@ -378,12 +378,12 @@ bool DrawUEFALeaguePhase(CDBCompetition *poolTeams, CDBCompetition *poolFixtures
 }
 
 Bool IsUEFALeaguePhaseCompID(CCompID const &compID) {
-    return compID.ToInt() == 0xF9090008 || compID.ToInt() == 0xF90A0006 || compID.ToInt() == 0xF933000A || compID.ToInt() == 0xF9260004
+    return compID.ToInt() == 0xF9090008 || compID.ToInt() == 0xF90A0006 || compID.ToInt() == 0xF933000A || compID.ToInt() == 0xF9260005
         || compID.ToInt() == 0xFD090003 || compID.ToInt() == 0xFD09000D;
 }
 
 Bool IsLastLeaguePhaseMatchdayID(UInt compId) {
-    return compId == 0xF9090011 || compId == 0xF90A000F || compId == 0xF9330011 || compId == 0xF926000B ||
+    return compId == 0xF9090011 || compId == 0xF90A000F || compId == 0xF9330011 || compId == 0xF926000C ||
         compId == 0xFD09000C || compId == 0xFD090016;
 }
 
@@ -396,7 +396,7 @@ UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds) {
     static UInt compIdsCL[] = { 0xF909000A, 0xF909000B, 0xF909000C, 0xF909000D, 0xF909000E, 0xF909000F, 0xF9090010, 0xF9090011 };
     static UInt compIdsEL[] = { 0xF90A0008, 0xF90A0009, 0xF90A000A, 0xF90A000B, 0xF90A000C, 0xF90A000D, 0xF90A000E, 0xF90A000F };
     static UInt compIdsCO[] = { 0xF933000C, 0xF933000D, 0xF933000E, 0xF933000F, 0xF9330010, 0xF9330011 };
-    static UInt compIdsYL[] = { 0xF9260006, 0xF9260007, 0xF926000B, 0xF9260009, 0xF926000A, 0xF926000B };
+    static UInt compIdsYL[] = { 0xF9260007, 0xF9260008, 0xF9260009, 0xF926000A, 0xF926000B, 0xF926000C };
     static UInt compIdsACL_W[] = { 0xFD090005, 0xFD090006, 0xFD090007, 0xFD090008, 0xFD090009, 0xFD09000A, 0xFD09000B, 0xFD09000C };
     static UInt compIdsACL_E[] = { 0xFD09000F, 0xFD090010, 0xFD090011, 0xFD090012, 0xFD090013, 0xFD090014, 0xFD090015, 0xFD090016 };
     UInt *compIds = nullptr;

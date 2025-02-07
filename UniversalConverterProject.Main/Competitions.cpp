@@ -1321,38 +1321,107 @@ UInt METHOD GetCompetitionNextLaunchYear_League(CDBCompetition *comp) {
     return GetCompetitionNextLaunchYear(comp);
 }
 
+Bool IsContinentalCompetitionWithHost(CCompID const &compId) {
+    UChar type = compId.type;
+    UChar region = compId.countryId;
+    if (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania) // OFC Champions League
+        return true;
+    if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica) // U20 Libertadores
+        return true;
+    if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) // Caribbean Shield
+        return true;
+    if (type == COMP_CONTINENTAL_2 && region == FifamCompRegion::NorthAmerica) // Leagues Cup
+        return true;
+    return false;
+}
+
+UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
+    CCompID compId = comp->GetCompID();
+    UChar type = compId.type;
+    if (type == COMP_EURO_NL || type == COMP_NAM_NL || type == COMP_NAM_CUP || type == COMP_ASIA_CUP || type == COMP_AFRICA_CUP
+        || type == COMP_OFC_CUP_Q || type == COMP_OFC_CUP || type == COMP_FINALISSIMA || type == COMP_TOYOTA) {
+        return COMP_WORLD_CUP;
+    }
+    else if (IsContinentalCompetitionWithHost(compId))
+        return COMP_WORLD_CUP;
+    return type;
+}
+
 CCompID *METHOD OnShowMatchReport_SelectNextTournamentHost(CDBOneMatch *match, DUMMY_ARG, CCompID *out) {
     CCompID compId = match->GetCompID();
-    UChar compType = compId.type;
-    if (compType == COMP_EURO_NL || compType == COMP_NAM_NL || compType == COMP_NAM_CUP || compType == COMP_ASIA_CUP
-        || compType == COMP_AFRICA_CUP || compType == COMP_OFC_CUP || compType == COMP_FINALISSIMA || compType == COMP_TOYOTA)
+    UChar type = compId.type;
+    UChar region = compId.countryId;
+    Bool selectHost = false;
+    if (type == COMP_EURO_NL || type == COMP_NAM_NL || type == COMP_NAM_CUP || type == COMP_ASIA_CUP
+        || type == COMP_AFRICA_CUP || type == COMP_OFC_CUP || type == COMP_FINALISSIMA || type == COMP_TOYOTA)
     {
+        selectHost = true;
+    }
+    else if (IsContinentalCompetitionWithHost(compId))
+        selectHost = true;
+    if (selectHost) {
         CDBCompetition *comp = GetCompetition(compId);
         if (comp && comp->GetRoundType() == ROUND_FINAL) {
-            auto previousHosts = GetCompetitionPreviousHosts(comp, (compType == COMP_OFC_CUP) ? 3 : 5);
+            UInt numPreviousHosts = 5;
+            if (type == COMP_CONTINENTAL_2 && region == FifamCompRegion::NorthAmerica)
+                numPreviousHosts = 0;
+            else if (type == COMP_OFC_CUP || IsContinentalCompetitionWithHost(compId))
+                numPreviousHosts = 3;
+            Set<UChar> previousHosts;
+            if (numPreviousHosts > 0)
+                previousHosts = GetCompetitionPreviousHosts(comp, numPreviousHosts);
             Vector<UChar> hostCandidates;
-            for (UInt i = 1; i <= 207; i++) {
-                if (Utils::Contains(previousHosts, i))
-                    continue;
-                CDBCountry *country = GetCountry(i);
-                if (country->GetNumClubs() < 8)
-                    continue;
-                Bool canAddThisCountry = false;
-                if (compType == COMP_EURO_NL)
-                    canAddThisCountry = country->GetContinent() == FifamContinent::Europe;
-                else if (compType == COMP_NAM_NL || compType == COMP_NAM_CUP)
-                    canAddThisCountry = country->GetContinent() == FifamContinent::NorthAmerica;
-                else if (compType == COMP_ASIA_CUP)
-                    canAddThisCountry = country->GetContinent() == FifamContinent::Asia;
-                else if (compType == COMP_AFRICA_CUP)
-                    canAddThisCountry = country->GetContinent() == FifamContinent::Africa;
-                else if (compType == COMP_OFC_CUP)
-                    canAddThisCountry = country->GetContinent() == FifamContinent::Oceania;
-                else if (compType == COMP_FINALISSIMA)
-                    canAddThisCountry = country->GetContinent() == FifamContinent::Europe || country->GetContinent() == FifamContinent::SouthAmerica;
-                if (!canAddThisCountry)
-                    continue;
-                hostCandidates.push_back(i);
+            if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) {
+                hostCandidates = {
+                    FifamNation::Antigua_and_Barbuda,
+                    FifamNation::Aruba,
+                    FifamNation::Bahamas,
+                    FifamNation::Barbados,
+                    FifamNation::Bermuda,
+                    FifamNation::British_Virgin_Is,
+                    FifamNation::Cayman_Islands,
+                    FifamNation::Cuba,
+                    FifamNation::Netherlands_Antil,
+                    FifamNation::Dominica,
+                    FifamNation::Grenada,
+                    FifamNation::Guyana,
+                    FifamNation::Montserrat,
+                    FifamNation::Puerto_Rico,
+                    FifamNation::St_Kitts_Nevis,
+                    FifamNation::St_Lucia,
+                    FifamNation::St_Vincent_Gren,
+                    FifamNation::Surinam,
+                    FifamNation::Turks_and_Caicos,
+                    FifamNation::US_Virgin_Islands
+                };
+            }
+            else if (type == COMP_CONTINENTAL_2 && region == FifamCompRegion::NorthAmerica)
+                hostCandidates = { FifamNation::United_States, FifamNation::Canada, FifamNation::Mexico };
+            else {
+                for (UInt countryId = 1; countryId <= 207; countryId++) {
+                    if (Utils::Contains(previousHosts, countryId))
+                        continue;
+                    CDBCountry *country = GetCountry(countryId);
+                    if (country->GetNumClubs() < 8)
+                        continue;
+                    Bool canAddThisCountry = false;
+                    if (type == COMP_EURO_NL)
+                        canAddThisCountry = country->GetContinent() == FifamContinent::Europe;
+                    else if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica)
+                        canAddThisCountry = country->GetContinent() == FifamContinent::SouthAmerica;
+                    else if (type == COMP_NAM_NL || type == COMP_NAM_CUP)
+                        canAddThisCountry = country->GetContinent() == FifamContinent::NorthAmerica;
+                    else if (type == COMP_ASIA_CUP)
+                        canAddThisCountry = country->GetContinent() == FifamContinent::Asia;
+                    else if (type == COMP_AFRICA_CUP)
+                        canAddThisCountry = country->GetContinent() == FifamContinent::Africa;
+                    else if (type == COMP_OFC_CUP || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
+                        canAddThisCountry = country->GetContinent() == FifamContinent::Oceania;
+                    else if (type == COMP_FINALISSIMA)
+                        canAddThisCountry = country->GetContinent() == FifamContinent::Europe || country->GetContinent() == FifamContinent::SouthAmerica;
+                    if (canAddThisCountry)
+                        hostCandidates.push_back(countryId);
+                }
             }
             if (!hostCandidates.empty()) {
                 UChar hostCountry = 0;
@@ -1452,13 +1521,11 @@ void OnGetSpare(CDBCompetition **ppComp) {
         if (id.countryId == FifamCompRegion::Europe) {
             if (comp->GetDbType() == DB_ROUND) {
                 if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE) {
-                    if (id.index == 13) { // last32
-                        if (comp->GetNumOfTeams() == 32) {
-                            comp->RandomlySortTeams(0, 6);
-                            comp->RandomlySortTeams(6, 10);
-                            comp->RandomlySortTeams(16, 6);
-                            comp->RandomlySortTeams(22, 10);
-                        }
+                    if (rt == ROUND_4 && comp->GetNumOfTeams() == 32) { // last32
+                        comp->RandomlySortTeams(0, 6);
+                        comp->RandomlySortTeams(6, 10);
+                        comp->RandomlySortTeams(16, 6);
+                        comp->RandomlySortTeams(22, 10);
                     }
                     else {
                         comp->SortTeams(Europe_YouthChampionsLeagueRoundSorter);
@@ -1952,7 +2019,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     SortUEFALeaguePhaseTable(0xF9330000, comp);
                     DumpComp(comp, L"Conference League League Phase sorted table");
                 }
-                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 0 && comp->GetNumOfTeams() == 52 && comp->GetNumOfRegisteredTeams() == 0) {
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 1 && comp->GetNumOfTeams() == 52 && comp->GetNumOfRegisteredTeams() == 0) {
                     auto compCL = GetCompetition(FifamCompRegion::Europe, FifamCompType::ChampionsLeague, 8);
                     UInt teamCounter = 0;
                     CTeamIndex* pTeamIDs = *raw_ptr<CTeamIndex*>(comp, 0xA0);
@@ -2002,7 +2069,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     comp->SetNumOfRegisteredTeams(comp->GetNumOfTeams());
                     DumpComp(comp, L"Youth Champions League Pool National Leagues Path pool");
                 }
-                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 5 && comp->GetNumOfTeams() == 216) {
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 6 && comp->GetNumOfTeams() == 216) {
                     CDBCompetition *clLeagueMatches = GetCompetition(FifamCompRegion::Europe, COMP_CHAMPIONSLEAGUE, 9);
                     if (clLeagueMatches) {
                         CTeamIndex *pDst = *raw_ptr<CTeamIndex *>(comp, 0xA0);
@@ -2013,7 +2080,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     }
                     DumpComp(comp, L"Youth League copied matchdays");
                 }
-                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 12 && comp->GetNumOfTeams() == 36) {
+                else if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 13 && comp->GetNumOfTeams() == 36) {
                     SortUEFALeaguePhaseTable(0xF9260000, comp);
                     DumpComp(comp, L"Youth League League Phase sorted table");
                 }
@@ -2200,6 +2267,70 @@ void OnGetSpare(CDBCompetition **ppComp) {
                 else {
                     comp->SortTeams(ChampionsLeagueRoundSorter);
                     comp->RandomizePairs();
+                }
+            }
+            else if (comp->GetDbType() == DB_POOL) {
+                if (id.type == COMP_YOUTH_CHAMPIONSLEAGUE && id.index == 0 && comp->GetNumOfTeams() == 12) {
+                    UChar hostCountry = GetCompHosts()->GetHostCountry(id.BaseCompID(), GetCurrentYear(), 0);
+                    if (hostCountry == 0)
+                        hostCountry = SouthAmerica_ParticipantsCountries[CRandom::GetRandomInt(std::size(SouthAmerica_ParticipantsCountries))];
+                    SafeLog::Write(Utils::Format(L"U20 Libertadores: host country %s", CountryName(hostCountry)));
+                    Vector<UChar> countries;
+                    countries.push_back(hostCountry);
+                    for (UInt i = 0; i < std::size(SouthAmerica_ParticipantsCountries); i++)
+                        countries.push_back(SouthAmerica_ParticipantsCountries[i]);
+                    auto teams = comp->GetRegisteredTeams();
+                    if (teams.empty()) {
+                        auto flamengo = GetTeamByUniqueID(0x00360003); // UPDATE
+                        if (flamengo)
+                            teams.push_back(flamengo->GetTeamID());
+                        else
+                            teams.push_back(CTeamIndex::make(FifamNation::Brazil, FifamClubTeamType::First, 1));
+                    }
+                    if (!teams.empty())
+                        SafeLog::Write(Utils::Format(L"U20 Libertadores: added champion team %s", TeamNameWithCountry(teams[0])));
+                    auto AddTeam = [&teams](CTeamIndex const &teamID, String const &name) {
+                        if (!teamID.isNull()) {
+                            CTeamIndex teamIDFirst = teamID.firstTeam();
+                            if (!Utils::Contains(teams, teamIDFirst)) {
+                                teams.push_back(teamIDFirst);
+                                SafeLog::Write(Utils::Format(L"U20 Libertadores: added %s - %s", name, TeamName(teamIDFirst)));
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                    for (UChar countryId : countries) {
+                        Bool added = false;
+                        CDBLeague *league = GetLeague(countryId, FifamCompType::League, 32); // Youth League A
+                        if (league) {
+                            added = AddTeam(league->GetChampion(), Utils::Format(L"%s youth league champion", CountryName(countryId)));
+                            if (!added) {
+                                for (UInt p = 0; p < league->GetNumOfTeams(); p++) {
+                                    added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s youth league place %u", CountryName(countryId), p + 1));
+                                    if (added)
+                                        break;
+                                }
+                            }
+                        }
+                        if (!added) {
+                            league = GetLeague(countryId, FifamCompType::League, 0);
+                            if (league) {
+                                added = AddTeam(league->GetChampion(), Utils::Format(L"%s league champion", CountryName(countryId)));
+                                if (!added) {
+                                    for (UInt p = 0; p < league->GetNumOfTeams(); p++) {
+                                        added = AddTeam(GetLeagueTeamAtPlace(league, p), Utils::Format(L"%s league place %u", CountryName(countryId), p + 1));
+                                        if (added)
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                        if (teams.size() == comp->GetNumOfTeams())
+                            break;
+                    }
+                    comp->SetTeams(teams);
+                    DumpComp(comp, L"U20 Libertadores pool");
                 }
             }
             return;
@@ -2527,16 +2658,6 @@ UChar GetCompetitionGroupByCompetitionId(UInt competitionId) {
         return 5;
     }
     return 0;
-}
-
-UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
-    UChar compType = *raw_ptr<UChar>(comp, 0x1A);
-    if (compType == COMP_EURO_NL || compType == COMP_NAM_NL || compType == COMP_NAM_CUP || compType == COMP_ASIA_CUP
-        || compType == COMP_AFRICA_CUP || compType == COMP_OFC_CUP || compType == COMP_FINALISSIMA || compType == COMP_TOYOTA)
-    {
-        return COMP_WORLD_CUP;
-    }
-    return compType;
 }
 
 Char const *GetNationalTeamECQualifiedTeamsScreenName() {
@@ -4676,55 +4797,57 @@ void METHOD AssessmentTable_AddPointsForMatch(CAssessmentTable *table, DUMMY_ARG
         UInt flags = 0;
         CTeamIndex team1 = rp.Get1stTeam();
         CTeamIndex team2 = rp.Get2ndTeam();
-        if (compID.countryId == FifamCompRegion::Asia) {
-            if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
-                if (rp.TestFlag(FifamBeg::ExtraTime)) { // ignore extra-time goals for AFC ranking
-                    if (rp.TestFlag(FifamBeg::_2ndPlayed)) { // if 2 matches were played
-                        rp.GetResult(result1, result2, flags, FifamBeg::_1stLeg); // get result of first leg
-                        if (result1 > result2) // if team1 won in first leg, then team2 won in second leg
-                            AddPoints(team2, pointsForWin);
-                        else if (result2 > result1) // if team2 won in first leg, then team1 won in second leg
-                            AddPoints(team1, pointsForWin);
-                        else { // if first leg ended in a draw, then second leg also ended in a draw
+        if (rp.AreTeamsValid()) {
+            if (compID.countryId == FifamCompRegion::Asia) {
+                if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
+                    if (rp.TestFlag(FifamBeg::ExtraTime)) { // ignore extra-time goals for AFC ranking
+                        if (rp.TestFlag(FifamBeg::_2ndPlayed)) { // if 2 matches were played
+                            rp.GetResult(result1, result2, flags, FifamBeg::_1stLeg); // get result of first leg
+                            if (result1 > result2) // if team1 won in first leg, then team2 won in second leg
+                                AddPoints(team2, pointsForWin);
+                            else if (result2 > result1) // if team2 won in first leg, then team1 won in second leg
+                                AddPoints(team1, pointsForWin);
+                            else { // if first leg ended in a draw, then second leg also ended in a draw
+                                AddPoints(team1, pointsForDraw);
+                                AddPoints(team2, pointsForDraw);
+                            }
+                        }
+                        else { // if extra-time was played in first leg - then it was a draw
                             AddPoints(team1, pointsForDraw);
                             AddPoints(team2, pointsForDraw);
                         }
                     }
-                    else { // if extra-time was played in first leg - then it was a draw
-                        AddPoints(team1, pointsForDraw);
-                        AddPoints(team2, pointsForDraw);
-                    }
-                }
-                else {
-                    rp.GetResult(result1, result2, flags, rp.TestFlag(FifamBeg::_2ndPlayed) ? FifamBeg::_2ndLeg : FifamBeg::_1stLeg);
-                    if (result1 > result2)
-                        AddPoints(team1, pointsForWin);
-                    else if (result2 > result1)
-                        AddPoints(team2, pointsForWin);
                     else {
-                        AddPoints(team1, pointsForDraw);
-                        AddPoints(team2, pointsForDraw);
+                        rp.GetResult(result1, result2, flags, rp.TestFlag(FifamBeg::_2ndPlayed) ? FifamBeg::_2ndLeg : FifamBeg::_1stLeg);
+                        if (result1 > result2)
+                            AddPoints(team1, pointsForWin);
+                        else if (result2 > result1)
+                            AddPoints(team2, pointsForWin);
+                        else {
+                            AddPoints(team1, pointsForDraw);
+                            AddPoints(team2, pointsForDraw);
+                        }
                     }
                 }
-            }
-        }
-        else {
-            if (comp->GetRoundType() == ROUND_FINAL) {
-                // we expect there's always one leg in the final and there's always a winner in the final.
-                // Winner gets 2 points, no matter if it's penalties or not.
-                AddPoints(rp.GetWinner(), pointsForWin);
             }
             else {
-                // TODO: handle forfeited matches?
-                if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
-                    rp.GetResult(result1, result2, flags, rp.TestFlag(FifamBeg::_2ndPlayed) ? FifamBeg::_2ndLeg : FifamBeg::_1stLeg);
-                    if (result1 > result2)
-                        AddPoints(team1, pointsForWin);
-                    else if (result2 > result1)
-                        AddPoints(team2, pointsForWin);
-                    else {
-                        AddPoints(team1, pointsForDraw);
-                        AddPoints(team2, pointsForDraw);
+                if (comp->GetRoundType() == ROUND_FINAL) {
+                    // we expect there's always one leg in the final and there's always a winner in the final.
+                    // Winner gets 2 points, no matter if it's penalties or not.
+                    AddPoints(rp.GetWinner(), pointsForWin);
+                }
+                else {
+                    // TODO: handle forfeited matches?
+                    if (rp.TestFlag(FifamBeg::_2ndPlayed) || rp.TestFlag(FifamBeg::_1stPlayed)) { // if any match played
+                        rp.GetResult(result1, result2, flags, rp.TestFlag(FifamBeg::_2ndPlayed) ? FifamBeg::_2ndLeg : FifamBeg::_1stLeg);
+                        if (result1 > result2)
+                            AddPoints(team1, pointsForWin);
+                        else if (result2 > result1)
+                            AddPoints(team2, pointsForWin);
+                        else {
+                            AddPoints(team1, pointsForDraw);
+                            AddPoints(team2, pointsForDraw);
+                        }
                     }
                 }
             }
@@ -5009,20 +5132,14 @@ FifamContinent ContinentFromRegion(UChar region) {
 }
 
 UInt METHOD OnGetChampionsLeagueHost(void *hosts) {
-    if (gMyDBRound_Launch && gMyDBRound_Launch->GetCompID().countryId != FifamCompRegion::Europe) {
-        UInt stadium = GetStadiumForContinentalCompetition(ContinentFromRegion(gMyDBRound_Launch->GetCompID().countryId));
-        if (stadium != 0)
-            return stadium;
-    }
+    if (gMyDBRound_Launch && gMyDBRound_Launch->GetCompID().countryId != FifamCompRegion::Europe)
+        return GetStadiumForContinentalCompetition(ContinentFromRegion(gMyDBRound_Launch->GetCompID().countryId));
     return CallMethodAndReturn<UInt, 0x117A560>(hosts);
 }
 
 UInt METHOD OnGetEuropaLeagueHost(void *hosts) {
-    if (gMyDBRound_Launch && gMyDBRound_Launch->GetCompID().countryId != FifamCompRegion::Europe) {
-        UInt stadium = GetStadiumForContinentalCompetition(ContinentFromRegion(gMyDBRound_Launch->GetCompID().countryId));
-        if (stadium != 0)
-            return stadium;
-    }
+    if (gMyDBRound_Launch && gMyDBRound_Launch->GetCompID().countryId != FifamCompRegion::Europe)
+        return GetStadiumForContinentalCompetition(ContinentFromRegion(gMyDBRound_Launch->GetCompID().countryId));
     return CallMethodAndReturn<UInt, 0x117A570>(hosts);
 }
 
@@ -5030,32 +5147,29 @@ UInt METHOD OnGetEuroSuperCupHost(void *hosts) {
     if (gMyDBRound_Launch && (gMyDBRound_Launch->GetCompetitionType() != COMP_EURO_SUPERCUP
         || gMyDBRound_Launch->GetCompID().countryId != FifamCompRegion::Europe))
     {
-        UInt stadium = GetStadiumForContinentalCompetition(ContinentFromRegion(gMyDBRound_Launch->GetCompID().countryId));
-        if (stadium != 0)
-            return stadium;
+        return GetStadiumForContinentalCompetition(ContinentFromRegion(gMyDBRound_Launch->GetCompID().countryId));
     }
     return CallMethodAndReturn<UInt, 0x1177730>(hosts);
 }
 
-UInt METHOD OnGetCompTypeEuroSuperCupForHost(CDBCompetition *comp) {
-    if (*raw_ptr<UInt>(gMyDBRound_Launch, 0x2080) & 2)
+UInt METHOD OnGetCompTypeEuroSuperCupForHost(CDBRound *round) {
+    if (round->GetLegFlags(0) & FifamBeg::With2ndLeg)
         return 0;
-    auto type = comp->GetCompetitionType();
-    if (type == COMP_CONTINENTAL_1 || type == COMP_CONTINENTAL_2 || type == COMP_CONFERENCE_LEAGUE || type == COMP_YOUTH_CHAMPIONSLEAGUE)
+    auto type = round->GetCompetitionType();
+    if (type == COMP_EURO_SUPERCUP || type == COMP_CONTINENTAL_1 || type == COMP_CONTINENTAL_2
+        || type == COMP_CONFERENCE_LEAGUE || type == COMP_YOUTH_CHAMPIONSLEAGUE)
+    {
         return COMP_EURO_SUPERCUP;
+    }
     return type;
 }
 
-UInt METHOD OnGetCompTypeChampionsLeagueForHost(CDBCompetition *comp) {
-    if (comp->GetCompID().countryId != FifamCompRegion::Europe && *raw_ptr<UInt>(gMyDBRound_Launch, 0x2080) & 2)
-        return 0;
-    return comp->GetCompetitionType();
+UInt METHOD OnGetCompTypeChampionsLeagueForHost(CDBRound *round) {
+    return (round->GetLegFlags(0) & FifamBeg::With2ndLeg) ? 0 : round->GetCompetitionType();
 }
 
-UInt METHOD OnGetCompTypeEuropaLeagueForHost(CDBCompetition *comp) {
-    if (comp->GetCompID().countryId != FifamCompRegion::Europe && *raw_ptr<UInt>(gMyDBRound_Launch, 0x2080) & 2)
-        return 0;
-    return comp->GetCompetitionType();
+UInt METHOD OnGetCompTypeEuropaLeagueForHost(CDBRound *round) {
+    return (round->GetLegFlags(0) & FifamBeg::With2ndLeg) ? 0 : round->GetCompetitionType();
 }
 
 Bool METHOD OnGetIsCountryInCompetitionHosts(void *t, DUMMY_ARG, CCompID *compId, UChar countryId) {
