@@ -62,6 +62,7 @@
 #include "MobilePhone.h"
 #include "UEFALeaguePhase.h"
 #include "Assessment.h"
+#include "MainMenu.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -170,6 +171,7 @@ public:
 		PatchMobilePhone(v);
         PatchUEFALeaguePhase(v);
         PatchAssessment(v);
+        PatchMainMenu(v);
 
     #ifdef BETA
         DoBetaPatches(v);

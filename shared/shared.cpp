@@ -20,8 +20,18 @@ String GetPatchName() {
     return L"2025";
 }
 
+Int GetPatchUpdateNumber() {
+    return 0;
+}
+
+WideChar const *GetPatchTestVersion() {
+    return L"February 11 Test";
+}
+
 String GetPatchVersion() {
-    return L"1.0";
+    if (GetPatchTestVersion())        // TODO:
+        return GetPatchTestVersion(); // remove this
+    return Utils::Format(L"1.%u", GetPatchUpdateNumber());
 }
 
 String GetFullAppName(Bool upperCase) {

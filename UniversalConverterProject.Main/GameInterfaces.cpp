@@ -766,6 +766,18 @@ void *CreateTextBox(void *screen, char const *name) {
     return CallMethodAndReturn<void *, 0xD44240>(screen, name);
 }
 
+void *CreateTextButton(void *screen, char const *name) {
+    return CallMethodAndReturn<void *, 0xD44360>(screen, name);
+}
+
+void *CreateImage(void *screen, char const *name) {
+    return CallMethodAndReturn<void *, 0xD44380>(screen, name);
+}
+
+void *GetTransform(void *screen, char const *name) {
+    return CallMethodAndReturn<void *, 0xD43060>(screen, name);
+}
+
 void SetTextBoxColorRGBA(void *tb, UChar r, UChar g, UChar b, UChar a) {
     UInt clr = (a << 24) | (r << 16) | (g << 8) | b;
     for (UInt i = 0; i < 4; i++)
@@ -827,9 +839,20 @@ void SetTextBoxColors(void *tb, UInt clr) {
     Call<0xD32810>(tb, clr);
 }
 
-void SetVisible(void* widget, bool visible) {
+void SetEnabled(void* widget, Bool enabled) {
+    if (widget)
+        CallVirtualMethod<9>(widget, enabled);
+}
+
+void SetVisible(void *widget, Bool visible) {
     if (widget)
         CallVirtualMethod<11>(widget, visible);
+}
+
+UInt GetId(void *widget) {
+    if (widget)
+        return CallVirtualMethodAndReturn<UInt, 23>(widget);
+    return 0;
 }
 
 void SetText(void* widget, WideChar const* text) {
@@ -845,6 +868,21 @@ unsigned char SetImageFilename(void* widget, std::wstring const& path) {
 
 unsigned char SetImageFilename(void *widget, wchar_t const *filename, int u1, int u2) {
     return CallAndReturn<unsigned char, 0xD32860>(widget, filename, u1, u2);
+}
+
+void SetTransformColor(void *trfm, Float *color) {
+    if (trfm)
+        CallVirtualMethod<37>(trfm, color);
+}
+
+void SetTransformEnabled(void *trfm, Bool enabled) {
+    if (trfm)
+        CallVirtualMethod<22>(trfm, enabled);
+}
+
+void SetTransformVisible(void *trfm, Bool visible) {
+    if (trfm)
+        CallVirtualMethod<24>(trfm, 0x100, visible);
 }
 
 String TeamName(CDBTeam *team) {

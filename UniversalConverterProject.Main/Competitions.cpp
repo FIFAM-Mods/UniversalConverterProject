@@ -312,11 +312,11 @@ UShort GetCompetitionNextLaunchYear(CDBCompetition *comp) {
     return GetCompetitionNextLaunchYear(comp->GetCompID().countryId, comp->GetCompID().type);
 }
 
-Set<UChar> GetCompetitionPreviousHosts(CDBCompetition *comp, UInt count) {
+Set<UChar> GetCompetitionPreviousHosts(CDBCompetition *comp) {
     UShort year = GetCompetitionNextLaunchYear(comp);
     UChar period = GetCompetitionLaunchPeriod(comp);
     Set<UChar> result;
-    for (UInt i = 0; i < count; i++) {
+    for (UInt i = 0; i < 2; i++) {
         for (UInt h = 0; h < 2; h++) {
             auto hostCountry = GetCompHosts()->GetHostCountry(comp->GetCompID().BaseCompID(), year, h);
             if (hostCountry != 0)
@@ -1347,13 +1347,107 @@ UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
     return type;
 }
 
+void SelectHostForCompetition(CDBCompetition *comp) {
+    if (!comp)
+        return;
+    auto compId = comp->GetCompID();
+    UChar type = compId.type;
+    UChar region = compId.countryId;
+    Set<UChar> previousHosts = GetCompetitionPreviousHosts(comp);
+    Vector<UChar> hostCandidates;
+    if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) {
+        static const UChar possibleHostCandidatesCaribbean[] = {
+            FifamNation::Antigua_and_Barbuda,
+            FifamNation::Aruba,
+            FifamNation::Bahamas,
+            FifamNation::Barbados,
+            FifamNation::Bermuda,
+            FifamNation::British_Virgin_Is,
+            FifamNation::Cayman_Islands,
+            FifamNation::Cuba,
+            FifamNation::Netherlands_Antil,
+            FifamNation::Dominica,
+            FifamNation::Grenada,
+            FifamNation::Guyana,
+            FifamNation::Montserrat,
+            FifamNation::Puerto_Rico,
+            FifamNation::St_Kitts_Nevis,
+            FifamNation::St_Lucia,
+            FifamNation::St_Vincent_Gren,
+            FifamNation::Surinam,
+            FifamNation::Turks_and_Caicos,
+            FifamNation::US_Virgin_Islands
+        };
+        for (UInt countryId : possibleHostCandidatesCaribbean) {
+            if (!Utils::Contains(previousHosts, countryId) && GetCountry(countryId)->GetNumClubs() >= 8)
+                hostCandidates.push_back(countryId);
+        }
+    }
+    else if (type == COMP_CONTINENTAL_2 && region == FifamCompRegion::NorthAmerica) {
+        static const UChar possibleHostCandidatesLeaguesCup[] = {
+            FifamNation::United_States,
+            FifamNation::Canada,
+            FifamNation::Mexico
+        };
+        for (UInt countryId : possibleHostCandidatesLeaguesCup) {
+            if (GetCountry(countryId)->GetNumClubs() >= 8)
+                hostCandidates.push_back(countryId);
+        }
+    }
+    else {
+        for (UInt countryId = 1; countryId <= 207; countryId++) {
+            if (Utils::Contains(previousHosts, countryId))
+                continue;
+            CDBCountry *country = GetCountry(countryId);
+            if (country->GetNumClubs() < 8)
+                continue;
+            Bool canAddThisCountry = false;
+            if (type == COMP_EURO_NL)
+                canAddThisCountry = country->GetContinent() == FifamContinent::Europe;
+            else if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica)
+                canAddThisCountry = country->GetContinent() == FifamContinent::SouthAmerica;
+            else if (type == COMP_NAM_NL || type == COMP_NAM_CUP)
+                canAddThisCountry = country->GetContinent() == FifamContinent::NorthAmerica;
+            else if (type == COMP_ASIA_CUP)
+                canAddThisCountry = country->GetContinent() == FifamContinent::Asia;
+            else if (type == COMP_AFRICA_CUP)
+                canAddThisCountry = country->GetContinent() == FifamContinent::Africa;
+            else if (type == COMP_OFC_CUP || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
+                canAddThisCountry = country->GetContinent() == FifamContinent::Oceania;
+            else if (type == COMP_FINALISSIMA)
+                canAddThisCountry = country->GetContinent() == FifamContinent::Europe || country->GetContinent() == FifamContinent::SouthAmerica;
+            if (canAddThisCountry)
+                hostCandidates.push_back(countryId);
+        }
+    }
+    if (!hostCandidates.empty()) {
+        UChar hostCountry = 0;
+        if (hostCandidates.size() == 1)
+            hostCountry = hostCandidates[0];
+        else
+            hostCountry = hostCandidates[CRandom::GetRandomInt(hostCandidates.size())];
+        if (hostCountry != 0) {
+            UShort year = GetCompetitionNextLaunchYear(comp);
+            UChar period = GetCompetitionLaunchPeriod(compId.countryId, compId.type);
+            GetCompHosts()->AddHostCountries(compId.BaseCompID(), year + period, hostCountry, 0);
+            SafeLog::Write(Utils::Format(L"%s. Selected host for next %s: %s in %d",
+                GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID()), CountryName(hostCountry), year + period));
+            GetCompHosts()->SelectHostStadiums(compId.BaseCompID(), year + period);
+        }
+    }
+    else {
+        SafeLog::Write(Utils::Format(L"%s. Selecting host for next %s: No available countries for host",
+            GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID())));
+    }
+}
+
 CCompID *METHOD OnShowMatchReport_SelectNextTournamentHost(CDBOneMatch *match, DUMMY_ARG, CCompID *out) {
     CCompID compId = match->GetCompID();
     UChar type = compId.type;
     UChar region = compId.countryId;
     Bool selectHost = false;
     if (type == COMP_EURO_NL || type == COMP_NAM_NL || type == COMP_NAM_CUP || type == COMP_ASIA_CUP
-        || type == COMP_AFRICA_CUP || type == COMP_OFC_CUP || type == COMP_FINALISSIMA || type == COMP_TOYOTA)
+        || type == COMP_AFRICA_CUP || type == COMP_OFC_CUP  || type == COMP_FINALISSIMA || type == COMP_TOYOTA)
     {
         selectHost = true;
     }
@@ -1362,85 +1456,9 @@ CCompID *METHOD OnShowMatchReport_SelectNextTournamentHost(CDBOneMatch *match, D
     if (selectHost) {
         CDBCompetition *comp = GetCompetition(compId);
         if (comp && comp->GetRoundType() == ROUND_FINAL) {
-            UInt numPreviousHosts = 5;
-            if (type == COMP_CONTINENTAL_2 && region == FifamCompRegion::NorthAmerica)
-                numPreviousHosts = 0;
-            else if (type == COMP_OFC_CUP || IsContinentalCompetitionWithHost(compId))
-                numPreviousHosts = 3;
-            Set<UChar> previousHosts;
-            if (numPreviousHosts > 0)
-                previousHosts = GetCompetitionPreviousHosts(comp, numPreviousHosts);
-            Vector<UChar> hostCandidates;
-            if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) {
-                hostCandidates = {
-                    FifamNation::Antigua_and_Barbuda,
-                    FifamNation::Aruba,
-                    FifamNation::Bahamas,
-                    FifamNation::Barbados,
-                    FifamNation::Bermuda,
-                    FifamNation::British_Virgin_Is,
-                    FifamNation::Cayman_Islands,
-                    FifamNation::Cuba,
-                    FifamNation::Netherlands_Antil,
-                    FifamNation::Dominica,
-                    FifamNation::Grenada,
-                    FifamNation::Guyana,
-                    FifamNation::Montserrat,
-                    FifamNation::Puerto_Rico,
-                    FifamNation::St_Kitts_Nevis,
-                    FifamNation::St_Lucia,
-                    FifamNation::St_Vincent_Gren,
-                    FifamNation::Surinam,
-                    FifamNation::Turks_and_Caicos,
-                    FifamNation::US_Virgin_Islands
-                };
-            }
-            else if (type == COMP_CONTINENTAL_2 && region == FifamCompRegion::NorthAmerica)
-                hostCandidates = { FifamNation::United_States, FifamNation::Canada, FifamNation::Mexico };
-            else {
-                for (UInt countryId = 1; countryId <= 207; countryId++) {
-                    if (Utils::Contains(previousHosts, countryId))
-                        continue;
-                    CDBCountry *country = GetCountry(countryId);
-                    if (country->GetNumClubs() < 8)
-                        continue;
-                    Bool canAddThisCountry = false;
-                    if (type == COMP_EURO_NL)
-                        canAddThisCountry = country->GetContinent() == FifamContinent::Europe;
-                    else if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica)
-                        canAddThisCountry = country->GetContinent() == FifamContinent::SouthAmerica;
-                    else if (type == COMP_NAM_NL || type == COMP_NAM_CUP)
-                        canAddThisCountry = country->GetContinent() == FifamContinent::NorthAmerica;
-                    else if (type == COMP_ASIA_CUP)
-                        canAddThisCountry = country->GetContinent() == FifamContinent::Asia;
-                    else if (type == COMP_AFRICA_CUP)
-                        canAddThisCountry = country->GetContinent() == FifamContinent::Africa;
-                    else if (type == COMP_OFC_CUP || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
-                        canAddThisCountry = country->GetContinent() == FifamContinent::Oceania;
-                    else if (type == COMP_FINALISSIMA)
-                        canAddThisCountry = country->GetContinent() == FifamContinent::Europe || country->GetContinent() == FifamContinent::SouthAmerica;
-                    if (canAddThisCountry)
-                        hostCandidates.push_back(countryId);
-                }
-            }
-            if (!hostCandidates.empty()) {
-                UChar hostCountry = 0;
-                if (hostCandidates.size() == 1)
-                    hostCountry = hostCandidates[0];
-                else
-                    hostCountry = hostCandidates[CRandom::GetRandomInt(hostCandidates.size())];
-                if (hostCountry != 0) {
-                    UShort year = GetCompetitionNextLaunchYear(comp);
-                    UChar period = GetCompetitionLaunchPeriod(compId.countryId, compId.type);
-                    GetCompHosts()->AddHostCountries(compId.BaseCompID(), year + period, hostCountry, 0);
-                    SafeLog::Write(Utils::Format(L"%s. Selected host for next %s: %s in %d",
-                        GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID()), CountryName(hostCountry), year + period));
-                }
-            }
-            else {
-                SafeLog::Write(Utils::Format(L"%s. Selecting host for next %s: No available countries for host",
-                    GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID())));
-            }
+            SelectHostForCompetition(comp);
+            if (type == COMP_OFC_CUP)
+                SelectHostForCompetition(GetCompetition(FifamCompRegion::International, COMP_OFC_CUP_Q, 0));
         }
     }
     *out = compId;
@@ -1474,6 +1492,11 @@ void __declspec(naked) GetHostTeamsForCompetition_Exe() {
         add esp, 12
         retn
     }
+}
+
+Bool METHOD OnCompHostsAddHostStadium(CompetitionHosts *hosts, DUMMY_ARG, CCompID const &compId, UShort year, CTeamIndex teamID) {
+    SafeLog::Write(Utils::Format(L"%s (%d): Added host stadium %s", CompetitionName(compId), year, StadiumNameWithCountry(teamID)));
+    return hosts->AddHostStadium(compId, year, teamID);
 }
 
 void OnGetSpare(CDBCompetition **ppComp) {
@@ -5210,7 +5233,7 @@ void SetHostTeamForNextCopaAmerica() {
     CCompID compId = CCompID::Make(0xFF210000);
     CDBCompetition *comp = GetCompetition(compId);
     if (comp) {
-        auto previousHosts = GetCompetitionPreviousHosts(comp, 3);
+        auto previousHosts = GetCompetitionPreviousHosts(comp);
         Vector<UChar> hostCandidates;
         for (UInt i = 1; i <= 207; i++) {
             if (Utils::Contains(previousHosts, i))
@@ -5321,6 +5344,8 @@ CDBCompetition *EndOfSeasonSummaryGetThirdCompetition(UChar region, UChar type, 
 }
 
 CDBCompetition *EndOfSeasonSummaryGetFourthCompetition(CCompID const &compID) {
+    Call<0xD33650>(*raw_ptr<void *>(gEndOfSeasonSummaryScreen, 0xBE0), "", 1);
+    Call<0xD33650>(*raw_ptr<void *>(gEndOfSeasonSummaryScreen, 0xBF0), "", 1);
     if (gTransitionScreenRegion == FifamCompRegion::Europe)
         return GetCompetition(gTransitionScreenRegion, COMP_EURO_SUPERCUP, 0);
     else if (gTransitionScreenRegion == FifamCompRegion::NorthAmerica) {
@@ -5611,6 +5636,17 @@ void *METHOD OnDBMatchEntryConstruction(void *t, DUMMY_ARG, CCompID compID, USho
     }
     return CallMethodAndReturn<void *, 0xE817F0>(t, compID, matchDay, pair, flags, team1, team2, date, matchDate, host,
         referee, roundType, teamType);
+}
+
+CCompID *METHOD MatchMainTabResults_GetCompetitionId(CDBOneMatch *match, DUMMY_ARG, CCompID *outCompID) {
+    *outCompID = match->GetCompID();
+    auto type = outCompID->type;
+    outCompID->type = (type == COMP_CHAMPIONSLEAGUE || type == COMP_WORLD_CLUB_CHAMP || type == COMP_ICC
+        || type == COMP_EURO_NL_Q || type == COMP_EURO_NL || type == COMP_CONTINENTAL_1 || type == COMP_CONTINENTAL_2
+        || type == COMP_NAM_NL_Q || type == COMP_NAM_NL || type == COMP_NAM_CUP || type == COMP_AFRICA_CUP_Q
+        || type == COMP_AFRICA_CUP || type == COMP_ASIA_CUP_Q || type == COMP_ASIA_CUP || type == COMP_OFC_CUP_Q
+        || type == COMP_OFC_CUP || type == COMP_CONFERENCE_LEAGUE || type == COMP_FINALISSIMA) ? COMP_CHAMPIONSLEAGUE : 0;
+    return outCompID;
 }
 
 void PatchCompetitions(FM::Version v) {
@@ -5910,14 +5946,16 @@ void PatchCompetitions(FM::Version v) {
         //patch::SetUInt(0x837738 + 4, 120);
 
         // international hosts - national team
-       patch::RedirectCall(0x1044950, GetCompetitionTypeForNationalTeamHost); // round
-       patch::Nop(0x104468A, 13);
-       patch::RedirectCall(0x1044685, GetCompetitionNextLaunchYear_Round);
-       patch::RedirectCall(0x105E619, GetCompetitionTypeForNationalTeamHost); // league
-       patch::RedirectJump(0x105E291, (void *)0x105E2E3);
-       patch::RedirectCall(0x105E28C, GetCompetitionNextLaunchYear_League);
-       patch::RedirectCall(0xF6C783, OnShowMatchReport_SelectNextTournamentHost);
-       patch::RedirectJump(0x139D690, GetHostTeamsForCompetition_Exe);
+        patch::RedirectCall(0x1044950, GetCompetitionTypeForNationalTeamHost); // round
+        patch::Nop(0x104468A, 13);
+        patch::RedirectCall(0x1044685, GetCompetitionNextLaunchYear_Round);
+        patch::RedirectCall(0x105E619, GetCompetitionTypeForNationalTeamHost); // league
+        patch::RedirectJump(0x105E291, (void *)0x105E2E3);
+        patch::RedirectCall(0x105E28C, GetCompetitionNextLaunchYear_League);
+        patch::RedirectCall(0xF6C783, OnShowMatchReport_SelectNextTournamentHost);
+        patch::RedirectJump(0x139D690, GetHostTeamsForCompetition_Exe);
+        patch::RedirectCall(0x117C496, OnCompHostsAddHostStadium);
+        patch::RedirectCall(0x117C4FF, OnCompHostsAddHostStadium);
 
         // Euro
         const UInt NumEuroTeams = 24;
@@ -6455,5 +6493,14 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x1044FC4, OnDBMatchEntryConstruction); // CDBRound::Launch
         patch::RedirectCall(0x105E1E6, OnDBMatchEntryConstruction); // CDBLeague::InitMatches
         patch::RedirectCall(0x105E85C, OnDBMatchEntryConstruction); // CDBLeague::InitMatches
+
+        // always select 12 host tadiums
+        patch::Nop(0x117C18C, 2);
+        patch::SetUChar(0x117C18E, 0xBD);
+        patch::SetUInt(0x117C18E + 1, 12); // mov ebp, 12
+        patch::Nop(0x117C194, 3);
+
+        // MatchMain screen Results tab
+        patch::RedirectCall(0xAC9F8E, MatchMainTabResults_GetCompetitionId);
     }
 }

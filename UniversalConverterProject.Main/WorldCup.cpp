@@ -95,6 +95,42 @@ void *METHOD OnDateWCModeSeason(void *t, DUMMY_ARG, UInt year, UInt month, UInt 
     return CallMethodAndReturn<void *, 0x1494A2A>(t, Settings::GetInstance().WCModeSeason_Year, Settings::GetInstance().WCModeSeason_Month, Settings::GetInstance().WCModeSeason_Day);
 }
 
+CTeamIndex WCMode_GetVenueForMatch(UInt compIndex, UInt matchdayId, UInt pairId) {
+    if (compIndex < 20 && matchdayId < 3 && pairId < 16) {
+        CDBTeam *team = GetTeamByUniqueID(gWCVenueIDs[compIndex][matchdayId][pairId]);
+        if (team)
+            return team->GetTeamID();
+    }
+    return CTeamIndex::null();
+}
+
+UInt gWCMode_VenueId = 0;
+UInt gWCMode_CompIndex = 0;
+UInt gWCMode_MatchdayId = 0;
+
+void WCMode_GetVenueId(WideChar const *buf, WideChar const *format, UInt *outId) {
+    swscanf(buf, format, outId);
+    gWCMode_VenueId = *outId;
+}
+
+UInt METHOD WCMode_GetCompIndex(void *t) {
+    gWCMode_CompIndex = CallMethodAndReturn<UInt, 0x4AFEB0>(t);
+    return gWCMode_CompIndex;
+}
+
+UInt METHOD WCMode_GetMatchdayId(void *t) {
+    gWCMode_MatchdayId = CallMethodAndReturn<UInt, 0x4AFEB0>(t);
+    return gWCMode_MatchdayId;
+}
+
+void METHOD WCMode_GetPairId(void *t) {
+    UInt pairId = CallMethodAndReturn<UInt, 0x4AFEB0>(t);
+    gWCVenueIDs[gWCMode_CompIndex][gWCMode_MatchdayId][pairId] = gWCMode_VenueId;
+}
+
+Bool WCMode_RetTrue() { return true; }
+Bool WCMode_RetFalse() { return false; }
+
 void PatchWorldCup(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0x108A8F8, OnDateWCMode);
@@ -135,19 +171,28 @@ void PatchWorldCup(FM::Version v) {
         patch::RedirectJump(0xF823E0, GetNationalTeamNominationSize_WC);
         patch::RedirectCall(0xF37F3A, NationalTeamNominationSize1);
 
-        patch::RedirectCall(0xF929AD, OnLoadCompetitionFile);
+        //patch::RedirectCall(0xF929AD, OnLoadCompetitionFile);
 
-        //patch::SetPointer(0x108A820 + 1, gWCCountryIDs);
-        //patch::SetPointer(0x108B080 + 3, gWCCountryIDs);
-        //patch::SetPointer(0x108B5B6 + 1, gWCCountryIDs);
-        //patch::SetPointer(0x108BBA8 + 3, gWCCountryIDs);
-        //patch::SetPointer(0x108B5C7 + 1, &gWCCountryIDs[NUM_WC_TEAMS]);
-        //patch::SetPointer(0x108B5EF + 1, &gWCCountryIDs[NUM_WC_TEAMS]);
-        //patch::SetUInt(0x108B0A9 + 2, NUM_WC_TEAMS * 4);
-        //patch::SetUChar(0x108BC06 + 2, NUM_WC_TEAMS);
-        //
-        //patch::SetPointer(0x108BCED + 1, gWCVenueIDs);
-        //patch::SetPointer(0x108BF72 + 3, gWCVenueIDs);
-        //patch::SetUInt(0x108BCE7 + 1, sizeof(gWCVenueIDs));
+        patch::SetPointer(0x108A820 + 1, gWCCountryIDs);
+        patch::SetPointer(0x108B080 + 3, gWCCountryIDs);
+        patch::SetPointer(0x108B5B6 + 1, gWCCountryIDs);
+        patch::SetPointer(0x108BBA8 + 3, gWCCountryIDs);
+        patch::SetPointer(0x108B5C7 + 1, &gWCCountryIDs[NUM_WC_TEAMS]);
+        patch::SetPointer(0x108B5EF + 1, &gWCCountryIDs[NUM_WC_TEAMS]);
+        patch::SetUInt(0x108B0A9 + 2, NUM_WC_TEAMS * 4);
+        patch::SetUChar(0x108BC06 + 2, NUM_WC_TEAMS);
+        
+        patch::SetPointer(0x108BCED + 1, gWCVenueIDs);
+        patch::SetUInt(0x108BCE7 + 1, sizeof(gWCVenueIDs));
+        patch::SetPointer(0x108BD91, "VENUE%03d");
+        patch::RedirectJump(0x108A830, WCMode_GetVenueForMatch);
+        patch::RedirectCall(0x108BEBD, WCMode_GetVenueId);
+        patch::RedirectCall(0x108BF05, WCMode_GetCompIndex);
+        patch::RedirectCall(0x108BF33, WCMode_GetMatchdayId);
+        patch::RedirectCall(0x108BF61, WCMode_GetPairId);
+        patch::Nop(0x108BF72, 7);
+
+        patch::RedirectCall(0x54F3B1, WCMode_RetTrue);
+        patch::RedirectCall(0x54F3C4, WCMode_RetFalse);
     }
 }

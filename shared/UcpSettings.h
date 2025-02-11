@@ -29,9 +29,9 @@ public:
     SETTINGS_PARAMETER(int,    PlayerNameEditMode,          "PLAYER_NAME_EDIT_MODE",          0);
     SETTINGS_PARAMETER(bool,   EditorDatabase,              "EDITOR_DATABASE",                false);
     SETTINGS_PARAMETER(string, Theme,                       "THEME",                          "");
-    SETTINGS_PARAMETER(bool,   WindowedMode,                "WINDOWED",                       false);
-    SETTINGS_PARAMETER(bool,   WindowsMousePointer,         "WINDOWS_MOUSE_POINTER",          false);
-    SETTINGS_PARAMETER(int,    WindowPosition,              "WINDOW_POSITION",                0);
+    SETTINGS_PARAMETER(bool,   WindowedMode,                "WINDOWED",                       true);
+    SETTINGS_PARAMETER(bool,   WindowsMousePointer,         "WINDOWS_MOUSE_POINTER",          true);
+    SETTINGS_PARAMETER(int,    WindowPosition,              "WINDOW_POSITION",                1);
     SETTINGS_PARAMETER(bool,   NamesForAllLanguages,        "EDITOR_NAMES_FOR_ALL_LANGUAGES", false);
     SETTINGS_PARAMETER(bool,   TestAllFixtures,             "EDITOR_TEST_ALL_FIXTURES",       false);
     SETTINGS_PARAMETER(bool,   ForceCalendar,               "FORCE_CALENDAR_EDITOR",          false);
@@ -40,10 +40,10 @@ public:
     SETTINGS_PARAMETER(int,    ResolutionY,                 "RESOLUTION_Y",                   0);
     SETTINGS_PARAMETER(bool,   EditorKitExtensions,         "EDITOR_KIT_EXTENSIONS",          true);
     SETTINGS_PARAMETER(bool,   ReloadKitConfig,             "RELOAD_KIT_CONFIG",              false);
-    SETTINGS_PARAMETER(int,    WCMode_Year,                 "WCMODE_YEAR",                    2022);
+    SETTINGS_PARAMETER(int,    WCMode_Year,                 "WCMODE_YEAR",                    2026);
     SETTINGS_PARAMETER(int,    WCMode_Month,                "WCMODE_MONTH",                   6);
     SETTINGS_PARAMETER(int,    WCMode_Day,                  "WCMODE_DAY",                     1);
-    SETTINGS_PARAMETER(int,    WCModeSeason_Year,           "WCMODE_SEASON_YEAR",             2021);
+    SETTINGS_PARAMETER(int,    WCModeSeason_Year,           "WCMODE_SEASON_YEAR",             2025);
     SETTINGS_PARAMETER(int,    WCModeSeason_Month,          "WCMODE_SEASON_MONTH",            7);
     SETTINGS_PARAMETER(int,    WCModeSeason_Day,            "WCMODE_SEASON_DAY",              1);
     SETTINGS_PARAMETER(int,    DatabaseOption,              "DATABASE_OPTION",                0);

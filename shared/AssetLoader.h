@@ -4,7 +4,7 @@
 
 using namespace plugin;
 
-#define ASSETS_DIR "data\\assets\\"
+#define ASSETS_DIR "data\\assets"
 
 void FindAssets(const StringA &rootPath, const StringA &currentSubpath);
 Bool32 FileIO_AssetExists(Char const *filename);

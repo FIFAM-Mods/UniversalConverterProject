@@ -36,23 +36,15 @@ void FindAssets(const StringA &rootPath, const StringA &currentSubpath) {
     FindClose(hFind);
 }
 
-Bool32 FileIO_AssetExists(Char const *filename) {
+Bool32 AssetExists(StringA const &filename) {
     return AssetsMap().find(filename) != AssetsMap().end();
 }
 
-UInt FileIO_AssetSize(Char const *filename) {
+UInt AssetSize(StringA const &filename) {
     auto it = AssetsMap().find(filename);
     if (it != AssetsMap().end())
         return (*it).second.fileSize;
     return 0;
-}
-
-Bool32 AssetExists(StringA const &filename) {
-    return FileIO_AssetExists(filename.c_str());
-}
-
-UInt AssetSize(StringA const &filename) {
-    return FileIO_AssetSize(filename.c_str());
 }
 
 StringA AssetFileName(StringA const &filename) {
@@ -60,12 +52,27 @@ StringA AssetFileName(StringA const &filename) {
     auto it = AssetsMap().find(filename);
     if (it != AssetsMap().end()) {
         result = ASSETS_DIR;
+        result += "\\";
         StringA const &subPath = (*it).second.subPath;
         if (!subPath.empty())
             result += subPath + "\\";
         result += filename;
     }
     return result;
+}
+
+Bool32 FileIO_AssetExists(Char const *filename) {
+    if (AssetExists(filename))
+        return true;
+    std::error_code ec;
+    return exists(filename, ec);
+}
+
+UInt FileIO_AssetSize(Char const *filename) {
+    if (AssetExists(filename))
+        return AssetSize(filename);
+    std::error_code ec;
+    return (UInt)file_size(filename, ec);
 }
 
 WideChar *METHOD FileIO_GetFilePath(void *fileIO, DUMMY_ARG, WideChar *output_buf, WideChar const *input) {

@@ -283,6 +283,9 @@ struct Assessment {
                 info[countryId] = _info;
             }
         }
+    }
+
+    void Init() {
         for (UChar countryId = 1; countryId <= 207; countryId++) {
             CDBCountry *country = GetCountry(countryId);
             if (country && country->GetContinent() == Continent && !Utils::Contains(info, countryId))
@@ -353,6 +356,8 @@ void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, void *reader)
         GetAssessmentInfoCAF().ReadFromMasterDatabase(reader);
         BinaryReaderCheckFourcc(reader, 'ASSM');
     }
+    GetAssessmentInfoAFC().Init();
+    GetAssessmentInfoCAF().Init();
 }
 
 void METHOD OnLoadAssessmentTable(void *table) {

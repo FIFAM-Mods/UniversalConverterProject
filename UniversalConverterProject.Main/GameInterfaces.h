@@ -841,6 +841,9 @@ struct FshWriterWriteInfo {
 };
 
 void *CreateTextBox(void *screen, char const *name);
+void *CreateTextButton(void *screen, char const *name);
+void *CreateImage(void *screen, char const *name);
+void *GetTransform(void *screen, char const *name);
 void SetTextBoxColorRGBA(void *tb, UChar r, UChar g, UChar b, UChar a);
 void SetTextBoxColorRGB(void *tb, UChar r, UChar g, UChar b);
 void SetTextBoxColorRGBA(void *tb, UInt clr);
@@ -850,10 +853,15 @@ void SetImageColorRGB(void *img, UChar r, UChar g, UChar b);
 void SetImageColorRGBA(void *img, UInt clr);
 void SetImageColorRGB(void *img, UInt clr);
 void SetTextBoxColors(void *tb, UInt clr);
-void SetVisible(void* widget, bool visible);
+void SetEnabled(void *widget, Bool enabled);
+void SetVisible(void* widget, Bool visible);
+UInt GetId(void *widget);
 void SetText(void* widget, WideChar const* text);
 unsigned char SetImageFilename(void* widget, std::wstring const& path);
 unsigned char SetImageFilename(void *widget, wchar_t const *filename, int u1, int u2);
+void SetTransformColor(void *trfm, Float *color);
+void SetTransformEnabled(void *trfm, Bool enabled);
+void SetTransformVisible(void *trfm, Bool visible);
 
 class CRandom {
 public:
