@@ -648,7 +648,7 @@ void UEFALeaguePhaseMatchdayProcessBonuses(CDBRound *round, RoundPair const &pai
                 CEAMailData mailData;
                 mailData.SetMoney(money);
                 team->SendMail(mailID, mailData, 1);
-                SafeLog::Write(Utils::Format(L"%s: team %s League Phase matchday bonus - %I64d", CompetitionName(round), TeamName(team), money));
+                SafeLog::Write(Utils::Format(L"%s: team %s League Phase matchday bonus - %I64d", CompetitionName(round), TeamName(team), money.GetValueInCurrency(CURRENCY_EUR)));
             }
         }
     };

@@ -2099,7 +2099,19 @@ void PatchEABFFixes(FM::Version v) {
         patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
 
         patch::Nop(0x45BF5A, 19); // Fix FM icon
-    }
+
+        // TODO: remove this (num days for building YC)
+        //for (UInt i = 1; i < 5; i++)
+        //    patch::SetUInt(0x24D25B4 + i * 4, 1);
+        //patch::SetUChar(0x125539C, 0xB8); // CTeamFanshops::ManageFanShops - always build new fanshops
+        //patch::SetUInt(0x125539C + 1, 1); // CTeamFanshops::ManageFanShops - always build new fanshops
+        //patch::Nop(0x125539C + 5, 1);     // CTeamFanshops::ManageFanShops - always build new fanshops
+        //patch::Nop(0xEE23AA, 2); // CTeamFanshops::Manage - update everyday
+        //patch::SetUChar(0x12551ED + 1, 1); // CTeamFanshops::ManageFanShops - minimum IP for building new fashops
+        //patch::Nop(0x1255220, 6); // CTeamFanshops::ManageFanShops - always build fansops
+        //patch::Nop(0xF43B8B, 6); // CDBTeam::ProcessStaffTasks - always build youth camps
+        //patch::Nop(0xF43B67, 6); // CDBTeam::ProcessStaffTasks - always build youth camps
+;    }
 }
 
 void UnpatchEABFFixes() {

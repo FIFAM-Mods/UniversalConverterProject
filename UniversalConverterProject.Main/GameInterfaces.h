@@ -103,10 +103,10 @@ public:
     EAGMoney(Int value, eCurrency currency = CURRENCY_EUR);
     EAGMoney(Int64 value, eCurrency currency = CURRENCY_EUR);
     EAGMoney(Double value, eCurrency currency = CURRENCY_EUR);
-    Int64 GetValue();
+    Int64 GetValue() const;
     Bool Set(Int64 value, eCurrency currency = CURRENCY_EUR);
-    Bool IsValidCurrency(eCurrency currency = CURRENCY_EUR);
-    Int64 GetValueInCurrency(eCurrency currency = CURRENCY_EUR);
+    Bool IsValidCurrency(eCurrency currency = CURRENCY_EUR) const;
+    Int64 GetValueInCurrency(eCurrency currency = CURRENCY_EUR) const;
     EAGMoney &operator=(Int64 rhs);
     EAGMoney operator-();
 };
@@ -209,15 +209,16 @@ public:
     }
 };
 
-#pragma pack(push, 4)
 template<typename TKey, typename TValue>
 class FmMap {
 public:
     class Proxy {
-        FmMap *container;
+    public:
+        FmMap *myMap;
     };
 
     class Node {
+    public:
         Node *left;
         Node *parent;
         Node *right;
@@ -225,23 +226,74 @@ public:
             TKey key;
             TValue value;
         };
-        UChar color;
-        UChar isNil;
+        unsigned char color;
+        bool isNil;
+        char _pad[2];
     };
 
     class Iterator {
+    public:
         Proxy *proxy;
         Node *node;
+
+        Iterator(Node *n, Proxy *p) : node(n), proxy(p) {}
+
+        Iterator &operator++() {
+            if (!node || node->isNil)
+                return *this;
+            if (!node->right->isNil) {
+                node = node->right;
+                while (!node->left->isNil)
+                    node = node->left;
+            }
+            else {
+                Node *p = nullptr;
+                while ((p = node->parent) && node == p->right)
+                    node = p;
+                node = p;
+            }
+            return *this;
+        }
+
+        bool operator!=(const Iterator &other) const {
+            return node != other.node;
+        }
+
+        std::pair<const TKey &, TValue &> operator*() {
+            return { node->key, node->value };
+        }
     };
 
     Proxy *proxy;
-private:
-    UInt _unk[5];
-public:
+    int _unk[5];
     Node *head;
-    UInt size;
+    UInt _size;
+
+    size_t size() {
+        return _size;
+    }
+
+    Iterator begin() {
+        return Iterator(head->left, proxy);
+    }
+
+    Iterator end() {
+        return Iterator(head, proxy);
+    }
+
+    Iterator find(const TKey &key) {
+        Node *current = head->parent;
+        while (current && !current->isNil) {
+            if (key < current->key)
+                current = current->left;
+            else if (key > current->key)
+                current = current->right;
+            else
+                return Iterator(current, proxy);
+        }
+        return end();
+    }
 };
-#pragma pack(pop)
 
 template<typename T>
 class SimpleContainer {

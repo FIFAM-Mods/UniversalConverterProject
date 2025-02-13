@@ -756,8 +756,14 @@ void METHOD ChampionsLeagueUniversalSort(CDBPool *comp, DUMMY_ARG, int numGroups
         numTeamsInGroup = 3;
         break;
     case 12:
-        numGroups = 4;
-        numTeamsInGroup = 3;
+        if (id.countryId == FifamCompRegion::SouthAmerica && id.type == COMP_YOUTH_CHAMPIONSLEAGUE) {
+            numGroups = 3;
+            numTeamsInGroup = 4;
+        }
+        else {
+            numGroups = 4;
+            numTeamsInGroup = 3;
+        }
         break;
     case 10:
         numGroups = 2;
@@ -1466,8 +1472,8 @@ CCompID *METHOD OnShowMatchReport_SelectNextTournamentHost(CDBOneMatch *match, D
 }
 
 void GetHostTeamsForCompetition(CCompID const &compId, UChar &first, UChar &second) {
-    CCompID finalID = compId;
-    UInt baseID = compId.BaseCompID().ToInt();
+    CCompID finalID = compId.BaseCompID();
+    UInt baseID = finalID.ToInt();
     for (auto const &[baseId2, info2] : GetCompetitionLaunchInfos()) { // find final tournament
         if (info2.qualiCompId == baseID) {
             finalID = CCompID::Make(baseId2);
@@ -1938,6 +1944,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     comp->RandomlySortTeams(18, 9);
                     comp->RandomlySortTeams(27, 9);
                     DumpComp(comp, L"Europa League teams sorted by pots");
+                    MakeCoefficientBasedPayments(comp);
                 }
                 else if (id.type == COMP_UEFA_CUP && id.index == 7 && comp->GetNumOfTeams() == 288) {
                     GenerateUEFALeaguePhaseMatches(L"Europa League", GetPool(FifamCompRegion::Europe, COMP_UEFA_CUP, 6), comp, 4, 8);
@@ -2033,6 +2040,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
                     comp->RandomlySortTeams(12, 12);
                     comp->RandomlySortTeams(24, 12);
                     DumpComp(comp, L"Conference League teams sorted by pots");
+                    MakeCoefficientBasedPayments(comp);
                 }
                 else if (id.type == COMP_CONFERENCE_LEAGUE && id.index == 11 && comp->GetNumOfTeams() == 216) {
                     GenerateUEFALeaguePhaseMatches(L"Conference League", GetPool(FifamCompRegion::Europe, COMP_CONFERENCE_LEAGUE, 10), comp, 3, 6);
@@ -5376,7 +5384,7 @@ void METHOD MyDBRound_RegisterMatch(CDBRound *round, DUMMY_ARG, Int eventStartIn
                         CEAMailData mailData;
                         mailData.SetMoney(bonus);
                         loserTeam->SendMail(3441, mailData, 1); // As a loser, you earned _MONEY in the previous cup match.
-                        SafeLog::Write(Utils::Format(L"%s: team %s loser bonus - %I64d", CompetitionName(round), TeamName(loserTeam), bonus));
+                        SafeLog::Write(Utils::Format(L"%s: team %s loser bonus - %I64d", CompetitionName(round), TeamName(loserTeam), bonus.GetValueInCurrency(CURRENCY_EUR)));
                     }
                 }
             }

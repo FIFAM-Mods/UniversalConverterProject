@@ -1,7 +1,9 @@
 #include "GameInterfaces.h"
 #include "GfxCoreHook.h"
 #include "Utils.h"
+#ifndef SHARED_DO_NOT_LOG
 #include "shared.h"
+#endif
 #include "FifamCompRegion.h"
 #include "FifamBeg.h"
 
@@ -355,13 +357,17 @@ void CDBCompetition::SortTeamsForKORoundAfterGroupStage() {
             break;
         Utils::Shuffle(teams, 0, numTeamsToSort);
     }
+#ifndef SHARED_DO_NOT_LOG
     SafeLog::Write(Utils::Format(L"SortTeamsForKORoundAfterGroupStage numIterations: %d", numIterations));
+#endif
     for (UInt i = 0; i < teamIDs.size(); i++) {
         teamIDs[i] = teams[i].teamID;
         if (i < numTeamsToSort) {
+#ifndef SHARED_DO_NOT_LOG
             SafeLog::Write(Utils::Format(L"%s (%c) - %s (%c)",
                 TeamName(teamIDs[i]), teams[i].group + 'A' - 1,
                 TeamName(teamIDs[numTeamsToSort + i]), teams[numTeamsToSort + i].group + 'A' - 1));
+#endif
         }
     }
     SetTeams(teamIDs);
@@ -2308,7 +2314,7 @@ EAGMoney::EAGMoney(Double value, eCurrency currency) {
     CallMethod<0x149C4AE>(this, value, currency);
 }
 
-Int64 EAGMoney::GetValue() {
+Int64 EAGMoney::GetValue() const {
     return mValue;
 }
 
@@ -2316,11 +2322,11 @@ Bool EAGMoney::Set(Int64 value, eCurrency currency) {
     return CallMethodAndReturn<Bool, 0x149C6BB>(this, value, currency);
 }
 
-Bool EAGMoney::IsValidCurrency(eCurrency currency) {
+Bool EAGMoney::IsValidCurrency(eCurrency currency) const {
     return CallMethodAndReturn<Bool, 0x149CF59>(this, currency);
 }
 
-Int64 EAGMoney::GetValueInCurrency(eCurrency currency) {
+Int64 EAGMoney::GetValueInCurrency(eCurrency currency) const {
     return CallMethodAndReturn<Int64, 0x149C9D7>(this, currency);
 }
 
