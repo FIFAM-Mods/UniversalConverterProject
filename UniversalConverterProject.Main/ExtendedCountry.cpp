@@ -8,7 +8,7 @@ using namespace plugin;
 
 UInt FixRankingFromOlderVersion(UInt ranking) {
 	if (ranking < 2133)
-		return ranking *= 15;
+		return ranking * 15;
 	return 32'000;
 }
 

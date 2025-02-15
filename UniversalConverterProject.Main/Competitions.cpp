@@ -1294,7 +1294,7 @@ CTeamIndex METHOD League_GetHostTeam(CDBTeam *team) {
             UChar hostCountryId = GetOFCChampionsLeagueQualiGroupHost(GetCurrentSeasonStartYear());
             auto hostCountry = GetCountry(hostCountryId);
             Vector<CTeamIndex> hostStadiums;
-            for (UInt i = 1; i <= Utils::Min(hostCountry->GetNumClubs(), 3); i++)
+            for (UInt i = 1; i <= Utils::Min((UInt)hostCountry->GetNumClubs(), 3u); i++)
                 hostStadiums.push_back(CTeamIndex::make(hostCountryId, FifamClubTeamType::First, i));
             for (UInt i = hostStadiums.size(); i < 3; i++)
                 hostStadiums.push_back(CTeamIndex::make(hostCountryId, FifamClubTeamType::First, 0xFFFF));
@@ -1362,6 +1362,18 @@ void SelectHostForCompetition(CDBCompetition *comp) {
     auto compId = comp->GetCompID();
     UChar type = compId.type;
     UChar region = compId.countryId;
+    UShort year = GetCompetitionNextLaunchYear(comp) + GetCompetitionLaunchPeriod(compId.countryId, compId.type);
+    if (GetCompHosts()->GetFirstHostCountry(compId, year) != 0) {
+        SafeLog::Write(Utils::Format(L"%s. Skipped host selection for %s in %d because host is already defined (%s)",
+            GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID()), year,
+            CountryName(GetCompHosts()->GetFirstHostCountry(compId, year))));
+        if (GetCompHosts()->GetHostStadium(compId, year, 0).isNull()) {
+            GetCompHosts()->SelectHostStadiums(compId.BaseCompID(), year);
+            SafeLog::Write(Utils::Format(L"%s. Selected host stadiums for %s in %d",
+                GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID()), year));
+        }
+        return;
+    }
     Set<UChar> previousHosts = GetCompetitionPreviousHosts(comp);
     if (type == COMP_OFC_CUP || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
         previousHosts.insert(GetOFCChampionsLeagueQualiGroupHost(GetCurrentSeasonStartYear() + 1));
@@ -1438,12 +1450,10 @@ void SelectHostForCompetition(CDBCompetition *comp) {
         else
             hostCountry = hostCandidates[CRandom::GetRandomInt(hostCandidates.size())];
         if (hostCountry != 0) {
-            UShort year = GetCompetitionNextLaunchYear(comp);
-            UChar period = GetCompetitionLaunchPeriod(compId.countryId, compId.type);
-            GetCompHosts()->AddHostCountries(compId.BaseCompID(), year + period, hostCountry, 0);
+            GetCompHosts()->AddHostCountries(compId.BaseCompID(), year, hostCountry, 0);
             SafeLog::Write(Utils::Format(L"%s. Selected host for next %s: %s in %d",
-                GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID()), CountryName(hostCountry), year + period));
-            GetCompHosts()->SelectHostStadiums(compId.BaseCompID(), year + period);
+                GetCurrentDate().ToStr(), CompetitionName(compId.BaseCompID()), CountryName(hostCountry), year));
+            GetCompHosts()->SelectHostStadiums(compId.BaseCompID(), year);
         }
     }
     else {
