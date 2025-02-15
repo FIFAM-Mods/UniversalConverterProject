@@ -14,6 +14,7 @@
 using namespace plugin;
 
 UInt gOriginalWndProc = 0;
+Int MouseWheelDelta = 0;
 
 enum WindowedModeWindowPosition {
     WINDOWED_MODE_DEFAULT = 0,
@@ -51,41 +52,48 @@ BOOL __stdcall MySetCursorPos(int X, int Y) {
 }
 
 void METHOD ProcessMouse(void *app) {
-    POINT Point = {}; RECT Rect = {};
-    GetCursorPos(&Point);
-    ScreenToClient(*(HWND *)(GfxCoreAddress(0x669064)), &Point);
-    Bool r = GetClientRect(*(HWND *)(GfxCoreAddress(0x669064)), &Rect);
-    Float appX = 0.0f, appY = 0.0f;
-    CallVirtualMethod<43>(app, &appX, &appY);
-    Float scaledX = Float((Double)(Point.x - Rect.left) * appX / (Double)(Rect.right - Rect.left));
-    Float scaledY = Float((Double)(Point.y - Rect.top) * appY / (Double)(Rect.bottom - Rect.top));
-    Float finalX = 0.0f;
-    if (scaledX >= 0.0f) {
-        if (appX > scaledX)
-            finalX = scaledX;
-        else
-            finalX = appX - 1.0f;
+    if (Settings::GetInstance().WindowedModeStartValue) {
+        POINT Point = {}; RECT Rect = {};
+        GetCursorPos(&Point);
+        ScreenToClient(*(HWND *)(GfxCoreAddress(0x669064)), &Point);
+        Bool r = GetClientRect(*(HWND *)(GfxCoreAddress(0x669064)), &Rect);
+        Float appX = 0.0f, appY = 0.0f;
+        CallVirtualMethod<43>(app, &appX, &appY);
+        Float scaledX = Float((Double)(Point.x - Rect.left) * appX / (Double)(Rect.right - Rect.left));
+        Float scaledY = Float((Double)(Point.y - Rect.top) * appY / (Double)(Rect.bottom - Rect.top));
+        Float finalX = 0.0f;
+        if (scaledX >= 0.0f) {
+            if (appX > scaledX)
+                finalX = scaledX;
+            else
+                finalX = appX - 1.0f;
+        }
+        Float finalY = 0.0f;
+        if (scaledY >= 0.0f) {
+            if (appY > scaledY)
+                finalY = scaledY;
+            else
+                finalY = appY - 1.0f;
+        }
+        *raw_ptr<Float>(app, 0x100) = finalX - *raw_ptr<Float>(app, 0xF4);
+        *raw_ptr<Float>(app, 0x104) = finalY - *raw_ptr<Float>(app, 0xF8);
+        *raw_ptr<Float>(app, 0xF4) = finalX;
+        *raw_ptr<Float>(app, 0xF8) = finalY;
+        void *someData = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x307C90), 6);
+        *raw_ptr<Float>(app, 0xFC) = Float((Double)(*raw_ptr<Int>(someData, 8)));
+        *raw_ptr<Float>(app, 0x108) = *raw_ptr<Float>(app, 0xFC);
     }
-    Float finalY = 0.0f;
-    if (scaledY >= 0.0f) {
-        if (appY > scaledY)
-            finalY = scaledY;
-        else
-            finalY = appY - 1.0f;
+    else
+        CallMethodDynGlobal(GfxCoreAddress(0x3BB4D0), app);
+    if (Settings::GetInstance().ImUsingATouchpad) {
+        *raw_ptr<Float>(app, 0xFC) = (Float)MouseWheelDelta;
+        *raw_ptr<Float>(app, 0x108) = (Float)MouseWheelDelta;
     }
-    *raw_ptr<Float>(app, 0x100) = finalX - *raw_ptr<Float>(app, 0xF4);
-    *raw_ptr<Float>(app, 0x104) = finalY - *raw_ptr<Float>(app, 0xF8);
-    *raw_ptr<Float>(app, 0xF4) = finalX;
-    *raw_ptr<Float>(app, 0xF8) = finalY;
-    void *someData = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x307C90), 6);
-    *raw_ptr<Float>(app, 0xFC) = Float((Double)(*raw_ptr<Int>(someData, 8)));
-    *raw_ptr<Float>(app, 0x108) = *raw_ptr<Float>(app, 0xFC);
 }
 
 void UpdateCursor(Bool winCursor) {
-    if (winCursor) {
+    if (winCursor)
         EnableCursor(true);
-    }
     else {
         RECT r = { 0, 0, 0, 0 };
         GetClientRect(*(HWND *)(GfxCoreAddress(0x669064)), &r);
@@ -95,13 +103,7 @@ void UpdateCursor(Bool winCursor) {
         ClientToScreen(*(HWND *)(GfxCoreAddress(0x669064)), &b);
         POINT p = { 0, 0 };
         GetCursorPos(&p);
-        if (p.x > a.x &&p.x < b.x && p.y > a.y &&p.y < b.y) {
-            EnableCursor(false);
-        }
-        else {
-            EnableCursor(true);
-            
-        }
+        EnableCursor(p.x > a.x && p.x < b.x && p.y > a.y && p.y < b.y);
     }
 }
 
@@ -119,6 +121,8 @@ struct GameOptionsAdditionalData {
     void *tbWindowPosition = nullptr;
     void *chkTeamControl = nullptr;
     void *cbTheme = nullptr;
+    void *chkPlayMusicInBackground = nullptr;
+    void *chkImUsingATouchpad = nullptr;
 };
 
 void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
@@ -130,6 +134,8 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     data->tbWindowPosition = CallMethodAndReturn<void *, 0xD44240>(screen, "TbWindowPosition");
     data->chkTeamControl = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkTeamControlCanBeEnabled");
     data->cbTheme = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbTheme");
+    data->chkPlayMusicInBackground = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkPlayMusicInBackground");
+    data->chkImUsingATouchpad = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkImUsingATouchpad");
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_DEFAULT"), 0, 0);
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_CENTER"), 1, 0);
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_LEFT"), 2, 0);
@@ -137,9 +143,12 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     CallVirtualMethod<84>(data->chkWindowedMode, Settings::GetInstance().WindowedMode);
     CallVirtualMethod<84>(data->chkWindowsMousePointer, Settings::GetInstance().WindowsMousePointer);
     CallVirtualMethod<84>(data->chkTeamControl, Settings::GetInstance().DisableTeamControl == false);
-    CallVirtualMethod<9>(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
-    CallVirtualMethod<9>(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
-    CallVirtualMethod<9>(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<84>(data->chkPlayMusicInBackground, Settings::GetInstance().PlayMusicInBackground);
+    CallVirtualMethod<84>(data->chkImUsingATouchpad, Settings::GetInstance().ImUsingATouchpad);
+    SetEnabled(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
+    SetEnabled(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
+    SetEnabled(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
+    SetEnabled(data->chkPlayMusicInBackground, Settings::GetInstance().WindowedMode);
     CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_CLASSIC"), 0, 0);
     CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_LIGHT"), 1, 0);
     CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DARK"), 2, 0);
@@ -157,9 +166,10 @@ void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
     if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkWindowedMode)) {
         Settings::GetInstance().WindowedMode = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowedMode) != 0;
-        CallVirtualMethod<9>(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
-        CallVirtualMethod<9>(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
-        CallVirtualMethod<9>(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->chkPlayMusicInBackground, Settings::GetInstance().WindowedMode);
         if (Settings::GetInstance().WindowedMode != Settings::GetInstance().WindowedModeStartValue)
             Call<0xD392F0>(GetTranslation("IDS_RESOLUTION_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
         return;
@@ -173,6 +183,14 @@ void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int
         Settings::GetInstance().DisableTeamControl = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkTeamControl) == 0;
         if (Settings::GetInstance().DisableTeamControl != Settings::GetInstance().TeamControlDisabledAtGameStart)
             Call<0xD392F0>(GetTranslation("IDS_TEAM_CONTROL_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+        return;
+    }
+    else if (*id == GetId(data->chkPlayMusicInBackground)) {
+        Settings::GetInstance().PlayMusicInBackground = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkPlayMusicInBackground) != 0;
+        return;
+    }
+    else if (*id == GetId(data->chkImUsingATouchpad)) {
+        Settings::GetInstance().ImUsingATouchpad = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkImUsingATouchpad) != 0;
         return;
     }
     CallMethod<0x500A80>(screen, id, unk);
@@ -373,9 +391,9 @@ void ClearPathCache() {
     CallMethod<0x4D8960>(resolver);
 }
 
-Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
+Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) { 
     if (uCmd == WM_DROPFILES) {
-        if (!GetScreens().empty()) {
+        if (Settings::GetInstance().WindowedModeStartValue && !GetScreens().empty()) {
             HDROP hDrop = (HDROP)wParam;
             WideChar fileName[MAX_PATH + 1];
             UInt filesCount = DragQueryFileW(hDrop, 0xFFFFFFFF, fileName, MAX_PATH + 1);
@@ -540,11 +558,13 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_CLOSE) {
-        if (CallAndReturn<Bool, 0x4514F0>() != 1) {
-            return 0;
+        if (Settings::GetInstance().WindowedModeStartValue) {
+            if (CallAndReturn<Bool, 0x4514F0>() != 1) {
+                return 0;
+            }
+            Settings::GetInstance().Save();
+            SaveTestFile();
         }
-        Settings::GetInstance().Save();
-        SaveTestFile();
     }
     else if (uCmd == WM_GETMINMAXINFO) {
         static Bool initialized = false;
@@ -557,13 +577,15 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             initialized = true;
         }
     }
+    else if (uCmd == WM_MOUSEWHEEL) {
+        MouseWheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+    }
     return CallMethodAndReturnDynGlobal<Int>(gOriginalWndProc, 0, hWnd, uCmd, wParam, lParam);
 }
 
 void CachedPathsMapCallback(void *t) {
     void *v = t;
-    for (void *i = t; !(*raw_ptr<UChar>(i, 0x3D)); v = i)
-    {
+    for (void *i = t; !(*raw_ptr<UChar>(i, 0x3D)); v = i) {
         CachedPathsMapCallback(*raw_ptr<void *>(i, 8));
         i = *raw_ptr<void *>(i, 0);
         Int *params = raw_ptr<Int>(v, 0x10);
@@ -587,7 +609,16 @@ const WideChar *METHOD OnAddPathToCache(void *t, DUMMY_ARG, Int *i, const WideCh
     return result;
 }
 
+void METHOD CApp_ProcessInput(void *app) {
+    CallMethodDynGlobal(GfxCoreAddress(0x3BB820), app);
+    MouseWheelDelta = 0;
+}
+
 void InstallWindowedMode_GfxCore() {
+    gOriginalWndProc = patch::GetUInt(GfxCoreAddress(0x7086) + 4);
+    patch::SetPointer(GfxCoreAddress(0x7086) + 4, MyWndProc);
+    patch::RedirectCall(GfxCoreAddress(0x3BDE3B), CApp_ProcessInput);
+
     if (Settings::GetInstance().WindowedMode) {
         patch::SetUChar(GfxCoreAddress(0xD1BE), 0xEB);
         patch::Nop(GfxCoreAddress(0xD23B), 2);
@@ -625,9 +656,6 @@ void InstallWindowedMode_GfxCore() {
 
         patch::RedirectCall(GfxCoreAddress(0x715E), MyCreateWindowExW);
         patch::Nop(GfxCoreAddress(0x715E) + 5, 1);
-
-        gOriginalWndProc = patch::GetUInt(GfxCoreAddress(0x7086) + 4);
-        patch::SetPointer(GfxCoreAddress(0x7086) + 4, MyWndProc);
 
         if (Settings::GetInstance().WindowPosition != WINDOWED_MODE_LEFT) {
             patch::RedirectCall(GfxCoreAddress(0x6D7E), MySetWindowPosition);

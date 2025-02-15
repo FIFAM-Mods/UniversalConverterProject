@@ -58,6 +58,8 @@ public:
     SETTINGS_PARAMETER(bool,   EnableMainLog,               "ENABLE_MAIN_LOG",                false);
     SETTINGS_PARAMETER(bool,   EnableAllLogFiles,           "ENABLE_ALL_LOG_FILES",           false);
     SETTINGS_PARAMETER(bool,   LogMatches,                  "LOG_MATCHES",                    false);
+    SETTINGS_PARAMETER(bool,   PlayMusicInBackground,       "PLAY_MUSIC_IN_BACKGROUND",       true);
+    SETTINGS_PARAMETER(bool,   ImUsingATouchpad,            "IM_USING_A_TOUCHPAD",            false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

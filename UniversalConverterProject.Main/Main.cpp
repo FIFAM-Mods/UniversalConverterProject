@@ -86,6 +86,7 @@ public:
                 return;
             Settings::GetInstance().Load();
             SafeLog::Clear();
+            SafeLog::Write(Utils::Format(L"Log started on %s", Utils::CurrentTime()));
             GenerateBigIdx();
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
@@ -164,7 +165,7 @@ public:
         PatchDatabaseOptions(v);
         PatchYouthGenCountries(v);
         PatchClubSponsors(v);
-        //PatchAchievements(v);
+        PatchAchievements(v);
         PatchReserveNames(v);
 		PatchExtendedCountry(v);
 		PatchStatsFifaRanking(v);

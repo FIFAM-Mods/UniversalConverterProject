@@ -336,6 +336,7 @@ public:
     void SetCurrentDate(CJDate date);
     CDBGameOptions &GetOptions();
     bool IsCountryPlayable(UChar countryId);
+    UShort GetCurrentSeasonNumber();
 };
 
 struct CTeamIndex {
@@ -715,6 +716,14 @@ public:
     Int GetArrayValue(UInt index) const;
 };
 
+class CClubFans {
+public:
+    class CDBTeam *GetTeam();
+    Int GetNumFans();
+    void SetNumFans(Int numFans);
+    Int AddFans(Int numFans);
+};
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -747,6 +756,9 @@ public:
     Char SendMail(UInt mailId, CEAMailData const &mailData, Int flag);
     void ChangeMoney(UInt type, EAGMoney const &money, UInt flag);
     void OnCompetitionElimination(CCompID const &compID, UInt cupRoundId);
+    UChar GetFirstTeamDivision();
+    UChar GetFirstTeamDivisionLastSeason();
+    CClubFans *GetClubFans();
 };
 
 struct CAssessmentInfo {

@@ -237,15 +237,6 @@ void METHOD MainMenu_TimerEvent(void *t, DUMMY_ARG, Int u, void **data) {
     CallMethod<0x52E420>(t, u, data);
 }
 
-void __declspec(naked) SetDefaultMusicVolume() {
-    __asm {
-        mov byte ptr[esi + 0x17], 40
-        mov [esi + 0x1D], al
-        mov edx, 0x45014B
-        jmp edx
-    }
-}
-
 void PatchMainMenu(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::Nop(0x532F4D, 5);
@@ -257,7 +248,5 @@ void PatchMainMenu(FM::Version v) {
         patch::SetPointer(0x23BC64C, MainMenu_OnButtonReleased);
         patch::SetPointer(0x23BC698, MainMenu_TimerEvent);
         CurrentMenuTab = MainMenuTab::StartGame;
-        //patch::RedirectJump(0x450145, SetDefaultMusicVolume);
-        //patch::SetUChar(0x450139 + 1, 40);
     }
 }

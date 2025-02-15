@@ -9,7 +9,7 @@ using namespace plugin;
 UInt FixRankingFromOlderVersion(UInt ranking) {
 	if (ranking < 2133)
 		return ranking *= 15;
-	return ranking = 32'000;
+	return 32'000;
 }
 
 void METHOD OnReadFifaRankingFromMaster(void *reader, DUMMY_ARG, UChar *country) {
@@ -39,33 +39,23 @@ bool SortCountriesByFifaRanking(CDBCountry *c1, CDBCountry *c2) {
 }
 
 bool SortCountryIDsByFifaRanking(UShort countryId1, UShort countryId2) {
-	CDBCountry *c1 = GetCountry((UChar)countryId1);
-	CDBCountry *c2 = GetCountry((UChar)countryId2);
-	if (!c1 || !c2)
+	if (countryId2 == 0)
+		return true;
+	if (countryId1 == 0)
 		return false;
-	return SortCountriesByFifaRanking(c1, c2);
+	return SortCountriesByFifaRanking(GetCountry((UChar)countryId1), GetCountry((UChar)countryId2));
 }
 
 bool SortTeamsByCountryFifaRanking(CTeamIndex const &t1, CTeamIndex const &t2) {
-	if (!t1.countryId || !t2.countryId)
-		return false;
 	return SortCountryIDsByFifaRanking(t1.countryId, t2.countryId);
+}
+
+UInt METHOD GetCountryFifaRankingUInt(CDBCountry *country, DUMMY_ARG, UChar year) {
+	return (UInt)roundf(*raw_ptr<Float>(country, 0x284));
 }
 
 void METHOD SetCountryFifaRanking_Dummy(CDBCountry *country, DUMMY_ARG, UShort value, UChar year) {
 
-}
-
-UInt METHOD GetCountryFifaRanking(CDBCountry *country, DUMMY_ARG, UChar year) {
-	return *(UInt *)raw_ptr<Float>(country, 0x284);
-}
-
-UInt METHOD GetCountryFifaRankingUInt(CDBCountry *country, DUMMY_ARG, UChar year) {
-	return (UInt)roundf(*raw_ptr<Float>(country, 0x284) * 100.0f);
-}
-
-UShort METHOD GetCountryFifaRankingUShort(CDBCountry *country, DUMMY_ARG, UChar year) {
-	return (UShort)roundf(*raw_ptr<Float>(country, 0x284));
 }
 
 void METHOD IncreaseCountryFifaRanking_Dummy(CDBCountry *country, DUMMY_ARG, UShort points) {
@@ -255,10 +245,9 @@ void METHOD OnLoadFifaRankingFromSaveGame(void *loader, DUMMY_ARG, UShort *out) 
 
 void METHOD OnLoadFifaRankingsFromSaveGame(void *loader, DUMMY_ARG, UInt *out, UInt count) {
 	CallMethod<0x1080430>(loader, out, count);
-	if (SaveGameLoadGetVersion(loader) < 45) {
+	if (SaveGameLoadGetVersion(loader) < 45)
 		*(Float *)out = (Float)FixRankingFromOlderVersion((UShort)out[0] + (UShort)out[1] + (UShort)out[2] + (UShort)out[3]);
-		out[1] = out[2] = out[3] = 0;
-	}
+	out[1] = out[2] = out[3] = 0;
 }
 
 void PatchExtendedCountry(FM::Version v) {
@@ -269,12 +258,14 @@ void PatchExtendedCountry(FM::Version v) {
 		patch::Nop(0xFDC04A, 11);
 		patch::Nop(0xFDC069, 11);
 		patch::Nop(0xFDC084, 14);
-		patch::RedirectJump(0xFD7F40, GetCountryFifaRanking);
+		patch::RedirectJump(0xFD7F40, GetCountryFifaRankingUInt);
 		patch::RedirectCall(0xF215F1, GetCountryFifaRankingUInt);
 		patch::RedirectCall(0xF215FF, GetCountryFifaRankingUInt);
-		patch::RedirectCall(0x1250DCF, GetCountryFifaRankingUShort);
-		patch::RedirectJump(0xFD7FC0, IncreaseCountryFifaRanking_Dummy);
-		patch::RedirectJump(0xFD7F80, SetCountryFifaRanking_Dummy);
+		patch::RedirectCall(0x1250DCF, GetCountryFifaRankingUInt); // CFanShopsAbroad
+		patch::RedirectCall(0x7F651E, GetCountryFifaRankingUInt); // season quiz
+		patch::RedirectCall(0x7F652A, GetCountryFifaRankingUInt); // season quiz
+		patch::RedirectJump(0xFD7FC0, IncreaseCountryFifaRanking_Dummy); // CDBCountry::IncreaseFifaRanking
+		patch::RedirectJump(0xFD7F80, SetCountryFifaRanking_Dummy); // CDBCountry::SetFifaRanking
 		patch::RedirectJump(0xFF7900, SortTeamsByCountryFifaRanking);
 		patch::RedirectJump(0xFF7860, SortCountryIDsByFifaRanking);
 		patch::RedirectJump(0xE9F22D, ProcessMatchInternationalResultExe);

@@ -7,6 +7,7 @@
 #include "UcpSettings.h"
 #include "FifamReadWrite.h"
 #include "FifamCompRegion.h"
+#include "FifamNation.h"
 #include "Competitions.h"
 #include "Translation.h"
 #include "Random.h"
@@ -953,12 +954,10 @@ Int OnFormatBadgeNameAddSeasonYear(WideChar *dst, UInt maxLen, WideChar const *f
     return CallAndReturn<Int, 0x1494153>(dst, maxLen, L"Clubs\\%dx%d\\%04d_%s", dimX, dimY, GetCurrentSeasonStartYear(), idstr);
 }
 
-#include "FifamNation.h"
-
 template<UInt addr>
-void METHOD OnAddClubFans(void *t, DUMMY_ARG, Int fans) {
+void METHOD OnAddClubFans(CClubFans *clubFans, DUMMY_ARG, Int fans) {
     //static FifamWriter w("test_fans.csv");
-    Int totalFansCount = *raw_ptr<Int>(t, 0x24);
+    Int totalFansCount = clubFans->GetNumFans();
     if (totalFansCount < 30'000) {
         Bool negative = fans < 0;
         if (negative)
@@ -981,9 +980,35 @@ void METHOD OnAddClubFans(void *t, DUMMY_ARG, Int fans) {
         if (negative)
             fans = -fans;
     }
-    CallMethod<0x122DF30>(t, fans);
-    //CDBTeam *team = *raw_ptr<CDBTeam *>(t, 0);
-    //w.WriteLine(addr, Quoted(FmUtils::GetTeamName(team)), Quoted(FifamNation::MakeFromInt(team->GetTeamID().countryId).ToStr()), fans, *raw_ptr<int>(t, 0x24));
+    clubFans->AddFans(fans);
+    //CDBTeam *team = clubFans->GetTeam();
+    //w.WriteLine(addr, Quoted(FmUtils::GetTeamName(team)), Quoted(FifamNation::MakeFromInt(team->GetTeamID().countryId).ToStr()), fans, clubFans->GetNumFans());
+}
+
+void METHOD OnUpdateTeamPrestigeAndFans(CDBTeam *team) {
+    if (CDBGame::GetInstance()->IsCountryPlayable(team->GetCountryId()) && CDBGame::GetInstance()->GetCurrentSeasonNumber() > 1) {
+        if (team->GetFirstTeamDivision() == 15 && team->GetFirstTeamDivisionLastSeason() < 15) { // if just relegated to spare
+            auto np = team->GetNationalPrestige();
+            if (np >= 1)
+                team->SetNationalPrestige(np - 1);
+            auto ip = team->GetInternationalPrestige();
+            if (ip >= 1)
+                team->SetInternationalPrestige(ip - 1);
+            Int numFans = team->GetClubFans()->GetNumFans();
+            if (numFans > 50) {
+                Int fansToRemove = numFans / 5;
+                if (fansToRemove > 10'000)
+                    fansToRemove = 10'000;
+                team->GetClubFans()->AddFans(-fansToRemove);
+            }
+            SafeLog::WriteToFile(L"log_spare_teams.txt",
+                Utils::Format(L"%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d",
+                    TeamTagWithCountry(team), team->GetFirstTeamDivision(), team->GetFirstTeamDivisionLastSeason(),
+                    np, team->GetNationalPrestige(), ip, team->GetInternationalPrestige(), numFans, team->GetClubFans()->GetNumFans()),
+                L"Team\tDiv\tLastSeasonDiv\tOldNP\tNewNP\tOldIP\tNewIP\tOldFans\tNewFans");
+        }
+    }
+    CallMethod<0xF0CD10>(team);
 }
 
 //void *METHOD OnGetSubsList(void *) {
@@ -1538,6 +1563,12 @@ void METHOD YouthTransfsersCollect(void *t, DUMMY_ARG, CDBTeam *team, void *vec)
 		L"Date,Team,Level");
 }
 
+Bool OnStopMusicWhenFocusLost(UChar u) {
+    if (Settings::GetInstance().WindowedModeStartValue && Settings::GetInstance().PlayMusicInBackground)
+        return true;
+    return CallAndReturn<Bool, 0x45C210>(u);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -1982,6 +2013,9 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xF0D3DC, OnAddClubFans<0xF0D3DC>);
         patch::RedirectCall(0xF0D4C1, OnAddClubFans<0xF0D4C1>);
 
+        // decrease NP/IP when team relegates to spare
+        patch::RedirectCall(0xF1E8DE, OnUpdateTeamPrestigeAndFans);
+
         // auto-substitutions test - TODO: remove
         //patch::RedirectCall(0x59037E, OnGetSubsList);
         //patch::Nop(0x5929D8, 6);
@@ -2099,6 +2133,10 @@ void PatchEABFFixes(FM::Version v) {
         patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
 
         patch::Nop(0x45BF5A, 19); // Fix FM icon
+
+        patch::Nop(0x450212, 6); // disable telemetry by default
+
+        patch::RedirectCall(0x44EF17, OnStopMusicWhenFocusLost);
 
         // TODO: remove this (num days for building YC)
         //for (UInt i = 1; i < 5; i++)

@@ -2022,4 +2022,7 @@ void Install3dPatches_FM13() {
     // replace fifaId by specialfaceid for 3D faces
     patch::RedirectCall(GfxCoreAddress(0x23CF17), WV_InitPlayer_GetPlayerSpecialFaceID);
     patch::Nop(GfxCoreAddress(0x23CF1C), 3);
+
+    // default music volume
+    patch::SetUChar(GfxCoreAddress(0x1E223B + 1), 50);
 }

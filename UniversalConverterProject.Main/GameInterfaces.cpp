@@ -121,6 +121,10 @@ bool CDBGame::IsCountryPlayable(UChar countryId) {
     return plugin::CallMethodAndReturn<bool, 0xF49AA0>(this, countryId);
 }
 
+UShort CDBGame::GetCurrentSeasonNumber() {
+    return plugin::CallMethodAndReturn<UShort, 0xF49A80>(this);
+}
+
 bool CDBGameOptions::CheckFlag(unsigned int flag) {
     return plugin::CallMethodAndReturn<bool, 0x10410E0>(this, flag);
 }
@@ -931,16 +935,12 @@ String TeamNameWithCountry(CTeamIndex const &teamId) {
 
 String TeamTag(CTeamIndex const& teamId) {
     auto team = GetTeam(teamId);
-    if (team)
-        return Utils::Format(L"%08X %s", teamId.ToInt(), team->GetName());
-    return L"n/a";
+    return Utils::Format(L"%08X %s", teamId.ToInt(), team ? team->GetName() : L"n/a");
 }
 
 String TeamTagWithCountry(CTeamIndex const& teamId) {
     auto team = GetTeam(teamId);
-    if (team)
-        return Utils::Format(L"%08X %s (%s)", teamId.ToInt(), team->GetName(), GetCountryStore()->m_aCountries[teamId.countryId].GetName());
-    return L"n/a";
+    return Utils::Format(L"%08X %s (%s)", teamId.ToInt(), team ? team->GetName() : L"n/a", CountryName(teamId.countryId));
 }
 
 String ThousandSeparators(unsigned int value) {
@@ -1011,7 +1011,8 @@ String CompetitionTag(CDBCompetition* comp) {
 }
 
 String CompetitionTag(CCompID const& compId) {
-    return CompetitionTag(GetCompetition(compId));
+    CDBCompetition *comp = GetCompetition(compId);
+    return Utils::Format(L"%s %s", compId.ToStr(), comp ? comp->GetName() : L"n/a");
 }
 
 String CompetitionName(CDBCompetition *comp) {
@@ -1031,9 +1032,8 @@ String CountryName(UChar countryId) {
 }
 
 String CountryTag(UChar countryId) {
-    if (countryId >= 1 && countryId <= 207)
-        return Utils::Format(L"%d %s", countryId, GetCountryStore()->m_aCountries[countryId].GetName());
-    return L"n/a";
+    Bool isValid = countryId >= 1 && countryId <= 207;
+    return Utils::Format(L"%d %s", countryId, CountryName(countryId));
 }
 
 String FlagsToStr(UInt value) {
@@ -1254,6 +1254,18 @@ void CDBTeam::ChangeMoney(UInt type, EAGMoney const &money, UInt flag) {
 
 void CDBTeam::OnCompetitionElimination(CCompID const &compID, UInt cupRoundId) {
     CallMethod<0xEEE0B0>(this, &compID, cupRoundId);
+}
+
+UChar CDBTeam::GetFirstTeamDivision() {
+    return CallMethodAndReturn<UChar, 0xECC400>(this);
+}
+
+UChar CDBTeam::GetFirstTeamDivisionLastSeason() {
+    return CallMethodAndReturn<UChar, 0xECC6B0>(this);
+}
+
+CClubFans *CDBTeam::GetClubFans() {
+    return CallMethodAndReturn<CClubFans *, 0xED01B0>(this);
 }
 
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
@@ -2421,4 +2433,20 @@ Bool CDBRoot::LaunchesInThisSeason(UInt phase) {
 
 CDBMatchEventEntries *CDBRoot::GetEvents() {
     return *raw_ptr<CDBMatchEventEntries *>(this, 0x2128);
+}
+
+CDBTeam *CClubFans::GetTeam() {
+    return *raw_ptr<CDBTeam *>(this, 0);
+}
+
+Int CClubFans::GetNumFans() {
+    return *raw_ptr<Int>(this, 0x24);
+}
+
+void CClubFans::SetNumFans(Int numFans) {
+    CallMethod<0x122DF00>(this, numFans);
+}
+
+Int CClubFans::AddFans(Int numFans) {
+    return CallMethodAndReturn<Int, 0x122DF30>(this, numFans);
 }
