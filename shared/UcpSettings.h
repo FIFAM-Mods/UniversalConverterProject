@@ -60,6 +60,7 @@ public:
     SETTINGS_PARAMETER(bool,   LogMatches,                  "LOG_MATCHES",                    false);
     SETTINGS_PARAMETER(bool,   PlayMusicInBackground,       "PLAY_MUSIC_IN_BACKGROUND",       true);
     SETTINGS_PARAMETER(bool,   ImUsingATouchpad,            "IM_USING_A_TOUCHPAD",            false);
+    SETTINGS_PARAMETER(bool,   SkipUpdatesCheck,            "SKIP_UPDATES_CHECK",             false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

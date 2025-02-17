@@ -2,6 +2,7 @@
 #include "FifamTypes.h"
 #include "GameInterfaces.h"
 #include "Utils.h"
+#include "UcpSettings.h"
 #include <regex>
 #include <shellapi.h>
 #include <wininet.h>
@@ -124,6 +125,8 @@ void MainMenu_SetCurrentTab(void *t, MainMenuTab tab) {
 
 Int GetLastUpdateNumber(StringA const &gameId) {
     Int version = -1;
+    if (Settings::GetInstance().SkipUpdatesCheck)
+        return version;
     HINTERNET hInternet = InternetOpen("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
     if (hInternet) {
         StringA url = "https://editor.fm-zocker.net/versionCheck.php?game=" + gameId;
@@ -194,7 +197,7 @@ void METHOD MainMenu_OnButtonReleased(void *t, DUMMY_ARG, UInt *pId, Int u) {
     else if (*pId == GetId(ext->pBtLinkModDB))
         MainMenu_OpenLinkInBrowser("https://www.moddb.com/mods/fifa-manager-season-patch");
     else if (*pId == GetId(ext->pBtLinkDiscordEng))
-        MainMenu_OpenLinkInBrowser("https://discord.gg/DkaAmVj");
+        MainMenu_OpenLinkInBrowser("https://discord.gg/wzqAtB4");
     else if (*pId == GetId(ext->pBtLinkDiscordGer))
         MainMenu_OpenLinkInBrowser("https://www.bit.ly/FM-Zocker_Discord");
     CallMethod<0x52F680>(t, pId, u);

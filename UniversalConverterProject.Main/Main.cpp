@@ -165,7 +165,7 @@ public:
         PatchDatabaseOptions(v);
         PatchYouthGenCountries(v);
         PatchClubSponsors(v);
-        PatchAchievements(v);
+        //PatchAchievements(v);
         PatchReserveNames(v);
 		PatchExtendedCountry(v);
 		PatchStatsFifaRanking(v);

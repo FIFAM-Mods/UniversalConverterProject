@@ -26,7 +26,7 @@ Map<UInt, CompetitionLaunchInfo> &GetCompetitionLaunchInfos() {
         { COMP_BASE_ID(255, COMP_NAM_NL),        { 2027, SEASON_END, 2, COMP_BASE_ID(255, COMP_NAM_NL_Q) } },
 
         { COMP_BASE_ID(FifamCompRegion::Europe, COMP_WORLD_CLUB_CHAMP), { 2029, SEASON_END, 4, 0 } },
-        { COMP_BASE_ID(FifamCompRegion::Africa, COMP_CONTINENTAL_1), { 2026, SEASON_START, 4, 0 } }
+        { COMP_BASE_ID(FifamCompRegion::Africa, COMP_CONTINENTAL_1), { 2026, SEASON_START, 2, 0 } }
     };
     return infos;
 }
