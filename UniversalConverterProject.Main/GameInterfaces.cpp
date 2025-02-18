@@ -551,6 +551,10 @@ unsigned int CDBLeague::GetCurrentMatchday() {
     return plugin::CallMethodAndReturn<int, 0x1050310>(this);
 }
 
+CRoleFactory *GetRoleFactory() {
+    return CallAndReturn<CRoleFactory *, 0x124B4F0>();
+}
+
 CAssessmentTable *GetAssesmentTable() {
     return plugin::CallAndReturn<CAssessmentTable *, 0x121D940>();
 }
@@ -629,6 +633,14 @@ CDBPlayer *GetPlayer(Int playerId) {
 
 CDBEmployee *GetEmployee(Int employeeId) {
     return CallAndReturn<CDBEmployee *, 0xEA2A00>(employeeId);
+}
+
+CDBStaff *GetStaff(Int staffId) {
+    return CallAndReturn<CDBStaff *, 0x11027F0>(staffId);
+}
+
+WideChar const *GetCityName(Int cityId) {
+    return CallAndReturn<WideChar const *, 0x11C14A0>(cityId);
 }
 
 CCountryStore *GetCountryStore() {
@@ -1266,6 +1278,14 @@ UChar CDBTeam::GetFirstTeamDivisionLastSeason() {
 
 CClubFans *CDBTeam::GetClubFans() {
     return CallMethodAndReturn<CClubFans *, 0xED01B0>(this);
+}
+
+CTeamStaff *CDBTeam::GetTeamStaff() {
+    return *raw_ptr<CTeamStaff *>(this, 0x49B4);
+}
+
+CTeamFanshops *CDBTeam::GetFanShops() {
+    return CallMethodAndReturn<CTeamFanshops *, 0xECFFF0>(this);
 }
 
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
@@ -2417,6 +2437,10 @@ CompetitionHosts *GetCompHosts() {
     return CallAndReturn<CompetitionHosts *, 0x117C830>();
 }
 
+CDBYouthcampList *GetYouthcampList() {
+    return CallAndReturn<CDBYouthcampList *, 0x11C5330>();
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);
@@ -2449,4 +2473,12 @@ void CClubFans::SetNumFans(Int numFans) {
 
 Int CClubFans::AddFans(Int numFans) {
     return CallMethodAndReturn<Int, 0x122DF30>(this, numFans);
+}
+
+UInt CTeamFanshops::GetNumFanShops() {
+    return CallMethodAndReturn<UInt, 0x124CF30>(this);
+}
+
+CFanShop *CTeamFanshops::GetFanShop(UShort index) {
+    return CallMethodAndReturn<CFanShop *, 0x124CF50>(this, index);
 }

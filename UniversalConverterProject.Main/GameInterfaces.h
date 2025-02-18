@@ -186,6 +186,38 @@ struct RGBAReal {
 };
 
 template<typename T>
+class CStringBase {
+protected:
+    void *_vtable;
+    UInt _size;
+    T *_data;
+    UInt _capacity;
+};
+
+template <typename T>
+class CDynamicStringTemplate : public CStringBase<T> {
+    UInt _alignment;
+public:
+    UInt size() const {
+        return _size;
+    }
+
+    UInt capacity() const {
+        return _capacity;
+    }
+
+    T *data() {
+        return _data;
+    }
+
+    T *c_str() const {
+        return _data;
+    }
+};
+
+using FmString = CDynamicStringTemplate<WideChar>;
+
+template<typename T>
 class FmVec {
 public:
     T *data;
@@ -195,6 +227,7 @@ public:
     UInt capacity;
     T *begin;
     T *end;
+    T *end_buf;
 
     UInt size() {
         return (UInt)(end - begin);
@@ -261,6 +294,89 @@ public:
 
         std::pair<const TKey &, TValue &> operator*() {
             return { node->key, node->value };
+        }
+    };
+
+    Proxy *proxy;
+    int _unk[5];
+    Node *head;
+    UInt _size;
+
+    size_t size() {
+        return _size;
+    }
+
+    Iterator begin() {
+        return Iterator(head->left, proxy);
+    }
+
+    Iterator end() {
+        return Iterator(head, proxy);
+    }
+
+    Iterator find(const TKey &key) {
+        Node *current = head->parent;
+        while (current && !current->isNil) {
+            if (key < current->key)
+                current = current->left;
+            else if (key > current->key)
+                current = current->right;
+            else
+                return Iterator(current, proxy);
+        }
+        return end();
+    }
+};
+
+template<typename TKey>
+class FmSet {
+public:
+    class Proxy {
+    public:
+        FmSet *myMap;
+    };
+
+    class Node {
+    public:
+        Node *left;
+        Node *parent;
+        Node *right;
+        TKey key;
+        unsigned char color;
+        bool isNil;
+        char _pad[2];
+    };
+
+    class Iterator {
+    public:
+        Proxy *proxy;
+        Node *node;
+
+        Iterator(Node *n, Proxy *p) : node(n), proxy(p) {}
+
+        Iterator &operator++() {
+            if (!node || node->isNil)
+                return *this;
+            if (!node->right->isNil) {
+                node = node->right;
+                while (!node->left->isNil)
+                    node = node->left;
+            }
+            else {
+                Node *p = nullptr;
+                while ((p = node->parent) && node == p->right)
+                    node = p;
+                node = p;
+            }
+            return *this;
+        }
+
+        bool operator!=(const Iterator &other) const {
+            return node != other.node;
+        }
+
+        const TKey &operator*() const {
+            return node->key;
         }
     };
 
@@ -724,6 +840,140 @@ public:
     Int AddFans(Int numFans);
 };
 
+enum eClubRole {
+    ROLE_ASSISTANT_COACH1 = 0x6,
+    ROLE_ASSISTANT_COACH2 = 0x7,
+    ROLE_AMATEUR_COACH = 0x8,
+    ROLE_YOUTH_COACH = 0x9,
+    ROLE_FITNESS_COACH = 0xA,
+    ROLE_GOALKEEPER_COACH = 0xB,
+    ROLE_TEAM_DOCTOR = 0xC,
+    ROLE_SPECIALIST_BONE = 0xD,
+    ROLE_SPECIALIST_KNEE = 0xE,
+    ROLE_SPECIALIST_MUSCLE = 0xF,
+    ROLE_MASSEUR = 0x10,
+    ROLE_PSYCHOLOGIST = 0x11,
+    ROLE_GENERAL_MANAGER = 0x12,
+    ROLE_MARKETING_MANAGER = 0x13,
+    ROLE_CONSTRUCTION_MANAGER = 0x14,
+    ROLE_SPORTS_DIRECTOR = 0x15,
+    ROLE_FAN_REPRESENTATIVE = 0x16,
+    ROLE_SPOKESPERSON = 0x17,
+    ROLE_LAWYER = 0x18,
+    ROLE_GENERAL_SCOUT1 = 0x19,
+    ROLE_GENERAL_SCOUT2 = 0x1A,
+    ROLE_GENERAL_SCOUT3 = 0x1B,
+    ROLE_GENERAL_SCOUT4 = 0x1C,
+    ROLE_GENERAL_SCOUT5 = 0x1D,
+    ROLE_GENERAL_SCOUT6 = 0x1E
+};
+
+enum eClubPosition {
+    POSITION_MANAGER = 0x1,
+    POSITION_CHIEF_EXEC = 0x2,
+    POSITION_PRESIDENT = 0x3,
+    POSITION_ASSISTANT_COACH = 0x6,
+    POSITION_AMATEUR_COACH = 0x7,
+    POSITION_YOUTH_COACH = 0x8,
+    POSITION_FITNESS_COACH = 0x9,
+    POSITION_GOALKEEPER_COACH = 0xA,
+    POSITION_TEAM_DOCTOR = 0xB,
+    POSITION_SPECIALIST_BONE = 0xC,
+    POSITION_SPECIALIST_KNEE = 0xD,
+    POSITION_SPECIALIST_MUSCLE = 0xE,
+    POSITION_MASSEUR = 0xF,
+    POSITION_PSYCHOLOGIST = 0x10,
+    POSITION_GENERAL_MANAGER = 0x11,
+    POSITION_MARKETING_MANAGER = 0x12,
+    POSITION_CONSTRUCTION_MANAGER = 0x13,
+    POSITION_SPORTS_DIRECTOR = 0x14,
+    POSITION_FAN_REPRESENTATIVE = 0x15,
+    POSITION_SPOKESPERSON = 0x16,
+    POSITION_LAWYER = 0x17,
+    POSITION_GENERAL_SCOUT = 0x18,
+    POSITION_NONE = 0x19
+};
+
+enum eDepartment {
+    DEPARTMENT_COACHES = 0,
+    DEPARTMENT_MEDICINE = 1,
+    DEPARTMENT_MANAGERS = 2,
+    DEPARTMENT_PR = 3,
+    DEPARTMENT_SCOUTS = 4,
+};
+
+class CRole {
+public:
+    UInt id;
+    UInt positionId;
+    CDynamicStringTemplate<WideChar> name;
+    UChar importance;
+private:
+    Char _pad1D;
+public:
+    UInt specialType;
+    UInt cityId;
+};
+
+static_assert(sizeof(CRole) == 0x28, "Failed");
+
+class CRoleFactory {
+    void *vtable;
+public:
+    FmMap<UInt, CRole *> roles;
+};
+
+CRoleFactory *GetRoleFactory();
+
+class CDepartment {
+public:
+    UInt id;
+    UInt type;
+    FmSet<UInt> roles;
+};
+
+class CStructure {
+public:
+    CDepartment *departments[5];
+};
+
+class CTeamStaff {
+public:
+    CTeamIndex teamId;
+    CStructure structure;
+    FmMap<UInt, Int> roleToWorkerId;
+};
+
+class CFanShop {
+public:
+    UChar countryId;
+    Char _pad1;
+    UShort abroadID;
+    Short field_4;
+    Char _pad6[2];
+    UInt lastMp;
+    Int field_C;
+    UInt sumOfAllMp;
+    Int field_14;
+    Char field_18;
+    Char _pad19[3];
+    Int roleID;
+    UChar flags;
+    Char _pad21[3];
+    CDBTeam *pTeam;
+};
+
+static_assert(sizeof(CFanShop) == 0x28, "Failed");
+
+class CTeamFanshops {
+public:
+    FmVec<CFanShop> vecShops;
+    CDBTeam *pTeam;
+
+    UInt GetNumFanShops();
+    CFanShop *GetFanShop(UShort index);
+};
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -759,6 +1009,8 @@ public:
     UChar GetFirstTeamDivision();
     UChar GetFirstTeamDivisionLastSeason();
     CClubFans *GetClubFans();
+    CTeamStaff *GetTeamStaff();
+    CTeamFanshops *GetFanShops();
 };
 
 struct CAssessmentInfo {
@@ -851,6 +1103,8 @@ CDBTeam *GetTeam(CTeamIndex teamId);
 CDBTeam *GetTeamByUniqueID(unsigned int uniqueID);
 CDBPlayer *GetPlayer(Int playerId);
 CDBEmployee *GetEmployee(Int employeeId);
+CDBStaff *GetStaff(Int staffId);
+WideChar const *GetCityName(Int cityId);
 
 CCountryStore *GetCountryStore();
 
@@ -1187,3 +1441,35 @@ public:
 };
 
 CompetitionHosts *GetCompHosts();
+
+class CDBYouthcamp {
+public:
+    Int id;
+    Int countryId;
+    Int cityId;
+    Int level1;
+    Int level2;
+    Int field_14;
+    Int numPlayers;
+    Int numSignedPlayers;
+    Int field_20;
+    CTeamIndex teamID;
+    Int youthCoachRoleId;
+    Int playerIds[100];
+    Int bestSignedPlayerId;
+    Int maxSignedPlayerRating;
+    Int field_1C4;
+    Char field_1C8;
+    Char field_1C9;
+    Char _pad1CA[2];
+    CJDate date;
+};
+
+static_assert(sizeof(CDBYouthcamp) == 0x1D0, "Failed");
+
+class CDBYouthcampList {
+public:
+    FmVec<CDBYouthcamp> countries[208];
+};
+
+CDBYouthcampList *GetYouthcampList();
