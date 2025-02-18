@@ -1934,6 +1934,14 @@ void SaveGameWriteFloatArray(void *save, Float const *values, UInt count) {
     CallMethod<0x107F5D0>(save, values, count);
 }
 
+void SaveGameWriteSize(void *save, UInt value) {
+    CallMethod<0x107F670>(save, value);
+}
+
+void SaveGameWriteString(void *save, FmString const &value) {
+    CallMethod<0x1080C80>(save, &value);
+}
+
 UInt SaveGameLoadGetVersion(void *save) {
     return CallMethodAndReturn<UInt, 0x107F730>(save);
 }

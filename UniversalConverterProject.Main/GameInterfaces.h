@@ -1280,6 +1280,8 @@ void SaveGameWriteInt8(void *save, UChar value);
 void SaveGameWriteInt32(void *save, UInt value);
 void SaveGameWriteFloat(void *save, Float value);
 void SaveGameWriteFloatArray(void *save, Float const *values, UInt count);
+void SaveGameWriteSize(void *save, UInt value);
+void SaveGameWriteString(void *save, FmString const &value);
 UInt SaveGameLoadGetVersion(void *save);
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID);
 
