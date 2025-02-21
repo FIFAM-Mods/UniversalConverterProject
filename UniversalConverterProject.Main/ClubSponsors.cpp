@@ -17,8 +17,8 @@ void METHOD OnReadClubSponsorAmount(void *reader, DUMMY_ARG, UInt *amount) {
     }
     CallMethod<0x1338AB0>(reader, amount);
     gSponsorAmount = *amount;
-    //if (gSponsorName[0] && *amount == 0)
-    //    *amount = INT32_MAX;
+    if (gSponsorName[0] && *amount == 0)
+        *amount = INT32_MAX;
 }
 
 void METHOD OnReadClubSponsorDuration(void *reader, DUMMY_ARG, UChar *duration) {
@@ -122,8 +122,8 @@ void PatchClubSponsors(FM::Version v) {
         // initial sponsor
         patch::RedirectCall(0xF334A7, OnReadClubSponsorAmount);
         patch::RedirectCall(0xF33512, OnSetupSponsorClub);
-        //patch::RedirectCall(0xF334FE, OnClubSponsorConstructMoney);
-        //patch::RedirectCall(0xF33506, OnClubSponsorSetMoneyAmount);
+        patch::RedirectCall(0xF334FE, OnClubSponsorConstructMoney);
+        patch::RedirectCall(0xF33506, OnClubSponsorSetMoneyAmount);
         patch::RedirectCall(0xF334B3, OnReadClubSponsorDuration);
         patch::RedirectCall(0xF334BA, OnReadClubSponsorIsSpecial);
     }

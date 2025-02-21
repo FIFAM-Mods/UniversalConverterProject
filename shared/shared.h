@@ -8,6 +8,7 @@ String GetPatchName();
 String GetPatchVersion();
 String GetFullAppName(Bool upperCase = false);
 String GetPatchNameWithVersion(Bool upperCase = false);
+Int GetPatchUpdateNumber();
 String GetFMDocumentsFolderName();
 Bool &IsWomensDatabase();
 Bool &IsFirstLaunch();

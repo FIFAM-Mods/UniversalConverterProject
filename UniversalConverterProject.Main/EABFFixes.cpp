@@ -1557,10 +1557,10 @@ WideChar const *YouthTransfersLevelStr[] = { L"LeagueLevel", L"NationalLevel", L
 
 template<UInt Orig, UInt Level>
 void METHOD YouthTransfsersCollect(void *t, DUMMY_ARG, CDBTeam *team, void *vec) {
-	CallMethod<Orig>(t, team, vec);
-	SafeLog::WriteToFile("youth_transfer_levels.csv",
-		Utils::Format(L"%s,%s,%s", GetCurrentDate().ToStr(), team->GetName(), YouthTransfersLevelStr[Level]),
-		L"Date,Team,Level");
+    CallMethod<Orig>(t, team, vec);
+    SafeLog::WriteToFile("youth_transfer_levels.csv",
+        Utils::Format(L"%s,%s,%s", GetCurrentDate().ToStr(), team->GetName(), YouthTransfersLevelStr[Level]),
+        L"Date,Team,Level");
 }
 
 Bool OnStopMusicWhenFocusLost(UChar u) {
@@ -1578,12 +1578,33 @@ void SaveStaffRoles_Fix(void *save) {
             SaveGameWriteInt32(save, role->id);
             SaveGameWriteString(save, role->name);
             SaveGameWriteInt8(save, role->importance);
-            SaveGameWriteInt32(save, role->specialType);
-            SaveGameWriteInt32(save, role->cityId);
+            SaveGameWriteInt32(save, role->locationType);
+            SaveGameWriteInt32(save, role->locationId);
             continue;
         }
         SaveGameWriteInt32(save, 0);
     }
+}
+
+void AddRoleToRoleFactory(Int roleID, UInt position, WideChar const *name, UInt locationType, UInt locationId) {
+    auto &roles = GetRoleFactory()->roles;
+    if (roles.find(roleID) == roles.end()) {
+        CRole *role = CallMethodAndReturn<CRole *, 0x125FDA0>(GetRoleFactory(), roleID, position);
+        CallMethod<0x149794C>(&role->name, name);
+        role->importance = 50;
+        role->locationType = locationType;
+        role->locationId = locationId;
+    }
+}
+
+void METHOD OnLoadYouthCamp(CDBYouthcamp *yc) {
+    CallMethod<0x11C0250>(yc);
+    AddRoleToRoleFactory(yc->youthCoachRoleId, POSITION_YOUTH_COACH, L"IDS_ROLE_YOUTH_COACH_CAMP", 2, yc->cityId);
+}
+
+void METHOD OnLoadFanShop(CFanShop *fs) {
+    CallMethod<0x124BA40>(fs);
+    AddRoleToRoleFactory(fs->roleID, POSITION_MARKETING_MANAGER, L"IDS_ROLE_MARKETING_MANAGER_SHOP", 1, fs->countryId);
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -2156,19 +2177,11 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x44EF17, OnStopMusicWhenFocusLost);
 
         patch::RedirectJump(0x125FEF0, SaveStaffRoles_Fix);
-
-        // TODO: remove this (num days for building YC)
-        //for (UInt i = 1; i < 5; i++)
-        //    patch::SetUInt(0x24D25B4 + i * 4, 1);
-        //patch::SetUChar(0x125539C, 0xB8); // CTeamFanshops::ManageFanShops - always build new fanshops
-        //patch::SetUInt(0x125539C + 1, 1); // CTeamFanshops::ManageFanShops - always build new fanshops
-        //patch::Nop(0x125539C + 5, 1);     // CTeamFanshops::ManageFanShops - always build new fanshops
-        //patch::Nop(0xEE23AA, 2); // CTeamFanshops::Manage - update everyday
-        //patch::SetUChar(0x12551ED + 1, 1); // CTeamFanshops::ManageFanShops - minimum IP for building new fashops
-        //patch::Nop(0x1255220, 6); // CTeamFanshops::ManageFanShops - always build fansops
-        //patch::Nop(0xF43B8B, 6); // CDBTeam::ProcessStaffTasks - always build youth camps
-        //patch::Nop(0xF43B67, 6); // CDBTeam::ProcessStaffTasks - always build youth camps
-;    }
+        if (Settings::GetInstance().FixStaffRolesOnThisSave) {
+            patch::RedirectCall(0x11C57F1, OnLoadYouthCamp);
+            patch::RedirectCall(0x12536C8, OnLoadFanShop);
+        }
+;   }
 }
 
 void UnpatchEABFFixes() {

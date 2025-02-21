@@ -61,6 +61,7 @@ public:
     SETTINGS_PARAMETER(bool,   PlayMusicInBackground,       "PLAY_MUSIC_IN_BACKGROUND",       true);
     SETTINGS_PARAMETER(bool,   ImUsingATouchpad,            "IM_USING_A_TOUCHPAD",            false);
     SETTINGS_PARAMETER(bool,   SkipUpdatesCheck,            "SKIP_UPDATES_CHECK",             false);
+    SETTINGS_PARAMETER(bool,   FixStaffRolesOnThisSave,     "FIX_STAFF_ROLES_ON_THIS_SAVE",   false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

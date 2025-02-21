@@ -292,6 +292,10 @@ public:
             return node != other.node;
         }
 
+        bool operator==(const Iterator &other) const {
+            return node == other.node;
+        }
+
         std::pair<const TKey &, TValue &> operator*() {
             return { node->key, node->value };
         }
@@ -911,8 +915,8 @@ public:
 private:
     Char _pad1D;
 public:
-    UInt specialType;
-    UInt cityId;
+    UInt locationType;
+    UInt locationId;
 };
 
 static_assert(sizeof(CRole) == 0x28, "Failed");

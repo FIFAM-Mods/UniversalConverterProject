@@ -25,12 +25,12 @@ Int GetPatchUpdateNumber() {
 }
 
 WideChar const *GetPatchTestVersion() {
-    return L"February 15 Test";
+    return nullptr;
 }
 
 String GetPatchVersion() {
-    if (GetPatchTestVersion())        // TODO:
-        return GetPatchTestVersion(); // remove this
+    if (GetPatchTestVersion())
+        return GetPatchTestVersion();
     return Utils::Format(L"1.%u", GetPatchUpdateNumber());
 }
 

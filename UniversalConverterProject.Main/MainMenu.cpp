@@ -3,6 +3,7 @@
 #include "GameInterfaces.h"
 #include "Utils.h"
 #include "UcpSettings.h"
+#include "shared.h"
 #include <regex>
 #include <shellapi.h>
 #include <wininet.h>
@@ -219,7 +220,7 @@ void METHOD MainMenu_TimerEvent(void *t, DUMMY_ARG, Int u, void **data) {
                 ext->updateNumber = GetLastUpdateNumber("fm25");
                 if (ext->updateNumber == -1)
                     SetVisible(ext->pTbUpdatesUnknown, true);
-                else if (ext->updateNumber > 0) {
+                else if (ext->updateNumber > GetPatchUpdateNumber()) {
                     SetVisible(ext->pTbUpdates, true);
                     SetVisible(ext->pImgUpdatesCircle, true);
                     SetEnabled(ext->pTbUpdatesFMZ, true);
