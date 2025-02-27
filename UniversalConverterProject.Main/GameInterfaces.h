@@ -199,19 +199,19 @@ class CDynamicStringTemplate : public CStringBase<T> {
     UInt _alignment;
 public:
     UInt size() const {
-        return _size;
+        return this->_size;
     }
 
     UInt capacity() const {
-        return _capacity;
+        return this->_capacity;
     }
 
     T *data() {
-        return _data;
+        return this->_data;
     }
 
     T *c_str() const {
-        return _data;
+        return this->_data;
     }
 };
 

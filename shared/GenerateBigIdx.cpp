@@ -12,10 +12,11 @@
 using namespace std;
 using namespace std::filesystem;
 
-vector<string> archiveNames13 = { // 47
+vector<string> archiveNames13 = { // 48
     "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
     "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big",
-    "art_09.big", "art_10.big", "art_11.big", "art_12.big", "art_13.big", "art_14.big", "art_15.big", "art_16.big", "art_17.big", // 17
+    "art_09.big", "art_10.big", "art_11.big", "art_12.big", "art_13.big", "art_14.big", "art_15.big", "art_16.big",
+    "art_17.big", "art_18.big", // 18
     "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
     "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_32.big", "data\\zdata_33.big", // 5
     "data\\zdata_34.big", "data\\zdata_36.big",  "data\\zdata_38.big", "data\\zdata_39.big", "data\\zdata_40.big", // 5
@@ -25,10 +26,11 @@ vector<string> archiveNames13 = { // 47
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
 
-vector<string> archiveNames14 = { // 47
+vector<string> archiveNames14 = { // 48
     "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
     "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big",
-    "art_09.big", "art_10.big", "art_11.big", "art_12.big", "art_13.big", "art_14.big", "art_15.big", "art_16.big", "art_17.big", // 17
+    "art_09.big", "art_10.big", "art_11.big", "art_12.big", "art_13.big", "art_14.big", "art_15.big", "art_16.big",
+    "art_17.big", "art_18.big", // 18
     "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
     "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_33.big", "data\\zdata_34.big", // 5
     "data\\zdata_35.big", "data\\zdata_37.big", "data\\zdata_39.big", "data\\zdata_40.big", "data\\zdata_41.big", // 5
@@ -37,38 +39,6 @@ vector<string> archiveNames14 = { // 47
     "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big", // 4
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
-
-bool IsFileIncludedToIndex(string const& fileName) {
-    if (Utils::StartsWith(fileName, "m228__") ||
-        Utils::StartsWith(fileName, "m728__") ||
-        Utils::StartsWith(fileName, "m432__") ||
-        //Utils::StartsWith(fileName, "t75__") ||
-        //Utils::StartsWith(fileName, "tag-") ||
-        //Utils::StartsWith(fileName, "flr-") ||
-        //Utils::StartsWith(fileName, "fls-") ||
-        //Utils::StartsWith(fileName, "sle-") ||
-        //Utils::StartsWith(fileName, "m713__") ||
-        //Utils::StartsWith(fileName, "m714__") ||
-        //Utils::StartsWith(fileName, "m715__") ||
-        //Utils::StartsWith(fileName, "m716__") ||
-        //Utils::StartsWith(fileName, "m717__") ||
-        //Utils::StartsWith(fileName, "m718__") ||
-        //Utils::StartsWith(fileName, "m720__") ||
-        //Utils::StartsWith(fileName, "t226__") ||
-        //Utils::StartsWith(fileName, "t13__") ||
-        //Utils::StartsWith(fileName, "t122__") ||
-        //Utils::StartsWith(fileName, "t212__") ||
-        //Utils::StartsWith(fileName, "t238__") ||
-        Utils::StartsWith(fileName, "t21__") ||
-        Utils::StartsWith(fileName, "cm_") ||
-        Utils::StartsWith(fileName, "cmbhair_") ||
-        Utils::StartsWith(fileName, "hair_cm")
-        )
-    {
-        return false;
-    }
-    return true;
-}
 
 unsigned int FileNameHash(string const& fileName) {
     unsigned int hash = 0;
@@ -132,7 +102,6 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
                             unsigned char* fileDesc = (unsigned char*)((unsigned int)fileData + 16);
                             for (unsigned int i = 0; i < numFiles; i++) {
                                 char* fileName = (char*)((unsigned int)fileDesc + 8);
-                                //if (IsFileIncludedToIndex(fileName)) {
                                 if (!Utils::Contains(updateFiles, string(fileName)) && !Utils::Contains(ignoreFiles, string(fileName))) {
                                     unsigned int hash = FileNameHash(fileName);
                                     filesMap[hash].emplace_back(archiveId, -1, fileName);

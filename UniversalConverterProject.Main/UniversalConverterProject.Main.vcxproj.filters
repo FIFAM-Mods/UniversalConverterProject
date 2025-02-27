@@ -86,6 +86,7 @@
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="MainMenu.cpp" />
+    <ClCompile Include="DebugPrint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="MainMenu.h" />
+    <ClInclude Include="DebugPrint.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

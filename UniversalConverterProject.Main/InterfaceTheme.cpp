@@ -482,7 +482,8 @@ void FormatLeagueBadgeName1(UInt *data, UInt length, WideChar const *format, UIn
 	data[1] = year;
 }
 
-void FormatLeagueBadgeName2(WideChar *out, UInt length, WideChar const *format, UInt resX, UInt resY, UInt *data, WideChar const *strCompId) {
+void FormatLeagueBadgeName2
+(WideChar *out, UInt length, WideChar const *format, UInt resX, UInt resY, UInt *data, WideChar const *strCompId) {
 	switch (data[0]) {
 	case 0:
 		_snwprintf(out, length, L"Leagues\\%dx%d\\%04d_%s_1", resX, resY, data[1], strCompId);

@@ -10,17 +10,17 @@
 #include <stack>
 #include "Magick++.h"
 #include "UcpSettings.h"
+#include "MainMenu.h"
+#include "DebugPrint.h"
+#include <VersionHelpers.h>
+#include <dwmapi.h>
+
+#pragma comment(lib, "Dwmapi.lib")
 
 using namespace plugin;
 
 UInt gOriginalWndProc = 0;
 Int MouseWheelDelta = 0;
-
-enum WindowedModeWindowPosition {
-    WINDOWED_MODE_DEFAULT = 0,
-    WINDOWED_MODE_CENTER = 1,
-    WINDOWED_MODE_LEFT = 2
-};
 
 void EnableCursor(Bool enable) {
     if (enable) {
@@ -38,6 +38,86 @@ INT __stdcall MyShowCursor(BOOL show) {
         EnableCursor(false);
     INT result = show ? 0 : -1;
     return result;
+}
+
+int GetWindowsMajorVersion() {
+    typedef LONG(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+    HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+    if (hNtdll) {
+        RtlGetVersionPtr fnRtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hNtdll, "RtlGetVersion");
+        if (fnRtlGetVersion) {
+            RTL_OSVERSIONINFOW rovi = { 0 };
+            rovi.dwOSVersionInfoSize = sizeof(rovi);
+            if (fnRtlGetVersion(&rovi) == 0) {
+                return rovi.dwMajorVersion;
+            }
+        }
+    }
+    return 0;
+}
+
+Bool ToggleTaskbarAutoHide(Bool enable) {
+    if (!Settings::GetInstance().HideTaskbarStartValue)
+        return false;
+    HWND hTaskbar = FindWindowA("Shell_TrayWnd", NULL);
+    if (hTaskbar == NULL)
+        return false;
+    APPBARDATA abd = {};
+    abd.cbSize = sizeof(APPBARDATA);
+    abd.hWnd = hTaskbar;
+    abd.lParam = enable ? ABS_AUTOHIDE : ABS_ALWAYSONTOP;
+    return SHAppBarMessage(ABM_SETSTATE, &abd) != 0;
+}
+
+Int GetTaskbarAutoHideStatus() {
+    if (!Settings::GetInstance().HideTaskbarStartValue)
+        return -1;
+    APPBARDATA abd = {};
+    abd.cbSize = sizeof(APPBARDATA);
+    return SHAppBarMessage(ABM_GETSTATE, &abd) == ABS_AUTOHIDE;
+}
+
+COLORREF GetThemeAccentColor() {
+    DWORD color = 0;
+    HKEY hKey;
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD dataSize = sizeof(DWORD);
+        if (RegQueryValueExA(hKey, "AccentColor", nullptr, nullptr, (LPBYTE)&color, &dataSize) == ERROR_SUCCESS) {
+            RegCloseKey(hKey);
+            return RGB(GetRValue(color), GetGValue(color), GetBValue(color));
+        }
+        RegCloseKey(hKey);
+    }
+    BOOL opaque = FALSE;
+    if (SUCCEEDED(DwmGetColorizationColor(&color, &opaque)))
+        return ((color & 0xFF0000) >> 16) | (color & 0xFF00) | ((color & 0xFF) << 16);
+    return RGB(0, 0, 0);
+}
+
+Bool IsThemeColorAppliedToTitleBars() {
+    if (GetWindowsMajorVersion() < 10)
+        return true;
+    DWORD colorPrevalence = 0;
+    HKEY hKey;
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD dataSize = sizeof(DWORD);
+        if (RegQueryValueExA(hKey, "ColorPrevalence", nullptr, nullptr, (LPBYTE)&colorPrevalence, &dataSize) == ERROR_SUCCESS) {
+            RegCloseKey(hKey);
+            return colorPrevalence != 0;
+        }
+        RegCloseKey(hKey);
+    }
+    return false;
+}
+
+Int &TaskbarStatusOnGameStart() {
+    static Int taskbarStatusOnGameStart = -1;
+    return taskbarStatusOnGameStart;
+}
+
+void WindowedModeOnExitGame() {
+    if (Settings::GetInstance().HideTaskbarStartValue && TaskbarStatusOnGameStart() == 0)
+        ToggleTaskbarAutoHide(false);
 }
 
 void NopWinapiMethod(UInt address, UInt numParams) {
@@ -123,6 +203,10 @@ struct GameOptionsAdditionalData {
     void *cbTheme = nullptr;
     void *chkPlayMusicInBackground = nullptr;
     void *chkImUsingATouchpad = nullptr;
+    void *cbWindowBorders = nullptr;
+    void *tbWindowBorders = nullptr;
+    void *chkHideTaskbar = nullptr;
+    void *chkDragWithMouse = nullptr;
 };
 
 void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
@@ -136,6 +220,10 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     data->cbTheme = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbTheme");
     data->chkPlayMusicInBackground = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkPlayMusicInBackground");
     data->chkImUsingATouchpad = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkImUsingATouchpad");
+    data->cbWindowBorders = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbWindowBorders");
+    data->tbWindowBorders = CreateTextBox(screen, "TbWindowBorders");
+    data->chkHideTaskbar = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkHideTaskbar");
+    data->chkDragWithMouse = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkDragWithMouse");
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_DEFAULT"), 0, 0);
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_CENTER"), 1, 0);
     CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_LEFT"), 2, 0);
@@ -159,6 +247,15 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
         CallVirtualMethod<70>(data->cbTheme, 2);
     else
         CallVirtualMethod<70>(data->cbTheme, 0);
+    CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_DEFAULT"), 0, 0);
+    CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_NONE"), 1, 0);
+    CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_THIN"), 2, 0);
+    CallVirtualMethod<70>(data->cbWindowBorders, Settings::GetInstance().WindowBorders);
+    SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<84>(data->chkHideTaskbar, Settings::GetInstance().HideTaskbar);
+    SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
+    CallVirtualMethod<84>(data->chkDragWithMouse, Settings::GetInstance().DragWithMouse);
+    SetEnabled(data->chkDragWithMouse, Settings::GetInstance().WindowedMode);
     return result;
 }
 
@@ -170,8 +267,12 @@ void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int
         SetEnabled(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
         SetEnabled(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
         SetEnabled(data->chkPlayMusicInBackground, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->tbWindowBorders, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->chkDragWithMouse, Settings::GetInstance().WindowedMode);
         if (Settings::GetInstance().WindowedMode != Settings::GetInstance().WindowedModeStartValue)
-            Call<0xD392F0>(GetTranslation("IDS_RESOLUTION_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+            Call<0xD392F0>(GetTranslation("IDS_WINDOWMODE_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
         return;
     }
     else if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkWindowsMousePointer)) {
@@ -191,6 +292,16 @@ void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int
     }
     else if (*id == GetId(data->chkImUsingATouchpad)) {
         Settings::GetInstance().ImUsingATouchpad = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkImUsingATouchpad) != 0;
+        return;
+    }
+    else if (*id == GetId(data->chkHideTaskbar)) {
+        Settings::GetInstance().HideTaskbar = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkHideTaskbar) != 0;
+        if (Settings::GetInstance().HideTaskbar != Settings::GetInstance().HideTaskbarStartValue)
+            Call<0xD392F0>(GetTranslation("IDS_TASKBAR_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+        return;
+    }
+    else if (*id == GetId(data->chkDragWithMouse)) {
+        Settings::GetInstance().DragWithMouse = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkDragWithMouse) != 0;
         return;
     }
     CallMethod<0x500A80>(screen, id, unk);
@@ -214,6 +325,18 @@ void METHOD OnProcessGameOptionsComboboxes(void *screen, DUMMY_ARG, int *id, int
             Call<0xD392F0>(GetTranslation("IDS_THEME_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
         return;
     }
+    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbWindowBorders)) {
+        int borders = CallVirtualMethodAndReturn<int, 94>(data->cbWindowBorders, 0, 0);
+        if (borders == WINDOW_BORDERS_DEFAULT)
+            Settings::GetInstance().WindowBorders = WINDOW_BORDERS_DEFAULT;
+        else if (borders == WINDOW_BORDERS_THIN)
+            Settings::GetInstance().WindowBorders = WINDOW_BORDERS_THIN;
+        else
+            Settings::GetInstance().WindowBorders = WINDOW_BORDERS_NONE;
+        if (Settings::GetInstance().WindowBorders != Settings::GetInstance().WindowBordersStartValue)
+            Call<0xD392F0>(GetTranslation("IDS_BORDERS_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+        return;
+    }
     CallMethod<0x500B20>(screen, id, unk1, unk2);
 }
 
@@ -222,12 +345,17 @@ void METHOD MyDrawCursor(void *c) {
         CallMethod<0x494A90>(c);
 }
 
+Array<int, 4> &InitialWindowRect() {
+    static Array<int, 4> initialWindowRect;
+    return initialWindowRect;
+}
+
 BOOL __stdcall MySetWindowPosition(HWND hWnd, int X, int Y, int nWidth, int nHeight, BOOL bRepaint) {
     int newX = X;
     int newY = Y;
-    auto screenW = GetSystemMetrics(SM_CXMAXIMIZED);
-    auto screenH = GetSystemMetrics(SM_CYMAXIMIZED);
-    if (nWidth <= screenW && nHeight <= screenH) {
+    auto screenW = GetSystemMetrics(SM_CXMAXIMIZED) - 100;
+    auto screenH = GetSystemMetrics(SM_CYMAXIMIZED) - 100;
+    if (nWidth < screenW && nHeight < screenH) {
         if (Settings::GetInstance().WindowPosition == WINDOWED_MODE_CENTER) {
             newX = screenW / 2 - nWidth / 2;
             newY = screenH / 2 - nHeight / 2;
@@ -247,11 +375,52 @@ BOOL __stdcall MySetWindowPosition(HWND hWnd, int X, int Y, int nWidth, int nHei
             }
         }
     }
+    else {
+        newX = 0;
+        newY = 0;
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
+            nHeight -= 1;
+        else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+            nWidth -= 2;
+            nHeight -= 3;
+        }
+    }
+    static Bool storedInitialRect = false;
+    if (!storedInitialRect) {
+        auto &initial = InitialWindowRect();
+        initial[0] = newX;
+        initial[1] = newY;
+        initial[2] = nWidth;
+        initial[3] = nHeight;
+        storedInitialRect = true;
+    }
     return MoveWindow(hWnd, newX, newY, nWidth, nHeight, bRepaint);
 }
 
+LONG GetWindowedModeWindowStyle() {
+    DWORD style = WS_VISIBLE | WS_MINIMIZEBOX;
+    if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
+        style |= WS_POPUP;
+    else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
+        style |= WS_BORDER;
+    else
+        style |= WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_SIZEBOX;
+    return style;
+}
+
 HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam) {
-    HWND h = CreateWindowExW(0x10, lpClassName, lpWindowName, 0x10CF0000, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+    auto screenW = GetSystemMetrics(SM_CXMAXIMIZED);
+    auto screenH = GetSystemMetrics(SM_CYMAXIMIZED);
+    if (nWidth >= screenW && nHeight >= screenH) {
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
+            nHeight -= 1;
+        else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+            nWidth -= 2;
+            nHeight -= 3;
+        }
+    }
+    HWND h = CreateWindowExW(WS_EX_ACCEPTFILES, lpClassName, lpWindowName, GetWindowedModeWindowStyle(),
+        X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
     
     // enable drag-drop
     typedef BOOL(WINAPI * PFN_CHANGEWINDOWMESSAGEFILTER) (UINT, DWORD);
@@ -266,6 +435,14 @@ HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR l
         }
     }
     return h;
+}
+
+LONG __stdcall MySetWindowLong(HWND hWnd, int nIndex, LONG dwNewLong) {
+    return SetWindowLongA(hWnd, nIndex, GetWindowedModeWindowStyle());
+}
+
+BOOL __stdcall MyAdjustWindowRect(LPRECT lpRect, DWORD dwStyle, BOOL bMenu) {
+    return AdjustWindowRect(lpRect, GetWindowedModeWindowStyle(), bMenu);
 }
 
 enum class FmEntityType {
@@ -391,7 +568,12 @@ void ClearPathCache() {
     CallMethod<0x4D8960>(resolver);
 }
 
-Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) { 
+Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
+    static Bool WindowShown = false;
+    static POINT ptStart;
+    static POINT ptOffset;
+    static BOOL bDragging = FALSE;
+    static const UInt BORDERLESS_MOVEBAR_HEIGHT = 15;
     if (uCmd == WM_DROPFILES) {
         if (Settings::GetInstance().WindowedModeStartValue && !GetScreens().empty()) {
             HDROP hDrop = (HDROP)wParam;
@@ -559,11 +741,14 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
     }
     else if (uCmd == WM_CLOSE) {
         if (Settings::GetInstance().WindowedModeStartValue) {
-            if (CallAndReturn<Bool, 0x4514F0>() != 1) {
-                return 0;
+            static Bool ShowingCloseWindow = false;
+            if (!ShowingCloseWindow) {
+                ShowingCloseWindow = true;
+                UInt result = CallAndReturn<Bool, 0x4514F0>();
+                if (result != 1)
+                    ShowingCloseWindow = false;
             }
-            Settings::GetInstance().Save();
-            SaveTestFile();
+            return 0;
         }
     }
     else if (uCmd == WM_GETMINMAXINFO) {
@@ -580,33 +765,81 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
     else if (uCmd == WM_MOUSEWHEEL) {
         MouseWheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
     }
-    return CallMethodAndReturnDynGlobal<Int>(gOriginalWndProc, 0, hWnd, uCmd, wParam, lParam);
-}
-
-void CachedPathsMapCallback(void *t) {
-    void *v = t;
-    for (void *i = t; !(*raw_ptr<UChar>(i, 0x3D)); v = i) {
-        CachedPathsMapCallback(*raw_ptr<void *>(i, 8));
-        i = *raw_ptr<void *>(i, 0);
-        Int *params = raw_ptr<Int>(v, 0x10);
-        void *wstr = *raw_ptr<void *>(v, 0xC);
-        const WideChar *strdata = (*raw_ptr<UInt>(wstr, 0x18) < 8) ? raw_ptr<const WideChar>(wstr, 4) : *raw_ptr<const WideChar *>(wstr, 4);
-        //SafeLog::WriteToFile("path_cached_map.txt", strdata);
+    else if (uCmd == WM_SHOWWINDOW) {
+        if (!WindowShown) {
+            WindowShown = true;
+            if (Settings::GetInstance().HideTaskbarStartValue) {
+                TaskbarStatusOnGameStart() = GetTaskbarAutoHideStatus();
+                ToggleTaskbarAutoHide(true);
+            }
+        }
     }
-}
-
-const WideChar *METHOD OnAddPathToCache(void *t, DUMMY_ARG, Int *i, const WideChar *filePath, UInt type) {
-    //SafeLog::WriteToFile("path_cache.csv",
-    //    Format(L"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,\"%s\",%d",
-    //        i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], filePath, type));
-    const WideChar *result = CallMethodAndReturn<const WideChar *, 0x4DC060>(t, i, filePath, type);
-    void *cachedMap = raw_ptr<void>(t, 0x3C30);
-    UInt mapSize = *raw_ptr<UInt>(cachedMap, 0x1C);
-    void *n1 = *raw_ptr<void *>(cachedMap, 0x18);
-    void *n2 = *raw_ptr<void *>(n1, 4);
-    //SafeLog::WriteToFile("path_cached_map.txt", Format(L"MAP size: %d ===========================================", mapSize));
-    CachedPathsMapCallback(n2);
-    return result;
+    else if (uCmd == WM_NCPAINT) {
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN && GetForegroundWindow() == hWnd
+            && IsThemeColorAppliedToTitleBars())
+        {
+            HDC hdc = GetWindowDC(hWnd);
+            if (hdc) {
+                RECT rect;
+                GetWindowRect(hWnd, &rect);
+                OffsetRect(&rect, -rect.left, -rect.top);
+                HBRUSH hBrush = CreateSolidBrush(GetThemeAccentColor());
+                FrameRect(hdc, &rect, hBrush);
+                DeleteObject(hBrush);
+                ReleaseDC(hWnd, hdc);
+            }
+            return 0;
+        }
+    }
+    else if (uCmd == WM_DWMCOLORIZATIONCOLORCHANGED || uCmd == WM_SETFOCUS || uCmd == WM_KILLFOCUS || uCmd == WM_NCACTIVATE) {
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+            SetWindowPos(hWnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+        }
+    }
+    else if (uCmd == WM_LBUTTONDOWN) {
+        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+            GetCursorPos(&ptStart);
+            RECT rect;
+            GetWindowRect(hWnd, &rect);
+            ptOffset.x = ptStart.x - rect.left;
+            ptOffset.y = ptStart.y - rect.top;
+            if (ptStart.y <= rect.top + BORDERLESS_MOVEBAR_HEIGHT)
+                bDragging = TRUE;
+        }
+    }
+    else if (uCmd == WM_MOUSEMOVE) {
+        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+            if (bDragging) {
+                POINT pt;
+                GetCursorPos(&pt);
+                int dx = pt.x - ptStart.x;
+                int dy = pt.y - ptStart.y;
+                RECT rect;
+                GetWindowRect(hWnd, &rect);
+                MoveWindow(hWnd, rect.left + dx, rect.top + dy, rect.right - rect.left, rect.bottom - rect.top, TRUE);
+                ptStart = pt;
+            }
+        }
+    }
+    else if (uCmd == WM_LBUTTONUP) {
+        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+            bDragging = FALSE;
+        }
+    }
+    else if (uCmd == WM_LBUTTONDBLCLK) {
+        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+            POINT pt;
+            GetCursorPos(&pt);
+            ScreenToClient(hWnd, &pt);
+            RECT rect;
+            GetClientRect(hWnd, &rect);
+            if (pt.y <= BORDERLESS_MOVEBAR_HEIGHT) {
+                MySetWindowPosition(hWnd, InitialWindowRect()[0], InitialWindowRect()[1],
+                    InitialWindowRect()[2], InitialWindowRect()[3], TRUE);
+            }
+        }
+    }
+    return CallMethodAndReturnDynGlobal<Int>(gOriginalWndProc, 0, hWnd, uCmd, wParam, lParam);
 }
 
 void METHOD CApp_ProcessInput(void *app) {
@@ -657,10 +890,20 @@ void InstallWindowedMode_GfxCore() {
         patch::RedirectCall(GfxCoreAddress(0x715E), MyCreateWindowExW);
         patch::Nop(GfxCoreAddress(0x715E) + 5, 1);
 
-        if (Settings::GetInstance().WindowPosition != WINDOWED_MODE_LEFT) {
-            patch::RedirectCall(GfxCoreAddress(0x6D7E), MySetWindowPosition);
-            patch::Nop(GfxCoreAddress(0x6D7E) + 5, 1);
+        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT) {
+            patch::SetUChar(GfxCoreAddress(0x70B8 + 4), CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS);
         }
+
+        patch::RedirectCall(GfxCoreAddress(0x6D4B), MySetWindowLong);
+        patch::Nop(GfxCoreAddress(0x6D4B) + 5, 1);
+
+        patch::RedirectCall(GfxCoreAddress(0x7104), MyAdjustWindowRect);
+        patch::Nop(GfxCoreAddress(0x7104) + 5, 1);
+        patch::RedirectCall(GfxCoreAddress(0x6D59), MyAdjustWindowRect);
+        patch::Nop(GfxCoreAddress(0x6D59) + 5, 1);
+
+        patch::RedirectCall(GfxCoreAddress(0x6D7E), MySetWindowPosition);
+        patch::Nop(GfxCoreAddress(0x6D7E) + 5, 1);
     }
 }
 
@@ -710,19 +953,5 @@ void PatchWindowedMode(FM::Version v) {
             patch::RedirectCall(0x5F48C9, EntityScreenDestructor<FmEntityType::Country, 0xD54220>);
             patch::RedirectJump(0x5F43B6, EntityScreenDestructor<FmEntityType::Country, 0xD54220>);
         }
-        //if (Settings::GetInstance().DisableResourcePathsCaching)
-        //    patch::SetUChar(0x4DC38F + 6, 0); // disable resource caching
-
-        //patch::RedirectCall(0x4DC5C0 + 0x70B , OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x789 , OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x1341, OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x1640, OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x165E, OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x3500, OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x372D, OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x3BB4, OnAddPathToCache);
-        //patch::RedirectCall(0x4E0232         , OnAddPathToCache);
-        //patch::RedirectCall(0x4DC5C0 + 0x3CF0, OnAddPathToCache);
-
     }
 }

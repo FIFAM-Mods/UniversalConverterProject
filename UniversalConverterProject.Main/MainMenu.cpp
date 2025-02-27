@@ -55,6 +55,11 @@ struct MainMenuExtension {
 
 const UInt MainMenuExtensionOffset = 0x59B4;
 
+Bool &ReachedMainMenu() {
+    static Bool reachedMainMenu = false;
+    return reachedMainMenu;
+}
+
 void MainMenu_OpenLinkInBrowser(char const *url) {
     ShellExecuteA(NULL, NULL, url, NULL, NULL, SW_SHOWNORMAL);
 }
@@ -152,6 +157,9 @@ Int GetLastUpdateNumber(StringA const &gameId) {
 }
 
 void METHOD MainMenu_OnCreateUI(void *t) {
+    if (IsFirstLaunch() && !ReachedMainMenu())
+        CallMethod<0x490F30>(0x30AC968, true, false); // CJukeBoxMp3::SetRandomOrder()
+    ReachedMainMenu() = true;
     MainMenuExtension *ext = raw_ptr<MainMenuExtension>(t, MainMenuExtensionOffset);
     CallMethod<0x532D20>(t);
     ext->pTrfmLinks = GetTransform(t, "TrfmLinks");
@@ -241,6 +249,18 @@ void METHOD MainMenu_TimerEvent(void *t, DUMMY_ARG, Int u, void **data) {
     CallMethod<0x52E420>(t, u, data);
 }
 
+Bool METHOD OnWriteJukeBoxSongPath(void *t, DUMMY_ARG, WideChar const *songPath) {
+    if (Utils::EndsWith(songPath, L"0 Intro Music (TBD).asf"))
+        return true;
+    return CallMethodAndReturn<Bool, 0x14B3D10>(t, songPath);
+}
+
+void OnFormatJukeBoxParameters(WideChar *dst, WideChar const *format, Bool randomOrder, Bool unk) {
+    if (IsFirstLaunch() && !ReachedMainMenu())
+        randomOrder = true;
+    swprintf(dst, format, randomOrder, unk);
+}
+
 void PatchMainMenu(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::Nop(0x532F4D, 5);
@@ -252,5 +272,7 @@ void PatchMainMenu(FM::Version v) {
         patch::SetPointer(0x23BC64C, MainMenu_OnButtonReleased);
         patch::SetPointer(0x23BC698, MainMenu_TimerEvent);
         CurrentMenuTab = MainMenuTab::StartGame;
+        patch::RedirectCall(0x4908E7, OnWriteJukeBoxSongPath);
+        patch::RedirectCall(0x490867, OnFormatJukeBoxParameters);
     }
 }

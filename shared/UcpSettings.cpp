@@ -17,6 +17,8 @@ void Settings::Load() {
     WindowedModeStartValue = WindowedMode;
     WindowsMousePointerStartValue = WindowsMousePointer;
     WindowPositionStartValue = WindowPosition;
+    WindowBordersStartValue = WindowBorders;
+    HideTaskbarStartValue = HideTaskbar;
     ThemeAtGameStart = Theme;
 }
 

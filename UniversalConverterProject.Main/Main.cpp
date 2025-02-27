@@ -73,10 +73,18 @@ class UniversalConverterProject {
 public:
     static FM::Version v;
 
-    static void OnCloseGame() {
-        Call<0xF61490>();
+    template<Bool WindowedModeClosedWindow>
+    static void METHOD OnExitGameSaveGameOptions(void *game, DUMMY_ARG, UInt resolution) {
+        CallMethod<0x44F0E0>(game, resolution);
+        if (WindowedModeClosedWindow)
+            Call<0x4506E0>(); // write GameOptions.dat
+        WindowedModeOnExitGame();
         Settings::GetInstance().Save();
         SaveTestFile();
+        Path introMusicPath = R"(data\audio\music\0 Intro Music (TBD).asf)";
+        std::error_code ec;
+        if (exists(introMusicPath, ec))
+            remove(introMusicPath, ec);
     }
 
     UniversalConverterProject() {
@@ -103,7 +111,8 @@ public:
             static std::wstring gameVersionStr = GetPatchNameWithVersion(false);
             patch::SetPointer(0x4D2880 + 1, (void *)gameVersionStr.c_str());
 
-            patch::RedirectCall(0x45BFB5, OnCloseGame);
+            patch::RedirectCall(0x4523DD, OnExitGameSaveGameOptions<false>);
+            patch::RedirectCall(0x4515E0, OnExitGameSaveGameOptions<true>);
 
             path documentsPath = GetDocumentsPath();
             if (!documentsPath.empty()) {

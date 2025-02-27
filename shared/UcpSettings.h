@@ -4,6 +4,18 @@
 using namespace std;
 using namespace std::filesystem;
 
+enum WindowedModeWindowPosition {
+    WINDOWED_MODE_DEFAULT = 0,
+    WINDOWED_MODE_CENTER = 1,
+    WINDOWED_MODE_LEFT = 2
+};
+
+enum WindowedModeWindowBorders {
+    WINDOW_BORDERS_DEFAULT,
+    WINDOW_BORDERS_NONE,
+    WINDOW_BORDERS_THIN
+};
+
 class Settings : public SettingsAbstract {
 public:
     SETTINGS_PARAMETER(bool,   ExtendLoansLimit,            "EXTEND_LOANS_LIMIT",             true);
@@ -31,7 +43,7 @@ public:
     SETTINGS_PARAMETER(string, Theme,                       "THEME",                          "");
     SETTINGS_PARAMETER(bool,   WindowedMode,                "WINDOWED",                       true);
     SETTINGS_PARAMETER(bool,   WindowsMousePointer,         "WINDOWS_MOUSE_POINTER",          true);
-    SETTINGS_PARAMETER(int,    WindowPosition,              "WINDOW_POSITION",                1);
+    SETTINGS_PARAMETER(int,    WindowPosition,              "WINDOW_POSITION",                WINDOWED_MODE_CENTER);
     SETTINGS_PARAMETER(bool,   NamesForAllLanguages,        "EDITOR_NAMES_FOR_ALL_LANGUAGES", false);
     SETTINGS_PARAMETER(bool,   TestAllFixtures,             "EDITOR_TEST_ALL_FIXTURES",       false);
     SETTINGS_PARAMETER(bool,   ForceCalendar,               "FORCE_CALENDAR_EDITOR",          false);
@@ -62,11 +74,16 @@ public:
     SETTINGS_PARAMETER(bool,   ImUsingATouchpad,            "IM_USING_A_TOUCHPAD",            false);
     SETTINGS_PARAMETER(bool,   SkipUpdatesCheck,            "SKIP_UPDATES_CHECK",             false);
     SETTINGS_PARAMETER(bool,   FixStaffRolesOnThisSave,     "FIX_STAFF_ROLES_ON_THIS_SAVE",   false);
+    SETTINGS_PARAMETER(int,    WindowBorders,               "WINDOW_BORDERS",                 WINDOW_BORDERS_NONE);
+    SETTINGS_PARAMETER(bool,   HideTaskbar,                 "HIDE_TASKBAR",                   false);
+    SETTINGS_PARAMETER(bool,   DragWithMouse,               "DRAG_WITH_MOUSE",                true);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;
     bool WindowsMousePointerStartValue = false;
+    bool HideTaskbarStartValue = false;
     int WindowPositionStartValue = 0;
+    int WindowBordersStartValue = 0;
     string ThemeAtGameStart;
 
     void Save();
