@@ -424,6 +424,12 @@ LONG GetWindowedModeWindowStyle() {
     return style;
 }
 
+// unused
+ATOM __stdcall MyRegisterClassW(WNDCLASSW *lpWndClass) {
+    //lpWndClass->hIcon = (HICON)LoadImageA(NULL, "Manager.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
+    return RegisterClassW(lpWndClass);
+}
+
 HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int Width, int Height, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam) {
     auto rect = CalcWindowRect(X, Y, Width, Height, false);
     HWND h = CreateWindowExW(WS_EX_ACCEPTFILES, lpClassName, lpWindowName, GetWindowedModeWindowStyle(),
@@ -575,12 +581,25 @@ void ClearPathCache() {
     CallMethod<0x4D8960>(resolver);
 }
 
+HBITMAP IconToBitmap(HICON hIcon, int width, int height) {
+    HDC hDC = GetDC(NULL);
+    HDC hMemDC = CreateCompatibleDC(hDC);
+    HBITMAP hBitmap = CreateCompatibleBitmap(hDC, width, height);
+    HGDIOBJ hOld = SelectObject(hMemDC, hBitmap);
+    DrawIconEx(hMemDC, 0, 0, hIcon, width, height, 0, NULL, DI_NORMAL);
+    SelectObject(hMemDC, hOld);
+    DeleteDC(hMemDC);
+    ReleaseDC(NULL, hDC);
+    return hBitmap;
+}
+
 Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
     static Bool WindowShown = false;
     static POINT ptStart;
     static POINT ptOffset;
     static BOOL bDragging = FALSE;
     static const UInt BORDERLESS_MOVEBAR_HEIGHT = 15;
+    Bool isWindow = Settings::GetInstance().WindowedModeStartValue;
     if (uCmd == WM_DROPFILES) {
         if (Settings::GetInstance().WindowedModeStartValue && !GetScreens().empty()) {
             HDROP hDrop = (HDROP)wParam;
@@ -747,7 +766,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_CLOSE) {
-        if (Settings::GetInstance().WindowedModeStartValue) {
+        if (isWindow) {
             static Bool ShowingCloseWindow = false;
             if (!ShowingCloseWindow) {
                 ShowingCloseWindow = true;
@@ -759,22 +778,30 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             }
         }
     }
-    else if (uCmd == WM_GETMINMAXINFO) {
-        static Bool initialized = false;
-        if (!initialized) {
+    else if (uCmd == WM_CREATE) {
+        if (isWindow) {
             HICON hIcon = (HICON)LoadImageA(NULL, "Manager.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
-            if (hIcon != NULL) {
+            if (hIcon) {
                 SendMessageA(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
                 SendMessageA(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
             }
-            initialized = true;
+        }
+    }
+    else if (uCmd == WM_DWMSENDICONICTHUMBNAIL) {
+        if (isWindow) {
+            HICON hIcon = (HICON)LoadImageA(NULL, "Manager.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
+            if (hIcon) {
+                HBITMAP hBitmap = IconToBitmap(hIcon, 64, 64);
+                DwmSetIconicThumbnail(hWnd, hBitmap, 0);
+                DeleteObject(hBitmap);
+            }
         }
     }
     else if (uCmd == WM_MOUSEWHEEL) {
         MouseWheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
     }
     else if (uCmd == WM_SHOWWINDOW) {
-        if (!WindowShown) {
+        if (isWindow &&!WindowShown) {
             WindowShown = true;
             if (Settings::GetInstance().HideTaskbarStartValue) {
                 TaskbarStatusOnGameStart() = GetTaskbarAutoHideStatus();
@@ -783,7 +810,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_NCPAINT) {
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN && IsThemeColorAppliedToTitleBars()) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN && IsThemeColorAppliedToTitleBars()) {
             HDC hdc = GetWindowDC(hWnd);
             if (hdc) {
                 RECT rect;
@@ -799,16 +826,15 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
                 DeleteObject(hBrush);
                 ReleaseDC(hWnd, hdc);
             }
-            return 0;
         }
     }
     else if (uCmd == WM_DWMCOLORIZATIONCOLORCHANGED || uCmd == WM_SETFOCUS || uCmd == WM_KILLFOCUS || uCmd == WM_NCACTIVATE) {
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
             SetWindowPos(hWnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
         }
     }
     else if (uCmd == WM_LBUTTONDOWN) {
-        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
             GetCursorPos(&ptStart);
             RECT rect;
             GetWindowRect(hWnd, &rect);
@@ -819,7 +845,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_MOUSEMOVE) {
-        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
             if (bDragging) {
                 POINT pt;
                 GetCursorPos(&pt);
@@ -833,12 +859,12 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_LBUTTONUP) {
-        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
             bDragging = FALSE;
         }
     }
     else if (uCmd == WM_LBUTTONDBLCLK) {
-        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
             POINT pt;
             GetCursorPos(&pt);
             ScreenToClient(hWnd, &pt);
@@ -900,6 +926,9 @@ void InstallWindowedMode_GfxCore() {
 
         patch::RedirectCall(GfxCoreAddress(0x715E), MyCreateWindowExW);
         patch::Nop(GfxCoreAddress(0x715E) + 5, 1);
+
+        //patch::RedirectCall(GfxCoreAddress(0x70D5), MyRegisterClassW);
+        //patch::Nop(GfxCoreAddress(0x70D5) + 5, 1);
 
         if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT) {
             patch::SetUChar(GfxCoreAddress(0x70B8 + 4), CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS);

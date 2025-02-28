@@ -1308,9 +1308,7 @@ CTeamIndex METHOD League_GetHostTeam(CDBTeam *team) {
 }
 
 UInt METHOD GetCompetitionNextLaunchYear_Round(CDBGame *) {
-    UShort result = GetCompetitionNextLaunchYear(gMyDBRound_Launch);
-    SafeLog::Write(Utils::Format(L"GetCompetitionNextLaunchYear_Round: %s %d", CompetitionTag(gMyDBRound_Launch), result));
-    return result;
+    return GetCompetitionNextLaunchYear(gMyDBRound_Launch);
 }
 
 UInt METHOD GetCompetitionNextLaunchYear_League(CDBCompetition *comp) {
@@ -1318,13 +1316,18 @@ UInt METHOD GetCompetitionNextLaunchYear_League(CDBCompetition *comp) {
 }
 
 UInt METHOD GetCompetitionBaseID_Round(CDBCompetition *comp, DUMMY_ARG, UInt *) {
-    UInt result = comp->GetCompID().BaseCompID().ToInt();
-    SafeLog::Write(Utils::Format(L"GetCompetitionBaseID_Round: %s %d", CompetitionTag(gMyDBRound_Launch), result));
-    return result;
+    return comp->GetCompID().BaseCompID().ToInt();
 }
 
 UInt METHOD GetCompetitionBaseID_League(CDBCompetition *comp) {
     return comp->GetCompID().BaseCompID().ToInt();
+}
+
+// unused
+CTeamIndex METHOD CompetitionHosts_GetHostStadium_Round(CompetitionHosts *hosts, DUMMY_ARG, CCompID const &compId, UShort year, UChar stadiumIndex) {
+    auto result = hosts->GetHostStadium(compId, year, stadiumIndex);
+    SafeLog::Write(Utils::Format(L"CompetitionHosts_GetHostStadium_Round: %s - %d - %s", CompetitionTag(compId), year, StadiumTagWithCountry(result)));
+    return result;
 }
 
 Bool IsContinentalCompetitionWithHost(CCompID const &compId) {
@@ -1344,11 +1347,12 @@ Bool IsContinentalCompetitionWithHost(CCompID const &compId) {
     return false;
 }
 
-UChar METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
+UInt METHOD GetCompetitionTypeForNationalTeamHost(CDBCompetition *comp) {
     CCompID compId = comp->GetCompID();
-    UChar type = compId.type;
+    UInt type = compId.type;
     if (type == COMP_EURO_NL || type == COMP_NAM_NL || type == COMP_NAM_CUP || type == COMP_ASIA_CUP || type == COMP_AFRICA_CUP
-        || type == COMP_OFC_CUP_Q || type == COMP_OFC_CUP || type == COMP_FINALISSIMA || type == COMP_TOYOTA) {
+        || type == COMP_OFC_CUP_Q || type == COMP_OFC_CUP || type == COMP_FINALISSIMA || type == COMP_TOYOTA)
+    {
         return COMP_WORLD_CUP;
     }
     else if (IsContinentalCompetitionWithHost(compId))
