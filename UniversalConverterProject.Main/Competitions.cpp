@@ -1308,7 +1308,9 @@ CTeamIndex METHOD League_GetHostTeam(CDBTeam *team) {
 }
 
 UInt METHOD GetCompetitionNextLaunchYear_Round(CDBGame *) {
-    return GetCompetitionNextLaunchYear(gMyDBRound_Launch);
+    UShort result = GetCompetitionNextLaunchYear(gMyDBRound_Launch);
+    SafeLog::Write(Utils::Format(L"GetCompetitionNextLaunchYear_Round: %s %d", CompetitionTag(gMyDBRound_Launch), result));
+    return result;
 }
 
 UInt METHOD GetCompetitionNextLaunchYear_League(CDBCompetition *comp) {
@@ -1316,7 +1318,9 @@ UInt METHOD GetCompetitionNextLaunchYear_League(CDBCompetition *comp) {
 }
 
 UInt METHOD GetCompetitionBaseID_Round(CDBCompetition *comp, DUMMY_ARG, UInt *) {
-    return comp->GetCompID().BaseCompID().ToInt();
+    UInt result = comp->GetCompID().BaseCompID().ToInt();
+    SafeLog::Write(Utils::Format(L"GetCompetitionBaseID_Round: %s %d", CompetitionTag(gMyDBRound_Launch), result));
+    return result;
 }
 
 UInt METHOD GetCompetitionBaseID_League(CDBCompetition *comp) {
@@ -1424,7 +1428,7 @@ void SelectHostForCompetition(CDBCompetition *comp) {
             CDBCountry *country = GetCountry(countryId);
             if (country->GetNumClubs() < 8)
                 continue;
-            Bool canAddThisCountry = false;
+            Bool canAddThisCountry = true;
             if (type == COMP_EURO_NL)
                 canAddThisCountry = country->GetContinent() == FifamContinent::Europe;
             else if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica)

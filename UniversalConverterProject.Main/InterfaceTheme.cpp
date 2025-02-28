@@ -482,9 +482,8 @@ void FormatLeagueBadgeName1(UInt *data, UInt length, WideChar const *format, UIn
 	data[1] = year;
 }
 
-void FormatLeagueBadgeName2
-(WideChar *out, UInt length, WideChar const *format, UInt resX, UInt resY, UInt *data, WideChar const *strCompId) {
-	switch (data[0]) {
+void FormatLeagueBadgeName2(WideChar *out, UInt length, WideChar const *format, UInt resX, UInt resY, UInt *data, WideChar const *strCompId) {
+    switch (data[0]) {
 	case 0:
 		_snwprintf(out, length, L"Leagues\\%dx%d\\%04d_%s_1", resX, resY, data[1], strCompId);
 		break;
@@ -498,6 +497,11 @@ void FormatLeagueBadgeName2
 		_snwprintf(out, length, L"Leagues\\%dx%d\\%s", resX, resY, strCompId);
 		break;
 	}
+}
+
+void FormatLeagueBadgeShortFormat(WideChar *out, UInt length, WideChar const *format, UInt id) {
+    _snwprintf(out, length, format, id);
+    out[4] = L'\0';
 }
 
 void PatchInterfaceTheme(FM::Version v) {
@@ -607,6 +611,10 @@ void PatchInterfaceTheme(FM::Version v) {
 				patch::RedirectCall(0x4DCA5F, FormatLeagueBadgeName2);
 				patch::RedirectCall(0x4DCAF0, FormatLeagueBadgeName2);
 				patch::RedirectCall(0x4DCB5E, FormatLeagueBadgeName2);
+                patch::RedirectCall(0x4DC8B2, FormatLeagueBadgeShortFormat);
+                patch::Nop(0x4DC8FE, 8); // short badge path - don't terminate
+                patch::Nop(0x4DC978, 6); // short badge path 2 - ignore
+                patch::Nop(0x4DC949, 8); // short badge path 2 - don't terminate
                 // fix player attribute
                 patch::SetUChar(0x4E8D4C + 1, 8); // 22
                 // WC mode

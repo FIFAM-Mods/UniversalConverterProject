@@ -345,56 +345,72 @@ void METHOD MyDrawCursor(void *c) {
         CallMethod<0x494A90>(c);
 }
 
-Array<int, 4> &InitialWindowRect() {
-    static Array<int, 4> initialWindowRect;
+struct WindowRect {
+    int X, Y, Width, Height;
+};
+
+WindowRect &InitialWindowRect() {
+    static WindowRect initialWindowRect;
     return initialWindowRect;
 }
 
-BOOL __stdcall MySetWindowPosition(HWND hWnd, int X, int Y, int nWidth, int nHeight, BOOL bRepaint) {
-    int newX = X;
-    int newY = Y;
-    auto screenW = GetSystemMetrics(SM_CXMAXIMIZED) - 100;
-    auto screenH = GetSystemMetrics(SM_CYMAXIMIZED) - 100;
-    if (nWidth < screenW && nHeight < screenH) {
+WindowRect CalcWindowRect(int X, int Y, int Width, int Height, Bool StoreInitialRect) {
+    WindowRect rect;
+    rect.X = X;
+    rect.Y = Y;
+    rect.Width = Width;
+    rect.Height = Height;
+    auto screenW = GetSystemMetrics(SM_CXMAXIMIZED);
+    auto screenH = GetSystemMetrics(SM_CYMAXIMIZED);
+    if (rect.Width < (screenW - 100) && rect.Height < (screenH - 100)) {
         if (Settings::GetInstance().WindowPosition == WINDOWED_MODE_CENTER) {
-            newX = screenW / 2 - nWidth / 2;
-            newY = screenH / 2 - nHeight / 2;
+            rect.X = screenW / 2 - rect.Width / 2;
+            rect.Y = screenH / 2 - rect.Height / 2;
         }
         else if (Settings::GetInstance().WindowPosition == WINDOWED_MODE_DEFAULT) {
-            newX = screenW / 2 - nWidth / 2;
-            newY = screenH / 2 - nHeight / 2;
+            rect.X = screenW / 2 - rect.Width / 2;
+            rect.Y = screenH / 2 - rect.Height / 2;
             if (screenW > 0) {
-                Float cw = (Float)nWidth / (Float)screenW;
+                Float cw = (Float)rect.Width / (Float)screenW;
                 if (cw <= 0.9f)
-                    newX = int((Float)screenW * 0.05f);
+                    rect.X = int((Float)screenW * 0.05f);
             }
             if (screenH > 0) {
-                Float ch = (Float)nHeight / (Float)screenH;
+                Float ch = (Float)rect.Height / (Float)screenH;
                 if (ch <= 0.9f)
-                    newY = int((Float)screenH * 0.05f);
+                    rect.Y = int((Float)screenH * 0.05f);
             }
         }
     }
     else {
-        newX = 0;
-        newY = 0;
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
-            nHeight -= 1;
-        else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
-            nWidth -= 2;
-            nHeight -= 3;
+        rect.X = 0;
+        rect.Y = 0;
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_DEFAULT) {
+            if (screenW > 1920 && screenW <= 1944)
+                rect.X = -(screenW - 1920) / 2;
+        }
+        else {
+            if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+                rect.Width -= 2;
+                rect.Height -= 2;
+            }
+            else
+                rect.Height -= 1;
         }
     }
-    static Bool storedInitialRect = false;
-    if (!storedInitialRect) {
-        auto &initial = InitialWindowRect();
-        initial[0] = newX;
-        initial[1] = newY;
-        initial[2] = nWidth;
-        initial[3] = nHeight;
-        storedInitialRect = true;
+    if (StoreInitialRect) {
+        static Bool storedInitialRect = false;
+        if (!storedInitialRect) {
+            InitialWindowRect() = rect;
+            storedInitialRect = true;
+        }
     }
-    return MoveWindow(hWnd, newX, newY, nWidth, nHeight, bRepaint);
+    return rect;
+}
+
+BOOL __stdcall MySetWindowPosition(HWND hWnd, int X, int Y, int Width, int Height, BOOL bRepaint) {
+    auto rect = CalcWindowRect(X, Y, Width, Height, true);
+    return MoveWindow(hWnd, rect.X, rect.Y, rect.Width, rect.Height, bRepaint);
 }
 
 LONG GetWindowedModeWindowStyle() {
@@ -408,19 +424,10 @@ LONG GetWindowedModeWindowStyle() {
     return style;
 }
 
-HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam) {
-    auto screenW = GetSystemMetrics(SM_CXMAXIMIZED);
-    auto screenH = GetSystemMetrics(SM_CYMAXIMIZED);
-    if (nWidth >= screenW && nHeight >= screenH) {
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
-            nHeight -= 1;
-        else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
-            nWidth -= 2;
-            nHeight -= 3;
-        }
-    }
+HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int Width, int Height, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam) {
+    auto rect = CalcWindowRect(X, Y, Width, Height, false);
     HWND h = CreateWindowExW(WS_EX_ACCEPTFILES, lpClassName, lpWindowName, GetWindowedModeWindowStyle(),
-        X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+        rect.X, rect.Y, rect.Width, rect.Height, hWndParent, hMenu, hInstance, lpParam);
     
     // enable drag-drop
     typedef BOOL(WINAPI * PFN_CHANGEWINDOWMESSAGEFILTER) (UINT, DWORD);
@@ -745,10 +752,11 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             if (!ShowingCloseWindow) {
                 ShowingCloseWindow = true;
                 UInt result = CallAndReturn<Bool, 0x4514F0>();
-                if (result != 1)
+                if (result != 1) {
                     ShowingCloseWindow = false;
+                    return 0;
+                }
             }
-            return 0;
         }
     }
     else if (uCmd == WM_GETMINMAXINFO) {
@@ -775,15 +783,18 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_NCPAINT) {
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN && GetForegroundWindow() == hWnd
-            && IsThemeColorAppliedToTitleBars())
-        {
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN && IsThemeColorAppliedToTitleBars()) {
             HDC hdc = GetWindowDC(hWnd);
             if (hdc) {
                 RECT rect;
                 GetWindowRect(hWnd, &rect);
                 OffsetRect(&rect, -rect.left, -rect.top);
-                HBRUSH hBrush = CreateSolidBrush(GetThemeAccentColor());
+                COLORREF color;
+                if (GetForegroundWindow() == hWnd)
+                    color = GetThemeAccentColor();
+                else
+                    color = RGB(60, 60, 60);
+                HBRUSH hBrush = CreateSolidBrush(color);
                 FrameRect(hdc, &rect, hBrush);
                 DeleteObject(hBrush);
                 ReleaseDC(hWnd, hdc);
@@ -834,8 +845,8 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             RECT rect;
             GetClientRect(hWnd, &rect);
             if (pt.y <= BORDERLESS_MOVEBAR_HEIGHT) {
-                MySetWindowPosition(hWnd, InitialWindowRect()[0], InitialWindowRect()[1],
-                    InitialWindowRect()[2], InitialWindowRect()[3], TRUE);
+                MySetWindowPosition(hWnd, InitialWindowRect().X, InitialWindowRect().Y,
+                    InitialWindowRect().Width, InitialWindowRect().Height, TRUE);
             }
         }
     }
