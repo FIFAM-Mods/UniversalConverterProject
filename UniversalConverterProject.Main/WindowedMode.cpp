@@ -12,8 +12,8 @@
 #include "UcpSettings.h"
 #include "MainMenu.h"
 #include "DebugPrint.h"
-#include <VersionHelpers.h>
 #include <dwmapi.h>
+#include <d3d9.h>
 
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -77,7 +77,25 @@ Int GetTaskbarAutoHideStatus() {
     return SHAppBarMessage(ABM_GETSTATE, &abd) == ABS_AUTOHIDE;
 }
 
-COLORREF GetThemeAccentColor() {
+Bool IsThemeColorAppliedToTitleBars() {
+    if (GetWindowsMajorVersion() < 10)
+        return true;
+    DWORD colorPrevalence = 0;
+    HKEY hKey;
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD dataSize = sizeof(DWORD);
+        if (RegQueryValueExA(hKey, "ColorPrevalence", nullptr, nullptr, (LPBYTE)&colorPrevalence, &dataSize) == ERROR_SUCCESS) {
+            RegCloseKey(hKey);
+            return colorPrevalence != 0;
+        }
+        RegCloseKey(hKey);
+    }
+    return false;
+}
+
+COLORREF ReadThemeAccentColor() {
+    if (!IsThemeColorAppliedToTitleBars())
+        return RGB(60, 60, 60);
     DWORD color = 0;
     HKEY hKey;
     if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -94,20 +112,14 @@ COLORREF GetThemeAccentColor() {
     return RGB(0, 0, 0);
 }
 
-Bool IsThemeColorAppliedToTitleBars() {
-    if (GetWindowsMajorVersion() < 10)
-        return true;
-    DWORD colorPrevalence = 0;
-    HKEY hKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        DWORD dataSize = sizeof(DWORD);
-        if (RegQueryValueExA(hKey, "ColorPrevalence", nullptr, nullptr, (LPBYTE)&colorPrevalence, &dataSize) == ERROR_SUCCESS) {
-            RegCloseKey(hKey);
-            return colorPrevalence != 0;
-        }
-        RegCloseKey(hKey);
-    }
-    return false;
+COLORREF &ThemeAccentColor() {
+    static COLORREF color = 0;
+    return color;
+}
+
+COLORREF &WindowBordersColor() {
+    static COLORREF color = 0;
+    return color;
 }
 
 Int &TaskbarStatusOnGameStart() {
@@ -389,14 +401,8 @@ WindowRect CalcWindowRect(int X, int Y, int Width, int Height, Bool StoreInitial
             if (screenW > 1920 && screenW <= 1944)
                 rect.X = -(screenW - 1920) / 2;
         }
-        else {
-            if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
-                rect.Width -= 2;
-                rect.Height -= 2;
-            }
-            else
-                rect.Height -= 1;
-        }
+        else
+            rect.Height -= 1;
     }
     if (StoreInitialRect) {
         static Bool storedInitialRect = false;
@@ -418,7 +424,7 @@ LONG GetWindowedModeWindowStyle() {
     if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
         style |= WS_POPUP;
     else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
-        style |= WS_BORDER;
+        style |= WS_POPUP;
     else
         style |= WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_SIZEBOX;
     return style;
@@ -456,6 +462,94 @@ LONG __stdcall MySetWindowLong(HWND hWnd, int nIndex, LONG dwNewLong) {
 
 BOOL __stdcall MyAdjustWindowRect(LPRECT lpRect, DWORD dwStyle, BOOL bMenu) {
     return AdjustWindowRect(lpRect, GetWindowedModeWindowStyle(), bMenu);
+}
+
+void __stdcall OnRenderContextEndFrame(DWORD dwMilliseconds) {
+    auto hWnd = *(HWND *)GfxCoreAddress(0x669064);
+    auto device = *(IDirect3DDevice9 **)GfxCoreAddress(0xBEF498);
+    struct Vertex {
+        float x, y, z, rhw;
+        DWORD color;
+    };
+    COLORREF colorRef;
+    if (GetForegroundWindow() == hWnd)
+        colorRef = ThemeAccentColor();
+    else
+        colorRef = RGB(60, 60, 60);
+    DWORD borderColor = D3DCOLOR_ARGB(255, GetRValue(colorRef), GetGValue(colorRef), GetBValue(colorRef));
+    D3DDISPLAYMODE mode;
+    device->GetDisplayMode(0, &mode);
+    int screenWidth = mode.Width;
+    int screenHeight = mode.Height;
+    int thickness = 2;
+
+    Vertex vertices[] = {
+        // Left border
+        { 0, 0, 0, 1, borderColor }, { (float)thickness, 0, 0, 1, borderColor },
+        { (float)thickness, (float)screenHeight, 0, 1, borderColor }, { 0, (float)screenHeight, 0, 1, borderColor },
+        // Right border
+        { (float)(screenWidth - thickness), 0, 0, 1, borderColor }, { (float)screenWidth, 0, 0, 1, borderColor },
+        { (float)screenWidth, (float)screenHeight, 0, 1, borderColor }, { (float)(screenWidth - thickness), (float)screenHeight, 0, 1, borderColor },
+        // Top border
+        { 0, 0, 0, 1, borderColor }, { (float)screenWidth, 0, 0, 1, borderColor },
+        { (float)screenWidth, (float)thickness, 0, 1, borderColor }, { 0, (float)thickness, 0, 1, borderColor },
+        // Bottom border
+        { 0, (float)(screenHeight - thickness), 0, 1, borderColor }, { (float)screenWidth, (float)(screenHeight - thickness), 0, 1, borderColor },
+        { (float)screenWidth, (float)screenHeight, 0, 1, borderColor }, { 0, (float)screenHeight, 0, 1, borderColor },
+    };
+    device->BeginScene();
+
+    DWORD fvf, alphaBlendEnable, srcBlend, dstBlend, colorWriteEnable, zEnable;
+    IDirect3DBaseTexture9 *pTexture = nullptr;
+    DWORD colorOp, alphaOp;
+    device->GetFVF(&fvf);
+    device->GetRenderState(D3DRS_ALPHABLENDENABLE, &alphaBlendEnable);
+    device->GetRenderState(D3DRS_SRCBLEND, &srcBlend);
+    device->GetRenderState(D3DRS_DESTBLEND, &dstBlend);
+    device->GetRenderState(D3DRS_COLORWRITEENABLE, &colorWriteEnable);
+    device->GetRenderState(D3DRS_ZENABLE, &zEnable);
+    device->GetTexture(0, &pTexture); // Save texture
+    device->GetTextureStageState(0, D3DTSS_COLOROP, &colorOp);
+    device->GetTextureStageState(0, D3DTSS_ALPHAOP, &alphaOp);
+
+    device->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
+    device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+    device->SetRenderState(D3DRS_COLORWRITEENABLE, 0xFFFFFFFF); // Enable all color channels
+    device->SetRenderState(D3DRS_ZENABLE, FALSE); // Disable depth testing
+    device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+    device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+    device->SetTexture(0, nullptr); // Unset textures
+    device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);
+    device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+
+    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[0], sizeof(Vertex));
+    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[4], sizeof(Vertex));
+    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[8], sizeof(Vertex));
+    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[12], sizeof(Vertex));
+
+    Vertex lines[] = {
+    { 0, 0, 0, 1, borderColor }, { (float)screenWidth - 1, 0, 0, 1, borderColor },
+    { (float)screenWidth - 1, 0, 0, 1, borderColor }, { (float)screenWidth - 1, (float)screenHeight - 1, 0, 1, borderColor },
+    { (float)screenWidth - 1, (float)screenHeight - 1, 0, 1, borderColor }, { 0, (float)screenHeight - 1, 0, 1, borderColor },
+    { 0, (float)screenHeight - 1, 0, 1, borderColor }, { 0, 0, 0, 1, borderColor }
+    };
+    device->DrawPrimitiveUP(D3DPT_LINELIST, 4, lines, sizeof(Vertex));
+
+    device->SetFVF(fvf);
+    device->SetRenderState(D3DRS_ALPHABLENDENABLE, alphaBlendEnable);
+    device->SetRenderState(D3DRS_SRCBLEND, srcBlend);
+    device->SetRenderState(D3DRS_DESTBLEND, dstBlend);
+    device->SetRenderState(D3DRS_COLORWRITEENABLE, colorWriteEnable);
+    device->SetRenderState(D3DRS_ZENABLE, zEnable);
+    device->SetTexture(0, pTexture);
+    device->SetTextureStageState(0, D3DTSS_COLOROP, colorOp);
+    device->SetTextureStageState(0, D3DTSS_ALPHAOP, alphaOp);
+    if (pTexture)
+        pTexture->Release();
+
+    device->EndScene();
+
+    Sleep(dwMilliseconds);
 }
 
 enum class FmEntityType {
@@ -785,6 +879,8 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
                 SendMessageA(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
                 SendMessageA(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
             }
+            if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
+                ThemeAccentColor() = ReadThemeAccentColor();
         }
     }
     else if (uCmd == WM_DWMSENDICONICTHUMBNAIL) {
@@ -809,29 +905,9 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             }
         }
     }
-    else if (uCmd == WM_NCPAINT) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN && IsThemeColorAppliedToTitleBars()) {
-            HDC hdc = GetWindowDC(hWnd);
-            if (hdc) {
-                RECT rect;
-                GetWindowRect(hWnd, &rect);
-                OffsetRect(&rect, -rect.left, -rect.top);
-                COLORREF color;
-                if (GetForegroundWindow() == hWnd)
-                    color = GetThemeAccentColor();
-                else
-                    color = RGB(60, 60, 60);
-                HBRUSH hBrush = CreateSolidBrush(color);
-                FrameRect(hdc, &rect, hBrush);
-                DeleteObject(hBrush);
-                ReleaseDC(hWnd, hdc);
-            }
-        }
-    }
-    else if (uCmd == WM_DWMCOLORIZATIONCOLORCHANGED || uCmd == WM_SETFOCUS || uCmd == WM_KILLFOCUS || uCmd == WM_NCACTIVATE) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
-            SetWindowPos(hWnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
-        }
+    else if (uCmd == WM_DWMCOLORIZATIONCOLORCHANGED) {
+        if (isWindow && Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
+            ThemeAccentColor() = ReadThemeAccentColor();
     }
     else if (uCmd == WM_LBUTTONDOWN) {
         if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
@@ -944,6 +1020,11 @@ void InstallWindowedMode_GfxCore() {
 
         patch::RedirectCall(GfxCoreAddress(0x6D7E), MySetWindowPosition);
         patch::Nop(GfxCoreAddress(0x6D7E) + 5, 1);
+
+        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+            patch::RedirectCall(GfxCoreAddress(0x2D69F5), OnRenderContextEndFrame);
+            patch::Nop(GfxCoreAddress(0x2D69F5) + 5, 1);
+        }
     }
 }
 

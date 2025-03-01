@@ -1383,7 +1383,7 @@ void SelectHostForCompetition(CDBCompetition *comp) {
         return;
     }
     Set<UChar> previousHosts = GetCompetitionPreviousHosts(comp);
-    if (type == COMP_OFC_CUP || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
+    if (type == COMP_OFC_CUP || type == COMP_OFC_CUP_Q || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
         previousHosts.insert(GetOFCChampionsLeagueQualiGroupHost(GetCurrentSeasonStartYear() + 1));
     Vector<UChar> hostCandidates;
     if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) {
@@ -1443,7 +1443,7 @@ void SelectHostForCompetition(CDBCompetition *comp) {
                 canAddThisCountry = country->GetContinent() == FifamContinent::Asia;
             else if (type == COMP_AFRICA_CUP)
                 canAddThisCountry = country->GetContinent() == FifamContinent::Africa;
-            else if (type == COMP_OFC_CUP || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
+            else if (type == COMP_OFC_CUP || type == COMP_OFC_CUP_Q || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
                 canAddThisCountry = country->GetContinent() == FifamContinent::Oceania;
             else if (type == COMP_FINALISSIMA)
                 canAddThisCountry = country->GetContinent() == FifamContinent::Europe || country->GetContinent() == FifamContinent::SouthAmerica;
@@ -6015,6 +6015,7 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectJump(0x139D690, GetHostTeamsForCompetition_Exe);
         patch::RedirectCall(0x117C496, OnCompHostsAddHostStadium);
         patch::RedirectCall(0x117C4FF, OnCompHostsAddHostStadium);
+        patch::SetUChar(0x117C5D7 + 2, 10); // select host stadiums for next 10 years
 
         // Euro
         const UInt NumEuroTeams = 24;
