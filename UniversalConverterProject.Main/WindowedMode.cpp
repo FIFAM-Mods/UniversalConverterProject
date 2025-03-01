@@ -117,11 +117,6 @@ COLORREF &ThemeAccentColor() {
     return color;
 }
 
-COLORREF &WindowBordersColor() {
-    static COLORREF color = 0;
-    return color;
-}
-
 Int &TaskbarStatusOnGameStart() {
     static Int taskbarStatusOnGameStart = -1;
     return taskbarStatusOnGameStart;
@@ -481,22 +476,7 @@ void __stdcall OnRenderContextEndFrame(DWORD dwMilliseconds) {
     device->GetDisplayMode(0, &mode);
     int screenWidth = mode.Width;
     int screenHeight = mode.Height;
-    int thickness = 2;
 
-    Vertex vertices[] = {
-        // Left border
-        { 0, 0, 0, 1, borderColor }, { (float)thickness, 0, 0, 1, borderColor },
-        { (float)thickness, (float)screenHeight, 0, 1, borderColor }, { 0, (float)screenHeight, 0, 1, borderColor },
-        // Right border
-        { (float)(screenWidth - thickness), 0, 0, 1, borderColor }, { (float)screenWidth, 0, 0, 1, borderColor },
-        { (float)screenWidth, (float)screenHeight, 0, 1, borderColor }, { (float)(screenWidth - thickness), (float)screenHeight, 0, 1, borderColor },
-        // Top border
-        { 0, 0, 0, 1, borderColor }, { (float)screenWidth, 0, 0, 1, borderColor },
-        { (float)screenWidth, (float)thickness, 0, 1, borderColor }, { 0, (float)thickness, 0, 1, borderColor },
-        // Bottom border
-        { 0, (float)(screenHeight - thickness), 0, 1, borderColor }, { (float)screenWidth, (float)(screenHeight - thickness), 0, 1, borderColor },
-        { (float)screenWidth, (float)screenHeight, 0, 1, borderColor }, { 0, (float)screenHeight, 0, 1, borderColor },
-    };
     device->BeginScene();
 
     DWORD fvf, alphaBlendEnable, srcBlend, dstBlend, colorWriteEnable, zEnable;
@@ -521,11 +501,6 @@ void __stdcall OnRenderContextEndFrame(DWORD dwMilliseconds) {
     device->SetTexture(0, nullptr); // Unset textures
     device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);
     device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-
-    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[0], sizeof(Vertex));
-    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[4], sizeof(Vertex));
-    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[8], sizeof(Vertex));
-    //device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, &vertices[12], sizeof(Vertex));
 
     Vertex lines[] = {
     { 0, 0, 0, 1, borderColor }, { (float)screenWidth - 1, 0, 0, 1, borderColor },

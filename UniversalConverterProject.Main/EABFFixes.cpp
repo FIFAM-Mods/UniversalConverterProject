@@ -1607,6 +1607,16 @@ void METHOD OnLoadFanShop(CFanShop *fs) {
     AddRoleToRoleFactory(fs->roleID, POSITION_MARKETING_MANAGER, L"IDS_ROLE_MARKETING_MANAGER_SHOP", 1, fs->countryId);
 }
 
+bool __stdcall RetUnlockablesTrue(int) { return true; }
+
+bool METHOD CheckAchievementInvestor(void *ac, DUMMY_ARG, unsigned int id) {
+    if (id < 30) {
+        unsigned int bs = (unsigned int)(raw_ptr<void>(ac, 0x16C));
+        return ((1 << (id & 0x1F)) & *(unsigned int *)(bs + 4 * (id >> 5))) != 0;
+    }
+    return false;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2181,6 +2191,9 @@ void PatchEABFFixes(FM::Version v) {
             patch::RedirectCall(0x11C57F1, OnLoadYouthCamp);
             patch::RedirectCall(0x12536C8, OnLoadFanShop);
         }
+
+        patch::RedirectJump(0x13BB610, RetUnlockablesTrue);
+        patch::RedirectCall(0x6B0798, CheckAchievementInvestor);
 ;   }
 }
 
