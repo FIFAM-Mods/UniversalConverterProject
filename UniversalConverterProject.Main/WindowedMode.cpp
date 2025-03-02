@@ -122,6 +122,27 @@ Int &TaskbarStatusOnGameStart() {
     return taskbarStatusOnGameStart;
 }
 
+void EnableDPIAwareness() {
+    HMODULE hShcore = LoadLibraryA("Shcore.dll");
+    if (hShcore) {
+        typedef HRESULT(WINAPI *SetDpiAwarenessFunc)(int);
+        SetDpiAwarenessFunc SetProcessDpiAwareness = (SetDpiAwarenessFunc)GetProcAddress(hShcore, "SetProcessDpiAwareness");
+        if (SetProcessDpiAwareness)
+            SetProcessDpiAwareness(1);
+        FreeLibrary(hShcore);
+    }
+    else {
+        HMODULE hUser32 = LoadLibraryA("User32.dll");
+        if (hUser32) {
+            typedef BOOL(WINAPI *SetDPIAwareFunc)();
+            SetDPIAwareFunc SetProcessDPIAware = (SetDPIAwareFunc)GetProcAddress(hUser32, "SetProcessDPIAware");
+            if (SetProcessDPIAware)
+                SetProcessDPIAware();
+            FreeLibrary(hUser32);
+        }
+    }
+}
+
 void WindowedModeOnExitGame() {
     if (Settings::GetInstance().HideTaskbarStartValue && TaskbarStatusOnGameStart() == 0)
         ToggleTaskbarAutoHide(false);
@@ -432,6 +453,7 @@ ATOM __stdcall MyRegisterClassW(WNDCLASSW *lpWndClass) {
 }
 
 HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int Width, int Height, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam) {
+    EnableDPIAwareness();
     auto rect = CalcWindowRect(X, Y, Width, Height, false);
     HWND h = CreateWindowExW(WS_EX_ACCEPTFILES, lpClassName, lpWindowName, GetWindowedModeWindowStyle(),
         rect.X, rect.Y, rect.Width, rect.Height, hWndParent, hMenu, hInstance, lpParam);
@@ -669,6 +691,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
     static BOOL bDragging = FALSE;
     static const UInt BORDERLESS_MOVEBAR_HEIGHT = 15;
     Bool isWindow = Settings::GetInstance().WindowedModeStartValue;
+    Bool draggable = isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse;
     if (uCmd == WM_DROPFILES) {
         if (Settings::GetInstance().WindowedModeStartValue && !GetScreens().empty()) {
             HDROP hDrop = (HDROP)wParam;
@@ -885,18 +908,20 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             ThemeAccentColor() = ReadThemeAccentColor();
     }
     else if (uCmd == WM_LBUTTONDOWN) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (draggable && !bDragging) {
             GetCursorPos(&ptStart);
             RECT rect;
             GetWindowRect(hWnd, &rect);
             ptOffset.x = ptStart.x - rect.left;
             ptOffset.y = ptStart.y - rect.top;
-            if (ptStart.y <= rect.top + BORDERLESS_MOVEBAR_HEIGHT)
+            if (ptStart.y <= rect.top + BORDERLESS_MOVEBAR_HEIGHT) {
                 bDragging = TRUE;
+                SetCapture(hWnd);
+            }
         }
     }
     else if (uCmd == WM_MOUSEMOVE) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (draggable) {
             if (bDragging) {
                 POINT pt;
                 GetCursorPos(&pt);
@@ -910,12 +935,13 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_LBUTTONUP) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (draggable) {
             bDragging = FALSE;
+            ReleaseCapture();
         }
     }
     else if (uCmd == WM_LBUTTONDBLCLK) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse) {
+        if (draggable) {
             POINT pt;
             GetCursorPos(&pt);
             ScreenToClient(hWnd, &pt);
