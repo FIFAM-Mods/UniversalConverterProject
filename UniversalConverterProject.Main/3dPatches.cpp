@@ -1283,6 +1283,31 @@ int FormatCustomHairTextureName(Char *dst, Char const *format, void *pID) {
     return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x473B06), dst, format, *raw_ptr<UInt>(pID, 0x20)); // sprintf
 }
 
+void OnProcessSound() {
+    void *soundBuffer = *(void **)GfxCoreAddress(0xC053E0);
+    if (!soundBuffer)
+        return;
+    CallDynGlobal(GfxCoreAddress(0x34EDD9));
+}
+
+UInt OnProcessSound_GetCurrentPosition_RetAddr = 0;
+
+void __declspec(naked) OnProcessSound_GetCurrentPosition() {
+    __asm {
+        test eax, eax
+        jz JMP_BACK
+        mov ecx, [eax]
+        lea edx, [ebp - 8]
+        push edx
+        push ebx
+        push eax
+        call dword ptr [ecx + 0x10]
+    JMP_BACK:
+        mov ecx, OnProcessSound_GetCurrentPosition_RetAddr
+        jmp ecx
+    }
+}
+
 void Install3dPatches_FM13() {
 
     FindAssets(ASSETS_DIR, "");
@@ -2025,4 +2050,9 @@ void Install3dPatches_FM13() {
 
     // default music volume
     patch::SetUChar(GfxCoreAddress(0x1E223B + 1), 50);
+
+    // an attempt to fix issues with disconnected sound device
+    //patch::RedirectCall(GfxCoreAddress(0x34F09E), OnProcessSound);
+    //patch::RedirectJump(GfxCoreAddress(0x34EE28), OnProcessSound_GetCurrentPosition);
+    //OnProcessSound_GetCurrentPosition_RetAddr = GfxCoreAddress(0x34EE33);
 }

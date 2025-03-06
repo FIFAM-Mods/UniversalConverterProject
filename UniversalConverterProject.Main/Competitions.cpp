@@ -3607,32 +3607,49 @@ CDBCompetition *GetPoolForGameStartNationalTeam(CCompID *compId) {
     return GetCompetition(FifamCompRegion::International, COMP_QUALI_EC, 0);
 }
 
-void METHOD OnClearInternationalCompsEvents_Clear(void *vec, DUMMY_ARG, UInt *pId) {
-    static const UChar internationalCompTypes[] = {
-        COMP_EURO_NL_Q, COMP_QUALI_WC, COMP_QUALI_EC, COMP_EURO_NL, COMP_WORLD_CUP, COMP_EURO_CUP, COMP_CONFED_CUP,
-        COMP_COPA_AMERICA, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP, COMP_AFRICA_CUP_Q, COMP_AFRICA_CUP, COMP_ASIA_CUP_Q,
-        COMP_ASIA_CUP, COMP_OFC_CUP_Q, COMP_OFC_CUP, COMP_FINALISSIMA, COMP_U20_WC_Q, COMP_U20_WORLD_CUP
-    };
-    for (auto type : internationalCompTypes) {
-        UInt baseId = COMP_BASE_ID(FifamCompRegion::International, type);
-        auto info = GetCompetitionLaunchInfo(FifamCompRegion::International, type);
-        if (info.period <= 1)
-            CallMethod<0x6E3FD0>(vec, &baseId);
-        else {
-            UInt finalTournamentId = 0;
-            for (auto const &[baseId2, info2] : GetCompetitionLaunchInfos()) {
-                if (info2.qualiCompId == baseId) {
-                    finalTournamentId = baseId2;
-                    break;
+void METHOD Root_ClearMatchEvents(CDBRoot *root, DUMMY_ARG, UInt phase) {
+    if (phase == *raw_ptr<UChar>(root, 0x2071) && CDBCompetition_LaunchesInThisSeason(root, 0, phase)) {
+        root->Launch();
+        auto events = root->GetEvents();
+        if (events) {
+            if (root->GetRegion() == FifamCompRegion::International) {
+                if ((GetCurrentSeasonStartYear() % 2) == 0) {
+                    for (auto [id, comp] : GetCompetitions()) {
+                        if (comp && comp->GetRegion() == FifamCompRegion::International) {
+                            if (comp->GetDbType() == DB_ROUND) {
+                                CDBRound *round = (CDBRound *)comp;
+                                for (UInt p = 0; p < round->GetNumOfPairs(); p++) {
+                                    round->GetRoundPair(p).SetMatchEventsStartIndex(-1, 0);
+                                    round->GetRoundPair(p).SetMatchEventsStartIndex(-1, 1);
+                                }
+                            }
+                            else if (comp->GetDbType() == DB_LEAGUE) {
+                                CDBLeague *league = (CDBLeague *)comp;
+                                CMatch match;
+                                for (UInt i = 0; i < league->GetNumMatchdays(); ++i) {
+                                    for (UInt j = 0; j < league->GetNumOfTeams() / 2; ++j) {
+                                        league->GetMatches()->GetMatch(i, j, match);
+                                        match.SetMatchEventsStartIndex(-1);
+                                        league->GetMatches()->SetMatch(i, j, match);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    events->Clear();
                 }
             }
-            if (LaunchesInSeason(CCompID::Make(finalTournamentId ? finalTournamentId : baseId), GetCurrentSeasonStartYear() - 1)) {
-                CallMethod<0x6E3FD0>(vec, &baseId);
-                SafeLog::Write(Utils::Format(L"OnClearInternationalCompsEvents_Clear: %s on %s",
-                    CompetitionTag(CCompID::Make(baseId)), GetCurrentDate().ToStr()));
-            }
+            else
+                events->Clear();
         }
+        CallMethod<0x11F1090>(raw_ptr<void>(root, 0x212C));
     }
+}
+
+void METHOD OnNTStatsGoalscorers_ClearRoundPair(RoundPair *rp) {
+    CallMethod<0x10ED3D0>(rp);
+    rp->SetMatchEventsStartIndex(-1, 0);
+    rp->SetMatchEventsStartIndex(-1, 1);
 }
 
 void METHOD OnClearFirstTeamCompetitionsRoot(CDBRoot *root, DUMMY_ARG, UInt phase) {
@@ -6273,12 +6290,12 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x24B184C, OnPoolLaunch);
 
         // match events for international comps
-        patch::RedirectJump(0x11F4311, (void *)0x11F43B0);
-        patch::RedirectCall(0x11F43C1, OnClearInternationalCompsEvents_Clear);
+        patch::RedirectJump(0x11F4270, Root_ClearMatchEvents);
         //patch::RedirectCall(0xF8FB0C, OnClearFirstTeamCompetitionsRoot);
         //patch::RedirectCall(0xF8FB88, OnClearFirstTeamCompetitionsRoot);
         //patch::RedirectCall(0xF8FC04, OnClearFirstTeamCompetitionsRoot);
         //patch::RedirectCall(0xF8FC80, OnClearFirstTeamCompetitionsRoot);
+        patch::RedirectCall(0x84B7BD, OnNTStatsGoalscorers_ClearRoundPair);
 
         // club info achievements
         patch::RedirectCall(0x658A7D, OnGetTeamForClubAchievementsScreen);

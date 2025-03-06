@@ -40,7 +40,23 @@ INT __stdcall MyShowCursor(BOOL show) {
     return result;
 }
 
-int GetWindowsMajorVersion() {
+UInt &WindowBorders() {
+    static UInt windowBorders = 0;
+    return windowBorders;
+}
+
+enum eWindowsVersion {
+    WINVER_NOTDEFINED = 0,
+    WINVER_2000 = 4,
+    WINVER_XP = 5,
+    WINVER_VISTA = 6,
+    WINVER_7 = 7,
+    WINVER_8 = 8,
+    WINVER_10 = 10,
+    WINVER_11 = 11
+};
+
+UInt GetWindowsVersionNumber() {
     typedef LONG(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
     HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
     if (hNtdll) {
@@ -49,11 +65,28 @@ int GetWindowsMajorVersion() {
             RTL_OSVERSIONINFOW rovi = { 0 };
             rovi.dwOSVersionInfoSize = sizeof(rovi);
             if (fnRtlGetVersion(&rovi) == 0) {
-                return rovi.dwMajorVersion;
+                UInt major = rovi.dwMajorVersion;
+                UInt minor = rovi.dwMinorVersion;
+                UInt build = rovi.dwBuildNumber;
+                if (major == 5)
+                    return (minor == 0) ? WINVER_2000 : WINVER_XP;
+                else if (major == 6 && minor == 0)
+                    return WINVER_VISTA;
+                else if (major == 6 && minor == 1)
+                    return WINVER_7;
+                else if (major == 6 && (minor == 2 || minor == 3))
+                    return WINVER_8;
+                else if (major == 10)
+                    return (build >= 22000) ? WINVER_11 : WINVER_10;
             }
         }
     }
-    return 0;
+    return WINVER_NOTDEFINED;
+}
+
+UInt &WindowsVersion() {
+    static UInt windowsVersion = GetWindowsVersionNumber();
+    return windowsVersion;
 }
 
 Bool ToggleTaskbarAutoHide(Bool enable) {
@@ -78,8 +111,8 @@ Int GetTaskbarAutoHideStatus() {
 }
 
 Bool IsThemeColorAppliedToTitleBars() {
-    if (GetWindowsMajorVersion() < 10)
-        return true;
+    if (GetWindowsVersionNumber() < WINVER_10)
+        return false;
     DWORD colorPrevalence = 0;
     HKEY hKey;
     if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -141,6 +174,22 @@ void EnableDPIAwareness() {
             FreeLibrary(hUser32);
         }
     }
+}
+
+void EnableWindowsAeroTheme(Bool enable) {
+    typedef HRESULT(WINAPI *DwmEnableComposition_t)(UINT);
+    HMODULE hDwm = LoadLibraryA("dwmapi.dll");
+    if (hDwm) {
+        DwmEnableComposition_t pDwmEnableComposition = (DwmEnableComposition_t)GetProcAddress(hDwm, "DwmEnableComposition");
+        if (pDwmEnableComposition)
+            pDwmEnableComposition(enable ? DWM_EC_ENABLECOMPOSITION : DWM_EC_DISABLECOMPOSITION);
+        FreeLibrary(hDwm);
+    }
+}
+
+Bool &WindowsAeroThemeOnGameStart() {
+    static Bool windowsAeroThemeOnGameStart = false;
+    return windowsAeroThemeOnGameStart;
 }
 
 void WindowedModeOnExitGame() {
@@ -278,8 +327,14 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_DEFAULT"), 0, 0);
     CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_NONE"), 1, 0);
     CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_THIN"), 2, 0);
-    CallVirtualMethod<70>(data->cbWindowBorders, Settings::GetInstance().WindowBorders);
-    SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
+    if (WindowsVersion() == WINVER_8) {
+        CallVirtualMethod<70>(data->cbWindowBorders, 0);
+        SetEnabled(data->cbWindowBorders, false);
+    }
+    else {
+        CallVirtualMethod<70>(data->cbWindowBorders, Settings::GetInstance().WindowBorders);
+        SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
+    }
     CallVirtualMethod<84>(data->chkHideTaskbar, Settings::GetInstance().HideTaskbar);
     SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
     CallVirtualMethod<84>(data->chkDragWithMouse, Settings::GetInstance().DragWithMouse);
@@ -413,7 +468,7 @@ WindowRect CalcWindowRect(int X, int Y, int Width, int Height, Bool StoreInitial
     else {
         rect.X = 0;
         rect.Y = 0;
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_DEFAULT) {
+        if (WindowBorders() == WINDOW_BORDERS_DEFAULT) {
             if (screenW > 1920 && screenW <= 1944)
                 rect.X = -(screenW - 1920) / 2;
         }
@@ -437,9 +492,9 @@ BOOL __stdcall MySetWindowPosition(HWND hWnd, int X, int Y, int Width, int Heigh
 
 LONG GetWindowedModeWindowStyle() {
     DWORD style = WS_VISIBLE | WS_MINIMIZEBOX;
-    if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_NONE)
+    if (WindowBorders() == WINDOW_BORDERS_NONE)
         style |= WS_POPUP;
-    else if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
+    else if (WindowBorders() == WINDOW_BORDERS_THIN)
         style |= WS_POPUP;
     else
         style |= WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_SIZEBOX;
@@ -457,7 +512,7 @@ HWND __stdcall MyCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR l
     auto rect = CalcWindowRect(X, Y, Width, Height, false);
     HWND h = CreateWindowExW(WS_EX_ACCEPTFILES, lpClassName, lpWindowName, GetWindowedModeWindowStyle(),
         rect.X, rect.Y, rect.Width, rect.Height, hWndParent, hMenu, hInstance, lpParam);
-    
+
     // enable drag-drop
     typedef BOOL(WINAPI * PFN_CHANGEWINDOWMESSAGEFILTER) (UINT, DWORD);
 
@@ -691,7 +746,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
     static BOOL bDragging = FALSE;
     static const UInt BORDERLESS_MOVEBAR_HEIGHT = 15;
     Bool isWindow = Settings::GetInstance().WindowedModeStartValue;
-    Bool draggable = isWindow && Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse;
+    Bool draggable = isWindow && WindowBorders() != WINDOW_BORDERS_DEFAULT && Settings::GetInstance().DragWithMouse;
     if (uCmd == WM_DROPFILES) {
         if (Settings::GetInstance().WindowedModeStartValue && !GetScreens().empty()) {
             HDROP hDrop = (HDROP)wParam;
@@ -877,7 +932,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
                 SendMessageA(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
                 SendMessageA(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
             }
-            if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
+            if (WindowBorders() == WINDOW_BORDERS_THIN)
                 ThemeAccentColor() = ReadThemeAccentColor();
         }
     }
@@ -904,7 +959,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
         }
     }
     else if (uCmd == WM_DWMCOLORIZATIONCOLORCHANGED) {
-        if (isWindow && Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN)
+        if (isWindow && WindowBorders() == WINDOW_BORDERS_THIN)
             ThemeAccentColor() = ReadThemeAccentColor();
     }
     else if (uCmd == WM_LBUTTONDOWN) {
@@ -1007,7 +1062,7 @@ void InstallWindowedMode_GfxCore() {
         //patch::RedirectCall(GfxCoreAddress(0x70D5), MyRegisterClassW);
         //patch::Nop(GfxCoreAddress(0x70D5) + 5, 1);
 
-        if (Settings::GetInstance().WindowBordersStartValue != WINDOW_BORDERS_DEFAULT) {
+        if (WindowBorders() != WINDOW_BORDERS_DEFAULT) {
             patch::SetUChar(GfxCoreAddress(0x70B8 + 4), CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS);
         }
 
@@ -1022,7 +1077,7 @@ void InstallWindowedMode_GfxCore() {
         patch::RedirectCall(GfxCoreAddress(0x6D7E), MySetWindowPosition);
         patch::Nop(GfxCoreAddress(0x6D7E) + 5, 1);
 
-        if (Settings::GetInstance().WindowBordersStartValue == WINDOW_BORDERS_THIN) {
+        if (WindowBorders() == WINDOW_BORDERS_THIN) {
             patch::RedirectCall(GfxCoreAddress(0x2D69F5), OnRenderContextEndFrame);
             patch::Nop(GfxCoreAddress(0x2D69F5) + 5, 1);
         }
@@ -1035,6 +1090,14 @@ void PatchWindowedMode(FM::Version v) {
             Settings::GetInstance().WindowedMode = GetPrivateProfileIntW(L"", L"WINDOWED", 0, L".\\locale.ini");
             Settings::GetInstance().WindowedModeStartValue = Settings::GetInstance().WindowedMode;
         }
+        WindowBorders() = Settings::GetInstance().WindowBorders;
+        if (WindowsVersion() == WINVER_VISTA || WindowsVersion() == WINVER_7) {
+            if (Settings::GetInstance().WindowedMode && WindowBorders() != WINDOW_BORDERS_DEFAULT)
+                EnableWindowsAeroTheme(false);
+        }
+        else if (WindowsVersion() == WINVER_8)
+            WindowBorders() = WINDOW_BORDERS_DEFAULT;
+  
         const UInt newStructSize = 0x504 + sizeof(GameOptionsAdditionalData);
         patch::SetUInt(0x52F1B4 + 1, newStructSize);
         patch::SetUInt(0x52F1BB + 1, newStructSize);

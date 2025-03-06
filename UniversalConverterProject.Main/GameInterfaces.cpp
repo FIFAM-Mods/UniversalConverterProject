@@ -551,6 +551,10 @@ unsigned int CDBLeague::GetCurrentMatchday() {
     return plugin::CallMethodAndReturn<int, 0x1050310>(this);
 }
 
+CMatches *CDBLeague::GetMatches() {
+    return raw_ptr<CMatches>(this, 0x22C8);
+}
+
 CRoleFactory *GetRoleFactory() {
     return CallAndReturn<CRoleFactory *, 0x124B4F0>();
 }
@@ -613,6 +617,10 @@ CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned
 
 CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index) {
     return plugin::CallAndReturn<CDBPool *, 0xF8C5C0>(region, type, index);
+}
+
+FmMap<UInt, CDBCompetition *> &GetCompetitions() {
+    return *(FmMap<UInt, CDBCompetition *> *)0x3127D8C;
 }
 
 CDBCountry *GetCountry(UChar countryId) {
@@ -2136,6 +2144,14 @@ CTeamIndex const &RoundPair::Get2ndTeam() const {
     return CallMethodAndReturn<CTeamIndex const &, 0x10ED400>(this);
 }
 
+Int RoundPair::GetMatchEventsStartIndex(UInt leg) const {
+    return CallMethodAndReturn<Int, 0x10ED630>(this, leg);
+}
+
+void RoundPair::SetMatchEventsStartIndex(Int index, UInt leg) {
+    CallMethod<0x10ED620>(this, index, leg);
+}
+
 SyncFile::SyncFile() {
     plugin::CallMethod<0x14BDD8D>(this);
 }
@@ -2489,4 +2505,28 @@ UInt CTeamFanshops::GetNumFanShops() {
 
 CFanShop *CTeamFanshops::GetFanShop(UShort index) {
     return CallMethodAndReturn<CFanShop *, 0x124CF50>(this, index);
+}
+
+CMatch::CMatch() {
+    CallMethod<0xF82800>(this);
+}
+
+Int CMatch::GetMatchEventsStartIndex() const {
+    return CallMethodAndReturn<Int, 0xF828C0>(this);
+}
+
+void CMatch::SetMatchEventsStartIndex(Int index) {
+    CallMethod<0xF828B0>(this, index);
+}
+
+void CMatches::GetMatch(UInt matchday, UInt matchIndex, CMatch &match) const {
+    CallMethod<0xF82C40>(this, matchday, matchIndex, &match);
+}
+
+void CMatches::SetMatch(UInt matchday, UInt matchIndex, CMatch const &match) {
+    CallMethod<0xF82CD0>(this, matchday, matchIndex, &match);
+}
+
+void CDBMatchEventEntries::Clear() {
+    CallMethod<0x1004E40>(this);
 }

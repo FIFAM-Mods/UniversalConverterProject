@@ -702,6 +702,8 @@ struct RoundPair {
     Bool TestFlag(UInt flag) const;
     CTeamIndex const &Get1stTeam() const;
     CTeamIndex const &Get2ndTeam() const;
+    Int GetMatchEventsStartIndex(UInt leg) const;
+    void SetMatchEventsStartIndex(Int index, UInt leg);
 };
 
 struct MatchGoalInfo {
@@ -726,7 +728,10 @@ public:
     UChar goalsAway;
 };
 
-using CDBMatchEventEntries = SimpleContainer<CDBMatchEventEntry>;
+class CDBMatchEventEntries : public SimpleContainer<CDBMatchEventEntry> {
+public:
+    void Clear();
+};
 
 class CDBRoot : public CDBCompetition {
 public:
@@ -754,12 +759,39 @@ public:
     CTeamIndex &GetTeamAtPosition(int position);
 };
 
+class CMatch{
+public:
+    UChar homeGoals;
+    UChar awayGoals;
+    UChar firstHalfHome;
+    UChar firstHalfAway;
+    UInt flags;
+    Int firstEventIndex;
+
+    CMatch();
+    Int GetMatchEventsStartIndex() const;
+    void SetMatchEventsStartIndex(Int index);
+};
+
+static_assert(sizeof(CMatch) == 0xC, "Failed");
+
+class CMatches {
+public:
+    UInt m_nNumMatchdays;
+    UInt m_nNumMatches;
+    void *m_pMatches;
+
+    void GetMatch(UInt matchday, UInt matchIndex, CMatch &match) const;
+    void SetMatch(UInt matchday, UInt matchIndex, CMatch const &match);
+};
+
 class CDBLeague : public CDBLeagueBase {
 public:
     void SetStartDate(CJDate date);
     int GetEqualPointsSorting();
     void SortTeams(TeamLeaguePositionData *infos, int sortingFlags, int goalsMinMinute, int goalsMaxMinute, int minMatchday, int maxMatchday);
     unsigned int GetCurrentMatchday();
+    CMatches *GetMatches();
 };
 
 struct SponsorPlacement {
@@ -1101,6 +1133,8 @@ CDBRound *GetRound(unsigned int *id);
 CDBRound *GetRound(unsigned int id);
 CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType);
 CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index);
+
+FmMap<UInt, CDBCompetition *> &GetCompetitions();
 
 CDBCountry *GetCountry(UChar countryId);
 CDBTeam *GetTeam(CTeamIndex teamId);
