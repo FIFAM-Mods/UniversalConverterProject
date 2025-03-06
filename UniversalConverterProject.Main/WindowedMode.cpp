@@ -187,11 +187,6 @@ void EnableWindowsAeroTheme(Bool enable) {
     }
 }
 
-Bool &WindowsAeroThemeOnGameStart() {
-    static Bool windowsAeroThemeOnGameStart = false;
-    return windowsAeroThemeOnGameStart;
-}
-
 void WindowedModeOnExitGame() {
     if (Settings::GetInstance().HideTaskbarStartValue && TaskbarStatusOnGameStart() == 0)
         ToggleTaskbarAutoHide(false);
@@ -330,10 +325,12 @@ void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
     if (WindowsVersion() == WINVER_8) {
         CallVirtualMethod<70>(data->cbWindowBorders, 0);
         SetEnabled(data->cbWindowBorders, false);
+        SetEnabled(data->tbWindowBorders, false);
     }
     else {
         CallVirtualMethod<70>(data->cbWindowBorders, Settings::GetInstance().WindowBorders);
         SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
+        SetEnabled(data->tbWindowBorders, Settings::GetInstance().WindowedMode);
     }
     CallVirtualMethod<84>(data->chkHideTaskbar, Settings::GetInstance().HideTaskbar);
     SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
@@ -350,8 +347,10 @@ void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int
         SetEnabled(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
         SetEnabled(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
         SetEnabled(data->chkPlayMusicInBackground, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->tbWindowBorders, Settings::GetInstance().WindowedMode);
+        if (WindowsVersion() != WINVER_8) {
+            SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
+            SetEnabled(data->tbWindowBorders, Settings::GetInstance().WindowedMode);
+        }
         SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
         SetEnabled(data->chkDragWithMouse, Settings::GetInstance().WindowedMode);
         if (Settings::GetInstance().WindowedMode != Settings::GetInstance().WindowedModeStartValue)

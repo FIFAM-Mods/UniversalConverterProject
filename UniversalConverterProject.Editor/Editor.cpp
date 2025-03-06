@@ -185,19 +185,32 @@ const wchar_t* GetAppLocalizedName() {
     return GetFMDocumentsFolderName().c_str();
 }
 
+Path GetEULAPath() {
+    Path documentsPath = GetDocumentsPath();
+    if (!documentsPath.empty())
+        return GetDocumentsPath() / "Config" / "ucp-eula-shown";
+    return Path();
+}
+
+Path &EULAPath() {
+    static Path eulaPath = GetEULAPath();
+    return eulaPath;
+}
+
 UInt __stdcall WasEULAShown(Int) {
-    path documentsPath = GetDocumentsPath();
-    if (!documentsPath.empty()) {
-        path testFileName = GetDocumentsPath() / "Config" / "ucp-eula-shown";
-        if (exists(testFileName))
-            return true;
-        else {
-            FILE* testFile = _wfopen(testFileName.c_str(), L"wb");
+    return !EULAPath().empty() && exists(EULAPath());
+}
+
+Int METHOD CDlgEula_Show(void *dlg) {
+    Int result = CallMethodAndReturn<Int, 0x442B20>(dlg);
+    if (result == 1) {
+        if (!EULAPath().empty()) {
+            FILE *testFile = _wfopen(EULAPath().c_str(), L"wb");
             if (testFile)
                 fclose(testFile);
         }
     }
-    return false;
+    return result;
 }
 
 void *gDlgMainMenu = nullptr;
@@ -1251,7 +1264,11 @@ void PatchEditor(FM::Version v) {
     #endif
     */
 
-        patch::RedirectCall(0x442B25, WasEULAShown); // EULA
+        // EULA
+        patch::RedirectCall(0x442B25, WasEULAShown);
+        patch::RedirectCall(0x4C1389, CDlgEula_Show);
+        patch::RedirectCall(0x4C1512, CDlgEula_Show);
+        patch::SetPointer(0x6555E8, CDlgEula_Show);
 
         patch::RedirectCall(0x52769C, OnPlayerCommentFormat);
 
