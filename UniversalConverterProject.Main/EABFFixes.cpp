@@ -1617,6 +1617,38 @@ bool METHOD CheckAchievementInvestor(void *ac, DUMMY_ARG, unsigned int id) {
     return false;
 }
 
+CDBTeam *gMatchdayMatchSpeech_UserTeam;
+CTeamIndex gMatchdayMatchSpeech_StadiumID;
+
+CTeamIndex * METHOD CMatchdayMatchSpeech_GetNextMatchStadiumID(CDBTeam *team, DUMMY_ARG, CTeamIndex *outStadiumID) {
+    gMatchdayMatchSpeech_StadiumID.clear();
+    CTeamIndex *result = CallMethodAndReturn<CTeamIndex *, 0xECCB00>(team, outStadiumID);
+    gMatchdayMatchSpeech_UserTeam = team;
+    gMatchdayMatchSpeech_StadiumID = *result;
+    return result;
+}
+
+FmString * METHOD CMatchdayMatchSpeech_GetStadiumName(CDBTeam *, DUMMY_ARG, FmString *out) {
+    return CallMethodAndReturn<FmString *, 0xED3D80>(gMatchdayMatchSpeech_UserTeam, out, &gMatchdayMatchSpeech_StadiumID);
+}
+
+Bool METHOD IsTeamHostOfNextMatch(CDBTeam *team, DUMMY_ARG, CTeamIndex) {
+    return *raw_ptr<Bool>(team, 0x9AC + 0x16);
+}
+
+void CWeekNextMatchdayInfo_SetWidgetStadiumImage(void *widget, CTeamIndex const &teamID, UInt flag) {
+    CDBTeam *team = GetTeam(teamID);
+    if (team) {
+        CTeamIndex hostTeamID = CTeamIndex::null();
+        CallMethod<0xECCB00>(team, &hostTeamID); // CDBTeam::GetNextMatchHost
+        if (!hostTeamID.isNull() && GetTeam(hostTeamID)) {
+            Call<0xD4F840>(widget, &hostTeamID, flag);
+            return;
+        }
+    }
+    Call<0xD4F840>(widget, &teamID, flag);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -1957,13 +1989,13 @@ void PatchEABFFixes(FM::Version v) {
         // national team select - 35 players => 18
         patch::SetUChar(0x5467FD + 3, 18);
 
-        // user formation bug
+        // user formation bug TODO: remove this?
         patch::RedirectCall(0x13ED595, UserFormationsBugFix);
         patch::RedirectCall(0x13ED5CC, UserFormationsBugFix);
         patch::RedirectCall(0x1172FF7, UserFormationsBugFix);
         patch::RedirectCall(0x141558C, UserFormationsBugFix);
 
-        // temporary handler for 1010DAA
+        // temporary handler for 1010DAA TODO: remove this?
         patch::RedirectCall(0x5401D0 + 0x1DA, Handler_1010D90<0x5401D0 + 0x1DA>);
         patch::RedirectCall(0x5751C0 + 0x60, Handler_1010D90<0x5751C0 + 0x60 >);
         patch::RedirectCall(0x5818F0 + 0xAF, Handler_1010D90<0x5818F0 + 0xAF >);
@@ -2194,6 +2226,16 @@ void PatchEABFFixes(FM::Version v) {
 
         patch::RedirectJump(0x13BB610, RetUnlockablesTrue);
         patch::RedirectCall(0x6B0798, CheckAchievementInvestor);
+
+        // home/away/stadium team fix
+        // MatchAlertPopup
+        patch::RedirectCall(0xA9424E, IsTeamHostOfNextMatch);
+        // CMatchdayMatchSpeech
+        patch::RedirectCall(0xAB4778, CMatchdayMatchSpeech_GetNextMatchStadiumID);
+        patch::RedirectCall(0xAB48BA, CMatchdayMatchSpeech_GetStadiumName);
+        patch::RedirectCall(0xAB478A, IsTeamHostOfNextMatch);
+        // CWeekNextMatchdayInfo
+        patch::RedirectCall(0xAEEB0B, CWeekNextMatchdayInfo_SetWidgetStadiumImage);
 ;   }
 }
 

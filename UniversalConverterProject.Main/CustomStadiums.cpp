@@ -466,52 +466,6 @@ char METHOD OnCheckStadiumWeatherForTeamType(void *t) {
     return CallMethodAndReturn<char, 0xF72D70>(t);
 }
 
-bool gMatchPreviewSwapMatchHomeAway = false;
-
-void * METHOD OnGetMatchForPreview(void *matchList, DUMMY_ARG, unsigned int index) {
-    unsigned int numMatches = CallMethodAndReturn<unsigned int, 0xE884A0>(matchList);
-    if (index >= numMatches) {
-        index -= numMatches;
-        gMatchPreviewSwapMatchHomeAway = true;
-    }
-    else
-        gMatchPreviewSwapMatchHomeAway = false;
-    return CallMethodAndReturn<void *, 0xE884B0>(matchList, index);
-}
-
-unsigned int METHOD OnGetMatchPreviewNumMatches(void *matchList) {
-    return CallMethodAndReturn<unsigned int, 0xE884A0>(matchList) * 2;
-}
-
-CTeamIndex *METHOD OnGetMatchPreviewHomeTeamID(void *match, DUMMY_ARG, CTeamIndex *teamId) {
-    if (gMatchPreviewSwapMatchHomeAway)
-        return CallMethodAndReturn<CTeamIndex *, 0xE7FD00>(match, teamId);
-    else
-        return CallMethodAndReturn<CTeamIndex *, 0xE7FCF0>(match, teamId);
-}
-
-CTeamIndex *METHOD OnGetMatchPreviewAwayTeamID(void *match, DUMMY_ARG, CTeamIndex *teamId) {
-    if (gMatchPreviewSwapMatchHomeAway)
-        return CallMethodAndReturn<CTeamIndex *, 0xE7FCF0>(match, teamId);
-    else
-        return CallMethodAndReturn<CTeamIndex *, 0xE7FD00>(match, teamId);
-}
-
-void *METHOD OnCopyMatchForMatchPreview(void *matchList, DUMMY_ARG, unsigned int index, CDBOneMatch *outMatch) {
-    unsigned int numMatches = CallMethodAndReturn<unsigned int, 0xE884A0>(matchList);
-    Bool isSwapped = index >= numMatches;
-    if (isSwapped)
-        index -= numMatches;
-    void *result = CallMethodAndReturn<void *, 0xE8BB20>(matchList, index, outMatch);
-    if (isSwapped) {
-        CTeamIndex homeTeamID = outMatch->GetHomeTeamID();
-        CTeamIndex awayTeamID = outMatch->GetAwayTeamID();
-        *raw_ptr<CTeamIndex>(outMatch, 8) = awayTeamID;
-        *raw_ptr<CTeamIndex>(outMatch, 12) = homeTeamID;
-    }
-    return result;
-}
-
 void PatchCustomStadiums(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         // movzx   ebp, al  >>  mov ebp, eax
@@ -535,13 +489,6 @@ void PatchCustomStadiums(FM::Version v) {
 
         // weather fix
         patch::SetUChar(0x44231D + 1, 0x97);
-
-        // weather fix for training ground matches
-        patch::RedirectCall(0xA942E6, OnGetMatchForPreview);
-        patch::RedirectCall(0xA94322, OnGetMatchPreviewNumMatches);
-        patch::RedirectCall(0xA942F4, OnGetMatchPreviewHomeTeamID);
-        patch::RedirectCall(0xA94304, OnGetMatchPreviewAwayTeamID);
-        patch::RedirectCall(0xA94340, OnCopyMatchForMatchPreview);
 
         if (!Settings::GetInstance().EnableDefaultStadiums) {
             patch::RedirectCall(0xF80AC7, OnReadFifaStadiumIdFromDb);
