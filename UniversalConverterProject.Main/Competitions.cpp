@@ -5718,6 +5718,27 @@ CCompID *METHOD MatchMainTabResults_GetCompetitionId(CDBOneMatch *match, DUMMY_A
     return outCompID;
 }
 
+UChar METHOD LastContinentalMatchDate_GetLeaguePlaceColor(CDBLeague *league, DUMMY_ARG, UChar place) {
+    UChar color = CallMethodAndReturn<UChar, 0x1050510>(league, place);
+    if (color == 4) // Conference League places color
+        return 3;
+    return color;
+}
+
+CCompID *METHOD LastContinentalMatchDate_GetCompId(CDBCompetition *comp, DUMMY_ARG, CCompID *outId) {
+    *outId = comp->GetCompID();
+    if (outId->type == COMP_CONFERENCE_LEAGUE)
+        outId->type = COMP_UEFA_CUP;
+    return outId;
+}
+
+Bool METHOD LastContinentalMatchDate_TeamPlaysInCompetition(CDBTeam *team, DUMMY_ARG, CCompID *compId) {
+    if (CallMethodAndReturn<Bool, 0xED0710>(team, compId))
+        return true;
+    static CCompID conferenceLeagueId = CCompID::Make(FifamCompRegion::Europe, COMP_CONFERENCE_LEAGUE, 0);
+    return CallMethodAndReturn<Bool, 0xED0710>(team, &conferenceLeagueId);
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectJump(0xF909BE, CupDraw_Clear);
@@ -6581,5 +6602,10 @@ void PatchCompetitions(FM::Version v) {
 
         // MatchMain screen Results tab
         patch::RedirectCall(0xAC9F8E, MatchMainTabResults_GetCompetitionId);
+
+        // LastContinentalMatchDate and Conference League
+        patch::RedirectCall(0x121C478, LastContinentalMatchDate_GetLeaguePlaceColor);
+        patch::RedirectCall(0x110BBD8, LastContinentalMatchDate_GetCompId);
+        patch::RedirectCall(0xF1E259, LastContinentalMatchDate_TeamPlaysInCompetition);
     }
 }

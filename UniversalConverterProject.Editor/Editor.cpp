@@ -181,8 +181,10 @@ void OnGetFreeAgentsFilePath(WideChar *dest, WideChar const *format, WideChar co
     swprintf(dest, freeAgentsFilePathFormat.c_str(), dbPath);
 }
 
-const wchar_t* GetAppLocalizedName() {
-    return GetFMDocumentsFolderName().c_str();
+const WideChar* GetAppLocalizedName() {
+    static WideChar appLocalizedName[2048];
+    wcscpy(appLocalizedName, GetFMDocumentsFolderName().c_str());
+    return appLocalizedName;
 }
 
 Path GetEULAPath() {

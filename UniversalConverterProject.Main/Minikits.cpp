@@ -72,6 +72,8 @@ void METHOD Render2dKit(void *t) {
 }
 
 void PatchMinikits(FM::Version v) {
-    patch::RedirectCall(0x654991, Render2dKit<0, 0x21E0, 0x19A0, 0x652E40>);
-    patch::RedirectCall(0x6D36C1, Render2dKit<0xBE0, 0, 0xBC0, 0x6D0630>);
+    if (v.id() == ID_FM_13_1030_RLD) {
+        patch::RedirectCall(0x654991, Render2dKit<0, 0x21E0, 0x19A0, 0x652E40>);
+        patch::RedirectCall(0x6D36C1, Render2dKit<0xBE0, 0, 0xBC0, 0x6D0630>);
+    }
 }

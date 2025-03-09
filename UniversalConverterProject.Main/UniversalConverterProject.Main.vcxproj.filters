@@ -87,6 +87,8 @@
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="DebugPrint.cpp" />
+    <ClCompile Include="..\shared\Resolutions.cpp" />
+    <ClCompile Include="ScreenResolution.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -169,6 +171,8 @@
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="DebugPrint.h" />
+    <ClInclude Include="..\shared\Resolutions.h" />
+    <ClInclude Include="ScreenResolution.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

@@ -9,6 +9,7 @@
 #include "CustomStadiums.h"
 #include "3dModels.h"
 #include "CustomShaders.h"
+#include "ScreenResolution.h"
 #include "UcpSettings.h"
 
 unsigned int gOriginalLoadGfxCore = 0;
@@ -37,6 +38,7 @@ bool METHOD OnLoadGfxCore(void **info, DUMMY_ARG, const wchar_t *libFileName, co
             InstallAdBoardsAndBanners3dPatches();
             InstallCustomStadiums3DPatches();
             Install3DModelPatches();
+            InstallScreenResolution_GfxCore();
         }
     }
     return result;

@@ -27,6 +27,7 @@ typedef struct IUnknown IUnknown;
 #define APP_EURO    4
 #define APP_WC      5
 #define APP_CL      6
+#define APP_RESOLUTOOL 15
 
 #define ID_FM_14_1000     0xE100001
 #define VERSION_FM_14 ID_FM_14_1000
@@ -135,6 +136,9 @@ typedef struct IUnknown IUnknown;
 
 #define ID_CL_06_07_1000_C   0x7100016
 #define VERSION_CL_06_07 ID_CL_06_07_1000_C
+
+#define ID_RESOLUTOOL_13_1000 0xD10000F
+#define VERSION_RESOLUTOOL_13 ID_RESOLUTOOL_13_1000
 
 namespace FM {
 
@@ -309,6 +313,11 @@ inline Version DetectAppVersion() {
 
     case 0x930005:
         return ID_CL_04_05_1000_C;
+
+    // RESOLUTOOL
+
+    case 0x502B92:
+        return ID_RESOLUTOOL_13_1000;
 
     }
 

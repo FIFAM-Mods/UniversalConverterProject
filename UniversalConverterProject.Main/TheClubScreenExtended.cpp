@@ -92,11 +92,13 @@ void METHOD OnTeamResolveLinks(CDBTeam *team) {
 }
 
 void PatchTheClubScreenExtended(FM::Version v) {
-    static UInt NEW_CCLUBHISTORY_SIZE = DEFAULT_CCLUBHISTORY_SIZE + 8;
-    patch::SetUInt(0x659AF4 + 1, NEW_CCLUBHISTORY_SIZE);
-    patch::SetUInt(0x659AFB + 1, NEW_CCLUBHISTORY_SIZE);
-    patch::RedirectCall(0x65565E, OnCreateClubHistoryUI);
-    patch::RedirectCall(0x656B96, OnGetTeamAddress);
-    patch::RedirectCall(0x6590F5, OnSetupClubHistoryScreen);
-    patch::RedirectCall(0xFDC597, OnTeamResolveLinks);
+    if (v.id() == ID_FM_13_1030_RLD) {
+        static UInt NEW_CCLUBHISTORY_SIZE = DEFAULT_CCLUBHISTORY_SIZE + 8;
+        patch::SetUInt(0x659AF4 + 1, NEW_CCLUBHISTORY_SIZE);
+        patch::SetUInt(0x659AFB + 1, NEW_CCLUBHISTORY_SIZE);
+        patch::RedirectCall(0x65565E, OnCreateClubHistoryUI);
+        patch::RedirectCall(0x656B96, OnGetTeamAddress);
+        patch::RedirectCall(0x6590F5, OnSetupClubHistoryScreen);
+        patch::RedirectCall(0xFDC597, OnTeamResolveLinks);
+    }
 }

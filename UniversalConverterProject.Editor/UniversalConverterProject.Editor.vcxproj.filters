@@ -33,6 +33,8 @@
     <ClCompile Include="Assessment.cpp" />
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
+    <ClCompile Include="Resolutool.cpp" />
+    <ClCompile Include="..\shared\Resolutions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -67,6 +69,8 @@
     <ClInclude Include="Assessment.h" />
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
+    <ClInclude Include="Resolutool.h" />
+    <ClInclude Include="..\shared\Resolutions.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

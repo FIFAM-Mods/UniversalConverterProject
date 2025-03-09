@@ -22,12 +22,15 @@
 #include "CustomShaders.h"
 #include "ReserveNames.h"
 #include "Assessment.h"
+#include "Resolutool.h"
 #include "shared.h"
 
 using namespace plugin;
 
 class UniversalConverterProject {
 public:
+    static FM::Version v;
+
     UniversalConverterProject() {
         auto v = FM::GetAppVersion();
         if (v.id() == ID_ED_13_1000) {
@@ -47,31 +50,39 @@ public:
             patch::SetUChar(0x4E9A1A + 1, 0xF); // CCountry::LoadFileData
             patch::SetUChar(0x53B5B9 + 1, 0xF); // Without.sav
             patch::SetUChar(0x541847 + 1, 0xF); // Rules.sav
+            PatchRendererHook(v);
+            PatchTranslation(v);
+            PatchClubIDs(v);
+            PatchArchivesReadingForEditor(v);
+            //PatchTalentStars(v);
+            PatchEditorChiefExecExport(v);
+            PatchLowestLeagues(v);
+            PatchStaffNames(v);
+            PatchCountry207(v);
+            //PatchFemaleNames(v);
+            PatchCompetitions(v);
+            PatchFormations(v);
+            PatchEditor(v);
+            PatchParameterFiles(v);
+            PatchExtendedPlayer(v);
+            //PatchGenericKits(v);
+            PatchKits(v);
+            PatchDatabaseOptions(v);
+            PatchReserveNames(v);
+            PatchAssessment(v);
         }
-        PatchRendererHook(v);
-        PatchTranslation(v);
-        PatchClubIDs(v);
-        PatchArchivesReadingForEditor(v);
-        //PatchTalentStars(v);
-        PatchEditorChiefExecExport(v);
-        PatchLowestLeagues(v);
-        PatchStaffNames(v);
-        PatchCountry207(v);
-        //PatchFemaleNames(v);
-        PatchCompetitions(v);
-        PatchFormations(v);
-        PatchEditor(v);
-        PatchParameterFiles(v);
-        PatchExtendedPlayer(v);
-        //PatchGenericKits(v);
-        PatchKits(v);
-        PatchDatabaseOptions(v);
-        PatchReserveNames(v);
-        PatchAssessment(v);
+        else if (v.id() == ID_RESOLUTOOL_13_1000) {
+            PatchResolutool(v);
+        }
     }
 
     ~UniversalConverterProject() {
-        //if (Settings::GetInstance().EnableCustomShaders)
-        //    ClearShadersDataStorage();
+        if (v.id() == ID_ED_13_1000) {
+            //if (Settings::GetInstance().EnableCustomShaders)
+            //    ClearShadersDataStorage();
+        }
     }
-} universalConverterProject;
+};
+
+FM::Version UniversalConverterProject::v;
+UniversalConverterProject universalConverterProject;

@@ -1121,12 +1121,12 @@ UChar METHOD MySetTransferDemandsTaskProcess(void *task, DUMMY_ARG, void *staff)
                 break;
             CDBPlayer *player = GetPlayer(team->GetPlayer(i));
             if (player && player->GetCurrentTeam() == teamIndex) {
-                auto currMV = player->GetMarketValue().GetValue();
+                auto currMV = player->GetMarketValue().GetValueInCurrency();
                 if (currMV > 0) {
-                    auto currDemand = player->GetDemandValue().GetValue();
-                    auto currFee = player->GetMinRelFee().GetValue();
-                    const Int64 ValueMin = 70'000'000'000;
-                    const Int64 ValueMax = 150'000'000'000;
+                    auto currDemand = player->GetDemandValue().GetValueInCurrency();
+                    auto currFee = player->GetMinRelFee().GetValueInCurrency();
+                    const Int64 ValueMin = 70'000'000;
+                    const Int64 ValueMax = 150'000'000;
                     const Int64 ValueDiff = ValueMax - ValueMin;
                     if (ValueDiff > 0 && currMV > ValueMin && (currDemand > currMV || currFee > currMV)) {
                         Double coeff = 1.0 - (Double)(std::clamp(currMV, ValueMin, ValueMax) - ValueMin) / (Double)ValueDiff;
@@ -1142,7 +1142,6 @@ UChar METHOD MySetTransferDemandsTaskProcess(void *task, DUMMY_ARG, void *staff)
                             if (newValue < currFee)
                                 player->SetMinRelFee((Int64)(currMV + (Double)(currFee - currMV) * coeff));
                         }
-
                     }
                 }
             }
@@ -2239,7 +2238,9 @@ void PatchEABFFixes(FM::Version v) {
 ;   }
 }
 
-void UnpatchEABFFixes() {
-    if (bGetPlayerKnowledgeLevelCriticalSectionInitialized)
-        DeleteCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
+void UnpatchEABFFixes(FM::Version v) {
+    if (v.id() == ID_FM_13_1030_RLD) {
+        if (bGetPlayerKnowledgeLevelCriticalSectionInitialized)
+            DeleteCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
+    }
 }

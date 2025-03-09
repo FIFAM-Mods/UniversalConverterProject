@@ -101,6 +101,7 @@
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
+    <ClCompile Include="..\shared\Resolutions.cpp" />
     <ClCompile Include="..\shared\settings\Settings.cpp" />
     <ClCompile Include="..\shared\shared.cpp" />
     <ClCompile Include="..\shared\UcpSettings.cpp" />
@@ -124,6 +125,7 @@
     <ClCompile Include="ParameterFiles.cpp" />
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="ReserveNames.cpp" />
+    <ClCompile Include="Resolutool.cpp" />
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="Talent6Stars.cpp" />
     <ClCompile Include="Translation.cpp" />
@@ -133,6 +135,7 @@
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
+    <ClInclude Include="..\shared\Resolutions.h" />
     <ClInclude Include="..\shared\settings\Settings.h" />
     <ClInclude Include="..\shared\shared.h" />
     <ClInclude Include="..\shared\UcpSettings.h" />
@@ -156,6 +159,7 @@
     <ClInclude Include="ParameterFiles.h" />
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="ReserveNames.h" />
+    <ClInclude Include="Resolutool.h" />
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="Translation.h" />

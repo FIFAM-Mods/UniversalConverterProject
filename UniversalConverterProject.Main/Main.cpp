@@ -63,6 +63,7 @@
 #include "UEFALeaguePhase.h"
 #include "Assessment.h"
 #include "MainMenu.h"
+#include "ScreenResolution.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -90,7 +91,7 @@ public:
     UniversalConverterProject() {
         v = FM::GetAppVersion();
         if (v.id() == ID_FM_13_1030_RLD) {
-            if (!CheckLicense(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','M','a','i','n','.','a','s','i'>(1583797143)))
+            if (!CheckLicense(Magic<'U', 'n', 'i', 'v', 'e', 'r', 's', 'a', 'l', 'C', 'o', 'n', 'v', 'e', 'r', 't', 'e', 'r', 'P', 'r', 'o', 'j', 'e', 'c', 't', '.', 'M', 'a', 'i', 'n', '.', 'a', 's', 'i'>(1583797143)))
                 return;
             Settings::GetInstance().Load();
             SafeLog::Clear();
@@ -125,73 +126,74 @@ public:
                     IsFirstLaunch() = false;
                 }
             }
-        }
-        PatchWorldCup(v);
-        PatchLeagueSelection(v);
-        PatchMasterDatLimit(v);
-        PatchTalentStars(v);
-        PatchTournamentFinalists(v);
-        PatchNationalTeamManagers(v);
-        PatchGfxCoreHook(v);
-        PatchPlayerMatchEvents(v);
-        PatchFifaWorldPlayerGala(v);
-        PatchScoutingSystems(v);
-        PatchLowestLeagues(v);
-        //PatchPlayerDevelopment(v);
-        PatchStaffNames(v);
-        PatchForeignersLimit(v);
-        PatchTeamControl(v);
-        //InstallEasyEdit(v); -- deprecated since version 2022.1. do not enable
-        PatchCompetitions(v);
-        PatchSpareEmployeeFix(v);
-        PatchEABFFixes(v);
-        PatchLoansLimit(v);
-        PatchEuCountries(v);
-        PatchMinikits(v);
-        PatchBalls(v);
-        PatchExcludeNames(v);
-        Patch3dMatchStandings(v);
-        PatchIncreaseSalaryOwnedClub(v);
-        PatchKits(v);
-        PatchMiscFormerCupOpponents(v);
-        PatchPlayerAccessories(v);
-        PatchFormations(v);
-        PatchWindowedMode(v);
-        Patch3dAdBoardsAndBanners(v);
-        PatchPitch(v);
-        PatchScouting(v);
-        PatchMedia(v);
-        PatchGenericHeads(v);
-        PatchCustomStadiums(v);
-        PatchPortraitDialog(v);
-        //PatchPlayerTalks(v);
-        PatchTheClubScreenExtended(v);
-        PatchExtendedPlayer(v);
-        PatchExtendedTeam(v);
-        PatchPlayerNameEdit(v);
-        PatchWomensDatabase(v);
-        PatchInterfaceTheme(v);
-        PatchDatabaseOptions(v);
-        PatchYouthGenCountries(v);
-        PatchClubSponsors(v);
-        //PatchAchievements(v);
-        PatchReserveNames(v);
-		PatchExtendedCountry(v);
-		PatchStatsFifaRanking(v);
-		PatchMobilePhone(v);
-        PatchUEFALeaguePhase(v);
-        PatchAssessment(v);
-        PatchMainMenu(v);
+            PatchWorldCup(v);
+            PatchLeagueSelection(v);
+            PatchMasterDatLimit(v);
+            PatchTalentStars(v);
+            PatchTournamentFinalists(v);
+            PatchNationalTeamManagers(v);
+            PatchGfxCoreHook(v);
+            PatchPlayerMatchEvents(v);
+            PatchFifaWorldPlayerGala(v);
+            PatchScoutingSystems(v);
+            PatchLowestLeagues(v);
+            //PatchPlayerDevelopment(v);
+            PatchStaffNames(v);
+            PatchForeignersLimit(v);
+            PatchTeamControl(v);
+            //InstallEasyEdit(v); -- deprecated since version 2022.1. do not enable
+            PatchCompetitions(v);
+            PatchSpareEmployeeFix(v);
+            PatchEABFFixes(v);
+            PatchLoansLimit(v);
+            PatchEuCountries(v);
+            PatchMinikits(v);
+            PatchBalls(v);
+            PatchExcludeNames(v);
+            Patch3dMatchStandings(v);
+            PatchIncreaseSalaryOwnedClub(v);
+            PatchKits(v);
+            PatchMiscFormerCupOpponents(v);
+            PatchPlayerAccessories(v);
+            PatchFormations(v);
+            PatchWindowedMode(v);
+            Patch3dAdBoardsAndBanners(v);
+            PatchPitch(v);
+            PatchScouting(v);
+            PatchMedia(v);
+            PatchGenericHeads(v);
+            PatchCustomStadiums(v);
+            PatchPortraitDialog(v);
+            //PatchPlayerTalks(v);
+            PatchTheClubScreenExtended(v);
+            PatchExtendedPlayer(v);
+            PatchExtendedTeam(v);
+            PatchPlayerNameEdit(v);
+            PatchWomensDatabase(v);
+            PatchInterfaceTheme(v);
+            PatchDatabaseOptions(v);
+            PatchYouthGenCountries(v);
+            PatchClubSponsors(v);
+            //PatchAchievements(v);
+            PatchReserveNames(v);
+            PatchExtendedCountry(v);
+            PatchStatsFifaRanking(v);
+            PatchMobilePhone(v);
+            PatchUEFALeaguePhase(v);
+            PatchAssessment(v);
+            PatchMainMenu(v);
+            PatchScreenResolution(v);
 
-    #ifdef BETA
-        DoBetaPatches(v);
-    #endif
+#ifdef BETA
+            DoBetaPatches(v);
+#endif
+        }
     }
 
     ~UniversalConverterProject() {
-        UnpatchEABFFixes();
-        //if (Settings::GetInstance().EnableCustomShaders)
-        //    ClearShadersDataStorage();
+        if (v.id() == ID_FM_13_1030_RLD) {
+            UnpatchEABFFixes(v);
+        }
     }
 };
 

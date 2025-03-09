@@ -2,4 +2,4 @@
 #include "plugin-std.h"
 
 void PatchEABFFixes(FM::Version v);
-void UnpatchEABFFixes();
+void UnpatchEABFFixes(FM::Version v);
