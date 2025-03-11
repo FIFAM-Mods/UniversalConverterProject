@@ -1413,7 +1413,64 @@ struct CompMatchResult {
     Char _pad1D[3];
 };
 
-class CXgFMPanel;
+class CTrfmNode {
+public:
+};
+
+class CXgBaseControl {
+public:
+    void SetEnabled(Bool enabled);
+    void SetVisible(Bool visible);
+    UInt GetId();
+};
+
+class CXgVisibleControl : public CXgBaseControl {
+public:
+};
+
+class CXgBaseButton : public CXgVisibleControl {
+public:
+};
+
+class CXgButton : public CXgBaseButton {
+public:
+};
+
+class CXgTextBox : public CXgBaseButton {
+public:
+};
+
+class CXgImage : public CXgBaseButton {
+public:
+};
+
+class CXgTextButton : public CXgButton {
+public:
+};
+
+class CXgComboCompound : public CXgVisibleControl {
+public:
+    void Clear();
+    Int GetNumberOfItems();
+    void SetCurrentIndex(Int index);
+    Int GetCurrentIndex();
+};
+
+class CXgComboBox : public CXgComboCompound {
+public:
+    Int AddItem(WideChar const *text, Int64 value);
+    void SetValueAtIndex(Int index, Int64 value);
+    Int64 GetValueAtIndex(Int index);
+    void SetCurrentValue(Int64 value);
+    Int64 GetCurrentValue(Int64 defaultValue);
+};
+
+class CXgCheckBox : public CXgButton {
+public:
+    void SetIsChecked(Bool checked);
+    Bool GetIsChecked();
+    UChar GetCheckState();
+};
 
 enum FMListBoxColumnType {
     LBT_COUNTRY = 1,
@@ -1432,6 +1489,8 @@ enum FMListBoxColumnFormatting {
     LBF_NONE = 210,
     LBF_END = 228
 };
+
+class CXgFMPanel;
 
 class CFMListBox {
 public:
@@ -1459,6 +1518,16 @@ public:
     static void InitColumnFormatting(CFMListBox *listBox, ArgTypes... args) {
         Call<0xD196A0>(listBox, args...);
     }
+};
+
+class CXgFMPanel {
+public:
+    CXgTextBox *GetTextBox(Char const *name);
+    CXgTextButton *GetTextButton(Char const *name);
+    CXgImage *GetImage(Char const *name);
+    CTrfmNode *GetTransform(Char const *name);
+    CXgCheckBox *GetCheckBox(Char const *name);
+    CXgComboBox *GetComboBox(Char const *name);
 };
 
 class CompetitionHosts {

@@ -14,6 +14,7 @@
 #include "DebugPrint.h"
 #include <dwmapi.h>
 #include <d3d9.h>
+#include <d3dx9.h>
 
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -267,136 +268,327 @@ Int AppIdle() {
 }
 
 struct GameOptionsAdditionalData {
-    void *chkWindowedMode = nullptr;
-    void *chkWindowsMousePointer = nullptr;
-    void *cbWindowPosition = nullptr;
-    void *tbWindowPosition = nullptr;
-    void *chkTeamControl = nullptr;
-    void *cbTheme = nullptr;
-    void *chkPlayMusicInBackground = nullptr;
-    void *chkImUsingATouchpad = nullptr;
-    void *cbWindowBorders = nullptr;
-    void *tbWindowBorders = nullptr;
-    void *chkHideTaskbar = nullptr;
-    void *chkDragWithMouse = nullptr;
+    CXgCheckBox *chkWindowedMode;
+    CXgCheckBox *chkWindowsMousePointer;
+    CXgComboBox *cbWindowPosition;
+    CXgTextBox *tbWindowPosition;
+    CXgCheckBox *chkTeamControl;
+    CXgComboBox *cbTheme;
+    CXgCheckBox *chkPlayMusicInBackground;
+    CXgCheckBox *chkImUsingATouchpad;
+    CXgComboBox *cbWindowBorders;
+    CXgTextBox *tbWindowBorders;
+    CXgCheckBox *chkHideTaskbar;
+    CXgCheckBox *chkDragWithMouse;
+    CXgComboBox *cbScreenshotKey;
+    CXgComboBox *cbScreenshotFormat;
+    CXgCheckBox *chkScreenshotOverlay;
 };
 
-void *METHOD OnSetupGameOptionsUI(void *screen, DUMMY_ARG, char const *name) {
-    void *result = CallMethodAndReturn<void *, 0xD44260>(screen, name);
+CXgCheckBox *METHOD OnSetupGameOptionsUI(CXgFMPanel *screen, DUMMY_ARG, char const *name) {
+    CXgCheckBox *cbRandomLoading = screen->GetCheckBox(name);
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
-    data->chkWindowedMode = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkWindowedMode");
-    data->chkWindowsMousePointer = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkWindowsMousePointer");
-    data->cbWindowPosition = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbWindowPosition");
-    data->tbWindowPosition = CallMethodAndReturn<void *, 0xD44240>(screen, "TbWindowPosition");
-    data->chkTeamControl = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkTeamControlCanBeEnabled");
-    data->cbTheme = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbTheme");
-    data->chkPlayMusicInBackground = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkPlayMusicInBackground");
-    data->chkImUsingATouchpad = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkImUsingATouchpad");
-    data->cbWindowBorders = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbWindowBorders");
-    data->tbWindowBorders = CreateTextBox(screen, "TbWindowBorders");
-    data->chkHideTaskbar = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkHideTaskbar");
-    data->chkDragWithMouse = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkDragWithMouse");
-    CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_DEFAULT"), 0, 0);
-    CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_CENTER"), 1, 0);
-    CallVirtualMethod<83>(data->cbWindowPosition, GetTranslation("IDS_OPTIONS_WINDOWPOS_LEFT"), 2, 0);
-    CallVirtualMethod<70>(data->cbWindowPosition, Settings::GetInstance().WindowPosition);
-    CallVirtualMethod<84>(data->chkWindowedMode, Settings::GetInstance().WindowedMode);
-    CallVirtualMethod<84>(data->chkWindowsMousePointer, Settings::GetInstance().WindowsMousePointer);
-    CallVirtualMethod<84>(data->chkTeamControl, Settings::GetInstance().DisableTeamControl == false);
-    CallVirtualMethod<84>(data->chkPlayMusicInBackground, Settings::GetInstance().PlayMusicInBackground);
-    CallVirtualMethod<84>(data->chkImUsingATouchpad, Settings::GetInstance().ImUsingATouchpad);
-    SetEnabled(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
-    SetEnabled(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
-    SetEnabled(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
-    SetEnabled(data->chkPlayMusicInBackground, Settings::GetInstance().WindowedMode);
-    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_CLASSIC"), 0, 0);
-    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_LIGHT"), 1, 0);
-    CallVirtualMethod<83>(data->cbTheme, GetTranslation("IDS_OPTIONS_THEME_DARK"), 2, 0);
+    data->chkWindowedMode = screen->GetCheckBox("ChkWindowedMode");
+    data->chkWindowsMousePointer = screen->GetCheckBox("ChkWindowsMousePointer");
+    data->cbWindowPosition = screen->GetComboBox("CbWindowPosition");
+    data->tbWindowPosition = screen->GetTextBox("TbWindowPosition");
+    data->chkTeamControl = screen->GetCheckBox("ChkTeamControlCanBeEnabled");
+    data->cbTheme = screen->GetComboBox("CbTheme");
+    data->chkPlayMusicInBackground = screen->GetCheckBox("ChkPlayMusicInBackground");
+    data->chkImUsingATouchpad = screen->GetCheckBox("ChkImUsingATouchpad");
+    data->cbWindowBorders = screen->GetComboBox("CbWindowBorders");
+    data->tbWindowBorders = screen->GetTextBox("TbWindowBorders");
+    data->chkHideTaskbar = screen->GetCheckBox("ChkHideTaskbar");
+    data->chkDragWithMouse = screen->GetCheckBox("ChkDragWithMouse");
+    data->cbScreenshotKey = screen->GetComboBox("CbScreenshotKey");
+    data->cbScreenshotFormat = screen->GetComboBox("CbScreenshotFormat");
+    data->chkScreenshotOverlay = screen->GetCheckBox("ChkScreenshotOverlay");
+    data->cbWindowPosition->AddItem(GetTranslation("IDS_OPTIONS_WINDOWPOS_DEFAULT"), WINDOWED_MODE_DEFAULT);
+    data->cbWindowPosition->AddItem(GetTranslation("IDS_OPTIONS_WINDOWPOS_CENTER"), WINDOWED_MODE_CENTER);
+    data->cbWindowPosition->AddItem(GetTranslation("IDS_OPTIONS_WINDOWPOS_LEFT"), WINDOWED_MODE_LEFT);
+    data->cbWindowPosition->SetCurrentValue(Settings::GetInstance().WindowPosition);
+    data->chkWindowedMode->SetIsChecked(Settings::GetInstance().WindowedMode);
+    data->chkWindowsMousePointer->SetIsChecked(Settings::GetInstance().WindowsMousePointer);
+    data->chkTeamControl->SetIsChecked(Settings::GetInstance().DisableTeamControl == false);
+    data->chkPlayMusicInBackground->SetIsChecked(Settings::GetInstance().PlayMusicInBackground);
+    data->chkImUsingATouchpad->SetIsChecked(Settings::GetInstance().ImUsingATouchpad);
+    data->chkWindowsMousePointer->SetEnabled(Settings::GetInstance().WindowedMode);
+    data->cbWindowPosition->SetEnabled(Settings::GetInstance().WindowedMode);
+    data->tbWindowPosition->SetEnabled(Settings::GetInstance().WindowedMode);
+    data->chkPlayMusicInBackground->SetEnabled(Settings::GetInstance().WindowedMode);
+    data->cbTheme->AddItem(GetTranslation("IDS_OPTIONS_THEME_CLASSIC"), 0);
+    data->cbTheme->AddItem(GetTranslation("IDS_OPTIONS_THEME_LIGHT"), 1);
+    data->cbTheme->AddItem(GetTranslation("IDS_OPTIONS_THEME_DARK"), 2);
     auto theme = ToLower(Settings::GetInstance().Theme);
     if (theme == "light")
-        CallVirtualMethod<70>(data->cbTheme, 1);
+        data->cbTheme->SetCurrentValue(1);
     else if (theme == "dark")
-        CallVirtualMethod<70>(data->cbTheme, 2);
+        data->cbTheme->SetCurrentValue(2);
     else
-        CallVirtualMethod<70>(data->cbTheme, 0);
-    CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_DEFAULT"), 0, 0);
-    CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_NONE"), 1, 0);
-    CallVirtualMethod<83>(data->cbWindowBorders, GetTranslation("IDS_WINDOWBORDERS_THIN"), 2, 0);
+        data->cbTheme->SetCurrentValue(0);
+    data->cbWindowBorders->AddItem(GetTranslation("IDS_WINDOWBORDERS_DEFAULT"), WINDOW_BORDERS_DEFAULT);
+    data->cbWindowBorders->AddItem(GetTranslation("IDS_WINDOWBORDERS_NONE"), WINDOW_BORDERS_NONE);
+    data->cbWindowBorders->AddItem(GetTranslation("IDS_WINDOWBORDERS_THIN"), WINDOW_BORDERS_THIN);
     if (WindowsVersion() == WINVER_8) {
-        CallVirtualMethod<70>(data->cbWindowBorders, 0);
-        SetEnabled(data->cbWindowBorders, false);
-        SetEnabled(data->tbWindowBorders, false);
+        data->cbWindowBorders->SetCurrentValue(WINDOW_BORDERS_DEFAULT);
+        data->cbWindowBorders->SetEnabled(false);
+        data->tbWindowBorders->SetEnabled(false);
     }
     else {
-        CallVirtualMethod<70>(data->cbWindowBorders, Settings::GetInstance().WindowBorders);
-        SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->tbWindowBorders, Settings::GetInstance().WindowedMode);
+        data->cbWindowBorders->SetCurrentValue(Settings::GetInstance().WindowBorders);
+        data->cbWindowBorders->SetEnabled(Settings::GetInstance().WindowedMode);
+        data->tbWindowBorders->SetEnabled(Settings::GetInstance().WindowedMode);
     }
-    CallVirtualMethod<84>(data->chkHideTaskbar, Settings::GetInstance().HideTaskbar);
-    SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
-    CallVirtualMethod<84>(data->chkDragWithMouse, Settings::GetInstance().DragWithMouse);
-    SetEnabled(data->chkDragWithMouse, Settings::GetInstance().WindowedMode);
-    return result;
+    data->chkHideTaskbar->SetIsChecked(Settings::GetInstance().HideTaskbar);
+    data->chkHideTaskbar->SetEnabled(Settings::GetInstance().WindowedMode);
+    data->chkDragWithMouse->SetIsChecked(Settings::GetInstance().DragWithMouse);
+    data->chkDragWithMouse->SetEnabled(Settings::GetInstance().WindowedMode);
+    data->cbScreenshotKey->AddItem(L"Left mouse button", 0x01);
+    data->cbScreenshotKey->AddItem(L"Right mouse button", 0x02);
+    data->cbScreenshotKey->AddItem(L"Control-break processing", 0x03);
+    data->cbScreenshotKey->AddItem(L"Middle mouse button", 0x04);
+    data->cbScreenshotKey->AddItem(L"X1 mouse button", 0x05);
+    data->cbScreenshotKey->AddItem(L"X2 mouse button", 0x06);
+    data->cbScreenshotKey->AddItem(L"BACKSPACE key", 0x08);
+    data->cbScreenshotKey->AddItem(L"TAB key", 0x09);
+    data->cbScreenshotKey->AddItem(L"CLEAR key", 0x0C);
+    data->cbScreenshotKey->AddItem(L"ENTER key", 0x0D);
+    data->cbScreenshotKey->AddItem(L"SHIFT key", 0x10);
+    data->cbScreenshotKey->AddItem(L"CTRL key", 0x11);
+    data->cbScreenshotKey->AddItem(L"ALT key", 0x12);
+    data->cbScreenshotKey->AddItem(L"PAUSE key", 0x13);
+    data->cbScreenshotKey->AddItem(L"CAPS LOCK key", 0x14);
+    data->cbScreenshotKey->AddItem(L"IME Kana mode", 0x15);
+    data->cbScreenshotKey->AddItem(L"IME Hangul mode", 0x15);
+    data->cbScreenshotKey->AddItem(L"IME On", 0x16);
+    data->cbScreenshotKey->AddItem(L"IME Junja mode", 0x17);
+    data->cbScreenshotKey->AddItem(L"IME final mode", 0x18);
+    data->cbScreenshotKey->AddItem(L"IME Hanja mode", 0x19);
+    data->cbScreenshotKey->AddItem(L"IME Kanji mode", 0x19);
+    data->cbScreenshotKey->AddItem(L"IME Off", 0x1A);
+    data->cbScreenshotKey->AddItem(L"ESC key", 0x1B);
+    data->cbScreenshotKey->AddItem(L"IME convert", 0x1C);
+    data->cbScreenshotKey->AddItem(L"IME nonconvert", 0x1D);
+    data->cbScreenshotKey->AddItem(L"IME accept", 0x1E);
+    data->cbScreenshotKey->AddItem(L"IME mode change request", 0x1F);
+    data->cbScreenshotKey->AddItem(L"SPACEBAR", 0x20);
+    data->cbScreenshotKey->AddItem(L"PAGE UP key", 0x21);
+    data->cbScreenshotKey->AddItem(L"PAGE DOWN key", 0x22);
+    data->cbScreenshotKey->AddItem(L"END key", 0x23);
+    data->cbScreenshotKey->AddItem(L"HOME key", 0x24);
+    data->cbScreenshotKey->AddItem(L"LEFT ARROW key", 0x25);
+    data->cbScreenshotKey->AddItem(L"UP ARROW key", 0x26);
+    data->cbScreenshotKey->AddItem(L"RIGHT ARROW key", 0x27);
+    data->cbScreenshotKey->AddItem(L"DOWN ARROW key", 0x28);
+    data->cbScreenshotKey->AddItem(L"SELECT key", 0x29);
+    data->cbScreenshotKey->AddItem(L"PRINT key", 0x2A);
+    data->cbScreenshotKey->AddItem(L"EXECUTE key", 0x2B);
+    data->cbScreenshotKey->AddItem(L"PRINT SCREEN key", 0x2C);
+    data->cbScreenshotKey->AddItem(L"INS key", 0x2D);
+    data->cbScreenshotKey->AddItem(L"DEL key", 0x2E);
+    data->cbScreenshotKey->AddItem(L"HELP key", 0x2F);
+    data->cbScreenshotKey->AddItem(L"0 key", 0x30);
+    data->cbScreenshotKey->AddItem(L"1 key", 0x31);
+    data->cbScreenshotKey->AddItem(L"2 key", 0x32);
+    data->cbScreenshotKey->AddItem(L"3 key", 0x33);
+    data->cbScreenshotKey->AddItem(L"4 key", 0x34);
+    data->cbScreenshotKey->AddItem(L"5 key", 0x35);
+    data->cbScreenshotKey->AddItem(L"6 key", 0x36);
+    data->cbScreenshotKey->AddItem(L"7 key", 0x37);
+    data->cbScreenshotKey->AddItem(L"8 key", 0x38);
+    data->cbScreenshotKey->AddItem(L"9 key", 0x39);
+    data->cbScreenshotKey->AddItem(L"A key", 0x41);
+    data->cbScreenshotKey->AddItem(L"B key", 0x42);
+    data->cbScreenshotKey->AddItem(L"C key", 0x43);
+    data->cbScreenshotKey->AddItem(L"D key", 0x44);
+    data->cbScreenshotKey->AddItem(L"E key", 0x45);
+    data->cbScreenshotKey->AddItem(L"F key", 0x46);
+    data->cbScreenshotKey->AddItem(L"G key", 0x47);
+    data->cbScreenshotKey->AddItem(L"H key", 0x48);
+    data->cbScreenshotKey->AddItem(L"I key", 0x49);
+    data->cbScreenshotKey->AddItem(L"J key", 0x4A);
+    data->cbScreenshotKey->AddItem(L"K key", 0x4B);
+    data->cbScreenshotKey->AddItem(L"L key", 0x4C);
+    data->cbScreenshotKey->AddItem(L"M key", 0x4D);
+    data->cbScreenshotKey->AddItem(L"N key", 0x4E);
+    data->cbScreenshotKey->AddItem(L"O key", 0x4F);
+    data->cbScreenshotKey->AddItem(L"P key", 0x50);
+    data->cbScreenshotKey->AddItem(L"Q key", 0x51);
+    data->cbScreenshotKey->AddItem(L"R key", 0x52);
+    data->cbScreenshotKey->AddItem(L"S key", 0x53);
+    data->cbScreenshotKey->AddItem(L"T key", 0x54);
+    data->cbScreenshotKey->AddItem(L"U key", 0x55);
+    data->cbScreenshotKey->AddItem(L"V key", 0x56);
+    data->cbScreenshotKey->AddItem(L"W key", 0x57);
+    data->cbScreenshotKey->AddItem(L"X key", 0x58);
+    data->cbScreenshotKey->AddItem(L"Y key", 0x59);
+    data->cbScreenshotKey->AddItem(L"Z key", 0x5A);
+    data->cbScreenshotKey->AddItem(L"Left Windows key", 0x5B);
+    data->cbScreenshotKey->AddItem(L"Right Windows key", 0x5C);
+    data->cbScreenshotKey->AddItem(L"Applications key", 0x5D);
+    data->cbScreenshotKey->AddItem(L"Computer Sleep key", 0x5F);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 0 key", 0x60);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 1 key", 0x61);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 2 key", 0x62);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 3 key", 0x63);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 4 key", 0x64);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 5 key", 0x65);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 6 key", 0x66);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 7 key", 0x67);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 8 key", 0x68);
+    data->cbScreenshotKey->AddItem(L"Numeric keypad 9 key", 0x69);
+    data->cbScreenshotKey->AddItem(L"Multiply key", 0x6A);
+    data->cbScreenshotKey->AddItem(L"Add key", 0x6B);
+    data->cbScreenshotKey->AddItem(L"Separator key", 0x6C);
+    data->cbScreenshotKey->AddItem(L"Subtract key", 0x6D);
+    data->cbScreenshotKey->AddItem(L"Decimal key", 0x6E);
+    data->cbScreenshotKey->AddItem(L"Divide key", 0x6F);
+    data->cbScreenshotKey->AddItem(L"F1 key", 0x70);
+    data->cbScreenshotKey->AddItem(L"F2 key", 0x71);
+    data->cbScreenshotKey->AddItem(L"F3 key", 0x72);
+    data->cbScreenshotKey->AddItem(L"F4 key", 0x73);
+    data->cbScreenshotKey->AddItem(L"F5 key", 0x74);
+    data->cbScreenshotKey->AddItem(L"F6 key", 0x75);
+    data->cbScreenshotKey->AddItem(L"F7 key", 0x76);
+    data->cbScreenshotKey->AddItem(L"F8 key", 0x77);
+    data->cbScreenshotKey->AddItem(L"F9 key", 0x78);
+    data->cbScreenshotKey->AddItem(L"F10 key", 0x79);
+    data->cbScreenshotKey->AddItem(L"F11 key", 0x7A);
+    data->cbScreenshotKey->AddItem(L"F12 key", 0x7B);
+    data->cbScreenshotKey->AddItem(L"F13 key", 0x7C);
+    data->cbScreenshotKey->AddItem(L"F14 key", 0x7D);
+    data->cbScreenshotKey->AddItem(L"F15 key", 0x7E);
+    data->cbScreenshotKey->AddItem(L"F16 key", 0x7F);
+    data->cbScreenshotKey->AddItem(L"F17 key", 0x80);
+    data->cbScreenshotKey->AddItem(L"F18 key", 0x81);
+    data->cbScreenshotKey->AddItem(L"F19 key", 0x82);
+    data->cbScreenshotKey->AddItem(L"F20 key", 0x83);
+    data->cbScreenshotKey->AddItem(L"F21 key", 0x84);
+    data->cbScreenshotKey->AddItem(L"F22 key", 0x85);
+    data->cbScreenshotKey->AddItem(L"F23 key", 0x86);
+    data->cbScreenshotKey->AddItem(L"F24 key", 0x87);
+    data->cbScreenshotKey->AddItem(L"NUM LOCK key", 0x90);
+    data->cbScreenshotKey->AddItem(L"SCROLL LOCK key", 0x91);
+    data->cbScreenshotKey->AddItem(L"Left SHIFT key", 0xA0);
+    data->cbScreenshotKey->AddItem(L"Right SHIFT key", 0xA1);
+    data->cbScreenshotKey->AddItem(L"Left CONTROL key", 0xA2);
+    data->cbScreenshotKey->AddItem(L"Right CONTROL key", 0xA3);
+    data->cbScreenshotKey->AddItem(L"Left ALT key", 0xA4);
+    data->cbScreenshotKey->AddItem(L"Right ALT key", 0xA5);
+    data->cbScreenshotKey->AddItem(L"Browser Back key", 0xA6);
+    data->cbScreenshotKey->AddItem(L"Browser Forward key", 0xA7);
+    data->cbScreenshotKey->AddItem(L"Browser Refresh key", 0xA8);
+    data->cbScreenshotKey->AddItem(L"Browser Stop key", 0xA9);
+    data->cbScreenshotKey->AddItem(L"Browser Search key", 0xAA);
+    data->cbScreenshotKey->AddItem(L"Browser Favorites key", 0xAB);
+    data->cbScreenshotKey->AddItem(L"Browser Start and Home key", 0xAC);
+    data->cbScreenshotKey->AddItem(L"Volume Mute key", 0xAD);
+    data->cbScreenshotKey->AddItem(L"Volume Down key", 0xAE);
+    data->cbScreenshotKey->AddItem(L"Volume Up key", 0xAF);
+    data->cbScreenshotKey->AddItem(L"Next Track key", 0xB0);
+    data->cbScreenshotKey->AddItem(L"Previous Track key", 0xB1);
+    data->cbScreenshotKey->AddItem(L"Stop Media key", 0xB2);
+    data->cbScreenshotKey->AddItem(L"Play/Pause Media key", 0xB3);
+    data->cbScreenshotKey->AddItem(L"Start Mail key", 0xB4);
+    data->cbScreenshotKey->AddItem(L"Select Media key", 0xB5);
+    data->cbScreenshotKey->AddItem(L"Start Application 1 key", 0xB6);
+    data->cbScreenshotKey->AddItem(L"Start Application 2 key", 0xB7);
+    data->cbScreenshotKey->AddItem(L";: key", 0xBA);
+    data->cbScreenshotKey->AddItem(L"+ key", 0xBB);
+    data->cbScreenshotKey->AddItem(L", key", 0xBC);
+    data->cbScreenshotKey->AddItem(L"- key", 0xBD);
+    data->cbScreenshotKey->AddItem(L". key", 0xBE);
+    data->cbScreenshotKey->AddItem(L"/? key", 0xBF);
+    data->cbScreenshotKey->AddItem(L"`~ key", 0xC0);
+    data->cbScreenshotKey->AddItem(L"[{ key", 0xDB);
+    data->cbScreenshotKey->AddItem(L"\\| key", 0xDC);
+    data->cbScreenshotKey->AddItem(L"]} key", 0xDD);
+    data->cbScreenshotKey->AddItem(L"the '\" key", 0xDE);
+    data->cbScreenshotKey->AddItem(L"<> keys", 0xE2);
+    data->cbScreenshotKey->AddItem(L"IME PROCESS key", 0xE5);
+    data->cbScreenshotKey->AddItem(L"Attn key", 0xF6);
+    data->cbScreenshotKey->AddItem(L"CrSel key", 0xF7);
+    data->cbScreenshotKey->AddItem(L"ExSel key", 0xF8);
+    data->cbScreenshotKey->AddItem(L"Erase EOF key", 0xF9);
+    data->cbScreenshotKey->AddItem(L"Play key", 0xFA);
+    data->cbScreenshotKey->AddItem(L"Zoom key", 0xFB);
+    data->cbScreenshotKey->AddItem(L"PA1 key", 0xFD);
+    data->cbScreenshotKey->AddItem(L"Clear key", 0xFE);
+    data->cbScreenshotKey->SetCurrentValue(Settings::GetInstance().ScreenshotKey);
+    data->cbScreenshotFormat->AddItem(L"BMP", D3DXIFF_BMP);
+    data->cbScreenshotFormat->AddItem(L"JPG", D3DXIFF_JPG);
+    data->cbScreenshotFormat->AddItem(L"PNG", D3DXIFF_PNG);
+    data->cbScreenshotFormat->SetCurrentValue(Settings::GetInstance().ScreenshotFormat);
+    data->chkScreenshotOverlay->SetIsChecked(Settings::GetInstance().DisplayScreenshotOverlay);
+    return cbRandomLoading;
 }
 
-void METHOD OnProcessGameOptionsCheckboxes(void *screen, DUMMY_ARG, int *id, int unk) {
+void RestartGameWarningMessage(CXgFMPanel *screen, Char const *titleKey, Char const *textKey) {
+    Call<0xD392F0>(GetTranslation(titleKey), GetTranslation(textKey), 48, screen, 0);
+}
+
+void METHOD OnProcessGameOptionsCheckboxes(CXgFMPanel *screen, DUMMY_ARG, UInt *id, Int unk) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
-    if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkWindowedMode)) {
-        Settings::GetInstance().WindowedMode = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowedMode) != 0;
-        SetEnabled(data->chkWindowsMousePointer, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->cbWindowPosition, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->tbWindowPosition, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->chkPlayMusicInBackground, Settings::GetInstance().WindowedMode);
+    if (*id == data->chkWindowedMode->GetId()) {
+        Settings::GetInstance().WindowedMode = data->chkWindowedMode->GetIsChecked();
+        data->chkWindowsMousePointer->SetEnabled(Settings::GetInstance().WindowedMode);
+        data->cbWindowPosition->SetEnabled(Settings::GetInstance().WindowedMode);
+        data->tbWindowPosition->SetEnabled(Settings::GetInstance().WindowedMode);
+        data->chkPlayMusicInBackground->SetEnabled(Settings::GetInstance().WindowedMode);
         if (WindowsVersion() != WINVER_8) {
-            SetEnabled(data->cbWindowBorders, Settings::GetInstance().WindowedMode);
-            SetEnabled(data->tbWindowBorders, Settings::GetInstance().WindowedMode);
+            data->cbWindowBorders->SetEnabled(Settings::GetInstance().WindowedMode);
+            data->tbWindowBorders->SetEnabled(Settings::GetInstance().WindowedMode);
         }
-        SetEnabled(data->chkHideTaskbar, Settings::GetInstance().WindowedMode);
-        SetEnabled(data->chkDragWithMouse, Settings::GetInstance().WindowedMode);
+        data->chkHideTaskbar->SetEnabled(Settings::GetInstance().WindowedMode);
+        data->chkDragWithMouse->SetEnabled(Settings::GetInstance().WindowedMode);
         if (Settings::GetInstance().WindowedMode != Settings::GetInstance().WindowedModeStartValue)
-            Call<0xD392F0>(GetTranslation("IDS_WINDOWMODE_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+            RestartGameWarningMessage(screen, "IDS_WINDOWMODE_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkWindowsMousePointer)) {
-        Settings::GetInstance().WindowsMousePointer = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkWindowsMousePointer) != 0;
+    else if (*id == data->chkWindowsMousePointer->GetId()) {
+        Settings::GetInstance().WindowsMousePointer = data->chkWindowsMousePointer->GetIsChecked();
         UpdateCursor(Settings::GetInstance().WindowsMousePointer);
         return;
     }
-    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->chkTeamControl)) {
-        Settings::GetInstance().DisableTeamControl = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkTeamControl) == 0;
+    else if (*id == data->chkTeamControl->GetId()) {
+        Settings::GetInstance().DisableTeamControl = !data->chkTeamControl->GetIsChecked();
         if (Settings::GetInstance().DisableTeamControl != Settings::GetInstance().TeamControlDisabledAtGameStart)
-            Call<0xD392F0>(GetTranslation("IDS_TEAM_CONTROL_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+            RestartGameWarningMessage(screen, "IDS_TEAM_CONTROL_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == GetId(data->chkPlayMusicInBackground)) {
-        Settings::GetInstance().PlayMusicInBackground = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkPlayMusicInBackground) != 0;
+    else if (*id == data->chkPlayMusicInBackground->GetId()) {
+        Settings::GetInstance().PlayMusicInBackground = data->chkPlayMusicInBackground->GetIsChecked();
         return;
     }
-    else if (*id == GetId(data->chkImUsingATouchpad)) {
-        Settings::GetInstance().ImUsingATouchpad = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkImUsingATouchpad) != 0;
+    else if (*id == data->chkImUsingATouchpad->GetId()) {
+        Settings::GetInstance().ImUsingATouchpad = data->chkImUsingATouchpad->GetIsChecked();
         return;
     }
-    else if (*id == GetId(data->chkHideTaskbar)) {
-        Settings::GetInstance().HideTaskbar = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkHideTaskbar) != 0;
+    else if (*id == data->chkHideTaskbar->GetId()) {
+        Settings::GetInstance().HideTaskbar = data->chkHideTaskbar->GetIsChecked();
         if (Settings::GetInstance().HideTaskbar != Settings::GetInstance().HideTaskbarStartValue)
-            Call<0xD392F0>(GetTranslation("IDS_TASKBAR_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+            RestartGameWarningMessage(screen, "IDS_TASKBAR_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == GetId(data->chkDragWithMouse)) {
-        Settings::GetInstance().DragWithMouse = CallVirtualMethodAndReturn<unsigned char, 85>(data->chkDragWithMouse) != 0;
+    else if (*id == data->chkDragWithMouse->GetId()) {
+        Settings::GetInstance().DragWithMouse = data->chkDragWithMouse->GetIsChecked();
+        return;
+    }
+    else if (*id == data->chkScreenshotOverlay->GetId()) {
+        Settings::GetInstance().DisplayScreenshotOverlay = data->chkScreenshotOverlay->GetIsChecked();
         return;
     }
     CallMethod<0x500A80>(screen, id, unk);
 }
 
-void METHOD OnProcessGameOptionsComboboxes(void *screen, DUMMY_ARG, int *id, int unk1, int unk2) {
+void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, UInt *id, Int unk1, Int unk2) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
-    if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbWindowPosition)) {
-        Settings::GetInstance().WindowPosition = CallVirtualMethodAndReturn<int, 94>(data->cbWindowPosition, 0, 0);
+    if (*id == data->cbWindowPosition->GetId()) {
+        Settings::GetInstance().WindowPosition = data->cbWindowPosition->GetCurrentValue(WINDOWED_MODE_CENTER);
         return;
     }
-    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbTheme)) {
-        int themeId = CallVirtualMethodAndReturn<int, 94>(data->cbTheme, 0, 0);
+    else if (*id == data->cbTheme->GetId()) {
+        int themeId = data->cbTheme->GetCurrentValue(0);
         if (themeId == 1)
             Settings::GetInstance().Theme = "light";
         else if (themeId == 2)
@@ -404,19 +596,21 @@ void METHOD OnProcessGameOptionsComboboxes(void *screen, DUMMY_ARG, int *id, int
         else
             Settings::GetInstance().Theme = "";
         if (Settings::GetInstance().Theme != ToLower(Settings::GetInstance().ThemeAtGameStart))
-            Call<0xD392F0>(GetTranslation("IDS_THEME_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+            RestartGameWarningMessage(screen, "IDS_THEME_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == CallVirtualMethodAndReturn<int, 23>(data->cbWindowBorders)) {
-        int borders = CallVirtualMethodAndReturn<int, 94>(data->cbWindowBorders, 0, 0);
-        if (borders == WINDOW_BORDERS_DEFAULT)
-            Settings::GetInstance().WindowBorders = WINDOW_BORDERS_DEFAULT;
-        else if (borders == WINDOW_BORDERS_THIN)
-            Settings::GetInstance().WindowBorders = WINDOW_BORDERS_THIN;
-        else
-            Settings::GetInstance().WindowBorders = WINDOW_BORDERS_NONE;
+    else if (*id == data->cbWindowBorders->GetId()) {
+        Settings::GetInstance().WindowBorders = data->cbWindowBorders->GetCurrentValue(WINDOW_BORDERS_NONE);
         if (Settings::GetInstance().WindowBorders != Settings::GetInstance().WindowBordersStartValue)
-            Call<0xD392F0>(GetTranslation("IDS_BORDERS_CHANGE"), GetTranslation("IDS_WARNING"), 48, screen, 0);
+            RestartGameWarningMessage(screen, "IDS_BORDERS_CHANGE", "IDS_WARNING");
+        return;
+    }
+    if (*id == data->cbScreenshotKey->GetId()) {
+        Settings::GetInstance().ScreenshotKey = data->cbScreenshotKey->GetCurrentValue(VK_SNAPSHOT);
+        return;
+    }
+    if (*id == data->cbScreenshotFormat->GetId()) {
+        Settings::GetInstance().ScreenshotFormat = data->cbScreenshotFormat->GetCurrentValue(D3DXIFF_JPG);
         return;
     }
     CallMethod<0x500B20>(screen, id, unk1, unk2);

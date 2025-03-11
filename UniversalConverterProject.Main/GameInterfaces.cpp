@@ -2530,3 +2530,87 @@ void CMatches::SetMatch(UInt matchday, UInt matchIndex, CMatch const &match) {
 void CDBMatchEventEntries::Clear() {
     CallMethod<0x1004E40>(this);
 }
+
+void CXgComboCompound::Clear() {
+    CallVirtualMethod<81>(this);
+}
+
+Int CXgComboCompound::GetNumberOfItems() {
+    return CallVirtualMethodAndReturn<Int, 69>(this);
+}
+
+void CXgComboCompound::SetCurrentIndex(Int index) {
+    CallVirtualMethod<70>(this, index);
+}
+
+Int CXgComboCompound::GetCurrentIndex() {
+    return CallVirtualMethodAndReturn<Int, 71>(this);
+}
+
+Int CXgComboBox::AddItem(WideChar const *text, Int64 value) {
+    return CallVirtualMethodAndReturn<Int, 83>(this, text, value);
+}
+
+void CXgComboBox::SetValueAtIndex(Int index, Int64 value) {
+    CallVirtualMethod<91>(this, index, value);
+}
+
+Int64 CXgComboBox::GetValueAtIndex(Int index) {
+    return CallVirtualMethodAndReturn<Int64, 92>(this, index);
+}
+
+void CXgComboBox::SetCurrentValue(Int64 value) {
+    CallVirtualMethod<93>(this, value);
+}
+
+Int64 CXgComboBox::GetCurrentValue(Int64 defaultValue) {
+    return CallVirtualMethodAndReturn<Int64, 94>(this, defaultValue);
+}
+
+void CXgCheckBox::SetIsChecked(Bool checked) {
+    CallVirtualMethod<84>(this, checked);
+}
+
+Bool CXgCheckBox::GetIsChecked() {
+    return GetCheckState() != 0;
+}
+
+UChar CXgCheckBox::GetCheckState() {
+    return CallVirtualMethodAndReturn<UChar, 85>(this);
+}
+
+void CXgBaseControl::SetEnabled(Bool enabled) {
+    CallVirtualMethod<9>(this, enabled);
+}
+
+void CXgBaseControl::SetVisible(Bool visible) {
+    CallVirtualMethod<11>(this, visible);
+}
+
+UInt CXgBaseControl::GetId() {
+    return CallVirtualMethodAndReturn<UInt, 23>(this);
+}
+
+CXgTextBox *CXgFMPanel::GetTextBox(Char const *name) {
+    return CallMethodAndReturn<CXgTextBox *, 0xD44240>(this, name);
+}
+
+CXgTextButton *CXgFMPanel::GetTextButton(Char const *name) {
+    return CallMethodAndReturn<CXgTextButton *, 0xD44360>(this, name);
+}
+
+CXgImage *CXgFMPanel::GetImage(Char const *name) {
+    return CallMethodAndReturn<CXgImage *, 0xD44380>(this, name);
+}
+
+CTrfmNode *CXgFMPanel::GetTransform(Char const *name) {
+    return CallMethodAndReturn<CTrfmNode *, 0xD43060>(this, name);
+}
+
+CXgCheckBox *CXgFMPanel::GetCheckBox(Char const *name) {
+    return CallMethodAndReturn<CXgCheckBox *, 0xD44260>(this, name);
+}
+
+CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
+    return CallMethodAndReturn<CXgComboBox *, 0xD442C0>(this, name);
+}

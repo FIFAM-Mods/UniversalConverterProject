@@ -96,6 +96,6 @@ void PatchMiscFormerCupOpponents(FM::Version v) {
         patch::RedirectJump(0x896760, GetMiscFormerCupOpponentsScreenName);
         patch::RedirectJump(0x8979C0, MiscFormerCupOpponents_Setup);
         patch::RedirectJump(0x4B1319, MiscFormerCupOpponents_CompTypeCheck);
-        patch::SetUChar(0x896D24, 0xEB);
+        //patch::SetUChar(0x896D24, 0xEB);
     }
 }

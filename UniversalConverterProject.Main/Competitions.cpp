@@ -3506,7 +3506,7 @@ void EuropeanCompsParticipantsInitColumns(UInt lb, int, int, int, int, int, int,
         * (UChar *)(lb + 24 * (3 + i * 2) + 29) = 204;
 }
 
-void *OnGetGameInstanceSetupCompetitionWinners() {
+CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
     auto SetDefaultWinners = [](UChar region, Vector<UChar> const &defaultCountries) {
         if (defaultCountries.size() != 3)
             return;
@@ -3553,14 +3553,23 @@ void *OnGetGameInstanceSetupCompetitionWinners() {
     SetDefaultWinners(FifamCompRegion::Africa, { FifamCompRegion::Egypt, FifamCompRegion::Tunisia, FifamCompRegion::DR_Congo });
     SetDefaultWinners(FifamCompRegion::Oceania, { FifamCompRegion::New_Zealand, FifamCompRegion::Fiji, FifamCompRegion::Papua_New_Guinea });
 
-    CDBCompetition *liechtensteinCup = GetCompetition(FifamCompRegion::Switzerland, FifamCompType::LeagueCup, 0);
-    if (liechtensteinCup) {
-        // UPDATE
-        CDBTeam* vaduz = GetTeamByUniqueID(0x002F0013);
-        if (vaduz)
-            liechtensteinCup->SetChampion(vaduz->GetTeamID());
+    auto SetChampion = [](unsigned char region, unsigned char type, UInt teamUID) {
+        CDBCompetition *comp = GetCompetition(region, type, 0);
+        if (comp) {
+            CDBTeam *team = GetTeamByUniqueID(teamUID);
+            if (team)
+                comp->SetChampion(team->GetTeamID());
+        }
+    };
+    SetChampion(FifamCompRegion::SouthAmerica, FifamCompType::EuroSuperCup, 0x0039002F); // UPDATE Club Independiente del Valle
+    SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::EuroSuperCup, 0x0053000B); // UPDATE Club Tigres U.A.N.L.
+    SetChampion(FifamCompRegion::Africa, FifamCompType::EuroSuperCup, 0x00610001); // UPDATE USM Algier
+    SetChampion(FifamCompRegion::Switzerland, FifamCompType::LeagueCup, 0x002F0013); // UPDATE Vaduz
+    if (GetStartingYear() == 2024 && GetStartingYear() == GetCurrentYear()) { // UPDATE
+        CDBCompetition *comp = GetCompetition(FifamCompRegion::Asia, FifamCompType::ConferenceLeague, 0);
+        if (comp)
+            comp->SetChampion(CTeamIndex::null());
     }
-
     return CDBGame::GetInstance();
 }
 

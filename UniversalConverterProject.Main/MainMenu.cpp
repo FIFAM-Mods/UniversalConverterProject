@@ -228,7 +228,7 @@ void METHOD MainMenu_TimerEvent(void *t, DUMMY_ARG, Int u, void **data) {
                 ext->updateNumber = GetLastUpdateNumber("fm25");
                 if (ext->updateNumber == -1)
                     SetVisible(ext->pTbUpdatesUnknown, true);
-                else if (ext->updateNumber > GetPatchUpdateNumber()) {
+                else if (ext->updateNumber > GetPatchVersionNumber()) {
                     SetVisible(ext->pTbUpdates, true);
                     SetVisible(ext->pImgUpdatesCircle, true);
                     SetEnabled(ext->pTbUpdatesFMZ, true);

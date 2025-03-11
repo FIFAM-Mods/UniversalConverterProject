@@ -77,6 +77,9 @@ public:
     SETTINGS_PARAMETER(int,    WindowBorders,               "WINDOW_BORDERS",                 WINDOW_BORDERS_NONE);
     SETTINGS_PARAMETER(bool,   HideTaskbar,                 "HIDE_TASKBAR",                   false);
     SETTINGS_PARAMETER(bool,   DragWithMouse,               "DRAG_WITH_MOUSE",                true);
+    SETTINGS_PARAMETER(bool,   DisplayScreenshotOverlay,    "DISPLAY_SCREENSHOT_OVERLAY",     true);
+    SETTINGS_PARAMETER(int,    ScreenshotKey,               "SCREENSHOT_KEY",                 0x2C); // VK_SNAPSHOT
+    SETTINGS_PARAMETER(int,    ScreenshotFormat,            "SCREENSHOT_FORMAT",              1); // D3DXIFF_JPG
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

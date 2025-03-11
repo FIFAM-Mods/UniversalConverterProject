@@ -24,6 +24,14 @@ Int GetPatchUpdateNumber() {
     return 0;
 }
 
+Int GetPatchHotfixNumber() {
+    return 1;
+}
+
+Int GetPatchVersionNumber() {
+    return GetPatchUpdateNumber() * 10 + GetPatchHotfixNumber();
+}
+
 WideChar const *GetPatchTestVersion() {
     return nullptr;
 }
@@ -31,7 +39,7 @@ WideChar const *GetPatchTestVersion() {
 String GetPatchVersion() {
     if (GetPatchTestVersion())
         return GetPatchTestVersion();
-    return Utils::Format(L"1.%u", GetPatchUpdateNumber());
+    return Utils::Format(L"1.%u.%u", GetPatchUpdateNumber(), GetPatchHotfixNumber());
 }
 
 String GetFullAppName(Bool upperCase) {
