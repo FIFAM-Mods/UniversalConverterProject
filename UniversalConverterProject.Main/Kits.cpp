@@ -1561,45 +1561,52 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
                                 }
                             }
                             if (sponsorImageType != 0) {
-                                WideChar tempPath[MAX_PATH + 1];
-                                GetTempPathW(259, tempPath);
-                                wcscat(tempPath, L"\\tempsponsor.fsh");
-                                SafeLog::Write(Utils::Format(L"tempSponsorPath %s", tempPath));
-                                UInt acc;
-                                Bool createdTempImage = false;
-                                CallMethodDynGlobal(GfxCoreAddress(0x373B6E), &acc);
-                                gfx::RawImageDesc img;
-                                UInt sW = sponsorImageType == 2 ? 200 : 96;
-                                UInt sH = sponsorImageType == 2 ? 120 : 96;
-                                CallVirtualMethod<5>(acc, &img, sponsorPath.c_str(), sW * sH * 4 + 256, 1, 0); // loadImage
-                                SafeLog::Write(Utils::Format(L"img.width %d img.height %d", img.width, img.height));
-                                if (img.width == sW && img.height == sH) {
-                                    if (sponsorImageType == 1) {
-                                        sW = sH = 128;
-                                        CallVirtualMethod<10>(acc, &img, sW, sH); // resizeImage
+                                WideChar tempPath[MAX_PATH + 16];
+                                auto tmpLen = GetTempPathW(MAX_PATH, tempPath);
+                                if (tmpLen != 0 && tmpLen < MAX_PATH) {
+                                    auto len = wcslen(tempPath);
+                                    if (len > 0 && tempPath[len - 1] == L'\\')
+                                        tempPath[len - 1] = L'\0';
+                                    wcscat(tempPath, L"\\tempsponsor.fsh");
+                                    SafeLog::Write(Utils::Format(L"tempSponsorPath %s", tempPath));
+                                    UInt acc;
+                                    Bool createdTempImage = false;
+                                    CallMethodDynGlobal(GfxCoreAddress(0x373B6E), &acc);
+                                    gfx::RawImageDesc img;
+                                    UInt sW = sponsorImageType == 2 ? 200 : 96;
+                                    UInt sH = sponsorImageType == 2 ? 120 : 96;
+                                    CallVirtualMethod<5>(acc, &img, sponsorPath.c_str(), sW * sH * 4 + 256, 1, 0); // loadImage
+                                    SafeLog::Write(Utils::Format(L"img.width %d img.height %d", img.width, img.height));
+                                    if (img.width == sW && img.height == sH) {
+                                        if (sponsorImageType == 1) {
+                                            sW = sH = 128;
+                                            CallVirtualMethod<10>(acc, &img, sW, sH); // resizeImage
+                                        }
+                                        CallVirtualMethod<12>(acc, tempPath, &img, 1); // writeImage
+                                        createdTempImage = true;
                                     }
-                                    CallVirtualMethod<12>(acc, tempPath, &img, 1); // writeImage
-                                    createdTempImage = true;
-                                }
-                                CallVirtualMethod<8>(acc, &img); // deleteImage
-                                CallMethodDynGlobal(GfxCoreAddress(0x373BA9), &acc);
-                                if (createdTempImage) {
-                                    gfx::RawImageDesc dstRegion;
-                                    UInt sX = sponsorImageType == 2 ? 158 : 194;
-                                    UInt sY = sponsorImageType == 2 ? 778 : 778;
-                                    CallMethodDynGlobal(GfxCoreAddress(0x385E30), dstImg, &dstRegion, sX, sY, sW, sH); // GetImageRegionImg
-                                    gfx::RawImageDesc sponsorFsh;
-                                    sponsorFsh.width = sW;
-                                    sponsorFsh.height = sH;
-                                    sponsorFsh.stride = sW * 4;
-                                    CallMethodDynGlobal(GfxCoreAddress(0x37382C), &sponsorFsh.buffer, sponsorFsh.width * sponsorFsh.height * 4); // Buffer ctor
-                                    if (CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x38578E), gKitGen, &sponsorFsh, tempPath)) {
-                                        CallMethodDynGlobal(GfxCoreAddress(0x383675), shapeGen, &dstRegion, &img); // overlayCopyPixels
-                                        SafeLog::Write(L"copied");
+                                    CallVirtualMethod<8>(acc, &img); // deleteImage
+                                    CallMethodDynGlobal(GfxCoreAddress(0x373BA9), &acc);
+                                    if (createdTempImage) {
+                                        gfx::RawImageDesc dstRegion;
+                                        UInt sX = sponsorImageType == 2 ? 158 : 194;
+                                        UInt sY = sponsorImageType == 2 ? 778 : 778;
+                                        CallMethodDynGlobal(GfxCoreAddress(0x385E30), dstImg, &dstRegion, sX, sY, sW, sH); // GetImageRegionImg
+                                        gfx::RawImageDesc sponsorFsh;
+                                        sponsorFsh.width = sW;
+                                        sponsorFsh.height = sH;
+                                        sponsorFsh.stride = sW * 4;
+                                        CallMethodDynGlobal(GfxCoreAddress(0x37382C), &sponsorFsh.buffer, sponsorFsh.width * sponsorFsh.height * 4); // Buffer ctor
+                                        if (CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x38578E), gKitGen, &sponsorFsh, tempPath)) {
+                                            CallMethodDynGlobal(GfxCoreAddress(0x383675), shapeGen, &dstRegion, &img); // overlayCopyPixels
+                                            SafeLog::Write(L"copied");
+                                        }
+                                        CallVirtualMethod<8>(acc, &sponsorFsh); // deleteImage
+                                        DeleteFileW(tempPath);
                                     }
-                                    CallVirtualMethod<8>(acc, &sponsorFsh); // deleteImage
-                                    DeleteFileW(tempPath);
                                 }
+                                else
+                                    SafeLog::Write(L"failed to get Temp path");
                             }
                         }
                     }

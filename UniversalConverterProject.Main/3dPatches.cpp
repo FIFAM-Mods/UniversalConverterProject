@@ -1,6 +1,6 @@
 #include "3dPatches.h"
 #include "GfxCoreHook.h"
-#include <dinput.h>
+#include "dinput.h"
 #include "shared.h"
 #include "GameInterfaces.h"
 #include "Utils.h"
@@ -66,46 +66,65 @@ void OnSetupManualPlayerSwitch() {
     }
 }
 
-void *OnSetupController(int deviceId, int infoType) {
-    void *info = CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x309040), deviceId, infoType);
-    if (info && *raw_ptr<UChar>(info) == 4) { // joystick
-        SafeLog::Write(L"Setup joystick...");
-        UInt deviceFlags = *raw_ptr<UInt>(info, 4);
-        if (deviceFlags & 1) {
-            SafeLog::Write(L"Joystick flag 1 ENABLED");
+struct DeviceAdditionalData {
+    UChar m_nDeviceType;
+    UChar m_nDeviceSubType;
+    UChar m_nOtherType[2];
+    UInt m_nFlags;
+    UInt m_nAxes;
+    UInt m_nButtons;
+    UInt m_nPointOfViews;
+    Char m_szDeviceName[260];
+    Char m_szProduct[260];
+};
+
+UInt OnGetDeviceAdditionalData(void *pDevice, DeviceAdditionalData *data) {
+    auto result = CallAndReturnDynGlobal<UInt>(GfxCoreAddress(0x309280), pDevice, data);
+    if ((data->m_nFlags & 1) && data->m_nDeviceType == 4)
+        data->m_nFlags |= 2;
+    return result;
+}
+
+void *OnSetupController(Int deviceId, Int infoType) {
+    auto info = CallAndReturnDynGlobal<DeviceAdditionalData *>(GfxCoreAddress(0x309040), deviceId, infoType);
+    if (info && info->m_nDeviceType == 4) { // joystick
+        SafeLog::Write(Utils::Format(L"Setup joystick %s...", Utils::AtoW(info->m_szDeviceName)));
+        if (info->m_nFlags & 1) {
+            if (info->m_nFlags & 2)
+                SafeLog::Write(L"Joystick is attached and requires polling");
+            else
+                SafeLog::Write(L"Joystick is attached");
             CallDynGlobal(GfxCoreAddress(0x181A0), deviceId, 0); // RegisterInGameDevice2
             UInt *deviceFlagsData = (UInt *)patch::GetPointer(GfxCoreAddress(0x6696EC), false);
             if (deviceFlagsData) {
-                SafeLog::Write(L"Device flags data AVAILABLE");
-                if (deviceFlags & 2) {
-                    SafeLog::Write(L"Joystick flag 2 ENABLED");
-                    if (CallAndReturnDynGlobal<bool>(GfxCoreAddress(0x308460), deviceId)) {
-                        SafeLog::Write(L"Unknown check PASSED");
-                        Int devData[23];
-                        memset(devData, 0, 23 * sizeof(Int));
-                        devData[0] = 0;
-                        devData[1] = 10000;
-                        devData[13] = 1000000;
-                        devData[14] = 100;
-                        devData[15] = 3;
-                        devData[17] = 0;
-                        devData[16] = -1;
-                        devData[18] = *raw_ptr<UChar>(info, 1) != 6 ? 0 : 90;
-                        deviceFlagsData[deviceId] = CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x308C70), deviceId, devData);
-                        CallDynGlobal(GfxCoreAddress(0x308790), deviceFlagsData[deviceId]);
-                        CallDynGlobal(GfxCoreAddress(0x308800), deviceFlagsData[deviceId]);
-                    }
-                    else
-                        SafeLog::Write(L"Unknown check NOT passed");
+                SafeLog::Write(L"Device flags data is available");
+                Bool forceFeedbackInitialized = true;
+                if (info->m_nFlags & 2)
+                    forceFeedbackInitialized = CallAndReturnDynGlobal<Bool>(GfxCoreAddress(0x308460), deviceId);
+                if (forceFeedbackInitialized) {
+                    Int devData[23];
+                    memset(devData, 0, 23 * sizeof(Int));
+                    devData[0] = 0;
+                    devData[1] = 10000;
+                    devData[13] = 1000000;
+                    devData[14] = 100;
+                    devData[15] = 3;
+                    devData[17] = 0;
+                    devData[16] = -1;
+                    devData[18] = info->m_nDeviceSubType != 6 ? 0 : 90;
+                    deviceFlagsData[deviceId] = CallAndReturnDynGlobal<Int>(GfxCoreAddress(0x308C70), deviceId, devData);
+                    CallDynGlobal(GfxCoreAddress(0x308790), deviceFlagsData[deviceId]);
+                    CallDynGlobal(GfxCoreAddress(0x308800), deviceFlagsData[deviceId]);
+                    SafeLog::Write(L"Device was registered");
                 }
                 else
-                    SafeLog::Write(L"Joystick flag 2 NOT enabled");
+                    SafeLog::Write(L"Force feedback check was not passed");
             }
             else
-                SafeLog::Write(L"Device flags data NOT available");
+                SafeLog::Write(L"Device flags data is not available");
         }
         else
-            SafeLog::Write(L"Joystick flag 1 NOT enabled");
+            SafeLog::Write(L"Joystick flag is not attached");
     }
     return info;
 }
@@ -1308,6 +1327,36 @@ void __declspec(naked) OnProcessSound_GetCurrentPosition() {
     }
 }
 
+HRESULT EADevice_GetState(IDirectInputDevice2A *pDevice, BYTE *pStateBuffer, int bufferSize) {
+    static char tmp[256];
+    memcpy(tmp, pStateBuffer, bufferSize);
+    DIDEVCAPS caps = { sizeof(DIDEVCAPS) };
+    HRESULT hResult = pDevice->GetCapabilities(&caps);
+    if (SUCCEEDED(hResult) && (caps.dwFlags & DIDC_POLLEDDEVICE)) {
+        hResult = pDevice->Poll();
+        if ((hResult == DIERR_INPUTLOST || hResult == DIERR_NOTACQUIRED) && SUCCEEDED(pDevice->Acquire()))
+            hResult = pDevice->Poll();
+    }
+    hResult = pDevice->GetDeviceState(bufferSize, pStateBuffer);
+    if (hResult == DIERR_INPUTLOST || hResult == DIERR_NOTACQUIRED) {
+        if (SUCCEEDED(pDevice->Acquire()))
+            hResult = pDevice->GetDeviceState(bufferSize, pStateBuffer);
+    }
+    if (FAILED(hResult))
+        memcpy(pStateBuffer, tmp, bufferSize);
+
+    static Bool GetStateCalledForJoystick = false;
+    if (!GetStateCalledForJoystick) {
+        UINT deviceType = GET_DIDEVICE_TYPE(caps.dwDevType);
+        if (deviceType == DIDEVTYPE_JOYSTICK) {
+            SafeLog::Write(Utils::Format(L"EADevice_GetState was called for joystick: %u", hResult));
+            GetStateCalledForJoystick = true;
+        }
+    }
+
+    return hResult;
+}
+
 void Install3dPatches_FM13() {
 
     FindAssets(ASSETS_DIR, "");
@@ -1926,7 +1975,11 @@ void Install3dPatches_FM13() {
         patch::RedirectCall(GfxCoreAddress(0x23E629), OnSetupManualPlayerSwitch);
         patch::RedirectCall(GfxCoreAddress(0x165C3), OnCreateInputDevice);
         patch::RedirectCall(GfxCoreAddress(0x18553), OnSetupController);
+        //patch::RedirectCall(GfxCoreAddress(0x3090E1), OnGetDeviceAdditionalData);
         patch::RedirectCall(GfxCoreAddress(0x2E5B5A), GfxCopyData); // fix null-pointer memory copying
+        patch::Nop(GfxCoreAddress(0x3C7CF), 2);
+
+        //patch::RedirectCall(GfxCoreAddress(0x3090BF), EADevice_GetState);
     }
 
     // fix for some options

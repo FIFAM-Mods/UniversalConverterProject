@@ -1213,6 +1213,7 @@ void InstallWindowedMode_GfxCore() {
     gOriginalWndProc = patch::GetUInt(GfxCoreAddress(0x7086) + 4);
     patch::SetPointer(GfxCoreAddress(0x7086) + 4, MyWndProc);
     patch::RedirectCall(GfxCoreAddress(0x3BDE3B), CApp_ProcessInput);
+    patch::RedirectCall(GfxCoreAddress(0x3BB82C), ProcessMouse);
 
     if (Settings::GetInstance().WindowedMode) {
         patch::SetUChar(GfxCoreAddress(0xD1BE), 0xEB);
@@ -1226,8 +1227,6 @@ void InstallWindowedMode_GfxCore() {
         patch::SetUChar(GfxCoreAddress(0x28202F), 0xB8);
         patch::SetUInt(GfxCoreAddress(0x28202F + 1), 1);
         patch::Nop(GfxCoreAddress(0x282036), 2);
-
-        patch::RedirectCall(GfxCoreAddress(0x3BB82C), ProcessMouse);
 
         //patch::RedirectCall(GfxCoreAddress(0x28212D), AppIdle);
 
