@@ -77,7 +77,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;WINDOWS_IGNORE_PACKING_MISMATCH;DIRECTINPUT_VERSION=0x700;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;WINDOWS_IGNORE_PACKING_MISMATCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)shared;$(SolutionDir)shared\fifam-api\include\;$(SolutionDir)..\DXSDK\9.0c\Include;$(SolutionDir)..\fifam\fmapi;$(SolutionDir)..\fifam\generic;$(SolutionDir)..\ImageMagick-Windows\ImageMagick;$(SolutionDir)..\ImageMagick-Windows\ImageMagick\Magick++\lib;$(SolutionDir)..\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
