@@ -1847,6 +1847,7 @@ void InstallKits_FM13() {
 void PatchKits(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadKitsFile();
+        ReadRefereeKitsFile();
         patch::RedirectCall(0x44D4F0, OnGetKitsFor3dMatch);
         patch::RedirectCall(0x44D73D, OnSetupKitForTeam1);
         patch::RedirectCall(0x44D751, OnSetupKitForTeam2);

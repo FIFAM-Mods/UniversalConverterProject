@@ -97,6 +97,69 @@ void InstallScreenResolution_GfxCore() {
     patch::RedirectCall(GfxCoreAddress(0x3BA4DF), Screenshot_SaveSurfaceToFile);
 }
 
+Bool GetCurrentScreenResolution(Float &width, Float &height) {
+    void *xlibFactory = CallAndReturn<void *, 0x459720>();
+    void *app = CallVirtualMethodAndReturn<void *, 33>(xlibFactory);
+    return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), app, &width, &height);
+}
+
+VisibleControlAppearance *METHOD GetImageAppearanceFor3dRender(CXgImage *image) {
+    static VisibleControlAppearance a;
+    a = *image->GetAppearance();
+    Float width = 0.0f, height = 0.0f;
+    if (GetCurrentScreenResolution(width, height) && width > 2000.0f && height > 0.0f) { // TODO: change to width > 2000.0f
+        Float factorX = width / 1920.0f;
+        Float factorY = height / 1080.0f;
+        //factorX = 2.0f; // TODO: remove this
+        //factorY = 2.0f; // TODO: remove this
+        a.rect.x = (Short)((Float)a.rect.x * factorX); // TODO: uncomment
+        a.rect.y = (Short)((Float)a.rect.y * factorY); // TODO: uncomment
+        a.rect.width = (Short)((Float)a.rect.width * factorX);
+        a.rect.height = (Short)((Float)a.rect.height * factorY);
+    }
+    return &a;
+}
+
+void __declspec(naked) CClubShirtDesign_3DRenderGetAppearance_Exe() {
+    __asm {
+        call GetImageAppearanceFor3dRender
+        mov edx, 0x599DEC
+        jmp edx
+    }
+}
+
+void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit1_1_Exe() {
+    __asm {
+        call GetImageAppearanceFor3dRender
+        mov edx, 0xADD03E
+        jmp edx
+    }
+}
+
+void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit1_2_Exe() {
+    __asm {
+        call GetImageAppearanceFor3dRender
+        mov edx, 0xADD0F1
+        jmp edx
+    }
+}
+
+void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit2_1_Exe() {
+    __asm {
+        call GetImageAppearanceFor3dRender
+        mov edx, 0xADD411
+        jmp edx
+    }
+}
+
+void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit2_2_Exe() {
+    __asm {
+        call GetImageAppearanceFor3dRender
+        mov edx, 0xADD4BB
+        jmp edx
+    }
+}
+
 void PatchScreenResolution(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectJump(0x5005A0, GameScreen_AddResolutions);
@@ -125,6 +188,13 @@ void PatchScreenResolution(FM::Version v) {
         patch::SetPointer(0x4501F0 + 3, &ResolutionsSortedByID[0].width);
         patch::SetPointer(0x4501F9 + 3, &ResolutionsSortedByID[0].height);
         patch::SetUChar(0x450204 + 2, (UChar)std::size(Resolutions));
+
+        // 3D renders
+        patch::RedirectJump(0x599DE7, CClubShirtDesign_3DRenderGetAppearance_Exe);
+        patch::RedirectJump(0xADD039, CMdSelectMatchModes_3DRenderGetAppearance_Kit1_1_Exe);
+        patch::RedirectJump(0xADD0EC, CMdSelectMatchModes_3DRenderGetAppearance_Kit1_2_Exe);
+        patch::RedirectJump(0xADD40C, CMdSelectMatchModes_3DRenderGetAppearance_Kit2_1_Exe);
+        patch::RedirectJump(0xADD4B6, CMdSelectMatchModes_3DRenderGetAppearance_Kit2_2_Exe);
 
         // Screenshot - overlay
         patch::RedirectJump(0x9D3DF8, App_MakeScreenshot_Exe);

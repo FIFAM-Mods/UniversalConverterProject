@@ -1648,6 +1648,46 @@ void CWeekNextMatchdayInfo_SetWidgetStadiumImage(void *widget, CTeamIndex const 
     Call<0xD4F840>(widget, &teamID, flag);
 }
 
+void METHOD OnManagerInfo2ndNationality(CXgFMPanel *screen) {
+    CXgImage *pTbImgFlag2 = *raw_ptr<CXgImage *>(screen, 0x4EC);
+    SetImageFilename(pTbImgFlag2, L"", 4, 4);
+}
+
+void __declspec(naked) OnManagerInfo2ndNationality_Exe() {
+    __asm {
+        mov ecx, esi
+        call OnManagerInfo2ndNationality
+        mov ecx, [esi + 0x4DC]
+        mov eax, 0x5C1A24
+        jmp eax
+    }
+}
+
+Float MerchandiseShop_Value = 0.0f;
+
+Float METHOD MerchandiseShop_GetBuildingBonus(void *facilities, DUMMY_ARG, void *building, Int bonusIndex) {
+    MerchandiseShop_Value = CallMethodAndReturn<Float, 0x1185D90>(facilities, building, 1);
+    return CallMethodAndReturn<Float, 0x1185D90>(facilities, building, 0);
+}
+
+void METHOD MerchandiseShop_SetPercentage(CEAMailData *mailData, DUMMY_ARG, Int percentage) {
+    CallMethod<0x100D6C0>(mailData, percentage);
+    CallMethod<0x1010720>(mailData, (Int)MerchandiseShop_Value);
+}
+
+WideChar const *METHOD OnGetMatchStringData(FmString *str, DUMMY_ARG, UInt *outBufSize) {
+    auto result = CallMethodAndReturn<WideChar const *, 0x414970>(str, outBufSize);
+    FILE *f = nullptr;
+    _wfopen_s(&f, L"match.txt", L"wb");
+    fputws(result, f);
+    fclose(f);
+    return result;
+}
+
+void Sprintf3DMatchParameterAscii(FmString *str, WideChar const *format, Char const *value) {
+    Call<0x1497B06>(str, format, Utils::AtoW(value).c_str());
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2235,6 +2275,21 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xAB478A, IsTeamHostOfNextMatch);
         // CWeekNextMatchdayInfo
         patch::RedirectCall(0xAEEB0B, CWeekNextMatchdayInfo_SetWidgetStadiumImage);
+
+        // ManagerInfo 2nd nationality fix
+        patch::RedirectJump(0x5C1A1E, OnManagerInfo2ndNationality_Exe);
+
+        // FACILITY_MERCHANDISE_SHOP fix _VALUE value (merchandise items)
+        patch::RedirectCall(0xDFEC59, MerchandiseShop_GetBuildingBonus);
+        patch::RedirectCall(0xDFEC85, MerchandiseShop_SetPercentage);
+
+        // Dump 3D match text to file
+        //patch::RedirectCall(0x44E2BD, OnGetMatchStringData);
+
+        // Fix 3D match text paramters
+        patch::RedirectCall(0x40E353, Sprintf3DMatchParameterAscii);
+        patch::RedirectCall(0x40E380, Sprintf3DMatchParameterAscii);
+        patch::RedirectCall(0x40E3AD, Sprintf3DMatchParameterAscii);
 ;   }
 }
 

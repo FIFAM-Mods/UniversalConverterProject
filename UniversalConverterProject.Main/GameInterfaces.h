@@ -1424,8 +1424,19 @@ public:
     UInt GetId();
 };
 
+struct Rect {
+    Short x; Short y; Short width; Short height;
+};
+
+struct VisibleControlAppearance {
+    Rect rect;
+    UInt blendCol;
+    Float depth;
+};
+
 class CXgVisibleControl : public CXgBaseControl {
 public:
+    VisibleControlAppearance *GetAppearance();
 };
 
 class CXgBaseButton : public CXgVisibleControl {

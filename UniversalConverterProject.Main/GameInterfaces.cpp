@@ -2614,3 +2614,7 @@ CXgCheckBox *CXgFMPanel::GetCheckBox(Char const *name) {
 CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
     return CallMethodAndReturn<CXgComboBox *, 0xD442C0>(this, name);
 }
+
+VisibleControlAppearance *CXgVisibleControl::GetAppearance() {
+    return CallVirtualMethodAndReturn<VisibleControlAppearance *, 30>(this);
+}
