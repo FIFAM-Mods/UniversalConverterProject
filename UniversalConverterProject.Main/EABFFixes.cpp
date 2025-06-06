@@ -989,10 +989,14 @@ void METHOD OnUpdateTeamPrestigeAndFans(CDBTeam *team) {
     if (CDBGame::GetInstance()->IsCountryPlayable(team->GetCountryId()) && CDBGame::GetInstance()->GetCurrentSeasonNumber() > 1) {
         if (team->GetFirstTeamDivision() == 15 && team->GetFirstTeamDivisionLastSeason() < 15) { // if just relegated to spare
             auto np = team->GetNationalPrestige();
-            if (np >= 1)
+            if (np >= 11)
+                team->SetNationalPrestige(np - 2);
+            else if (np >= 1)
                 team->SetNationalPrestige(np - 1);
             auto ip = team->GetInternationalPrestige();
-            if (ip >= 1)
+            if (ip >= 10)
+                team->SetInternationalPrestige(ip - 2);
+            else if (ip >= 1)
                 team->SetInternationalPrestige(ip - 1);
             Int numFans = team->GetClubFans()->GetNumFans();
             if (numFans > 50) {
@@ -2250,6 +2254,7 @@ void PatchEABFFixes(FM::Version v) {
 		//patch::RedirectCall(0x120F5CC, YouthTransfsersCollect<0x120F220, IntercontinentalLevel>);
 
         patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
+        patch::Nop(0xFD40CB, 6); // AOG - Player Back from Brazil, TODO: test this!
 
         patch::Nop(0x45BF5A, 19); // Fix FM icon
 

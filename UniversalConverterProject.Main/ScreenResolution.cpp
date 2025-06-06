@@ -9,23 +9,33 @@
 
 using namespace plugin;
 
-Bool METHOD App_GetScreenResolution(void *app, DUMMY_ARG, Float *outWidth, Float *outHeight) {
-    Bool result = CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), app, outWidth, outHeight);
+Bool GetBaseResolution(void *app, Float *outWidth, Float *outHeight, Bool minimal = false) {
+    Bool result = false;
+    if (minimal)
+        result = CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD40), app, outWidth, outHeight);
+    else
+        result = CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), app, outWidth, outHeight);
     if (result && *outWidth > 2000) {
-        *outWidth = 1920.0f;
-        *outHeight = 1080.0f;
+        *outWidth /= 2.0f;
+        *outHeight /= 2.0f;
     }
     return result;
 }
 
-bool METHOD App_GetMinimumScreenResolution(void *app, DUMMY_ARG, Float *outWidth, Float *outHeight) {
-    Bool result = CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), app, outWidth, outHeight);
-    if (result && *outWidth > 2000) {
-        *outWidth = 1920.0f;
-        *outHeight = 1080.0f;
-        return true;
-    }
-    return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD40), app, outWidth, outHeight);
+Bool GetBaseResolution(Float *outWidth, Float *outHeight) {
+    return GetBaseResolution(GetApp(), outWidth, outHeight);
+}
+
+Bool METHOD App_GetScreenResolution(void *app, DUMMY_ARG, Float *outWidth, Float *outHeight) {
+    return GetBaseResolution(app, outWidth, outHeight);
+}
+
+Bool GetCurrentScreenResolution(Float &width, Float &height) {
+    return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), GetApp(), &width, &height);
+}
+
+Bool METHOD App_GetMinimumScreenResolution(void *app, DUMMY_ARG, Float *outWidth, Float *outHeight) {
+    return GetBaseResolution(app, outWidth, outHeight, true);
 }
 
 void METHOD GameScreen_AddResolutions(void *, DUMMY_ARG, CXgComboBox *cb) {
@@ -97,23 +107,19 @@ void InstallScreenResolution_GfxCore() {
     patch::RedirectCall(GfxCoreAddress(0x3BA4DF), Screenshot_SaveSurfaceToFile);
 }
 
-Bool GetCurrentScreenResolution(Float &width, Float &height) {
-    void *xlibFactory = CallAndReturn<void *, 0x459720>();
-    void *app = CallVirtualMethodAndReturn<void *, 33>(xlibFactory);
-    return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), app, &width, &height);
-}
-
 VisibleControlAppearance *METHOD GetImageAppearanceFor3dRender(CXgImage *image) {
     static VisibleControlAppearance a;
     a = *image->GetAppearance();
     Float width = 0.0f, height = 0.0f;
     if (GetCurrentScreenResolution(width, height) && width > 2000.0f && height > 0.0f) { // TODO: change to width > 2000.0f
+        Float offsetX = (1920.0f - 1280.0f) / 2.0f;
+        Float offsetY = (1080.0f - 1024.0f) / 2.0f;
         Float factorX = width / 1920.0f;
         Float factorY = height / 1080.0f;
         //factorX = 2.0f; // TODO: remove this
         //factorY = 2.0f; // TODO: remove this
-        a.rect.x = (Short)((Float)a.rect.x * factorX); // TODO: uncomment
-        a.rect.y = (Short)((Float)a.rect.y * factorY); // TODO: uncomment
+        a.rect.x = (Short)((Float)a.rect.x * factorX + offsetX); // TODO: uncomment
+        a.rect.y = (Short)((Float)a.rect.y * factorY + offsetY); // TODO: uncomment
         a.rect.width = (Short)((Float)a.rect.width * factorX);
         a.rect.height = (Short)((Float)a.rect.height * factorY);
     }

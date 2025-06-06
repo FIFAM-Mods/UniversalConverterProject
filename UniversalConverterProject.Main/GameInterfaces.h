@@ -1593,3 +1593,5 @@ public:
 };
 
 CDBYouthcampList *GetYouthcampList();
+
+void *GetApp();

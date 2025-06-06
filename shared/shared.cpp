@@ -80,6 +80,12 @@ void SaveTestFile() {
     }
 }
 
+String GetIniOption(String const &group, String const &key, String const &defaultValue, Path const &filePath) {
+    WideChar buf[MAX_PATH];
+    GetPrivateProfileStringW(group.c_str(), key.c_str(), defaultValue.c_str(), buf, MAX_PATH, filePath.c_str());
+    return Utils::ToLower(buf);
+}
+
 Bool& IsWomensDatabase() {
     static Bool isWomensDatabase = false;
     return isWomensDatabase;

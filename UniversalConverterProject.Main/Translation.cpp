@@ -2,12 +2,14 @@
 #include "GameInterfaces.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
-#include "license_check/license_check.h"
+#include "shared.h"
 
 using namespace plugin;
 
 Bool IsRussianLanguage = false;
 Bool IsUkrainianLanguage = false;
+eCurrency DefaultCurrency = CURRENCY_EUR;
+Bool IsDefaultImperialUnits = false;
 
 Array<String, 207> &CountryNames() {
     static Array<String, 207> countryNames;
@@ -232,11 +234,49 @@ Int MyCompareStringNoCase(WideChar const *str1, WideChar const *str2) {
     return CallAndReturn<Int, 0x1580597>(myStr1.c_str(), myStr2.c_str());
 }
 
+void METHOD OnSetDefaultCurrencyRate(void *t, DUMMY_ARG, Double rate) {
+    switch (DefaultCurrency) {
+    case CURRENCY_EUR:
+        CallMethod<0x14AB9D1>(t, 1.0);
+        break;
+    case CURRENCY_USD:
+        CallMethod<0x14AB9D1>(t, 1.25);
+        break;
+    case CURRENCY_GBP:
+        CallMethod<0x14AB9D1>(t, 0.8);
+        break;
+    case CURRENCY_PLN:
+        CallMethod<0x14AB9D1>(t, 3.85);
+        break;
+    }
+    *(UInt *)0x31264C4 = DefaultCurrency;
+}
+
+void METHOD OnSetDefaultCurrencySymbol(void *t, DUMMY_ARG, WideChar const *symbol) {
+    switch (DefaultCurrency) {
+    case CURRENCY_EUR:
+        CallMethod<0x14AB9B2>(t, L"€");
+        break;
+    case CURRENCY_USD:
+        CallMethod<0x14AB9B2>(t, L"$");
+        break;
+    case CURRENCY_GBP:
+        CallMethod<0x14AB9B2>(t, L"£");
+        break;
+    case CURRENCY_PLN:
+        CallMethod<0x14AB9B2>(t, L"zł");
+        break;
+    }
+}
+
+void METHOD OnSetDefaultUnits(CDBGameOptions *t, DUMMY_ARG, UInt flag, Bool set) {
+    CallMethod<0x1041110>(t, flag, !IsDefaultImperialUnits);
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        wchar_t gameLanguageStr[MAX_PATH];
-        GetPrivateProfileStringW(Magic<'O', 'P', 'T', 'I', 'O', 'N', 'S'>(1224534890).c_str(), Magic<'T', 'E', 'X', 'T', '_', 'L', 'A', 'N', 'G', 'U', 'A', 'G', 'E'>(3562105574).c_str(), Magic<'e', 'n', 'g'>(3703889367).c_str(), gameLanguageStr, MAX_PATH, Magic<'.', '\\', 'l', 'o', 'c', 'a', 'l', 'e', '.', 'i', 'n', 'i'>(2393442148).c_str());
-        GameLanguage() = Utils::ToLower(gameLanguageStr);
+        auto iniPath = FM::GameDirPath(L"locale.ini");
+        GameLanguage() = GetIniOption(L"OPTIONS", L"TEXT_LANGUAGE", L"eng", iniPath);
         if (!GameLanguage().empty()) {
             IsRussianLanguage = GameLanguage() == L"rus";
             IsUkrainianLanguage = GameLanguage() == L"ukr";
@@ -254,6 +294,18 @@ void PatchTranslation(FM::Version v) {
                 }
             }
         }
+        String currency = GetIniOption(L"OPTIONS", L"LANGUAGE_CURRENCY", L"", iniPath);
+        if (currency == L"usd")
+            DefaultCurrency = CURRENCY_USD;
+        else if (currency == L"gbp")
+            DefaultCurrency = CURRENCY_GBP;
+        else if (currency == L"pln")
+            DefaultCurrency = CURRENCY_PLN;
+        else
+            DefaultCurrency = CURRENCY_EUR;
+        String units = GetIniOption(L"OPTIONS", L"LANGUAGE_UNITS", L"", iniPath);
+        IsDefaultImperialUnits = units == L"imperial";
+
         patch::RedirectCall(0xF9720D, OnSetCountryName);
         patch::RedirectCall(0x108F723, OnSetCountryName);
         patch::RedirectJump(0x14A950B, GetLocaleShortName);
@@ -273,5 +325,12 @@ void PatchTranslation(FM::Version v) {
 
         if (IsUkrainianLanguage)
             patch::RedirectCall(0x1493FD4, MyCompareStringNoCase);
+
+        patch::RedirectCall(0xF65591, OnSetDefaultCurrencyRate);
+        patch::RedirectCall(0xF655D2, OnSetDefaultCurrencyRate);
+        patch::RedirectCall(0xF6560B, OnSetDefaultCurrencyRate);
+        patch::RedirectCall(0xF6559E, OnSetDefaultCurrencySymbol);
+        patch::RedirectCall(0xF65619, OnSetDefaultCurrencySymbol);
+        patch::RedirectCall(0xF65624, OnSetDefaultUnits);
     }
 }

@@ -2465,6 +2465,11 @@ CDBYouthcampList *GetYouthcampList() {
     return CallAndReturn<CDBYouthcampList *, 0x11C5330>();
 }
 
+void *GetApp() {
+    void *xlibFactory = CallAndReturn<void *, 0x459720>();
+    return CallVirtualMethodAndReturn<void *, 33>(xlibFactory);
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);

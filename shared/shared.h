@@ -16,6 +16,7 @@ Bool &IsWomensDatabase();
 Bool &IsFirstLaunch();
 path GetDocumentsPath();
 void SaveTestFile();
+String GetIniOption(String const &group, String const &key, String const &defaultValue, Path const &filePath);
 
 class SafeLog {
 public:
