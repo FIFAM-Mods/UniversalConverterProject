@@ -80,6 +80,8 @@ public:
     SETTINGS_PARAMETER(bool,   DisplayScreenshotOverlay,    "DISPLAY_SCREENSHOT_OVERLAY",     true);
     SETTINGS_PARAMETER(int,    ScreenshotKey,               "SCREENSHOT_KEY",                 0x2C); // VK_SNAPSHOT
     SETTINGS_PARAMETER(int,    ScreenshotFormat,            "SCREENSHOT_FORMAT",              1); // D3DXIFF_JPG
+    SETTINGS_PARAMETER(wstring, AbilitiesColorSchema,       "ABILITIES_COLOR_SCHEMA",         L"IDS_ABILITIES_SCHEMA_DEFAULT");
+    SETTINGS_PARAMETER(bool,   AbilitiesBoldFont,           "ABILITIES_BOLD_FONT",            false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

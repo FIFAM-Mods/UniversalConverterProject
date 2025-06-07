@@ -64,6 +64,7 @@
 #include "Assessment.h"
 #include "MainMenu.h"
 #include "ScreenResolution.h"
+#include "AbilityColors.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -126,6 +127,9 @@ public:
                     IsFirstLaunch() = false;
                 }
             }
+            PatchInterfaceTheme(v);
+            PatchDatabaseOptions(v);
+            PatchWomensDatabase(v);
             PatchWorldCup(v);
             PatchLeagueSelection(v);
             PatchMasterDatLimit(v);
@@ -169,9 +173,6 @@ public:
             PatchExtendedPlayer(v);
             PatchExtendedTeam(v);
             PatchPlayerNameEdit(v);
-            PatchWomensDatabase(v);
-            PatchInterfaceTheme(v);
-            PatchDatabaseOptions(v);
             PatchYouthGenCountries(v);
             PatchClubSponsors(v);
             //PatchAchievements(v);
@@ -183,6 +184,7 @@ public:
             PatchAssessment(v);
             PatchMainMenu(v);
             PatchScreenResolution(v);
+            PatchAbilityColors(v);
 
 #ifdef BETA
             DoBetaPatches(v);

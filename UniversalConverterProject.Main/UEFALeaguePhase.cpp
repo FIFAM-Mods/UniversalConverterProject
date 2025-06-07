@@ -817,7 +817,7 @@ Bool UEFALeaguePhaseChangeCompetition(CFMListBox *listBox, void *data, UInt comp
         if (!vecTeams.empty()) {
             for (UInt i = 0; i < vecTeams.size(); i++) {
                 Int lastRowIndex = listBox->GetMaxRows() - 1;
-                if (listBox->GetRowsCount() >= lastRowIndex)
+                if (listBox->GetNumRows() >= lastRowIndex)
                     break;
                 TeamLeaguePhaseInfo &info = vecTeams[i];
                 UInt color = CallMethodAndReturn<UInt, 0xA8BD80>(data, vecTeams[i].teamId.ToInt());

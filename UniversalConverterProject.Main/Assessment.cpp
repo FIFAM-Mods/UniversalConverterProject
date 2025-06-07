@@ -471,7 +471,7 @@ public:
             String eastFormat = GetTranslation("IDS_REGION_EAST_FORMAT");
             for (UInt i = 0; i < entries.size(); i++) {
                 Int lastRowIndex = listBox->GetMaxRows() - 1;
-                if (listBox->GetRowsCount() >= lastRowIndex)
+                if (listBox->GetNumRows() >= lastRowIndex)
                     break;
                 listBox->AddColumnInt(entries[i].newPosition, color, 0);
                 listBox->AddCountryFlag(entries[i].countryId, 0);
@@ -569,7 +569,7 @@ public:
             UInt yellowColor = GetGuiColor(COL_GEN_CAPTIONCOLOR_11T);
             for (UInt i = 0; i < entries.size(); i++) {
                 Int lastRowIndex = listBox->GetMaxRows() - 1;
-                if (listBox->GetRowsCount() >= lastRowIndex)
+                if (listBox->GetNumRows() >= lastRowIndex)
                     break;
                 if (entries[i].newTotal == 0.0f)
                     listBox->AddColumnString(L"—", color, 0);

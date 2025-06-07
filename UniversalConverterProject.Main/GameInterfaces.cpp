@@ -1679,6 +1679,10 @@ UChar CDBPlayer::GetPositionRole() {
     return CallMethodAndReturn<UChar, 0xFB4AF0>(this);
 }
 
+Char CDBPlayer::GetAbility(UInt ability, CDBEmployee *employee) {
+    return CallMethodAndReturn<UChar, 0xFA57D0>(this, ability, employee);
+}
+
 UChar CDBPlayer::GetNationality(UChar number) {
     return CallMethodAndReturn<UChar, 0xF9AF10>(this, number);
 }
@@ -2298,12 +2302,20 @@ void CFMListBox::Clear() {
     CallMethod<0xD1AF40>(this);
 }
 
+Int CFMListBox::GetNumRows() {
+    return CallMethodAndReturn<Int, 0xD18600>(this);
+}
+
+Int CFMListBox::GetNumColumns() {
+    return CallMethodAndReturn<Int, 0xD18610>(this);
+}
+
 Int CFMListBox::GetMaxRows() {
     return CallMethodAndReturn<Int, 0xD18640>(this);
 }
 
-Int CFMListBox::GetRowsCount() {
-    return CallMethodAndReturn<Int, 0xD18600>(this);
+Int CFMListBox::GetTotalRows() {
+    return CallMethodAndReturn<Int, 0xD18620>(this);
 }
 
 void CFMListBox::AddColumnInt(Int64 value, UInt color, Int unk) {
@@ -2352,6 +2364,14 @@ Int64 CFMListBox::GetCellValue(UInt row, UInt column) {
 
 void CFMListBox::SetCellValue(UInt row, UInt column, Int64 value) {
     return CallMethod<0xD18A00>(this, row, column, value);
+}
+
+void CFMListBox::SetFont(Char const *fontName) {
+    CallMethod<0xD1A310>(this, fontName);
+}
+
+CXgTextBox *CFMListBox::GetCellTextBox(UInt rowIndex, UInt columnIndex) {
+    return CallMethodAndReturn<CXgTextBox *, 0xD19DB0>(this, rowIndex, columnIndex);
 }
 
 EAGMoney::EAGMoney() {
@@ -2622,4 +2642,28 @@ CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
 
 VisibleControlAppearance *CXgVisibleControl::GetAppearance() {
     return CallVirtualMethodAndReturn<VisibleControlAppearance *, 30>(this);
+}
+
+void CXgTextBox::SetColor(UInt colorType, UInt colorValue) {
+    CallVirtualMethod<74>(this, colorType, colorValue);
+}
+
+UInt CXgTextBox::GetColor(UInt colorType) {
+    return CallVirtualMethodAndReturn<UInt, 75>(this, colorType);
+}
+
+void CXgTextBox::SetFont(Char const *fontName) {
+    CallVirtualMethod<76>(this, fontName);
+}
+
+Char const *CXgTextBox::GetFont() {
+    return CallVirtualMethodAndReturn<Char const *, 77>(this);
+}
+
+void CXgTextBox::SetText(WideChar const *text) {
+    CallVirtualMethod<78>(this, text);
+}
+
+WideChar const *CXgTextBox::GetText() {
+    return CallVirtualMethodAndReturn<WideChar const *, 79>(this);
 }

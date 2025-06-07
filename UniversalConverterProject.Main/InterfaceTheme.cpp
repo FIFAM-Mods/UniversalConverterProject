@@ -5,6 +5,8 @@
 
 using namespace plugin;
 
+Bool IsDarkTheme = false;
+
 String &GetCustomInterfaceFolderW() {
     static String custom1;
     return custom1;
@@ -514,8 +516,10 @@ void PatchInterfaceTheme(FM::Version v) {
             GetCustomInterfaceFolderW() = SettingsHelper::ToUTF16(GetCustomInterfaceFolderA());
 
             enum Theme { LIGHT, DARK, CUSTOM } theme = CUSTOM;
-            if (GetCustomInterfaceFolderW() == L"dark")
+            if (GetCustomInterfaceFolderW() == L"dark") {
                 theme = DARK;
+                IsDarkTheme = true;
+            }
             else if (GetCustomInterfaceFolderW() == L"light")
                 theme = LIGHT;
 

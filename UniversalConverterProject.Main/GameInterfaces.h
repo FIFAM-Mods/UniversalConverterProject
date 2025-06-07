@@ -524,6 +524,7 @@ public:
     CPlayerStats *GetStats();
     UChar GetPotential();
     UChar GetPositionRole();
+    Char GetAbility(UInt ability, CDBEmployee *employee = nullptr);
 };
 
 class CDBStaff {
@@ -1449,6 +1450,12 @@ public:
 
 class CXgTextBox : public CXgBaseButton {
 public:
+    void SetColor(UInt colorType, UInt colorValue);
+    UInt GetColor(UInt colorType);
+    void SetFont(Char const *fontName);
+    Char const *GetFont();
+    void SetText(WideChar const *text);
+    WideChar const *GetText();
 };
 
 class CXgImage : public CXgBaseButton {
@@ -1507,8 +1514,10 @@ class CFMListBox {
 public:
     void SetVisible(Bool visible);
     void Clear();
+    Int GetNumRows();
+    Int GetNumColumns();
     Int GetMaxRows();
-    Int GetRowsCount();
+    Int GetTotalRows();
     void AddColumnInt(Int64 value, UInt color, Int unk);
     void AddColumnFloat(Float value, UInt color, Int unk);
     void AddColumnString(WideChar const *str, UInt color, Int unk);
@@ -1521,6 +1530,8 @@ public:
     void Create(CXgFMPanel *panel, const char *name);
     Int64 GetCellValue(UInt row, UInt column);
     void SetCellValue(UInt row, UInt column, Int64 value);
+    void SetFont(Char const *fontName);
+    CXgTextBox *GetCellTextBox(UInt rowIndex, UInt columnIndex);
     template <typename... ArgTypes>
     static void InitColumnTypes(CFMListBox *listBox, ArgTypes... args) {
         Call<0xD19660>(listBox, args...);

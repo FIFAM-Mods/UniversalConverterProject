@@ -1,6 +1,7 @@
 #include "Scouting.h"
 #include "Utils.h"
 #include "GameInterfaces.h"
+#include "AbilityColors.h"
 
 using namespace plugin;
 
@@ -38,6 +39,7 @@ void METHOD OnUpdateStaffInfo(void *screen) {
         CallVirtualMethod<11>(data->pFlags[i], 0);
     }
     CallMethod<0x69A970>(screen);
+    UpdateStaffAbilityColors(screen);
     gStaffInfoScreen = nullptr;
 }
 
