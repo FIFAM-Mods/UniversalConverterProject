@@ -82,6 +82,7 @@ public:
     SETTINGS_PARAMETER(int,    ScreenshotFormat,            "SCREENSHOT_FORMAT",              1); // D3DXIFF_JPG
     SETTINGS_PARAMETER(wstring, AbilitiesColorSchema,       "ABILITIES_COLOR_SCHEMA",         L"IDS_ABILITIES_SCHEMA_DEFAULT");
     SETTINGS_PARAMETER(bool,   AbilitiesBoldFont,           "ABILITIES_BOLD_FONT",            false);
+    SETTINGS_PARAMETER(bool,   AbilitiesAutoReload,         "ABILITIES_AUTO_RELOAD",          false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

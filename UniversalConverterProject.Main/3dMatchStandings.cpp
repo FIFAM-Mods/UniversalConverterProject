@@ -4,6 +4,7 @@
 #include "license_check/license_check.h"
 #include "GameInterfaces.h"
 #include "Competitions.h"
+#include "Kits.h"
 #include "Color.h"
 
 const UInt STANDINGS3D_ORIGINAL_STRUCT_SIZE = 0x4F8;
@@ -121,118 +122,13 @@ void *GetOptionalComponent(void *panelInterface, char const *componentName) {
     return CallMethodAndReturn<void *, 0xD34CE0>(panelInterface, componentName);
 }
 
-Bool FileExists(String const &filename, Bool makeAbsolutePath = true) {
-    void *iSystem = *reinterpret_cast<void **>(0x30ABBC0);
-    return CallVirtualMethodAndReturn<Bool, 0>(iSystem, filename.c_str(), makeAbsolutePath);
-}
-
 Bool IsSecondLegMatch() {
     void *match = *reinterpret_cast<void **>(0x3124748);
     return match && *raw_ptr<Bool>(match, 0xBB8);
 }
 
-Pair<UInt, UInt> GetGenericKitColor(CDBTeamKit *kit, Bool home) {
-    UChar kitId = (home == true) ? 0 : 1;
-    UChar color1 = 0, color2 = 0;
-    switch (kit->GetPartType(kitId, 0)) {
-    case 2:
-    case 4:
-    case 5:
-    case 8:
-    case 9:
-    case 18:
-    case 26:
-    case 28:
-    case 29:
-    case 30:
-    case 31:
-    case 32:
-    case 35:
-    case 54:
-    case 56:
-    case 58:
-    case 61:
-    case 62:
-    case 66:
-        color1 = 0;
-        color2 = 0;
-        break;
-    case 1:
-    case 6:
-    case 10:
-    case 11:
-    case 13:
-    case 20:
-    case 27:
-    case 33:
-    case 34:
-    case 37:
-    case 38:
-    case 39:
-    case 40:
-    case 42:
-    case 43:
-    case 44:
-    case 45:
-    case 46:
-    case 47:
-    case 50:
-    case 52:
-    case 64:
-        color1 = 0;
-        color2 = 2;
-        break;
-    case 22:
-    case 53:
-    case 57:
-    case 59:
-    case 60:
-        color1 = 0;
-        color2 = 1;
-        break;
-    case 23:
-        color1 = 2;
-        color2 = 0;
-        break;
-    case 3:
-    case 7:
-    case 14:
-    case 16:
-    case 17:
-    case 19:
-    case 21:
-    case 24:
-    case 25:
-    case 36:
-    case 41:
-    case 48:
-    case 55:
-    case 65:
-        color1 = 0;
-        color2 = 2;
-        break;
-    case 15:
-    case 63:
-        color1 = 0;
-        color2 = 1;
-        break;
-    case 12:
-    case 49:
-    case 51:
-        color1 = 0;
-        color2 = 1;
-        break;
-    }
-    Pair<UInt, UInt> result = { kit->GetPartColor(kitId, 0, color1), kit->GetPartColor(kitId, 0, color2) };
-    if (result.first > 63)
-        result.first = 0;
-    if (result.second > 63)
-        result.second = 0;
-    return result;
-}
-
 String GetGenericKitColorName(CDBTeamKit *kit, Bool home) {
-    Pair<UInt, UInt> color = GetGenericKitColor(kit, home);
+    Pair<UInt, UInt> color = GetGenericKitColorIDs(kit, home);
     return Utils::Format(L"clr_%d_%d", color.first, color.second);
 }
 
@@ -371,19 +267,6 @@ UInt GetAltColor(UInt clr) {
     return GenColorToInt(genClr);
 }
 
-String GetPathForTeamKitColor(String const &dir, UInt teamUId, UInt kitType) {
-    String kitSuffix;
-    if (kitType == 0)
-        kitSuffix = L"_h";
-    else if (kitType == 1)
-        kitSuffix = L"_a";
-    else if (kitType == 3)
-        kitSuffix = L"_t";
-    else
-        return String();
-    return dir + Utils::Format(L"%08X", teamUId) + kitSuffix + L".png";
-}
-
 void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, char const *awayBadgeNode,
     CTeamIndex _homeTeamID, CTeamIndex _awayTeamID, UInt _compID, bool oneTeam)
 {
@@ -481,17 +364,17 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
                     String uid = Format(L"%08X", team[t]->GetTeamUniqueID());
                     if (isReserve[t]) {
                         badgePath[t] = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L"_2.png";
-                        if (!FileExists(badgePath[t])) {
+                        if (!FmFileExists(badgePath[t])) {
                             badgePath[t] = badgesData.paramStr + uid + L"_2.png";
-                            if (!FileExists(badgePath[t]))
+                            if (!FmFileExists(badgePath[t]))
                                 badgePath[t].clear();
                         }
                     }
                     if (badgePath[t].empty()) {
                         badgePath[t] = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L".png";
-                        if (!FileExists(badgePath[t])) {
+                        if (!FmFileExists(badgePath[t])) {
                             badgePath[t] = badgesData.paramStr + uid + L".png";
-                            if (!FileExists(badgePath[t]))
+                            if (!FmFileExists(badgePath[t]))
                                 badgePath[t].clear();
                         }
                     }
@@ -536,14 +419,14 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
         Bool customKit = false;
         if (!colorsData.paramStr.empty() && !imgKit.empty()) {
             String teamColorPath = GetPathForTeamKitColor(colorsData.paramStr, team[t]->GetTeamUniqueID(), kitType[t]);
-            if (!teamColorPath.empty() && FileExists(teamColorPath)) {
+            if (!teamColorPath.empty() && FmFileExists(teamColorPath)) {
                 for (auto k : imgKit)
                     SetImageFilename(k, teamColorPath);
                 customKit = true;
             }
             else {
                 String teamColorPath = colorsData.paramStr + GetGenericKitColorName(team[t]->GetKit(), kitType[t] == 0) + L".png";
-                if (FileExists(teamColorPath)) {
+                if (FmFileExists(teamColorPath)) {
                     for (auto k : imgKit)
                         SetImageFilename(k, teamColorPath);
                     customKit = true;
@@ -564,7 +447,7 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
         teamColors = ReadTeamColors(recolorData.paramStr);
     for (UInt t = 0; t < 2; t++) {
         if (team[t]) {
-            Pair<UInt, UInt> kitColorId = GetGenericKitColor(team[t]->GetKit(), kitType[t] != 1);
+            Pair<UInt, UInt> kitColorId = GetGenericKitColorIDs(team[t]->GetKit(), kitType[t] != 1);
             Pair<UInt, UInt> kitColor = {
                 0xFF000000 | *(UInt *)(0x3080410 + kitColorId.first * 4),
                 0xFF000000 | *(UInt *)(0x3080410 + kitColorId.second * 4)
@@ -992,11 +875,11 @@ void METHOD OnRead3dMatchOverlaysConfig(void *t, DUMMY_ARG, Int unk, WideChar co
             //Message(Format(L"compId: %08X", compId));
             UShort year = GetCurrentYear();
             String newfilename = Format(L"fmdata\\popups\\overlay\\%4d_%08X.cfg", year, compId);
-            if (!FileExists(newfilename)) {
+            if (!FmFileExists(newfilename)) {
                 if (IsCompetitionLeagueSplit_UInt(compId)) {
                     UInt mainCompId = GetCompetitionLeagueSplitMainLeague(compId);
                     newfilename = Format(L"fmdata\\popups\\overlay\\%4d_%08X.cfg", year, mainCompId);
-                    if (!FileExists(newfilename))
+                    if (!FmFileExists(newfilename))
                         newfilename.clear();
                 }
                 else
@@ -1004,16 +887,16 @@ void METHOD OnRead3dMatchOverlaysConfig(void *t, DUMMY_ARG, Int unk, WideChar co
             }
             if (newfilename.empty()) {
                 newfilename = Format(L"fmdata\\popups\\overlay\\%4d_%04X.cfg", year, (compId >> 16) & 0xFFFF);
-                if (!FileExists(newfilename))
+                if (!FmFileExists(newfilename))
                     newfilename.clear();
             }
             if (newfilename.empty()) {
                 newfilename = Format(L"fmdata\\popups\\overlay\\%08X.cfg", compId);
-                if (!FileExists(newfilename)) {
+                if (!FmFileExists(newfilename)) {
                     if (IsCompetitionLeagueSplit_UInt(compId)) {
                         UInt mainCompId = GetCompetitionLeagueSplitMainLeague(compId);
                         newfilename = Format(L"fmdata\\popups\\overlay\\%08X.cfg", mainCompId);
-                        if (!FileExists(newfilename))
+                        if (!FmFileExists(newfilename))
                             newfilename.clear();
                     }
                     else
@@ -1021,7 +904,7 @@ void METHOD OnRead3dMatchOverlaysConfig(void *t, DUMMY_ARG, Int unk, WideChar co
                 }
                 if (newfilename.empty()) {
                     newfilename = Format(L"fmdata\\popups\\overlay\\%04X.cfg", (compId >> 16) & 0xFFFF);
-                    if (!FileExists(newfilename))
+                    if (!FmFileExists(newfilename))
                         newfilename.clear();
                 }
             }
@@ -1073,11 +956,11 @@ void METHOD ReadPresentationConfig(void *t, DUMMY_ARG, WideChar const *filePath)
             //Message(Format(L"compId: %08X", compId));
             UShort year = GetCurrentYear();
             String newfilename = Format(L"fmdata\\popups\\presentation\\%4d_%08X.txt", year, compId);
-            if (!FileExists(newfilename)) {
+            if (!FmFileExists(newfilename)) {
                 if (IsCompetitionLeagueSplit_UInt(compId)) {
                     UInt mainCompId = GetCompetitionLeagueSplitMainLeague(compId);
                     newfilename = Format(L"fmdata\\popups\\presentation\\%4d_%08X.txt", year, mainCompId);
-                    if (!FileExists(newfilename))
+                    if (!FmFileExists(newfilename))
                         newfilename.clear();
                 }
                 else
@@ -1085,16 +968,16 @@ void METHOD ReadPresentationConfig(void *t, DUMMY_ARG, WideChar const *filePath)
             }
             if (newfilename.empty()) {
                 newfilename = Format(L"fmdata\\popups\\presentation\\%4d_%04X.txt", year, (compId >> 16) & 0xFFFF);
-                if (!FileExists(newfilename))
+                if (!FmFileExists(newfilename))
                     newfilename.clear();
             }
             if (newfilename.empty()) {
                 newfilename = Format(L"fmdata\\popups\\presentation\\%08X.txt", compId);
-                if (!FileExists(newfilename)) {
+                if (!FmFileExists(newfilename)) {
                     if (IsCompetitionLeagueSplit_UInt(compId)) {
                         UInt mainCompId = GetCompetitionLeagueSplitMainLeague(compId);
                         newfilename = Format(L"fmdata\\popups\\presentation\\%08X.txt", mainCompId);
-                        if (!FileExists(newfilename))
+                        if (!FmFileExists(newfilename))
                             newfilename.clear();
                     }
                     else
@@ -1102,7 +985,7 @@ void METHOD ReadPresentationConfig(void *t, DUMMY_ARG, WideChar const *filePath)
                 }
                 if (newfilename.empty()) {
                     newfilename = Format(L"fmdata\\popups\\presentation\\%04X.txt", (compId >> 16) & 0xFFFF);
-                    if (!FileExists(newfilename))
+                    if (!FmFileExists(newfilename))
                         newfilename.clear();
                 }
             }

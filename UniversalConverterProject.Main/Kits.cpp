@@ -10,8 +10,11 @@
 #include "FifamCompLeague.h"
 #include "Competitions.h"
 #include "3dPatches.h"
+#include "Color.h"
 #include "json/json.hpp"
 #include <fstream>
+#include "Magick++.h"
+#include "colorm/colorm.h"
 
 using namespace plugin;
 using namespace std::filesystem;
@@ -1385,7 +1388,6 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
                         createdTempImage = true;
                     }
                     CallVirtualMethod<8>(acc, &img); // deleteImage
-                    CallMethodDynGlobal(GfxCoreAddress(0x373BA9), &acc);
                     if (createdTempImage) {
                         gfx::RawImageDesc dstRegion;
                         CallMethodDynGlobal(GfxCoreAddress(0x385E30), dst, &dstRegion, left, top, width, height); // GetImageRegionImg
@@ -1401,6 +1403,7 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
                         CallVirtualMethod<8>(acc, &overlayFsh); // deleteImage
                         DeleteFileW(tempPath);
                     }
+                    CallMethodDynGlobal(GfxCoreAddress(0x373BA9), &acc);
                 }
             };
 
@@ -1489,41 +1492,6 @@ void METHOD OnWriteKitShape(void *shapeGen, DUMMY_ARG, gfx::RawImageDesc *dstImg
             PutOverlay(shapeGen, dstImg, badgeRight, 64, 64, 115, 34, 56, 56);
             PutOverlay(shapeGen, dstImg, badgeLeft, 64, 64, 438, 382, 28, 44);
             PutOverlay(shapeGen, dstImg, badgeRight, 64, 64, 48, 382, 28, 44);
-
-            //String overlayPath = GetUserTexturePath(L"data\\kitoverlay", gCurrCompId, teamId, kitTypeStr);
-            //SafeLog::Write(Utils::Format(L"overlayPath %s", overlayPath.c_str()));
-            //if (!overlayPath.empty()) {
-            //    WideChar tempPath[MAX_PATH + 1];
-            //    GetTempPathW(259, tempPath);
-            //    wcscat(tempPath, L"\\tempoverlay.fsh");
-            //    SafeLog::Write(Utils::Format(L"tempPath %s", tempPath));
-            //    UInt acc;
-            //    Bool createdTempImage = false;
-            //    CallMethodDynGlobal(GfxCoreAddress(0x373B6E), &acc);
-            //    gfx::RawImageDesc img;
-            //    CallVirtualMethod<5>(acc, &img, overlayPath.c_str(), 512 * 1024 * 4 + 256, 1, 0); // loadImage
-            //    SafeLog::Write(Utils::Format(L"img.width %d img.height %d", img.width, img.height));
-            //    if (img.width == 512 && img.height == 1024) {
-            //        CallVirtualMethod<12>(acc, tempPath, &img, 1); // writeImage
-            //        createdTempImage = true;
-            //    }
-            //    CallVirtualMethod<8>(acc, &img); // deleteImage
-            //    CallMethodDynGlobal(GfxCoreAddress(0x373BA9), &acc);
-            //    if (createdTempImage) {
-            //        gfx::RawImageDesc overlayFsh;
-            //        overlayFsh.width = 512;
-            //        overlayFsh.height = 1024;
-            //        overlayFsh.stride = 512 * 4;
-            //        CallMethodDynGlobal(GfxCoreAddress(0x37382C), &overlayFsh.buffer, overlayFsh.width * overlayFsh.height * 4); // Buffer ctor
-            //        if (CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x38578E), gKitGen, &overlayFsh, tempPath)) {
-            //            CallMethodDynGlobal(GfxCoreAddress(0x383675), shapeGen, dstImg, &img); // overlayCopyPixels
-            //            SafeLog::Write(L"copied");
-            //        }
-            //        CallVirtualMethod<8>(acc, &overlayFsh); // deleteImage
-            //        DeleteFileW(tempPath);
-            //    }
-            //}
-
         }
         if (Settings::GetInstance().ClubSponsorLogos && team && ((teamId & 0xFFFF) != 0xFFFF) && canUseSponsorLogo) {
             SafeLog::Write(Utils::Format(L"team_uid %08X", team->GetTeamUniqueID()));
@@ -1670,99 +1638,370 @@ WideChar const *OnFinishTeamPhoto(WideChar *dst, WideChar const *src) {
     return CallAndReturn<WideChar const *, 0x1493F2F>(dst, src);
 }
 
-void CheckKitSelection(const CTeamIndex &homeTeamIndex, const CTeamIndex &awayTeamIndex, DefaultKitRenderData *outputData, int *resultKits, char bFalse){
-    //Error(L"Check kit selection");
-    CDBTeam *team1 = GetTeam(homeTeamIndex);
-    if (team1) {
-        //Error(L"team1");
-        CDBTeam *team2 = GetTeam(awayTeamIndex);
-        if (team2) {
-            //Error(L"team2");
-            UInt *team3dIds = (UInt *)0x311BA68;
-            UChar *team3dKitIds = (UChar *)0x311BA50;
-            Bool manualKitSelection = false;
-            for (UInt i = 0; i < 8; i++) {
-                if (team3dIds[i] == homeTeamIndex.ToInt() || team3dIds[i] == awayTeamIndex.ToInt()) {
-                    manualKitSelection = true;
-                    //Error(L"Manual kit selection");
-                    break;
-                }
-            }
-            if (!manualKitSelection) {
-                FifamReader reader(L"plugins\\ucp\\kit_selection.csv", 14);
-                if (reader.Available()) {
-                    reader.SkipLine();
-                    while (!reader.IsEof()) {
-                        if (!reader.EmptyLine()) {
-                            UInt team1id = 0;
-                            UInt team2id = 0;
-                            String a, b;
-                            reader.ReadLine(Hexadecimal(team1id), Hexadecimal(team2id), a, b);
-                            //Error(Utils::Format(L"%08X - %08X (%08X - %08X), %s, %s", team1id, team2id, team1->GetTeamUniqueID(), team2->GetTeamUniqueID(), a, b));
-                            if (team1id == team1->GetTeamUniqueID() && team2id == team2->GetTeamUniqueID()) {
-                                auto TranslateKitType = [](String const &val) {
-                                    if (val == L"h" || val == L"H")
-                                        return 0;
-                                    if (val == L"a" || val == L"A")
-                                        return 1;
-                                    if (val == L"t" || val == L"T")
-                                        return 2;
-                                    UInt intVal = Utils::SafeConvertInt<UInt>(val);
-                                    if (intVal == 1)
-                                        return 1;
-                                    if (intVal == 2 || intVal == 3)
-                                        return 2;
-                                    return 0;
-                                };
-                                UChar homeKitId = TranslateKitType(a);
-                                UChar awayKitId = TranslateKitType(b);
-                                if (CallMethodAndReturn<Bool, 0xFFD940>(CallMethodAndReturn<void *, 0xED3D60>(team1), homeKitId)
-                                    && CallMethodAndReturn<Bool, 0xFFD940>(CallMethodAndReturn<void *, 0xED3D60>(team2), awayKitId))
-                                {
-                                    //Error(Utils::Format(L"home %d away %d", homeKitId, awayKitId));
-                                    UInt oldTeam1Id = team3dIds[0];
-                                    UInt oldTeam2Id = team3dIds[1];
-                                    UInt oldTeam1KitId = team3dKitIds[0];
-                                    UInt oldTeam2KitId = team3dKitIds[1];
-                                    team3dIds[0] = homeTeamIndex.ToInt();
-                                    team3dIds[1] = awayTeamIndex.ToInt();
-                                    team3dKitIds[0] = homeKitId;
-                                    team3dKitIds[1] = awayKitId;
-                                    Call<0x43FCB0>(&homeTeamIndex, &awayTeamIndex, outputData, resultKits, bFalse);
-                                    team3dIds[0] = oldTeam1Id;
-                                    team3dIds[1] = oldTeam2Id;
-                                    team3dKitIds[0] = oldTeam1KitId;
-                                    team3dKitIds[1] = oldTeam2KitId;
-                                    return;
-                                }
-                            }
-                        }
-                        else
-                            reader.SkipLine();
+void SetDefaultKitRenderDataKit(DefaultKitRenderData *data, CTeamIndex const &teamID, UInt kitTypeId, Bool away) {
+    const UInt HomeColor = 0xffffffff;
+    const UInt AwayColor = 0xff000000;
+    UInt *KitColorsRGBA = (UInt *)0x3080410;
+    auto originalKitTypeId = kitTypeId;
+    if (kitTypeId >= 2)
+        kitTypeId = 0;
+    memset(data, 0, sizeof(DefaultKitRenderData));
+    UInt defaultColor = away ? AwayColor : HomeColor;
+    CDBTeam *team = GetTeam(teamID);
+    auto KitColorRGBA = [&KitColorsRGBA](UInt index) {
+        return KitColorsRGBA[index] | 0xFF000000;
+    };
+    if (team) {
+        auto kit = team->GetKit();
+        data->nShirtType = kit->GetPartType(kitTypeId, 0);
+        data->nShortsType = kit->GetPartType(kitTypeId, 1);
+        data->nSocksType = kit->GetPartType(kitTypeId, 2);
+        data->nShirtColorPart1 = KitColorRGBA(kit->GetPartColor(kitTypeId, 0, 0));
+        data->nShirtColorPart2 = KitColorRGBA(kit->GetPartColor(kitTypeId, 0, 1));
+        data->nShirtColorPart3 = KitColorRGBA(kit->GetPartColor(kitTypeId, 0, 2));
+        data->nShortsColorPart1 = KitColorRGBA(kit->GetPartColor(kitTypeId, 2, 0));
+        data->nShortsColorPart2 = KitColorRGBA(kit->GetPartColor(kitTypeId, 2, 1));
+        data->nShortsColorPart3 = KitColorRGBA(kit->GetPartColor(kitTypeId, 2, 2));
+        data->nSocksColorPart1 = KitColorRGBA(kit->GetPartColor(kitTypeId, 3, 0));
+        data->nSocksColorPart2 = KitColorRGBA(kit->GetPartColor(kitTypeId, 3, 1));
+        data->nShirtBadgePosition = kit->GetShirtBadgePosition(kitTypeId);
+        if (kit->UserKitInUse() && kit->GetUserKitPath(originalKitTypeId)[0])
+            wcscpy(data->szUserKitPath, kit->GetUserKitPath(originalKitTypeId));
+        SafeLog::Write(data->szUserKitPath);
+        if (kit->GetBadgePath())
+            wcscpy(data->szBadgePath, kit->GetBadgePath());
+        data->nNamePlacement = 1;
+    }
+    else {
+        data->nShirtType = 1;
+        data->nShortsType = 1;
+        data->nSocksType = 1;
+        data->nShirtColorPart1 = defaultColor;
+        data->nShirtColorPart2 = defaultColor;
+        data->nShirtColorPart3 = defaultColor;
+        data->nShortsColorPart1 = defaultColor;
+        data->nShortsColorPart2 = defaultColor;
+        data->nShortsColorPart3 = defaultColor;
+        data->nSocksColorPart1 = defaultColor;
+        data->nSocksColorPart2 = defaultColor;
+        data->nNamePlacement = 1;
+        data->nShirtNumberColor = away ? 1 : 2;
+        data->nShirtNameColor = away ? 1 : 2;
+    }
+}
+
+Pair<UInt, UInt> GetGenericKitColorIDs(CDBTeamKit *kit, Bool home) {
+    UChar kitId = (home == true) ? 0 : 1;
+    UChar color1 = 0, color2 = 0;
+    switch (kit->GetPartType(kitId, 0)) {
+    case 2:
+    case 4:
+    case 5:
+    case 8:
+    case 9:
+    case 18:
+    case 26:
+    case 28:
+    case 29:
+    case 30:
+    case 31:
+    case 32:
+    case 35:
+    case 54:
+    case 56:
+    case 58:
+    case 61:
+    case 62:
+    case 66:
+        color1 = 0;
+        color2 = 0;
+        break;
+    case 1:
+    case 6:
+    case 10:
+    case 11:
+    case 13:
+    case 20:
+    case 27:
+    case 33:
+    case 34:
+    case 37:
+    case 38:
+    case 39:
+    case 40:
+    case 42:
+    case 43:
+    case 44:
+    case 45:
+    case 46:
+    case 47:
+    case 50:
+    case 52:
+    case 64:
+        color1 = 0;
+        color2 = 2;
+        break;
+    case 22:
+    case 53:
+    case 57:
+    case 59:
+    case 60:
+        color1 = 0;
+        color2 = 1;
+        break;
+    case 23:
+        color1 = 2;
+        color2 = 0;
+        break;
+    case 3:
+    case 7:
+    case 14:
+    case 16:
+    case 17:
+    case 19:
+    case 21:
+    case 24:
+    case 25:
+    case 36:
+    case 41:
+    case 48:
+    case 55:
+    case 65:
+        color1 = 0;
+        color2 = 2;
+        break;
+    case 15:
+    case 63:
+        color1 = 0;
+        color2 = 1;
+        break;
+    case 12:
+    case 49:
+    case 51:
+        color1 = 0;
+        color2 = 1;
+        break;
+    }
+    Pair<UInt, UInt> result = { kit->GetPartColor(kitId, 0, color1), kit->GetPartColor(kitId, 0, color2) };
+    if (result.first > 63)
+        result.first = 0;
+    if (result.second > 63)
+        result.second = 0;
+    return result;
+}
+
+ColorPair GetGenericKitColors(CDBTeamKit *kit, Bool home) {
+    auto colorIDs = GetGenericKitColorIDs(kit, home);
+    UInt *KitColorsRGBA = (UInt *)0x3080410;
+    return ColorPair(KitColorsRGBA[colorIDs.first], KitColorsRGBA[colorIDs.second]);
+}
+
+String GetPathForTeamKitColor(String const &dir, UInt teamUId, UInt kitType) {
+    String kitSuffix;
+    if (kitType == 0)
+        kitSuffix = L"_h";
+    else if (kitType == 1)
+        kitSuffix = L"_a";
+    else if (kitType == 3)
+        kitSuffix = L"_t";
+    else
+        return String();
+    return dir + Utils::Format(L"%08X", teamUId) + kitSuffix + L".png";
+}
+
+Color GetColorFromPixel(Magick::Image const &image, UInt x, UInt y) {
+    Color color;
+    Magick::ColorRGB pixColor = image.pixelColor(x, y);
+    color.r = static_cast<unsigned char>(pixColor.red() * 255);
+    color.g = static_cast<unsigned char>(pixColor.green() * 255);
+    color.b = static_cast<unsigned char>(pixColor.blue() * 255);
+    return color;
+}
+
+ColorPair GetTeamKitColors(CDBTeam *team, UChar kitTypeId) {
+    ColorPair result;
+    auto kit = team->GetKit();
+    Bool customColors = false;
+    if (kit->UserKitInUse() && kit->HasUserKitType(kitTypeId)) {
+        String teamColorPath = GetPathForTeamKitColor(L"ucp_popups\\colors\\vert\\", team->GetTeamUniqueID(),
+            (kitTypeId == 2) ? 3 : kitTypeId);
+        if (!teamColorPath.empty() && FmFileExists(teamColorPath)) {
+            UInt fileSize = FmFileGetSize(teamColorPath);
+            if (fileSize > 0) {
+                unsigned char *pngData = new unsigned char[fileSize];
+                if (FmFileRead(teamColorPath, pngData, fileSize)) {
+                    Magick::Blob blob(pngData, fileSize);
+                    Magick::Image image;
+                    image.read(blob);
+                    if (image.isValid() && image.columns() == 8 && image.rows() == 64) {
+                        result.first = GetColorFromPixel(image, 0, 0);
+                        result.second = GetColorFromPixel(image, 0, 32);
+                        customColors = true;
                     }
-                    //Error(L"not found");
                 }
-                //else
-                    //Error(L"failed to open file");
+                delete[] pngData;
             }
         }
     }
-    Call<0x43FCB0>(&homeTeamIndex, &awayTeamIndex, outputData, resultKits, bFalse);
+    if (!customColors)
+        result = GetGenericKitColors(team->GetKit(), kitTypeId != 1);
+    return result;
 }
 
-//void UpdateKitCollar(void *fifaPlayer) {
-//    void *bodyRes = *raw_ptr<void *>(fifaPlayer, 0x40);
-//    unsigned int buf[2] = {};
-//    void **pBuf = CallVirtualMethodAndReturn<void **, 7>(bodyRes, &buf);
-//    void *model = CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x37C1A5), *pBuf);
-//    SetCollar(gKitDesc ? gKitDesc->collar : 0);
-//    CallDynGlobal(GfxCoreAddress(0x38FA92), model, gBodyPartsCollar, std::size(gBodyPartsCollar));
-//}
+Float ColorDistance_CIE2000(Color const &e1, Color const &e2) {
+    colorm::Rgb clr1(e1.r, e1.g, e1.b);
+    colorm::Rgb clr2(e2.r, e2.g, e2.b);
+    return clr1.deltaE_00(clr2);
+}
+
+Float ColorPairDistance_CIE2000(ColorPair const &e1, ColorPair const &e2) {
+    Float d11 = ColorDistance_CIE2000(e1.first, e2.first);
+    Float d22 = ColorDistance_CIE2000(e1.second, e2.second);
+    Float d12 = ColorDistance_CIE2000(e1.first, e2.second);
+    Float d21 = ColorDistance_CIE2000(e1.second, e2.first);
+    Float best_match = Utils::Min(Utils::Min(d11, d22), Utils::Min(d12, d21));
+    Float average_all = (d11 + d22 + d12 + d21) / 4.0f;
+    return (best_match + average_all) / 2.0f;
+}
+
+void CheckKitSelection(CTeamIndex const &homeTeamIndex, CTeamIndex const &awayTeamIndex, DefaultKitRenderData *data, UInt *resultKits, UChar bMatch){
+    resultKits[0] = 0;
+    resultKits[1] = 0;
+    Bool kitTypesFromFile = false;
+    Bool manualKitSelection = false;
+    if (bMatch) {
+        UInt *team3dIdsHome = (UInt *)0x311BA68;
+        UInt *team3dIdsAway = (UInt *)0x311BA78;
+        UChar *team3dKitIdsHome = (UChar *)0x311BA50;
+        UChar *team3dKitIdsAway = (UChar *)0x311BA54;
+        for (UInt i = 0; i < 8; i++) {
+            if (team3dIdsHome[i] == homeTeamIndex.ToInt() && team3dIdsAway[i] == awayTeamIndex.ToInt()) {
+                resultKits[0] = team3dKitIdsHome[i];
+                resultKits[1] = team3dKitIdsAway[i];
+                manualKitSelection = true;
+                break;
+            }
+        }
+    }
+    CDBTeam *team1 = GetTeam(homeTeamIndex);
+    CDBTeam *team2 = GetTeam(awayTeamIndex);
+    if (team1 && team2 && !manualKitSelection) {
+        FifamReader reader(L"plugins\\ucp\\kit_selection.csv", 14);
+        if (reader.Available()) {
+            reader.SkipLine();
+            while (!reader.IsEof()) {
+                if (!reader.EmptyLine()) {
+                    UInt team1id = 0;
+                    UInt team2id = 0;
+                    String a, b;
+                    reader.ReadLine(Hexadecimal(team1id), Hexadecimal(team2id), a, b);
+                    if (team1id == team1->GetTeamUniqueID() && team2id == team2->GetTeamUniqueID()) {
+                        auto TranslateKitType = [](String const &val) {
+                            if (val == L"h" || val == L"H")
+                                return 0;
+                            if (val == L"a" || val == L"A")
+                                return 1;
+                            if (val == L"t" || val == L"T")
+                                return 2;
+                            UInt intVal = Utils::SafeConvertInt<UInt>(val);
+                            if (intVal == 1)
+                                return 1;
+                            if (intVal == 2 || intVal == 3)
+                                return 2;
+                            return 0;
+                        };
+                        UChar homeKitId = TranslateKitType(a);
+                        UChar awayKitId = TranslateKitType(b);
+                        if (team1->GetKit()->UserKitInUse() && team1->GetKit()->HasUserKitType(homeKitId)
+                            && team2->GetKit()->UserKitInUse() && team2->GetKit()->HasUserKitType(awayKitId))
+                        {
+                            resultKits[0] = homeKitId;
+                            resultKits[1] = awayKitId;
+                            kitTypesFromFile = true;
+                        }
+                        break;
+                    }
+                }
+                else
+                    reader.SkipLine();
+            }
+        }
+        if (!kitTypesFromFile) {
+            resultKits[0] = 0;
+            struct KitSetForKitClash {
+                UChar kitTypeId = 0;
+                Float distance = 0.0f;
+
+                KitSetForKitClash() {}
+                KitSetForKitClash(UChar _kitTypeId, Float _distance) { kitTypeId = _kitTypeId; distance = _distance; };
+            };
+            Vector<KitSetForKitClash> kitSetsToSelectFrom;
+            auto CalcColorDistanceForKit = [](ColorPair const &baseColor, CDBTeam *otherTeam, UChar otherTeamKitType) {
+                ColorPair otherColor = GetTeamKitColors(otherTeam, otherTeamKitType);
+                return ColorPairDistance_CIE2000(baseColor, otherColor);
+            };
+            ColorPair homeColors = GetTeamKitColors(team1, 0);
+            const Float KitMinDistance = 35.0f;
+            Float resultDistance = 0.0f;
+            Float distanceKit1 = CalcColorDistanceForKit(homeColors, team2, 0);
+            SafeLog::Write(Utils::Format(L"distanceKit1 : %f", distanceKit1));
+            if (distanceKit1 < KitMinDistance) {
+                Float distanceKit2 = CalcColorDistanceForKit(homeColors, team2, 1);
+                SafeLog::Write(Utils::Format(L"distanceKit2 : %f", distanceKit2));
+                if (distanceKit2 < KitMinDistance) {
+                    if (team2->GetKit()->UserKitInUse() && team2->GetKit()->HasUserKitType(2)) {
+                        Float distanceKit3 = CalcColorDistanceForKit(homeColors, team2, 2);
+                        SafeLog::Write(Utils::Format(L"distanceKit3 : %f", distanceKit3));
+                        if (distanceKit3 < KitMinDistance) {
+                            kitSetsToSelectFrom.emplace_back(0, distanceKit1);
+                            kitSetsToSelectFrom.emplace_back(1, distanceKit2);
+                            kitSetsToSelectFrom.emplace_back(2, distanceKit3);
+                        }
+                        else {
+                            resultKits[1] = 2;
+                            resultDistance = distanceKit3;
+                        }
+                    }
+                    else {
+                        kitSetsToSelectFrom.emplace_back(0, distanceKit1);
+                        kitSetsToSelectFrom.emplace_back(1, distanceKit2);
+                    }
+                }
+                else {
+                    resultKits[1] = 1;
+                    resultDistance = distanceKit2;
+                }
+            }
+            else {
+                resultKits[1] = 0;
+                resultDistance = distanceKit1;
+            }
+            if (!kitSetsToSelectFrom.empty()) {
+                Utils::Sort(kitSetsToSelectFrom, [](KitSetForKitClash const &a, KitSetForKitClash const &b) {
+                    if (a.distance > b.distance)
+                        return true;
+                    if (b.distance > a.distance)
+                        return false;
+                    return a.kitTypeId < b.kitTypeId;
+                });
+                resultKits[1] = kitSetsToSelectFrom[0].kitTypeId;
+                resultDistance = kitSetsToSelectFrom[0].distance;
+            }
+            SafeLog::Write(Utils::Format(L"%s vs %s: kit %d (%f)", TeamName(team1), TeamName(team2), resultKits[1], resultDistance));
+        }
+    }
+    if (bMatch) {
+        SetDefaultKitRenderDataKit(&data[0], homeTeamIndex, resultKits[0], false);
+        SetDefaultKitRenderDataKit(&data[1], awayTeamIndex, resultKits[1], true);
+        if (resultKits[0] == 2)
+            resultKits[0] = 0;
+        if (resultKits[1] == 2)
+            resultKits[1] = 0;
+    }
+}
 
 void InstallKits_FM13() {
-
     // custom captain armband
-
     patch::RedirectCall(GfxCoreAddress(0x3728EB), OnGenerateKit);
     patch::RedirectCall(GfxCoreAddress(0x38FF20), OnGenerateKit);
     patch::RedirectCall(GfxCoreAddress(0x384D6F), ReadCaptainArmband);
@@ -1773,7 +2012,6 @@ void InstallKits_FM13() {
     patch::RedirectCall(GfxCoreAddress(0x23FF7C), gfxOnSetupKitParametersTeam2);
 
     // dynamic textures
-
     patch::SetPointer(GfxCoreAddress(0x27CC10 + 2), gDynamicTextures);
     patch::SetUChar(GfxCoreAddress(0x27CC45 + 2), numDynTextures);
     patch::SetUChar(GfxCoreAddress(0x27D2DF + 2), numDynTextures);
@@ -1802,7 +2040,6 @@ void InstallKits_FM13() {
     patch::Nop(GfxCoreAddress(0x27D567), 9);
     patch::RedirectCall(GfxCoreAddress(0x27D60C), OnGenerateDynamicTextures);
     patch::RedirectCall(GfxCoreAddress(0x27D16C), OnSetupDynamicTexturesFor3dMatch);
-    //patch::RedirectCall(GfxCoreAddress(0x27D56B), OnSetupDynamicTexturesFor3dMatch); - we nop'ed it
 
     patch::Nop(GfxCoreAddress(0x370CBD), 3);
     patch::RedirectCall(GfxCoreAddress(0x370CB8), SetGkKitFileName);
@@ -1871,16 +2108,12 @@ void PatchKits(FM::Version v) {
         patch::RedirectCall(0x66212E, OnGetTeamForTeamPhoto);
         patch::RedirectCall(0x6623B2, OnFinishTeamPhoto);
 
-        // generic 3rd kit
-        patch::Nop(0x440601, 1);
-        patch::SetUChar(0x440601 + 1, 0xE9);
-
-        // kit clashing file
-        patch::RedirectCall(0x4409E8, CheckKitSelection);
-        patch::RedirectCall(0x440A35, CheckKitSelection);
-        patch::Nop(0x440601, 1);             // remove generic fantasy kit
-        patch::SetUChar(0x440601 + 1, 0xE9); // remove generic fantasy kit
-        patch::SetUChar(0xADB245 + 6, 0);
-        patch::SetUInt(0x43FDD7 + 3, 0);
+        // Fix kit clashing
+        patch::RedirectJump(0x43FCB0, CheckKitSelection);
+        patch::SetUChar(0xADB245 + 6, 0); // default kit set for away team (changed 1 to 0)
+        patch::SetUShort(0xADB1F0, 0x548A); // mov eax, [esp+0x58] => mov dl, byte ptr [esp+0x58]
+        patch::Nop(0xADB1F7, 10);
+        patch::SetUShort(0xADB26A, 0x4C8A); // mov eax, [esp+0x64] => mov cl, byte ptr [esp+0x58]
+        patch::Nop(0xADB275, 10);
     }
 }

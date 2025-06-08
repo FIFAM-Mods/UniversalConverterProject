@@ -845,6 +845,10 @@ public:
     UChar GetPartColor(UChar kitType, UChar shirtPart, UChar colorIndex);
     Bool HasUserKitType(UInt kitType);
     Bool HasUserKit();
+    Bool UserKitInUse();
+    WideChar const *GetBadgePath();
+    WideChar const *GetUserKitPath(UInt kitType);
+    UChar GetShirtBadgePosition(UChar kitType);
 };
 
 class CStadiumDevelopment {

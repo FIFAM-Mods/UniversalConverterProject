@@ -214,7 +214,8 @@ struct OptionsGeneralExtension {
 };
 
 CXgCheckBox *METHOD OnOptionsGeneralSetupUI(CXgFMPanel *screen, DUMMY_ARG, Char const *name) {
-    ReadPlayerAbilityColorSchemas(); // TODO: remove this
+    if (Settings::GetInstance().AbilitiesAutoReload)
+        ReadPlayerAbilityColorSchemas();
     auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
     ext->CbAbilitiesColorSchema = screen->GetComboBox("CbAbilitiesColorSchema");
     Int schemaIndex = 0;
@@ -244,7 +245,7 @@ void METHOD OnOptionsGeneralProcessComboBoxes(CXgFMPanel *screen, DUMMY_ARG, UIn
     auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
     if (*id == ext->CbAbilitiesColorSchema->GetId()) {
         Int currentIndex = ext->CbAbilitiesColorSchema->GetCurrentIndex();
-        if (currentIndex < GetPlayerAbilityColorSchemas().size())
+        if (currentIndex >= 0 && currentIndex < GetPlayerAbilityColorSchemas().size())
             Settings::GetInstance().AbilitiesColorSchema = GetPlayerAbilityColorSchemas()[currentIndex].name;
         return;
     }

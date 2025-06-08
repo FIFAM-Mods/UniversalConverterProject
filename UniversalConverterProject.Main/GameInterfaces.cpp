@@ -1731,6 +1731,22 @@ Bool CDBTeamKit::HasUserKit() {
     return CallMethodAndReturn<Bool, 0xFFDD00>(this);
 }
 
+Bool CDBTeamKit::UserKitInUse() {
+    return CallMethodAndReturn<Bool, 0xFFDD80>(this);
+}
+
+WideChar const *CDBTeamKit::GetBadgePath() {
+    return CallMethodAndReturn<WideChar const *, 0xFFCDA0>(this);
+}
+
+WideChar const *CDBTeamKit::GetUserKitPath(UInt kitType) {
+    return CallMethodAndReturn<WideChar const *, 0xFFDDB0>(this, kitType);
+}
+
+UChar CDBTeamKit::GetShirtBadgePosition(UChar kitType) {
+    return CallMethodAndReturn<UChar, 0xFFCD60>(this, kitType);
+}
+
 void CAssessmentInfo::AddPoints(float points) {
     CallMethod<0x121DE60>(this, points);
 }
