@@ -74,7 +74,8 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
     vector<string> fileNamesList;
     set<string> updateFiles;
     set<string> ignoreFiles = {
-        
+        "art_fm\\lib\\ClubFacilities\\building_03_12_3.tpi",
+        "art_fm\\lib\\ClubFacilities\\building_03_13_3.tpi"
     };
     unsigned int archivesCount = 0;
     unsigned int filesCount = 0;

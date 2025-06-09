@@ -382,9 +382,19 @@ Bool IsUEFALeaguePhaseCompID(CCompID const &compID) {
         || compID.ToInt() == 0xFD090003 || compID.ToInt() == 0xFD09000D;
 }
 
+Bool IsFirstLeaguePhaseMatchdayID(UInt compId) {
+    return compId == 0xF909000A || compId == 0xF90A0008 || compId == 0xF933000C || compId == 0xF9260007 ||
+        compId == 0xFD090005 || compId == 0xFD09000F;
+}
+
 Bool IsLastLeaguePhaseMatchdayID(UInt compId) {
     return compId == 0xF9090011 || compId == 0xF90A000F || compId == 0xF9330011 || compId == 0xF926000C ||
         compId == 0xFD09000C || compId == 0xFD090016;
+}
+
+Bool IsLeaguePhaseSortedPool(UInt compId) {
+    return compId == 0xF9090012 || compId == 0xF90A0010 || compId == 0xF9330012 || compId == 0xF926000D ||
+        compId == 0xFD090017 || compId == 0xFD090018;
 }
 
 Bool IsLeaguePhaseBaseID(UInt compId) {
@@ -468,7 +478,7 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
         UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(compId, numCompIds);
         for (UInt c = 0; c < numCompIds; c++) {
             CDBCompetition *comp = GetCompetition(compIds[c]);
-            if (comp && comp->GetDbType() == DB_ROUND && comp->IsLaunched()) {
+            if (comp && comp->GetDbType() == DB_ROUND && comp->IsFinished()) {
                 CDBRound *r = (CDBRound *)comp;
                 for (UInt i = 0; i < r->GetNumOfPairs(); i++) {
                     RoundPair rp;
@@ -1027,6 +1037,137 @@ void MyTeamListHandler(Int callbackArg, CEAMailData const &mailData, WideChar *o
         Call<0x14F35B2>(callbackArg, &mailData, out);
 }
 
+Int METHOD GetTeamParticipationStatus_Competition(CDBCompetition *comp, DUMMY_ARG, CTeamIndex teamID, CTeamIndex *outOpponent, CDBCompetition **outComp) {
+    return CallMethodAndReturn<Int, 0xF8B8B0>(comp, teamID, outOpponent, outComp);
+}
+
+Int METHOD GetTeamParticipationStatus_Pool(CDBPool *pool, DUMMY_ARG, CTeamIndex teamID, CTeamIndex *outOpponent, CDBCompetition **outComp) {
+    Int teamIndex = pool->GetTeamIndex(teamID);
+    if (teamIndex < 0) {
+        Int result = GetTeamParticipationStatus_Competition(pool, 0, teamID, outOpponent, outComp);
+        if (!result)
+            *outComp = nullptr;
+        return result;
+    }
+    Int result = GetTeamParticipationStatus_Competition(pool, 0, teamID, outOpponent, outComp);
+    if (!result) {
+        *outComp = pool;
+        result = ROUND_1 + 1;
+        UInt compId = pool->GetCompID().ToInt();
+        if (IsLeaguePhaseSortedPool(compId)) {
+            Bool eliminated = false;
+            UInt type = pool->GetCompetitionType();
+            if (pool->GetRegion() == FifamCompRegion::Europe) {
+                if (type == COMP_CHAMPIONSLEAGUE || type == COMP_UEFA_CUP || type == COMP_CONFERENCE_LEAGUE)
+                    eliminated = teamIndex >= 24;
+                else if (type == COMP_YOUTH_CHAMPIONSLEAGUE)
+                    eliminated = teamIndex >= 22;
+            }
+            else if (pool->GetRegion() == FifamCompRegion::Asia && pool->GetCompetitionType() == COMP_CHAMPIONSLEAGUE)
+                eliminated = teamIndex >= 8;
+            if (eliminated) {
+                UInt numCompIds = 0;
+                UInt baseCompId = 0;
+                if (compId == 0xFD090017)
+                    baseCompId = 0xFD090003; // AFC League Phase West
+                else if (compId == 0xFD090018)
+                    baseCompId = 0xFD09000F; // AFC League Phaes East
+                else
+                    baseCompId = pool->GetCompID().BaseCompID().ToInt();
+                UInt *leaguePhaseIDs = GetUEFALeaguePhaseMatchdaysCompIDs(baseCompId, numCompIds);
+                if (numCompIds > 0) {
+                    CDBRound *lastLeaguePhaseRound = GetRound(leaguePhaseIDs[numCompIds - 1]);
+                    if (lastLeaguePhaseRound) {
+                        *outComp = lastLeaguePhaseRound;
+                        UInt numPairsInRound = lastLeaguePhaseRound->GetNumOfTeams() / 2;
+                        for (UInt i = 0; i < numPairsInRound; i++) {
+                            RoundPair &pair = lastLeaguePhaseRound->GetRoundPair(i);
+                            if (!pair.Get1stTeam().isNull() && teamID == pair.Get1stTeam()) {
+                                *outOpponent = pair.Get2ndTeam();
+                                break;
+                            }
+                            else if (!pair.Get2ndTeam().isNull() && teamID == pair.Get2ndTeam()) {
+                                *outOpponent = pair.Get1stTeam();
+                                break;
+                            }
+                        }
+                        result = -1 - lastLeaguePhaseRound->GetRoundType();
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+Int METHOD GetTeamParticipationStatus_Round(CDBRound *round, DUMMY_ARG, CTeamIndex teamID, CTeamIndex *outOpponent, CDBCompetition **outComp) {
+    Int status = 0;
+    UInt rt = round->GetRoundType();
+    UInt numPairs = round->GetNumOfTeams() / 2;
+    for (UInt i = 0; i < numPairs; ++i) {
+        RoundPair &pair = round->GetRoundPair(i);
+        if (!pair.Get1stTeam().isNull() && teamID == pair.Get1stTeam()) {
+            *outOpponent = pair.Get2ndTeam();
+            status = (!pair.IsFinished() || pair.IsWinner(true)) ? rt + 1 : -1 - rt;
+        }
+        else if (!pair.Get2ndTeam().isNull() && teamID == pair.Get2ndTeam()) {
+            *outOpponent = pair.Get1stTeam();
+            status = (!pair.IsFinished() || pair.IsWinner(false)) ? rt + 1 : -1 - rt;
+        }
+    }
+    Int result = GetTeamParticipationStatus_Competition(round, 0, teamID, outOpponent, outComp);
+    if (!result) {
+        UInt compId = round->GetCompID().ToInt();
+        if (IsFirstLeaguePhaseMatchdayID(compId)) {
+            UInt numCompIds = 0;
+            UInt baseCompId = 0;
+            if (compId == 0xFD090005)
+                baseCompId = 0xFD090003; // AFC League Phase West
+            else if (compId == 0xFD090016)
+                baseCompId = 0xFD09000F; // AFC League Phaes East
+            else
+                baseCompId = round->GetCompID().BaseCompID().ToInt();
+            UInt *ids = GetUEFALeaguePhaseMatchdaysCompIDs(baseCompId, numCompIds);
+            Vector<UInt> roundIds(numCompIds);
+            for (UInt i = 0; i < numCompIds; ++i)
+                roundIds[i] = ids[numCompIds - i - 1];
+            for (UInt i = 0; i < numCompIds; ++i) {
+                CDBRound *roundToCheck = GetRound(roundIds[i]);
+                if (roundToCheck) {
+                    Bool isFirstRound = i == (numCompIds - 1);
+                    CDBRound *prevRound = isFirstRound ? nullptr : GetRound(roundIds[i + 1]);
+                    if (isFirstRound || (prevRound && prevRound->IsFinished())) {
+                        UInt numPairsInRound = roundToCheck->GetNumOfTeams() / 2;
+                        for (UInt j = 0; j < numPairsInRound; j++) {
+                            RoundPair &pair = roundToCheck->GetRoundPair(j);
+                            if (!pair.Get1stTeam().isNull() && teamID == pair.Get1stTeam()) {
+                                *outOpponent = pair.Get2ndTeam();
+                                *outComp = roundToCheck;
+                                return roundToCheck->GetRoundType() + 1;
+                            }
+                            else if (!pair.Get2ndTeam().isNull() && teamID == pair.Get2ndTeam()) {
+                                *outOpponent = pair.Get1stTeam();
+                                *outComp = roundToCheck;
+                                return roundToCheck->GetRoundType() + 1;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        *outComp = round;
+        return status;
+    }
+    return result;
+}
+
+Bool METHOD IsTeamInContinentalCompetition_ClubGeneral(CDBTeam *team, DUMMY_ARG, UInt) {
+    CTeamIndex teamID;
+    CCompID compID;
+    return CallMethodAndReturn<Int, 0xEFE330>(team, &teamID, &compID) != 0;
+}
+
 void PatchUEFALeaguePhase(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         // CStatsCupFixturesResults
@@ -1070,6 +1211,11 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::Nop(0x1045567, 5); // CDBMarketingPool::ProcessUEFACupQuarterfinal
         patch::Nop(0x10455E2, 5); // CDBMarketingPool::ProcessUEFACupFinal
         patch::Nop(0x10F1B92, 6); // CDBMarketingPool::ProcessChampionsLeagueGroupStage
+
+        // Team participation status
+        patch::RedirectJump(0x10F1780, GetTeamParticipationStatus_Pool);
+        patch::RedirectJump(0x1044260, GetTeamParticipationStatus_Round);
+        patch::RedirectCall(0x6538AB, IsTeamInContinentalCompetition_ClubGeneral);
 
         FifamReader r("fmdata\\ParameterFiles\\Media Markets.txt");
         if (r.Available()) {

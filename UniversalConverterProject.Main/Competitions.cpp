@@ -6228,8 +6228,8 @@ void PatchCompetitions(FM::Version v) {
         patch::SetUInt(0x1043AA7 + 2, 0xF9000000);
         patch::RedirectCall(0x10439EC, IsCLELQuali);
 
-        // Champions League group stage
-        patch::SetUInt(0x10F17B2 + 2, 0xF9090012);
+        // Champions League Group Stage 3rd Place Pool
+        patch::SetUInt(0x10F17B2 + 2, 0xF909FFFF);
 
         // DONE: add Conference League
         patch::SetUInt(0x1132451 + 6, 0xF909000A);

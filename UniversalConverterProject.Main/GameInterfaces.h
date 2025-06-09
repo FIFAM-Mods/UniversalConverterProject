@@ -621,7 +621,8 @@ public:
     void Launch();
     Bool IsContinental();
     Bool IsLaunched();
-	Bool IsFinished();
+    Bool IsFinished();
+	Bool CanLaunchAllSuccessors();
     EAGMoney GetBonus(UInt bonusId);
     class CDBRound *AsRound();
     class CDBRoot *GetRoot();
@@ -705,6 +706,7 @@ struct RoundPair {
     CTeamIndex const &Get2ndTeam() const;
     Int GetMatchEventsStartIndex(UInt leg) const;
     void SetMatchEventsStartIndex(Int index, UInt leg);
+    Bool IsWinner(Bool b2ndTeam) const;
 };
 
 struct MatchGoalInfo {

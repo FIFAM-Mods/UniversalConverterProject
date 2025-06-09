@@ -461,10 +461,14 @@ Bool CDBCompetition::IsContinental() {
 }
 
 Bool CDBCompetition::IsLaunched() {
-    return CallVirtualMethodAndReturn<Bool, 1>(this);
+    return CallMethodAndReturn<Bool, 0xF81B30>(this);
 }
 
 Bool CDBCompetition::IsFinished() {
+    return CallVirtualMethodAndReturn<Bool, 1>(this);
+}
+
+Bool CDBCompetition::CanLaunchAllSuccessors() {
 	return CallVirtualMethodAndReturn<Bool, 2>(this);
 }
 
@@ -2170,6 +2174,10 @@ Int RoundPair::GetMatchEventsStartIndex(UInt leg) const {
 
 void RoundPair::SetMatchEventsStartIndex(Int index, UInt leg) {
     CallMethod<0x10ED620>(this, index, leg);
+}
+
+Bool RoundPair::IsWinner(Bool b2ndTeam) const {
+    return CallMethodAndReturn<Bool, 0x10EDE20>(this, b2ndTeam);
 }
 
 SyncFile::SyncFile() {
