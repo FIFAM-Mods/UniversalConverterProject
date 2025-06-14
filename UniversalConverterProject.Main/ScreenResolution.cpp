@@ -34,6 +34,10 @@ Bool GetCurrentScreenResolution(Float &width, Float &height) {
     return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), GetApp(), &width, &height);
 }
 
+Bool METHOD GetCurrentScreenResolution_Method(void *, DUMMY_ARG, Float &width, Float &height) {
+    return CallMethodAndReturnDynGlobal<Bool>(GfxCoreAddress(0x3BAD10), GetApp(), &width, &height);
+}
+
 Bool METHOD App_GetMinimumScreenResolution(void *app, DUMMY_ARG, Float *outWidth, Float *outHeight) {
     return GetBaseResolution(app, outWidth, outHeight, true);
 }
@@ -99,36 +103,68 @@ void Screenshot_FormatFileName(WideChar *dst, UInt len, WideChar const *format, 
         wcscat(dst, L".png");
 }
 
-void InstallScreenResolution_GfxCore() {
-    patch::SetPointer(GfxCoreAddress(0x54FF68), App_GetScreenResolution);
-    patch::SetPointer(GfxCoreAddress(0x54FF6C), App_GetMinimumScreenResolution);
-    // Screenshot - format
-    patch::RedirectCall(GfxCoreAddress(0x3BA4D6), Screenshot_WcharToMB);
-    patch::RedirectCall(GfxCoreAddress(0x3BA4DF), Screenshot_SaveSurfaceToFile);
-}
-
-VisibleControlAppearance *METHOD GetImageAppearanceFor3dRender(CXgImage *image) {
-    static VisibleControlAppearance a;
-    a = *image->GetAppearance();
+void ModifyAppearanceFor3dRender(VisibleControlAppearance &a, Bool updatePosition = true) {
     Float width = 0.0f, height = 0.0f;
     if (GetCurrentScreenResolution(width, height) && width > 2000.0f && height > 0.0f) { // TODO: change to width > 2000.0f
-        Float offsetX = (1920.0f - 1280.0f) / 2.0f;
-        Float offsetY = (1080.0f - 1024.0f) / 2.0f;
         Float factorX = width / 1920.0f;
         Float factorY = height / 1080.0f;
-        //factorX = 2.0f; // TODO: remove this
-        //factorY = 2.0f; // TODO: remove this
-        a.rect.x = (Short)((Float)a.rect.x * factorX + offsetX); // TODO: uncomment
-        a.rect.y = (Short)((Float)a.rect.y * factorY + offsetY); // TODO: uncomment
         a.rect.width = (Short)((Float)a.rect.width * factorX);
         a.rect.height = (Short)((Float)a.rect.height * factorY);
+        if (updatePosition) {
+            Float offsetX = (1920.0f - 1280.0f) / 2.0f;
+            Float offsetY = (1080.0f - 1024.0f) / 2.0f;
+            a.rect.x = (Short)((Float)a.rect.x * factorX + offsetX);
+            a.rect.y = (Short)((Float)a.rect.y * factorY + offsetY);
+        }
     }
+}
+
+void ModifyAppearanceFor3dRender_Test(VisibleControlAppearance &a, Bool updatePosition = true) {
+    a.rect.x = 1000;
+    a.rect.y = 1000;
+    a.rect.x = 200;
+    a.rect.y = 200;
+}
+
+VisibleControlAppearance *METHOD GetAppearanceFor3dRender(CXgBaseButton *control) {
+    static VisibleControlAppearance a;
+    a = *control->GetAppearance();
+    ModifyAppearanceFor3dRender(a);
+    return &a;
+}
+
+VisibleControlAppearance *METHOD GetRectFor3dRender(CXgBaseButton *control) {
+    static VisibleControlAppearance a;
+    a.rect = *control->GetRect();
+    ModifyAppearanceFor3dRender(a);
+    a.blendCol = 0xFFFFFFFF;
+    a.depth = 0.0f;
+    return &a;
+}
+
+VisibleControlAppearance *METHOD GetAppearanceFor3dRender_Test(CXgBaseButton *control) {
+    static VisibleControlAppearance a;
+    a = *control->GetAppearance();
+    a.rect.x = 1000;
+    a.rect.y = 800;
+    a.rect.width = 200;
+    a.rect.height = 200;
+    return &a;
+}
+
+VisibleControlAppearance *METHOD GetRectFor3dRender_Test(CXgBaseButton *control) {
+    static VisibleControlAppearance a;
+    a.rect = *control->GetRect();
+    a.rect.width = 200;
+    a.rect.height = 200;
+    a.blendCol = 0xFFFFFFFF;
+    a.depth = 0.0f;
     return &a;
 }
 
 void __declspec(naked) CClubShirtDesign_3DRenderGetAppearance_Exe() {
     __asm {
-        call GetImageAppearanceFor3dRender
+        call GetRectFor3dRender
         mov edx, 0x599DEC
         jmp edx
     }
@@ -136,7 +172,7 @@ void __declspec(naked) CClubShirtDesign_3DRenderGetAppearance_Exe() {
 
 void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit1_1_Exe() {
     __asm {
-        call GetImageAppearanceFor3dRender
+        call GetRectFor3dRender
         mov edx, 0xADD03E
         jmp edx
     }
@@ -144,7 +180,7 @@ void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit1_1_Exe() {
 
 void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit1_2_Exe() {
     __asm {
-        call GetImageAppearanceFor3dRender
+        call GetRectFor3dRender
         mov edx, 0xADD0F1
         jmp edx
     }
@@ -152,7 +188,7 @@ void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit1_2_Exe() {
 
 void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit2_1_Exe() {
     __asm {
-        call GetImageAppearanceFor3dRender
+        call GetRectFor3dRender
         mov edx, 0xADD411
         jmp edx
     }
@@ -160,14 +196,84 @@ void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit2_1_Exe() {
 
 void __declspec(naked) CMdSelectMatchModes_3DRenderGetAppearance_Kit2_2_Exe() {
     __asm {
-        call GetImageAppearanceFor3dRender
+        call GetRectFor3dRender
         mov edx, 0xADD4BB
         jmp edx
     }
 }
 
+void __declspec(naked) GetScreenResolution_StadiumEditor1_Exe() {
+    __asm {
+        push ecx
+        mov ecx, eax
+        call GetCurrentScreenResolution_Method
+        mov ecx, 0x689ADE
+        jmp ecx
+    }
+}
+
+void __declspec(naked) GetScreenResolution_StadiumEditor2_Exe() {
+    __asm {
+        push ecx
+        mov ecx, eax
+        call GetCurrentScreenResolution_Method
+        mov ecx, 0x682AB7
+        jmp ecx
+    }
+}
+
+Rect *METHOD CClubStadium_3DRenderGetGlobalRect(CXgTextBox *tb, DUMMY_ARG, Rect *out) {
+    VisibleControlAppearance *appearance = GetAppearanceFor3dRender_Test(tb);
+    CallVirtualMethodAndReturn<VisibleControlAppearance *, 59>(tb, out, appearance);
+    return out;
+}
+
+void __declspec(naked) CClubStadium_3DRenderGetGlobalRect_Exe() {
+    __asm {
+        lea eax, [esp + 8]
+        push eax
+        call CClubStadium_3DRenderGetGlobalRect
+        mov ecx, 0x65D6A7
+        jmp ecx
+    }
+}
+
+void __declspec(naked) CClubStadium_3DRenderGetAppearance_Exe() {
+    __asm {
+        add edi, 0x2C
+        call GetAppearanceFor3dRender_Test
+        mov ecx, 0x65D8A3
+        jmp ecx
+    }
+}
+
+template<Bool UpdatePosition>
+void *METHOD CXgFMPanel_3DRenderHead(CXgFMPanel *t, DUMMY_ARG, void *unk, Rect *rect, void *playerRenderData, void *kitRenderData, Bool bDisplayPortrait, Bool32 bHasPicture) {
+    static VisibleControlAppearance a;
+    a.rect = *rect;
+    ModifyAppearanceFor3dRender(a, UpdatePosition);
+    return CallMethodAndReturn<void *, 0xD39A70>(t, unk, &a.rect, playerRenderData, kitRenderData, bDisplayPortrait, bHasPicture);
+}
+
+void *Ret0StadiumMove(void *) {
+    return nullptr;
+}
+
+void InstallScreenResolution_GfxCore() {
+#if 0
+    patch::SetPointer(GfxCoreAddress(0x54FF68), App_GetScreenResolution);
+    patch::SetPointer(GfxCoreAddress(0x54FF6C), App_GetMinimumScreenResolution);
+#endif
+    // Screenshot - format
+    patch::RedirectCall(GfxCoreAddress(0x3BA4D6), Screenshot_WcharToMB);
+    patch::RedirectCall(GfxCoreAddress(0x3BA4DF), Screenshot_SaveSurfaceToFile);
+
+    patch::RedirectCall(GfxCoreAddress(0x410EC2), Ret0StadiumMove);
+}
+
 void PatchScreenResolution(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+#if 0
         patch::RedirectJump(0x5005A0, GameScreen_AddResolutions);
         patch::RedirectJump(0x7AE720, GameScreen_AddResolutions);
 
@@ -201,7 +307,16 @@ void PatchScreenResolution(FM::Version v) {
         patch::RedirectJump(0xADD0EC, CMdSelectMatchModes_3DRenderGetAppearance_Kit1_2_Exe);
         patch::RedirectJump(0xADD40C, CMdSelectMatchModes_3DRenderGetAppearance_Kit2_1_Exe);
         patch::RedirectJump(0xADD4B6, CMdSelectMatchModes_3DRenderGetAppearance_Kit2_2_Exe);
-
+        patch::RedirectJump(0x689AD9, GetScreenResolution_StadiumEditor1_Exe);
+        patch::RedirectJump(0x682AB2, GetScreenResolution_StadiumEditor2_Exe);
+        patch::RedirectJump(0x65D6A0, CClubStadium_3DRenderGetGlobalRect_Exe); // generic stadium
+        patch::RedirectJump(0x65D89E, CClubStadium_3DRenderGetAppearance_Exe); // custom stadium
+        patch::RedirectCall(0x4FAD73, CXgFMPanel_3DRenderHead<false>);
+        patch::RedirectCall(0x536F98, CXgFMPanel_3DRenderHead<true>);
+        patch::RedirectCall(0x5478A7, CXgFMPanel_3DRenderHead<true>);
+        patch::RedirectCall(0xCB5ACA, CXgFMPanel_3DRenderHead<true>);
+        patch::RedirectCall(0xD39CB2, CXgFMPanel_3DRenderHead<true>);
+#endif
         // Screenshot - overlay
         patch::RedirectJump(0x9D3DF8, App_MakeScreenshot_Exe);
         // Screenshot - key

@@ -527,9 +527,9 @@ void RestartGameWarningMessage(CXgFMPanel *screen, Char const *titleKey, Char co
     Call<0xD392F0>(GetTranslation(titleKey), GetTranslation(textKey), 48, screen, 0);
 }
 
-void METHOD OnProcessGameOptionsCheckboxes(CXgFMPanel *screen, DUMMY_ARG, UInt *id, Int unk) {
+void METHOD OnProcessGameOptionsCheckboxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
-    if (*id == data->chkWindowedMode->GetId()) {
+    if (msg->node == data->chkWindowedMode->GetGuiNode()) {
         Settings::GetInstance().WindowedMode = data->chkWindowedMode->GetIsChecked();
         data->chkWindowsMousePointer->SetEnabled(Settings::GetInstance().WindowedMode);
         data->cbWindowPosition->SetEnabled(Settings::GetInstance().WindowedMode);
@@ -545,49 +545,49 @@ void METHOD OnProcessGameOptionsCheckboxes(CXgFMPanel *screen, DUMMY_ARG, UInt *
             RestartGameWarningMessage(screen, "IDS_WINDOWMODE_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == data->chkWindowsMousePointer->GetId()) {
+    else if (msg->node == data->chkWindowsMousePointer->GetGuiNode()) {
         Settings::GetInstance().WindowsMousePointer = data->chkWindowsMousePointer->GetIsChecked();
         UpdateCursor(Settings::GetInstance().WindowsMousePointer);
         return;
     }
-    else if (*id == data->chkTeamControl->GetId()) {
+    else if (msg->node == data->chkTeamControl->GetGuiNode()) {
         Settings::GetInstance().DisableTeamControl = !data->chkTeamControl->GetIsChecked();
         if (Settings::GetInstance().DisableTeamControl != Settings::GetInstance().TeamControlDisabledAtGameStart)
             RestartGameWarningMessage(screen, "IDS_TEAM_CONTROL_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == data->chkPlayMusicInBackground->GetId()) {
+    else if (msg->node == data->chkPlayMusicInBackground->GetGuiNode()) {
         Settings::GetInstance().PlayMusicInBackground = data->chkPlayMusicInBackground->GetIsChecked();
         return;
     }
-    else if (*id == data->chkImUsingATouchpad->GetId()) {
+    else if (msg->node == data->chkImUsingATouchpad->GetGuiNode()) {
         Settings::GetInstance().ImUsingATouchpad = data->chkImUsingATouchpad->GetIsChecked();
         return;
     }
-    else if (*id == data->chkHideTaskbar->GetId()) {
+    else if (msg->node == data->chkHideTaskbar->GetGuiNode()) {
         Settings::GetInstance().HideTaskbar = data->chkHideTaskbar->GetIsChecked();
         if (Settings::GetInstance().HideTaskbar != Settings::GetInstance().HideTaskbarStartValue)
             RestartGameWarningMessage(screen, "IDS_TASKBAR_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == data->chkDragWithMouse->GetId()) {
+    else if (msg->node == data->chkDragWithMouse->GetGuiNode()) {
         Settings::GetInstance().DragWithMouse = data->chkDragWithMouse->GetIsChecked();
         return;
     }
-    else if (*id == data->chkScreenshotOverlay->GetId()) {
+    else if (msg->node == data->chkScreenshotOverlay->GetGuiNode()) {
         Settings::GetInstance().DisplayScreenshotOverlay = data->chkScreenshotOverlay->GetIsChecked();
         return;
     }
-    CallMethod<0x500A80>(screen, id, unk);
+    CallMethod<0x500A80>(screen, msg, unk);
 }
 
-void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, UInt *id, Int unk1, Int unk2) {
+void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk1, Int unk2) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
-    if (*id == data->cbWindowPosition->GetId()) {
+    if (msg->node == data->cbWindowPosition->GetGuiNode()) {
         Settings::GetInstance().WindowPosition = data->cbWindowPosition->GetCurrentValue(WINDOWED_MODE_CENTER);
         return;
     }
-    else if (*id == data->cbTheme->GetId()) {
+    else if (msg->node == data->cbTheme->GetGuiNode()) {
         int themeId = data->cbTheme->GetCurrentValue(0);
         if (themeId == 1)
             Settings::GetInstance().Theme = "light";
@@ -599,21 +599,21 @@ void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, UInt *
             RestartGameWarningMessage(screen, "IDS_THEME_CHANGE", "IDS_WARNING");
         return;
     }
-    else if (*id == data->cbWindowBorders->GetId()) {
+    else if (msg->node == data->cbWindowBorders->GetGuiNode()) {
         Settings::GetInstance().WindowBorders = data->cbWindowBorders->GetCurrentValue(WINDOW_BORDERS_NONE);
         if (Settings::GetInstance().WindowBorders != Settings::GetInstance().WindowBordersStartValue)
             RestartGameWarningMessage(screen, "IDS_BORDERS_CHANGE", "IDS_WARNING");
         return;
     }
-    if (*id == data->cbScreenshotKey->GetId()) {
+    if (msg->node == data->cbScreenshotKey->GetGuiNode()) {
         Settings::GetInstance().ScreenshotKey = data->cbScreenshotKey->GetCurrentValue(VK_SNAPSHOT);
         return;
     }
-    if (*id == data->cbScreenshotFormat->GetId()) {
+    if (msg->node == data->cbScreenshotFormat->GetGuiNode()) {
         Settings::GetInstance().ScreenshotFormat = data->cbScreenshotFormat->GetCurrentValue(D3DXIFF_JPG);
         return;
     }
-    CallMethod<0x500B20>(screen, id, unk1, unk2);
+    CallMethod<0x500B20>(screen, msg, unk1, unk2);
 }
 
 void METHOD MyDrawCursor(void *c) {

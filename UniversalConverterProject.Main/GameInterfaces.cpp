@@ -2636,8 +2636,8 @@ void CXgBaseControl::SetVisible(Bool visible) {
     CallVirtualMethod<11>(this, visible);
 }
 
-UInt CXgBaseControl::GetId() {
-    return CallVirtualMethodAndReturn<UInt, 23>(this);
+CGuiNode *CXgBaseControl::GetGuiNode() {
+    return CallVirtualMethodAndReturn<CGuiNode *, 23>(this);
 }
 
 CXgTextBox *CXgFMPanel::GetTextBox(Char const *name) {
@@ -2665,7 +2665,11 @@ CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
 }
 
 VisibleControlAppearance *CXgVisibleControl::GetAppearance() {
-    return CallVirtualMethodAndReturn<VisibleControlAppearance *, 30>(this);
+    return CallVirtualMethodAndReturn<VisibleControlAppearance *, 27>(this);
+}
+
+Rect *CXgVisibleControl::GetRect() {
+    return CallVirtualMethodAndReturn<Rect *, 30>(this);
 }
 
 void CXgTextBox::SetColor(UInt colorType, UInt colorValue) {

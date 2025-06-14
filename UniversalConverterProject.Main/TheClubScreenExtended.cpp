@@ -6,12 +6,28 @@
 using namespace plugin;
 
 const UInt DEFAULT_CCLUBHISTORY_SIZE = 0x1234;
-void *gClubHistoryScreen = nullptr;
+CXgFMPanel *gClubHistoryScreen = nullptr;
 
-void *METHOD OnCreateClubHistoryUI(void *t, DUMMY_ARG, char const *name) {
-    *raw_ptr<void *>(t, DEFAULT_CCLUBHISTORY_SIZE + 0x0) = CreateTextBox(t, "TbAddressImage");
-    *raw_ptr<void *>(t, DEFAULT_CCLUBHISTORY_SIZE + 0x4) = CreateTextBox(t, "TbMascotImage");
-    return CreateTextBox(t, name);
+struct ClubHistoryScreenExtension {
+    CXgTextBox *TbAddressImage;
+    CXgTextBox *TbMascotImage;
+    CXgImage *ImgCupTitles[9];
+    CXgImage *ImgCupTitlesLong[9];
+    CXgTextBox *TbCupTitles[9];
+    CXgTextBox *TbCupTitlesLong[9];
+};
+
+void *METHOD OnCreateClubHistoryUI(CXgFMPanel *screen, DUMMY_ARG, char const *name) {
+    auto ext = raw_ptr<ClubHistoryScreenExtension>(screen, DEFAULT_CCLUBHISTORY_SIZE);
+    ext->TbAddressImage = screen->GetTextBox("TbAddressImage");
+    ext->TbMascotImage  = screen->GetTextBox("TbMascotImage");
+    for (UInt i = 0; i < 9; i++) {
+        ext->ImgCupTitles[i] = screen->GetImage(FormatStatic("ImgCupTitles%d", i + 1));
+        ext->ImgCupTitlesLong[i] = screen->GetImage(FormatStatic("ImgCupTitlesLong%d", i + 1));
+        ext->TbCupTitles[i] = screen->GetTextBox(FormatStatic("TbCupTitles%d", i + 1));
+        ext->TbCupTitlesLong[i] = screen->GetTextBox(FormatStatic("TbCupTitlesLong%d", i + 1));
+    }
+    return screen->GetTextBox(name);
 }
 
 bool GetClubScreenExtendedImageFilename(String &out, String const &folder, String const &filename) {
@@ -30,6 +46,7 @@ bool GetClubScreenExtendedImageFilename(String &out, String const &folder, Strin
 
 WideChar const *METHOD OnGetTeamAddress(CDBTeam *team) {
     if (gClubHistoryScreen) {
+        auto ext = raw_ptr<ClubHistoryScreenExtension>(gClubHistoryScreen, DEFAULT_CCLUBHISTORY_SIZE);
         static WideChar const *headquartersPath = L"art\\Lib\\Headquarters";
         static WideChar const *mascotPath = L"art\\Lib\\Mascot";
         static WideChar const *defaultFilename = L"00000000";
@@ -37,20 +54,43 @@ WideChar const *METHOD OnGetTeamAddress(CDBTeam *team) {
         static WideChar const *defaultFilenameMascot = L"art\\Lib\\Mascot\\00000000.tga";
         String clubUid = Format(L"%08X", team->GetTeamUniqueID());
         String imgPath;
-        void *addressImg = *raw_ptr<void *>(gClubHistoryScreen, DEFAULT_CCLUBHISTORY_SIZE + 0x0);
         if (GetClubScreenExtendedImageFilename(imgPath, headquartersPath, clubUid))
-            Call<0xD32860>(addressImg, imgPath.c_str(), 4, 4);
+            SetImageFilename(ext->TbAddressImage, imgPath.c_str(), 4, 4);
         else if (GetClubScreenExtendedImageFilename(imgPath, headquartersPath, defaultFilename))
-            Call<0xD32860>(addressImg, imgPath.c_str(), 4, 4);
+            SetImageFilename(ext->TbAddressImage, imgPath.c_str(), 4, 4);
         else
-            Call<0xD32860>(addressImg, defaultFilenameHeadquarters, 4, 4);
-        void *mascotImg = *raw_ptr<void *>(gClubHistoryScreen, DEFAULT_CCLUBHISTORY_SIZE + 0x4);
+            SetImageFilename(ext->TbAddressImage, defaultFilenameHeadquarters, 4, 4);
         if (GetClubScreenExtendedImageFilename(imgPath, mascotPath, clubUid))
-            Call<0xD32860>(mascotImg, imgPath.c_str(), 4, 4);
+            SetImageFilename(ext->TbMascotImage, imgPath.c_str(), 4, 4);
         else if (GetClubScreenExtendedImageFilename(imgPath, mascotPath, defaultFilename))
-            Call<0xD32860>(mascotImg, imgPath.c_str(), 4, 4);
+            SetImageFilename(ext->TbMascotImage, imgPath.c_str(), 4, 4);
         else
-            Call<0xD32860>(mascotImg, defaultFilenameMascot, 4, 4);
+            SetImageFilename(ext->TbMascotImage, defaultFilenameMascot, 4, 4);
+        auto vecWins = raw_ptr<FmVec<UShort>>(gClubHistoryScreen, 0x48C);
+        for (UInt i = 0; i < 9; i++) {
+            if (vecWins[i].empty()) {
+                ext->ImgCupTitles[i]->SetVisible(false);
+                ext->TbCupTitles[i]->SetVisible(false);
+                ext->ImgCupTitlesLong[i]->SetVisible(false);
+                ext->TbCupTitlesLong[i]->SetVisible(false);
+            }
+            else if (vecWins[i].size() < 100) {
+                ext->ImgCupTitles[i]->SetVisible(true);
+                ext->TbCupTitles[i]->SetVisible(true);
+                ext->ImgCupTitlesLong[i]->SetVisible(false);
+                ext->TbCupTitlesLong[i]->SetVisible(false);
+                ext->TbCupTitles[i]->SetText(FormatStatic(L"%d", vecWins[i].size()));
+                ext->TbCupTitlesLong[i]->SetText(L"");
+            }
+            else {
+                ext->ImgCupTitles[i]->SetVisible(false);
+                ext->TbCupTitles[i]->SetVisible(false);
+                ext->ImgCupTitlesLong[i]->SetVisible(true);
+                ext->TbCupTitlesLong[i]->SetVisible(true);
+                ext->TbCupTitles[i]->SetText(L"");
+                ext->TbCupTitlesLong[i]->SetText(FormatStatic(L"%d", vecWins[i].size()));
+            }
+        }
     }
     String strAddr = CallMethodAndReturn<WideChar const *, 0xED23B0>(team);
     String strBuf;
@@ -67,9 +107,9 @@ WideChar const *METHOD OnGetTeamAddress(CDBTeam *team) {
     return buf;
 }
 
-void METHOD OnSetupClubHistoryScreen(void *t) {
-    gClubHistoryScreen = t;
-    CallMethod<0x6569B0>(t);
+void METHOD OnSetupClubHistoryScreen(CXgFMPanel *screen) {
+    gClubHistoryScreen = screen;
+    CallMethod<0x6569B0>(screen);
     gClubHistoryScreen = nullptr;
 }
 
@@ -93,7 +133,7 @@ void METHOD OnTeamResolveLinks(CDBTeam *team) {
 
 void PatchTheClubScreenExtended(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        static UInt NEW_CCLUBHISTORY_SIZE = DEFAULT_CCLUBHISTORY_SIZE + 8;
+        static UInt NEW_CCLUBHISTORY_SIZE = DEFAULT_CCLUBHISTORY_SIZE + sizeof(ClubHistoryScreenExtension);
         patch::SetUInt(0x659AF4 + 1, NEW_CCLUBHISTORY_SIZE);
         patch::SetUInt(0x659AFB + 1, NEW_CCLUBHISTORY_SIZE);
         patch::RedirectCall(0x65565E, OnCreateClubHistoryUI);

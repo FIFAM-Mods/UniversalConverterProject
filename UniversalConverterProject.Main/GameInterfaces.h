@@ -1424,11 +1424,27 @@ class CTrfmNode {
 public:
 };
 
+class CGuiNode {
+public:
+};
+
+struct MessageDataBase {
+    Char const *name;
+};
+
+struct GuiMessage {
+    CGuiNode *node;
+    Char const *nodeUid;
+    CGuiNode *node2;
+    Char const *node2Uid;
+    MessageDataBase *pData;
+};
+
 class CXgBaseControl {
 public:
     void SetEnabled(Bool enabled);
     void SetVisible(Bool visible);
-    UInt GetId();
+    CGuiNode *GetGuiNode();
 };
 
 struct Rect {
@@ -1444,6 +1460,7 @@ struct VisibleControlAppearance {
 class CXgVisibleControl : public CXgBaseControl {
 public:
     VisibleControlAppearance *GetAppearance();
+    Rect *GetRect();
 };
 
 class CXgBaseButton : public CXgVisibleControl {

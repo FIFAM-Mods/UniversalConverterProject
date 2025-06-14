@@ -232,24 +232,24 @@ CXgCheckBox *METHOD OnOptionsGeneralSetupUI(CXgFMPanel *screen, DUMMY_ARG, Char 
     return screen->GetCheckBox(name);
 }
 
-void METHOD OnOptionsGeneralProcessCheckBoxes(CXgFMPanel *screen, DUMMY_ARG, UInt *id, Int unk) {
+void METHOD OnOptionsGeneralProcessCheckBoxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk) {
     auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
-    if (*id == ext->ChkAbilitiesBoldFont->GetId()) {
+    if (msg->node == ext->ChkAbilitiesBoldFont->GetGuiNode()) {
         Settings::GetInstance().AbilitiesBoldFont = ext->ChkAbilitiesBoldFont->GetIsChecked();
         return;
     }
-    CallMethod<0x7AFCF0>(screen, id, unk);
+    CallMethod<0x7AFCF0>(screen, msg, unk);
 }
 
-void METHOD OnOptionsGeneralProcessComboBoxes(CXgFMPanel *screen, DUMMY_ARG, UInt *id, Int unk1, Int unk2) {
+void METHOD OnOptionsGeneralProcessComboBoxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk1, Int unk2) {
     auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
-    if (*id == ext->CbAbilitiesColorSchema->GetId()) {
+    if (msg->node == ext->CbAbilitiesColorSchema->GetGuiNode()) {
         Int currentIndex = ext->CbAbilitiesColorSchema->GetCurrentIndex();
-        if (currentIndex >= 0 && currentIndex < GetPlayerAbilityColorSchemas().size())
+        if (currentIndex >= 0 && currentIndex < (Int)GetPlayerAbilityColorSchemas().size())
             Settings::GetInstance().AbilitiesColorSchema = GetPlayerAbilityColorSchemas()[currentIndex].name;
         return;
     }
-    CallMethod<0x7AE640>(screen, id, unk1, unk2);
+    CallMethod<0x7AE640>(screen, msg, unk1, unk2);
 }
 
 void PatchAbilityColors(FM::Version v) {
