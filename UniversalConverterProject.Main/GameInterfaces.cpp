@@ -2318,6 +2318,10 @@ Int CEAMailData::GetArrayValue(UInt index) const {
     return CallMethodAndReturn<Int, 0x1010670>(this, index);
 }
 
+void CEAMailData::SetFirstTeam(CTeamIndex const &teamID) {
+    CallMethod<0x1010610>(this, &teamID);
+}
+
 void CFMListBox::SetVisible(Bool visible) {
     CallVirtualMethod<20>(this, visible);
 }

@@ -255,10 +255,6 @@ void *METHOD CXgFMPanel_3DRenderHead(CXgFMPanel *t, DUMMY_ARG, void *unk, Rect *
     return CallMethodAndReturn<void *, 0xD39A70>(t, unk, &a.rect, playerRenderData, kitRenderData, bDisplayPortrait, bHasPicture);
 }
 
-void *Ret0StadiumMove(void *) {
-    return nullptr;
-}
-
 void InstallScreenResolution_GfxCore() {
 #if 0
     patch::SetPointer(GfxCoreAddress(0x54FF68), App_GetScreenResolution);
@@ -267,8 +263,6 @@ void InstallScreenResolution_GfxCore() {
     // Screenshot - format
     patch::RedirectCall(GfxCoreAddress(0x3BA4D6), Screenshot_WcharToMB);
     patch::RedirectCall(GfxCoreAddress(0x3BA4DF), Screenshot_SaveSurfaceToFile);
-
-    patch::RedirectCall(GfxCoreAddress(0x410EC2), Ret0StadiumMove);
 }
 
 void PatchScreenResolution(FM::Version v) {

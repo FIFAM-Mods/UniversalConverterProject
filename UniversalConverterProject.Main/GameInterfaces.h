@@ -873,6 +873,7 @@ public:
     EAGMoney GetMoney() const;
     void SetArrayValue(UInt index, Int value);
     Int GetArrayValue(UInt index) const;
+    void SetFirstTeam(CTeamIndex const &teamID);
 };
 
 class CClubFans {

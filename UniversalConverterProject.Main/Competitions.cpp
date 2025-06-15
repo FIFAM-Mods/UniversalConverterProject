@@ -5748,6 +5748,20 @@ Bool METHOD LastContinentalMatchDate_TeamPlaysInCompetition(CDBTeam *team, DUMMY
     return CallMethodAndReturn<Bool, 0xED0710>(team, &conferenceLeagueId);
 }
 
+CDBCompetition *gNTStatsComp = nullptr;
+
+void METHOD OnProcessStatisticsForInternationalMatch(void *t, DUMMY_ARG, CDBCompetition *comp, CDBOneMatch *match, void *squad1, void *squad2, UChar goals1stTeam, UChar goals2ndTeam, Char resultDifference) {
+    gNTStatsComp = comp;
+    CallMethod<0x110A4A0>(t, comp, match, squad1, squad2, goals1stTeam, goals2ndTeam, resultDifference);
+    gNTStatsComp = nullptr;
+}
+
+void *GetEmployeeJobs_NTStats(Int id) {
+    if (gNTStatsComp && (gNTStatsComp->GetCompetitionType() == COMP_U20_WORLD_CUP || gNTStatsComp->GetCompetitionType() == COMP_U20_WC_Q))
+        return nullptr;
+    return CallAndReturn<void *, 0xEA2A10>(id);
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectJump(0xF909BE, CupDraw_Clear);
@@ -6616,5 +6630,11 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x121C478, LastContinentalMatchDate_GetLeaguePlaceColor);
         patch::RedirectCall(0x110BBD8, LastContinentalMatchDate_GetCompId);
         patch::RedirectCall(0xF1E259, LastContinentalMatchDate_TeamPlaysInCompetition);
+
+        // National Team statisctics
+        patch::RedirectCall(0xEA0BF7, OnProcessStatisticsForInternationalMatch);
+        patch::RedirectCall(0xEA0DA0, OnProcessStatisticsForInternationalMatch);
+        patch::RedirectCall(0x110AE6D, GetEmployeeJobs_NTStats);
+        patch::RedirectCall(0x110AEAE, GetEmployeeJobs_NTStats);
     }
 }
