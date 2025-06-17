@@ -226,7 +226,7 @@ void ProcessStringUkrainianLanguageNoCase(String &str) {
     }
 }
 
-Int MyCompareStringNoCase(WideChar const *str1, WideChar const *str2) {
+Int CompareStringNoCase(WideChar const *str1, WideChar const *str2) {
     String myStr1 = str1;
     String myStr2 = str2;
     ProcessStringUkrainianLanguageNoCase(myStr1);
@@ -324,7 +324,7 @@ void PatchTranslation(FM::Version v) {
         //patch::RedirectCall(0x1495B8B, OnSprintfDateStr);
 
         if (IsUkrainianLanguage)
-            patch::RedirectCall(0x1493FD4, MyCompareStringNoCase);
+            patch::RedirectCall(0x1493FD4, CompareStringNoCase);
 
         patch::RedirectCall(0xF65591, OnSetDefaultCurrencyRate);
         patch::RedirectCall(0xF655D2, OnSetDefaultCurrencyRate);

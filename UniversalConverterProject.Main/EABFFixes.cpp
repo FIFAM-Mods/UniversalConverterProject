@@ -14,8 +14,6 @@
 #include "ExtendedTeam.h"
 #include "AssetLoader.h"
 
-const UInt NUM_LANGUAGES = 105;
-
 using namespace plugin;
 
 class FmUtils {
@@ -2209,12 +2207,6 @@ void PatchEABFFixes(FM::Version v) {
 
         // fix sorting on staff market screen
         patch::RedirectCall(0x690316, OnClubStaffMarketScreen);
-
-        // new languages
-        patch::SetUChar(0x8E03DE + 1, NUM_LANGUAGES + 1); // transfer search - screen 1
-        patch::SetUChar(0x8E0442 + 2, NUM_LANGUAGES + 1); // transfer search - screen 2
-        patch::SetUChar(0xF9D42B + 6, NUM_LANGUAGES + 1); // transfer search - init
-        patch::SetUChar(0xF9DAAC + 1, NUM_LANGUAGES + 1); // transfer search - compare
 
         patch::RedirectCall(0xF2B079, TeamPhotoRetNull);
 

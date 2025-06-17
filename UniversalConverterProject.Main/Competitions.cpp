@@ -5762,6 +5762,12 @@ void *GetEmployeeJobs_NTStats(Int id) {
     return CallAndReturn<void *, 0xEA2A10>(id);
 }
 
+void METHOD StatsResultsListBoxes_GetRoundPair(CDBRound *round, DUMMY_ARG, UInt pairIndex, RoundPair &out) {
+    out = round->GetRoundPair(pairIndex);
+    if ((round->GetLegFlags(0) & FifamBeg::WithoutAwayGoal) || (round->GetLegFlags(1) & FifamBeg::WithoutAwayGoal))
+        out.m_nFlags |= FifamBeg::WithoutAwayGoal;
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectJump(0xF909BE, CupDraw_Clear);
@@ -6636,5 +6642,8 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0xEA0DA0, OnProcessStatisticsForInternationalMatch);
         patch::RedirectCall(0x110AE6D, GetEmployeeJobs_NTStats);
         patch::RedirectCall(0x110AEAE, GetEmployeeJobs_NTStats);
+
+        // Fix for BEG_WITHOUT_AWAY_GOAL (away goal) in statistics
+        patch::RedirectCall(0xA8FCE9, StatsResultsListBoxes_GetRoundPair);
     }
 }

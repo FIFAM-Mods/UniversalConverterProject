@@ -9,4 +9,6 @@ extern Bool IsUkrainianLanguage;
 extern eCurrency DefaultCurrency;
 extern Bool IsDefaultImperialUnits;
 
+void ProcessStringUkrainianLanguage(String &str);
+void ProcessStringUkrainianLanguageNoCase(String &str);
 void PatchTranslation(FM::Version v);

@@ -90,6 +90,7 @@
     <ClCompile Include="..\shared\Resolutions.cpp" />
     <ClCompile Include="ScreenResolution.cpp" />
     <ClCompile Include="AbilityColors.cpp" />
+    <ClCompile Include="Languages.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -175,6 +176,7 @@
     <ClInclude Include="..\shared\Resolutions.h" />
     <ClInclude Include="ScreenResolution.h" />
     <ClInclude Include="AbilityColors.h" />
+    <ClInclude Include="Languages.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">
