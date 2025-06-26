@@ -1289,6 +1289,57 @@ void OnProcessSound() {
     CallDynGlobal(GfxCoreAddress(0x34EDD9));
 }
 
+Bool METHOD CXPNG_Read(CXPNG_ *img, DUMMY_ARG, UChar **shapePixels, ImageDesc *desc) {
+    if (!img->m_pData)
+        return false;
+    PixelFormat pngFormat(desc->m_nDepth, desc->m_nMaskRed, desc->m_nMaskGreen, desc->m_nMaskBlue, desc->m_nMaskAlpha);
+    PixelFormat *pf24 = (PixelFormat *)GfxCoreAddress(0xD46140);
+    PixelFormat *pf32 = (PixelFormat *)GfxCoreAddress(0xD46278);
+    UInt depth = (UChar)desc->m_nDepth;
+    UInt bytesPerPixel = depth / 8;
+    UInt sourceBpp = img->m_desc.m_nDepth == 24 ? 3 : 4;
+    UInt numTilesX = desc->m_nNumTilesX;
+    UInt numTilesY = desc->m_nNumTilesY;
+    UShort clampedTilesX[32];
+    UShort clampedTilesY[32];
+    ClampTilesToImageBounds(clampedTilesX, desc->m_tilesX, numTilesX, desc->m_nWidth);
+    ClampTilesToImageBounds(clampedTilesY, desc->m_tilesY, numTilesY, desc->m_nHeight);
+    UInt rowSize = CallAndReturnDynGlobal<UInt>(GfxCoreAddress(0x3E0810), img->pPngStruct, img->pPngInfo); // png_get_rowbytes
+    UShort imageHeight = desc->m_nHeight;
+    if (rowSize > 32768 || imageHeight > 4096)
+        return false;
+    UChar *pixelData = new UChar[rowSize * imageHeight];
+    Vector<UChar *> pngRows(imageHeight);
+    for (UInt i = 0; i < imageHeight; ++i)
+        pngRows[i] = pixelData + i * rowSize;
+    CallDynGlobal(GfxCoreAddress(0x3DE570), img->pPngStruct, pngRows.data()); // png_read_image
+    for (UInt tileY = 0; tileY < numTilesY; ++tileY) {
+        UShort tileHeight = clampedTilesY[tileY];
+        UInt yOffset = 0;
+        for (UInt i = 0; i < tileY; ++i)
+            yOffset += clampedTilesY[i];
+        for (UInt rowInTile = 0; rowInTile < tileHeight; ++rowInTile) {
+            UChar *rowPtr = pngRows[yOffset + rowInTile];
+            for (UInt tileX = 0; tileX < numTilesX; ++tileX) {
+                UShort tileWidth = clampedTilesX[tileX];
+                UShort shapeWidth = desc->m_tilesX[tileX];
+                UInt xOffset = 0;
+                for (UInt i = 0; i < tileX; ++i)
+                    xOffset += clampedTilesX[i];
+                UChar *dst = shapePixels[tileY * numTilesX + tileX];
+                UChar *dstRow = dst + rowInTile * shapeWidth * bytesPerPixel;
+                UChar *src = rowPtr + xOffset * sourceBpp;
+                if (img->m_desc.m_nDepth == 24)
+                    pngFormat.Convert(dstRow, tileWidth * bytesPerPixel, pf24, src, tileWidth * sourceBpp, 0xFF000000);
+                else if (img->m_desc.m_nDepth == 32)
+                    pngFormat.Convert(dstRow, tileWidth * bytesPerPixel, pf32, src, tileWidth * sourceBpp, 0);
+            }
+        }
+    }
+    delete[] pixelData;
+    return true;
+}
+
 void Install3dPatches_FM13() {
 
     FindAssets(ASSETS_DIR, "");
@@ -2036,4 +2087,6 @@ void Install3dPatches_FM13() {
     //patch::RedirectCall(GfxCoreAddress(0x34F09E), OnProcessSound);
     //patch::RedirectJump(GfxCoreAddress(0x34EE28), OnProcessSound_GetCurrentPosition);
     //OnProcessSound_GetCurrentPosition_RetAddr = GfxCoreAddress(0x34EE33);
+
+    patch::SetPointer(GfxCoreAddress(0x551DDC), CXPNG_Read);
 }

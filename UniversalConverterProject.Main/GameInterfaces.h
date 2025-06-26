@@ -1630,3 +1630,72 @@ public:
 CDBYouthcampList *GetYouthcampList();
 
 void *GetApp();
+
+struct ImageDesc {
+    UShort m_nWidth;
+    UShort m_nHeight;
+    UChar m_nDepth;
+    UChar _pad5[3];
+    UInt m_nMaskRed;
+    UInt m_nMaskGreen;
+    UInt m_nMaskBlue;
+    UInt m_nMaskAlpha;
+    UInt m_nInternalFormat;
+    UChar m_nNumTilesX;
+    UChar m_nNumTilesY;
+    UShort m_tilesX[32];
+    UShort m_tilesY[32];
+    Char _pad9E[2];
+};
+
+static_assert(sizeof(ImageDesc) == 0xA0, "Failed");
+
+class CImage_ {
+public:
+    void *vtable;
+    void* m_pData;
+    UInt m_nDataSize;
+    ImageDesc m_desc;
+    WideChar m_szTypeName[4];
+    Bool m_bDataAllocated;
+    Char _padB5[3];
+};
+
+struct PngReadData {
+    UChar *data;
+    UInt size;
+    UInt offset;
+};
+
+class CXPNG_ : public CImage_ {
+public:
+    void *pPngStruct;
+    void *pPngInfo;
+    PngReadData readData;
+};
+
+static_assert(sizeof(CXPNG_) == 0xCC, "Failed");
+
+class PixelFormat {
+public:
+    UInt depth;
+    UInt rMask;
+    UInt gMask;
+    UInt bMask;
+    UInt aMask;
+    UInt rShift;
+    UInt gShift;
+    UInt bShift;
+    UInt aShift;
+    UInt rBits;
+    UInt gBits;
+    UInt bBits;
+    UInt aBits;
+
+    PixelFormat(UInt depth, UInt rMask, UInt gMask, UInt bMask, UInt aMask);
+    void Convert(UChar* dst, UInt dstSize, PixelFormat *srcFormat, UChar* src, UInt srcSize, UInt mask);
+};
+
+static_assert(sizeof(PixelFormat) == 0x34, "Failed");
+
+void ClampTilesToImageBounds(UShort *dst, UShort *src, UInt numTiles, UShort total);

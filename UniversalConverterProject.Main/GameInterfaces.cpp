@@ -2518,6 +2518,10 @@ void *GetApp() {
     return CallVirtualMethodAndReturn<void *, 33>(xlibFactory);
 }
 
+void ClampTilesToImageBounds(UShort *dst, UShort *src, UInt numTiles, UShort total) {
+    CallDynGlobal(GfxCoreAddress(0x3D6910), dst, src, numTiles, total);
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);
@@ -2698,4 +2702,12 @@ void CXgTextBox::SetText(WideChar const *text) {
 
 WideChar const *CXgTextBox::GetText() {
     return CallVirtualMethodAndReturn<WideChar const *, 79>(this);
+}
+
+PixelFormat::PixelFormat(UInt depth, UInt rMask, UInt gMask, UInt bMask, UInt aMask) {
+    CallMethodDynGlobal(GfxCoreAddress(0x3D91D0), this, depth, rMask, gMask, bMask, aMask);
+}
+
+void PixelFormat::Convert(UChar* dst, UInt dstSize, PixelFormat *srcFormat, UChar *src, UInt srcSize, UInt mask) {
+    CallMethodDynGlobal(GfxCoreAddress(0x3D93B0), this, dst, dstSize, srcFormat, src, srcSize, mask);
 }
