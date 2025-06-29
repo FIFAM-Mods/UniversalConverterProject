@@ -1018,6 +1018,38 @@ public:
     CFanShop *GetFanShop(UShort index);
 };
 
+class CompWinYear {
+public:
+    CCompID compID;
+    UShort year;
+    Char _pad6[2];
+};
+
+class WinYearsList {
+public:
+    CompWinYear *entries;
+    UInt count;
+    UInt capacity;
+};
+
+class ClubHistoryRecord {
+public:
+    WideChar m_szOpponentName[22];
+    UChar m_nScore1;
+    UChar m_nScore2;
+    UShort m_nYear;
+    UInt m_nAttendance;
+};
+
+class CClubHistory {
+public:
+    ClubHistoryRecord m_aRecords1[5];
+    ClubHistoryRecord m_aRecords2[5];
+    WinYearsList m_winYearsList;
+};
+
+static_assert(sizeof(CClubHistory) == 0x214, "Failed");
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -1055,6 +1087,7 @@ public:
     CClubFans *GetClubFans();
     CTeamStaff *GetTeamStaff();
     CTeamFanshops *GetFanShops();
+    CClubHistory *GetClubHistory();
 };
 
 struct CAssessmentInfo {
@@ -1699,3 +1732,8 @@ public:
 static_assert(sizeof(PixelFormat) == 0x34, "Failed");
 
 void ClampTilesToImageBounds(UShort *dst, UShort *src, UInt numTiles, UShort total);
+
+void *opNew(UInt size);
+void opDelete(void *data);
+
+Bool GetFirstManagerRegion(UInt &outRegion);

@@ -907,17 +907,7 @@ unsigned char METHOD GetPoolNumberOfTeamsFromCountry(CDBPool *pool, DUMMY_ARG, i
     return (numTeams > 0) ? numTeams : 0;
 }
 
-unsigned int gParticipantsRegion = 0;
-
-bool GetFirstManagerRegion(unsigned int &outRegion) {
-    for (unsigned int i = 0; i <= 5; i++) {
-        if (plugin::CallAndReturn<bool, 0xFF7F60>(i)) {
-            outRegion = 249 + i;
-            return true;
-        }
-    }
-    return false;
-}
+UInt gParticipantsRegion = 0;
 
 void METHOD OnFillEuropeanCompsParticipants(void *obj, DUMMY_ARG, unsigned int region, unsigned int compType, unsigned int listId) {
     if (listId == 1)
@@ -4422,10 +4412,6 @@ Bool METHOD OnRegisterSquadSelectionScreenForWC_EC(CJDate *a, DUMMY_ARG, CJDate 
     return plugin::CallMethodAndReturn<Bool, 0x1494F7D>(a, b);
 }
 
-unsigned short METHOD IsFinalRound_22(CDBRound *round) {
-    return (round->GetRoundType() == 15) ? 22 : 0x7FFF;
-}
-
 UInt METHOD OnGetQualifiedForContinentalCompetition_SeasonGoals(CDBTeam *team, DUMMY_ARG, Int *a, CCompID *outCompId) {
     UInt result = CallMethodAndReturn<UInt, 0xEFE330>(team, a, outCompId);
     if (outCompId->countryId >= FifamCompRegion::Europe && outCompId->countryId <= FifamCompRegion::Oceania &&
@@ -5768,6 +5754,116 @@ void METHOD StatsResultsListBoxes_GetRoundPair(CDBRound *round, DUMMY_ARG, UInt 
         out.m_nFlags |= FifamBeg::WithoutAwayGoal;
 }
 
+void WinYearsList_RemoveCompEntries(WinYearsList &winsList, UChar compType) {
+    if (!winsList.entries || !winsList.count)
+        return;
+    UInt newCount = 0;
+    for (UInt i = 0; i < winsList.count; ++i) {
+        if (winsList.entries[i].compID.type != compType)
+            ++newCount;
+    }
+    if (newCount == winsList.count)
+        return;
+    CompWinYear *newEntries = nullptr;
+    if (newCount > 0) {
+        newEntries =  (CompWinYear *)opNew(sizeof(CompWinYear) * newCount);
+        UInt j = 0;
+        for (UInt i = 0; i < winsList.count; ++i) {
+            if (winsList.entries[i].compID.type != compType) {
+                newEntries[j].compID = winsList.entries[i].compID;
+                newEntries[j].year = winsList.entries[i].year;
+                ++j;
+            }
+        }
+    }
+    if (winsList.entries)
+        opDelete(winsList.entries);
+    winsList.entries = newEntries;
+    winsList.count = newCount;
+    winsList.capacity = newCount;
+}
+
+void OnReadCupHistoricFile(UChar countryId) {
+    CDBCountry *country = GetCountry(countryId);
+    if (country) {
+        for (Int t = 1; t <= country->GetNumClubs(); t++) {
+            auto team = GetTeam(CTeamIndex::make(country->GetCountryId(), FifamClubTeamType::First, t));
+            if (team) {
+                WinYearsList_RemoveCompEntries(team->GetClubHistory()->m_winYearsList, COMP_LEAGUE);
+                WinYearsList_RemoveCompEntries(team->GetClubHistory()->m_winYearsList, COMP_FA_CUP);
+                WinYearsList_RemoveCompEntries(team->GetClubHistory()->m_winYearsList, COMP_LE_CUP);
+                WinYearsList_RemoveCompEntries(team->GetClubHistory()->m_winYearsList, COMP_SUPERCUP);
+            }
+        }
+    }
+    Call<0x121B560>(countryId); // ReadCupHistoricFile
+}
+
+
+void ForcedLogWrite(Path const &filename, String const &str, String const &header = String()) {
+    Bool logEnabled = Settings::GetInstance().EnableAllLogFiles;
+    Settings::GetInstance().EnableAllLogFiles = true;
+    SafeLog::WriteToFile(filename, str, header);
+    Settings::GetInstance().EnableAllLogFiles = logEnabled;
+}
+
+template<UInt Address>
+void METHOD OnPlayerDeparture(CDBPlayer *player, DUMMY_ARG, UInt reason, Bool32 startAbsence, UInt numDays) {
+    auto ContinentName = [](UChar countryId) {
+        CDBCountry *country = GetCountry(countryId);
+        if (country)
+            return country->GetContinentName();
+        return L"n/a";
+        };
+    static WideChar const *DepartureType[] = { L"HOLIDAY", L"WORK", L"FAMILY", L"LAZY", L"NATIONALTEAM"};
+    ForcedLogWrite(L"player_departures.tsv",
+        Utils::Format(L"0x%X\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d",
+            Address, GetCurrentDate().ToStr(), CountryName(player->GetNationality()), ContinentName(player->GetNationality()),
+            player->GetName(), player->GetAge(), DepartureType[reason], startAbsence, numDays),
+        L"Address\tDate\tNation\tContinent\tPlayer\tAge\tReason\tStart\tDays");
+    CallMethod<0xFB1B80>(player, reason, startAbsence, numDays);
+}
+
+class CGameEvent {
+public:
+    CJDate date;
+    Int entityId;
+    UShort eventId;
+    UShort flags;
+    UInt param1;
+    UInt param2;
+    UInt param3;
+    UInt param4;
+    UInt param5;
+};
+
+static_assert(sizeof(CGameEvent) == 0x20, "Failed");
+
+template<Bool WriteToLog>
+UInt METHOD OnPoolLaunchRegisterNTNomination(CDBCompetition *comp) {
+    if (WriteToLog) {
+        ForcedLogWrite(L"nt_events.txt", Utils::Format(L"%s. Ignored event 1283 registration (competition %s)",
+            GetCurrentDate().ToStr(), FifamCompType::MakeFromInt(comp->GetCompetitionType()).ToStr()));
+    }
+    return 0;
+}
+
+void METHOD OnCountryProcessEvent(CDBCountry *country, DUMMY_ARG, CGameEvent *event) {
+    if (event->eventId == 1283
+        && event->date.GetMonth() == 6
+        && event->date.GetDays() == 7
+        && event->date.GetYear() % 2)
+    {
+        UChar compType = (event->param1 >> 16) & 0xFF;
+        if (compType == COMP_EURO_CUP || compType == COMP_WORLD_CUP) {
+            ForcedLogWrite(L"nt_events.txt", Utils::Format(L"%s. Ignored event 1283 processing for %s (competition %s)",
+                event->date.ToStr(), CountryName(event->entityId), CCompID::Make(event->param1).ToStr()));
+            return;
+        }
+    }
+    CallMethod<0xFF4850>(country, event); // CDBCountry::HandleEvent
+}
+
 void PatchCompetitions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectJump(0xF909BE, CupDraw_Clear);
@@ -6522,9 +6618,6 @@ void PatchCompetitions(FM::Version v) {
         patch::SetPointer(0x62BE96 + 3, gCompSpectatorCalcType);
         patch::SetPointer(0x62C121 + 3, gCompSpectatorCalcType);
 
-        // CDBCompetition::GetIndex
-        patch::RedirectCall(0x10481CD, IsFinalRound_22);
-
         patch::RedirectCall(0xF0B19E, OnGetQualifiedForContinentalCompetition_SeasonGoals);
         patch::SetUChar(0xEE5DBF + 2, 2); // number of top teams for domestic cup season goals
 
@@ -6645,5 +6738,29 @@ void PatchCompetitions(FM::Version v) {
 
         // Fix for BEG_WITHOUT_AWAY_GOAL (away goal) in statistics
         patch::RedirectCall(0xA8FCE9, StatsResultsListBoxes_GetRoundPair);
+
+        // prioritize entries from historic files over entries from the database
+        patch::RedirectCall(0x108F516, OnReadCupHistoricFile);
+
+        patch::RedirectCall(0x0061B307, OnPlayerDeparture<0x0061B307>);
+        patch::RedirectCall(0x0061B3C6, OnPlayerDeparture<0x0061B3C6>);
+        patch::RedirectCall(0x00EE3BE9, OnPlayerDeparture<0x00EE3BE9>);
+        patch::RedirectCall(0x00EF020B, OnPlayerDeparture<0x00EF020B>);
+        patch::RedirectCall(0x00F38144, OnPlayerDeparture<0x00F38144>);
+        patch::RedirectCall(0x00F3822C, OnPlayerDeparture<0x00F3822C>);
+        patch::RedirectCall(0x00F3837C, OnPlayerDeparture<0x00F3837C>);
+        patch::RedirectCall(0x00FEFAFF, OnPlayerDeparture<0x00FEFAFF>);
+        patch::RedirectCall(0x00FF00E6, OnPlayerDeparture<0x00FF00E6>);
+        patch::RedirectCall(0x00FF4A2C, OnPlayerDeparture<0x00FF4A2C>);
+        patch::RedirectCall(0x0108AE34, OnPlayerDeparture<0x0108AE34>);
+        patch::RedirectCall(0x0135F340, OnPlayerDeparture<0x0135F340>);
+        patch::RedirectCall(0x01500779, OnPlayerDeparture<0x01500779>);
+
+        // remove NT call up event registration for WC and EC in odd years
+        //patch::RedirectJump(0x10F1A6C, (void *)0x10F1B37);
+        patch::RedirectCall(0x10F1A6C, OnPoolLaunchRegisterNTNomination<true>);
+        patch::RedirectCall(0x10F1A78, OnPoolLaunchRegisterNTNomination<false>);
+
+        patch::RedirectCall(0xF5305B, OnCountryProcessEvent);
     }
 }

@@ -91,6 +91,7 @@
     <ClCompile Include="ScreenResolution.cpp" />
     <ClCompile Include="AbilityColors.cpp" />
     <ClCompile Include="Languages.cpp" />
+    <ClCompile Include="NewspaperEuroStats.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="ScreenResolution.h" />
     <ClInclude Include="AbilityColors.h" />
     <ClInclude Include="Languages.h" />
+    <ClInclude Include="NewspaperEuroStats.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

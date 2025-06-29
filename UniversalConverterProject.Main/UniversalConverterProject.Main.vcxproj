@@ -124,6 +124,7 @@
     <ClCompile Include="Languages.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="AbilityColors.cpp" />
+    <ClCompile Include="NewspaperEuroStats.cpp" />
     <ClCompile Include="ScreenResolution.cpp" />
     <ClCompile Include="UEFALeaguePhase.cpp" />
     <ClCompile Include="ClubSponsors.cpp" />
@@ -205,6 +206,7 @@
     <ClInclude Include="Languages.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="AbilityColors.h" />
+    <ClInclude Include="NewspaperEuroStats.h" />
     <ClInclude Include="ScreenResolution.h" />
     <ClInclude Include="UEFALeaguePhase.h" />
     <ClInclude Include="ClubSponsors.h" />

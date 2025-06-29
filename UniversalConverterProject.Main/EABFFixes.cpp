@@ -8,6 +8,7 @@
 #include "FifamReadWrite.h"
 #include "FifamCompRegion.h"
 #include "FifamNation.h"
+#include "FifamCompType.h"
 #include "Competitions.h"
 #include "Translation.h"
 #include "Random.h"

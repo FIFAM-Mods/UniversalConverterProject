@@ -66,6 +66,7 @@
 #include "ScreenResolution.h"
 #include "AbilityColors.h"
 #include "Languages.h"
+#include "NewspaperEuroStats.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -187,6 +188,7 @@ public:
             PatchScreenResolution(v);
             PatchAbilityColors(v);
             PatchLanguages(v);
+            PatchNewspaperEuroStats(v);
 
 #ifdef BETA
             DoBetaPatches(v);

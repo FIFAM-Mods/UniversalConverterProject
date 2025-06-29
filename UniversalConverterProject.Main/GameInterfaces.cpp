@@ -1300,6 +1300,10 @@ CTeamFanshops *CDBTeam::GetFanShops() {
     return CallMethodAndReturn<CTeamFanshops *, 0xECFFF0>(this);
 }
 
+CClubHistory *CDBTeam::GetClubHistory() {
+    return CallMethodAndReturn<CClubHistory *, 0xED1BE0>(this);
+}
+
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
     for (UInt i = 0; i < GetNumPlayers(); i++) {
         if (GetPlayer(i) == playerId)
@@ -2520,6 +2524,24 @@ void *GetApp() {
 
 void ClampTilesToImageBounds(UShort *dst, UShort *src, UInt numTiles, UShort total) {
     CallDynGlobal(GfxCoreAddress(0x3D6910), dst, src, numTiles, total);
+}
+
+void *opNew(UInt size) {
+    return CallAndReturn<void *, 0x15773B5>();
+}
+
+void opDelete(void *data) {
+    Call<0x1573B66>(data);
+}
+
+Bool GetFirstManagerRegion(UInt &outRegion) {
+    for (UInt i = 0; i <= 5; i++) {
+        if (plugin::CallAndReturn<Bool, 0xFF7F60>(i)) {
+            outRegion = 249 + i;
+            return true;
+        }
+    }
+    return false;
 }
 
 CCompID CDBRoot::GetFirstContinentalCompetition() {
