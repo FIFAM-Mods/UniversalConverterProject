@@ -2288,7 +2288,22 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x40E353, Sprintf3DMatchParameterAscii);
         patch::RedirectCall(0x40E380, Sprintf3DMatchParameterAscii);
         patch::RedirectCall(0x40E3AD, Sprintf3DMatchParameterAscii);
-;   }
+
+        // Unique ID format (Show IDs option)
+        WideChar const *ShowUniqueIDFormat = L"%08X";
+        patch::SetPointer(0x5EEB95 + 1, ShowUniqueIDFormat); // league details screen
+        patch::SetPointer(0x659422 + 1, ShowUniqueIDFormat); // club information screen
+        patch::SetPointer(0x6E2BB4 + 1, ShowUniqueIDFormat); // stats screen 1
+        patch::SetPointer(0x6E2E3F + 1, ShowUniqueIDFormat); // stats screen 2
+        patch::SetPointer(0x6E2FC9 + 1, ShowUniqueIDFormat); // stats screen 3
+        patch::SetPointer(0x6E30DD + 1, ShowUniqueIDFormat); // stats screen 4
+        patch::SetPointer(0x6E31EA + 1, ShowUniqueIDFormat); // stats screen 5
+        patch::SetPointer(0x6E32EC + 1, ShowUniqueIDFormat); // stats screen 6
+        patch::SetPointer(0x7060F4 + 1, ShowUniqueIDFormat); // stats screen 7
+        patch::SetPointer(0x706382 + 1, ShowUniqueIDFormat); // stats screen 8
+        patch::SetPointer(0x75F98E + 1, ShowUniqueIDFormat); // stats screen 9
+        patch::SetPointer(0x75FC1F + 1, ShowUniqueIDFormat); // stats screen 10
+    }
 }
 
 void UnpatchEABFFixes(FM::Version v) {
