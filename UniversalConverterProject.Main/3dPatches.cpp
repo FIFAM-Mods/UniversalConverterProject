@@ -2089,4 +2089,8 @@ void Install3dPatches_FM13() {
     //OnProcessSound_GetCurrentPosition_RetAddr = GfxCoreAddress(0x34EE33);
 
     patch::SetPointer(GfxCoreAddress(0x551DDC), CXPNG_Read);
+
+    // allow compressed files smaller than 128 bytes
+    patch::SetUInt(GfxCoreAddress(0x3C5B0D + 1), 8);
+    patch::SetUInt(GfxCoreAddress(0x3C5B26 + 1), 8);
 }

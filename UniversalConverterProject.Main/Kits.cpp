@@ -1830,14 +1830,17 @@ ColorPair GetTeamKitColors(CDBTeam *team, UChar kitTypeId) {
             if (fileSize > 0) {
                 unsigned char *pngData = new unsigned char[fileSize];
                 if (FmFileRead(teamColorPath, pngData, fileSize)) {
-                    Magick::Blob blob(pngData, fileSize);
-                    Magick::Image image;
-                    image.read(blob);
-                    if (image.isValid() && image.columns() == 8 && image.rows() == 64) {
-                        result.first = GetColorFromPixel(image, 0, 0);
-                        result.second = GetColorFromPixel(image, 0, 32);
-                        customColors = true;
+                    try {
+                        Magick::Blob blob(pngData, fileSize);
+                        Magick::Image image;
+                        image.read(blob);
+                        if (image.isValid() && image.columns() == 8 && image.rows() == 64) {
+                            result.first = GetColorFromPixel(image, 0, 0);
+                            result.second = GetColorFromPixel(image, 0, 32);
+                            customColors = true;
+                        }
                     }
+                    catch (...) {}
                 }
                 delete[] pngData;
             }
