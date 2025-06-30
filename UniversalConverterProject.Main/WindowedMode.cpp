@@ -282,6 +282,7 @@ struct GameOptionsAdditionalData {
     CXgCheckBox *chkDragWithMouse;
     CXgComboBox *cbScreenshotKey;
     CXgComboBox *cbScreenshotFormat;
+    CXgComboBox *cbScreenshotName;
     CXgCheckBox *chkScreenshotOverlay;
 };
 
@@ -302,6 +303,7 @@ CXgCheckBox *METHOD OnSetupGameOptionsUI(CXgFMPanel *screen, DUMMY_ARG, char con
     data->chkDragWithMouse = screen->GetCheckBox("ChkDragWithMouse");
     data->cbScreenshotKey = screen->GetComboBox("CbScreenshotKey");
     data->cbScreenshotFormat = screen->GetComboBox("CbScreenshotFormat");
+    data->cbScreenshotName = screen->GetComboBox("CbScreenshotName");
     data->chkScreenshotOverlay = screen->GetCheckBox("ChkScreenshotOverlay");
     data->cbWindowPosition->AddItem(GetTranslation("IDS_OPTIONS_WINDOWPOS_DEFAULT"), WINDOWED_MODE_DEFAULT);
     data->cbWindowPosition->AddItem(GetTranslation("IDS_OPTIONS_WINDOWPOS_CENTER"), WINDOWED_MODE_CENTER);
@@ -519,6 +521,11 @@ CXgCheckBox *METHOD OnSetupGameOptionsUI(CXgFMPanel *screen, DUMMY_ARG, char con
     data->cbScreenshotFormat->AddItem(L"JPG", D3DXIFF_JPG);
     data->cbScreenshotFormat->AddItem(L"PNG", D3DXIFF_PNG);
     data->cbScreenshotFormat->SetCurrentValue(Settings::GetInstance().ScreenshotFormat);
+    data->cbScreenshotName->AddItem(GetTranslation("IDS_SCREENSHOTNAME_0"), SCREENSHOTNAME_TIME);
+    data->cbScreenshotName->AddItem(GetTranslation("IDS_SCREENSHOTNAME_1"), SCREENSHOTNAME_NUMBER);
+    data->cbScreenshotName->AddItem(GetTranslation("IDS_SCREENSHOTNAME_2"), SCREENSHOTNAME_TITLE_AND_TIME);
+    data->cbScreenshotName->AddItem(GetTranslation("IDS_SCREENSHOTNAME_3"), SCREENSHOTNAME_TITLE_AND_NUMBER);
+    data->cbScreenshotName->SetCurrentValue(Settings::GetInstance().ScreenshotName);
     data->chkScreenshotOverlay->SetIsChecked(Settings::GetInstance().DisplayScreenshotOverlay);
     return cbRandomLoading;
 }
@@ -611,6 +618,10 @@ void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, GuiMes
     }
     if (msg->node == data->cbScreenshotFormat->GetGuiNode()) {
         Settings::GetInstance().ScreenshotFormat = data->cbScreenshotFormat->GetCurrentValue(D3DXIFF_JPG);
+        return;
+    }
+    if (msg->node == data->cbScreenshotName->GetGuiNode()) {
+        Settings::GetInstance().ScreenshotName = data->cbScreenshotName->GetCurrentValue(SCREENSHOTNAME_TIME);
         return;
     }
     CallMethod<0x500B20>(screen, msg, unk1, unk2);

@@ -5,7 +5,9 @@
 #include "GameInterfaces.h"
 #include "UcpSettings.h"
 #include "Utils.h"
+#include "shared.h"
 #include <d3dx9.h>
+#include <regex>
 
 using namespace plugin;
 
@@ -91,10 +93,48 @@ HRESULT __stdcall Screenshot_SaveSurfaceToFile(LPCWSTR pDestFile, D3DXIMAGE_FILE
     return D3DXSaveSurfaceToFileW(pDestFile, (D3DXIMAGE_FILEFORMAT)Settings::GetInstance().ScreenshotFormat, pSrcSurface, pSrcPalette, pSrcRect);
 }
 
-void Screenshot_FormatFileName(WideChar *dst, UInt len, WideChar const *format, UShort year, UShort month, UShort day,
+UInt GetNextScreenshotNumber(String const &prefix = String()) {
+    path documentsPath = GetDocumentsPath();
+    if (!documentsPath.empty()) {
+        path screenshotsPath = documentsPath / "Data" / "ScreenShots";
+        if (exists(screenshotsPath) && is_directory(screenshotsPath)) {
+            wregex pattern(L"^" + prefix + L"(0\\d{6})\\.(bmp|jpg|png)$", std::regex::icase);
+            UInt maxNumber = 0;
+            for (const auto &entry : directory_iterator(screenshotsPath)) {
+                if (entry.is_regular_file()) {
+                    String filename = entry.path().filename().wstring();
+                    wsmatch match;
+                    if (regex_match(filename, match, pattern)) {
+                        if (match.size() >= 2) {
+                            try {
+                                UInt number = std::stoul(match[1].str());
+                                if (number > maxNumber)
+                                    maxNumber = number;
+                            }
+                            catch (...) {}
+                        }
+                    }
+                }
+            }
+            if (maxNumber >= 999999)
+                return 999999;
+            return maxNumber + 1;
+        }
+    }
+    return 1;
+}
+
+void Screenshot_FormatFileName(WideChar *dst, UInt len, WideChar const *, UShort year, UShort month, UShort day,
     UShort hour, UShort minute, UShort second)
 {
-    swprintf_s(dst, len, L"%04d_%02d_%02d %02d_%02d_%02d", year, month, day, hour, minute, second);
+    if (Settings::GetInstance().ScreenshotName == SCREENSHOTNAME_NUMBER)
+        swprintf_s(dst, len, L"%07u", GetNextScreenshotNumber());
+    else if (Settings::GetInstance().ScreenshotName == SCREENSHOTNAME_TITLE_AND_NUMBER)
+        swprintf_s(dst, len, L"FM%s_%07u", GetPatchName().c_str(), GetNextScreenshotNumber(L"FM" + GetPatchName() + L"_"));
+    else if (Settings::GetInstance().ScreenshotName == SCREENSHOTNAME_TITLE_AND_TIME)
+        swprintf_s(dst, len, L"FM%s %04d_%02d_%02d %02d_%02d_%02d", GetPatchName().c_str(), year, month, day, hour, minute, second);
+    else
+        swprintf_s(dst, len, L"%04d_%02d_%02d %02d_%02d_%02d", year, month, day, hour, minute, second);
     if (Settings::GetInstance().ScreenshotFormat == D3DXIFF_BMP)
         wcscat(dst, L".bmp");
     else if (Settings::GetInstance().ScreenshotFormat == D3DXIFF_JPG)

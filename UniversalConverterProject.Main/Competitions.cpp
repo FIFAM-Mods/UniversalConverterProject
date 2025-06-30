@@ -3553,6 +3553,7 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
     };
     SetChampion(FifamCompRegion::SouthAmerica, FifamCompType::EuroSuperCup, 0x0039002F); // UPDATE Club Independiente del Valle
     SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::EuroSuperCup, 0x0053000B); // UPDATE Club Tigres U.A.N.L.
+    SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::ConferenceLeague, 0x005C1006); // UPDATE SV Robinhood
     SetChampion(FifamCompRegion::Africa, FifamCompType::EuroSuperCup, 0x00610001); // UPDATE USM Algier
     SetChampion(FifamCompRegion::Switzerland, FifamCompType::LeagueCup, 0x002F0013); // UPDATE Vaduz
     if (GetStartingYear() == 2024 && GetStartingYear() == GetCurrentYear()) { // UPDATE
@@ -5839,12 +5840,7 @@ public:
 
 static_assert(sizeof(CGameEvent) == 0x20, "Failed");
 
-template<Bool WriteToLog>
 UInt METHOD OnPoolLaunchRegisterNTNomination(CDBCompetition *comp) {
-    if (WriteToLog) {
-        ForcedLogWrite(L"nt_events.txt", Utils::Format(L"%s. Ignored event 1283 registration (competition %s)",
-            GetCurrentDate().ToStr(), FifamCompType::MakeFromInt(comp->GetCompetitionType()).ToStr()));
-    }
     return 0;
 }
 
@@ -5855,11 +5851,8 @@ void METHOD OnCountryProcessEvent(CDBCountry *country, DUMMY_ARG, CGameEvent *ev
         && event->date.GetYear() % 2)
     {
         UChar compType = (event->param1 >> 16) & 0xFF;
-        if (compType == COMP_EURO_CUP || compType == COMP_WORLD_CUP) {
-            ForcedLogWrite(L"nt_events.txt", Utils::Format(L"%s. Ignored event 1283 processing for %s (competition %s)",
-                event->date.ToStr(), CountryName(event->entityId), CCompID::Make(event->param1).ToStr()));
+        if (compType == COMP_EURO_CUP || compType == COMP_WORLD_CUP)
             return;
-        }
     }
     CallMethod<0xFF4850>(country, event); // CDBCountry::HandleEvent
 }
@@ -6742,24 +6735,23 @@ void PatchCompetitions(FM::Version v) {
         // prioritize entries from historic files over entries from the database
         patch::RedirectCall(0x108F516, OnReadCupHistoricFile);
 
-        patch::RedirectCall(0x0061B307, OnPlayerDeparture<0x0061B307>);
-        patch::RedirectCall(0x0061B3C6, OnPlayerDeparture<0x0061B3C6>);
-        patch::RedirectCall(0x00EE3BE9, OnPlayerDeparture<0x00EE3BE9>);
-        patch::RedirectCall(0x00EF020B, OnPlayerDeparture<0x00EF020B>);
-        patch::RedirectCall(0x00F38144, OnPlayerDeparture<0x00F38144>);
-        patch::RedirectCall(0x00F3822C, OnPlayerDeparture<0x00F3822C>);
-        patch::RedirectCall(0x00F3837C, OnPlayerDeparture<0x00F3837C>);
-        patch::RedirectCall(0x00FEFAFF, OnPlayerDeparture<0x00FEFAFF>);
-        patch::RedirectCall(0x00FF00E6, OnPlayerDeparture<0x00FF00E6>);
-        patch::RedirectCall(0x00FF4A2C, OnPlayerDeparture<0x00FF4A2C>);
-        patch::RedirectCall(0x0108AE34, OnPlayerDeparture<0x0108AE34>);
-        patch::RedirectCall(0x0135F340, OnPlayerDeparture<0x0135F340>);
-        patch::RedirectCall(0x01500779, OnPlayerDeparture<0x01500779>);
+        //patch::RedirectCall(0x0061B307, OnPlayerDeparture<0x0061B307>);
+        //patch::RedirectCall(0x0061B3C6, OnPlayerDeparture<0x0061B3C6>);
+        //patch::RedirectCall(0x00EE3BE9, OnPlayerDeparture<0x00EE3BE9>);
+        //patch::RedirectCall(0x00EF020B, OnPlayerDeparture<0x00EF020B>);
+        //patch::RedirectCall(0x00F38144, OnPlayerDeparture<0x00F38144>);
+        //patch::RedirectCall(0x00F3822C, OnPlayerDeparture<0x00F3822C>);
+        //patch::RedirectCall(0x00F3837C, OnPlayerDeparture<0x00F3837C>);
+        //patch::RedirectCall(0x00FEFAFF, OnPlayerDeparture<0x00FEFAFF>);
+        //patch::RedirectCall(0x00FF00E6, OnPlayerDeparture<0x00FF00E6>);
+        //patch::RedirectCall(0x00FF4A2C, OnPlayerDeparture<0x00FF4A2C>);
+        //patch::RedirectCall(0x0108AE34, OnPlayerDeparture<0x0108AE34>);
+        //patch::RedirectCall(0x0135F340, OnPlayerDeparture<0x0135F340>);
+        //patch::RedirectCall(0x01500779, OnPlayerDeparture<0x01500779>);
 
         // remove NT call up event registration for WC and EC in odd years
-        //patch::RedirectJump(0x10F1A6C, (void *)0x10F1B37);
-        patch::RedirectCall(0x10F1A6C, OnPoolLaunchRegisterNTNomination<true>);
-        patch::RedirectCall(0x10F1A78, OnPoolLaunchRegisterNTNomination<false>);
+        patch::RedirectCall(0x10F1A6C, OnPoolLaunchRegisterNTNomination);
+        patch::RedirectCall(0x10F1A78, OnPoolLaunchRegisterNTNomination);
 
         patch::RedirectCall(0xF5305B, OnCountryProcessEvent);
     }
