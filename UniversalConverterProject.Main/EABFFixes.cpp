@@ -2247,6 +2247,7 @@ void PatchEABFFixes(FM::Version v) {
 		//patch::RedirectCall(0x120F5CC, YouthTransfsersCollect<0x120F220, IntercontinentalLevel>);
 
         patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
+        patch::Nop(0x13492E9, 6); // enable AOG for English version
         patch::Nop(0xFD40CB, 6); // AOG - Player Back from Brazil
 
         patch::Nop(0x45BF5A, 19); // Fix FM icon
