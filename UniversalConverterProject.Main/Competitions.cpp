@@ -6754,5 +6754,8 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x10F1A78, OnPoolLaunchRegisterNTNomination);
 
         patch::RedirectCall(0xF5305B, OnCountryProcessEvent);
+        
+        // remove Free TV bonus payment for DFB Cup (Germany)
+        patch::Nop(0xFDD8B6, 13);
     }
 }
