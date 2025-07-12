@@ -493,6 +493,19 @@ enum ePlayerPositionRole {
     PLAYER_POSITION_ROLE_ATT
 };
 
+struct NameDesc {
+    UChar languageId;
+    UChar flags;
+    UShort firstName;
+    UShort lastName;
+
+    WideChar const *ToName(WideChar *buf = nullptr);
+    WideChar const *ToPlayerStringID(CJDate birthdate, Int empicsId, WideChar *buf);
+    String ToPlayerStringID(CJDate birthdate, Int empicsId);
+};
+
+static_assert(sizeof(NameDesc) == 0x6, "Failed");
+
 class CDBPlayer {
 public:
     // 0 to 20
@@ -508,6 +521,7 @@ public:
     UChar GetNationality(UChar number = 0);
     CTeamIndex GetNationalTeam();
     String GetName(bool shortForm = false);
+    NameDesc GetNameDesc();
     void SetDemandValue(EAGMoney const &money);
     void SetMinRelFee(EAGMoney const &money);
     void SetNationality(UChar index, UChar nation);
@@ -525,6 +539,7 @@ public:
     UChar GetPotential();
     UChar GetPositionRole();
     Char GetAbility(UInt ability, CDBEmployee *employee = nullptr);
+    UInt GetEmpicsID();
 };
 
 class CDBStaff {
@@ -1148,6 +1163,7 @@ public:
     const Int GetNumClubs();
     const UInt GetNumRegenPlayers();
     const UChar GetLanguage(UChar number);
+    const UChar GetFirstLanguage();
     const Bool IsPlayerInNationalTeam(UInt playerId);
 	void SetFifaRanking(Float value);
 	Float GetFifaRanking();
@@ -1355,11 +1371,14 @@ UInt SaveGameReadInt32(void *save);
 void SaveGameReadFloat(void *save, Float &out);
 Float SaveGameReadFloat(void *save);
 void SaveGameReadFloatArray(void *save, Float *values, UInt count);
+UInt SaveGameReadSize(void *save);
+void SaveGameReadData(void *save, void *data, UInt size);
 void SaveGameWriteInt8(void *save, UChar value);
 void SaveGameWriteInt32(void *save, UInt value);
 void SaveGameWriteFloat(void *save, Float value);
 void SaveGameWriteFloatArray(void *save, Float const *values, UInt count);
 void SaveGameWriteSize(void *save, UInt value);
+void SaveGameWriteData(void *save, void *data, UInt size);
 void SaveGameWriteString(void *save, FmString const &value);
 UInt SaveGameLoadGetVersion(void *save);
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID);
@@ -1580,6 +1599,7 @@ public:
     void AddColumnString(WideChar const *str, UInt color, Int unk);
     void AddTeamWidget(CTeamIndex const &teamID);
     void AddTeamName(CTeamIndex const &teamID, UInt color, Int unk);
+    void AddCompetitionName(CCompID const &compID, UInt color, Int unk);
     void AddCountryFlag(UInt countryId, Int unk);
     void AddColumnImage(WideChar const *imagePath);
     void SetRowColor(UInt rowIndex, UInt color);
@@ -1589,6 +1609,7 @@ public:
     void SetCellValue(UInt row, UInt column, Int64 value);
     void SetFont(Char const *fontName);
     CXgTextBox *GetCellTextBox(UInt rowIndex, UInt columnIndex);
+    void Sort(UInt columnIndex, Bool descendingOrder = false);
     template <typename... ArgTypes>
     static void InitColumnTypes(CFMListBox *listBox, ArgTypes... args) {
         Call<0xD19660>(listBox, args...);
@@ -1737,3 +1758,51 @@ void *opNew(UInt size);
 void opDelete(void *data);
 
 Bool GetFirstManagerRegion(UInt &outRegion);
+
+struct HistoricalPlayerEntry {
+    UShort year;
+    NameDesc name;
+    CTeamIndex teamID;
+    Float level;
+    UChar age;
+    UChar position;
+    Char _pad12[2];
+    Int field_14;
+    Int playerId;
+    Float mark;
+    UChar countryId;
+    Char _pad21[3];
+};
+
+static_assert(sizeof(HistoricalPlayerEntry) == 0x24, "Failed");
+
+class CNamePools {
+public:
+    UShort AddName(UChar languageId, UInt nameType, WideChar const *name);
+    WideChar const *GetNameByIndex(UChar nameType, UInt languageId, UShort index);
+    WideChar const *FormatName(NameDesc const &nameDesc, Bool bShortForm, WideChar *buf, UInt bufSize);
+    String FormatName(NameDesc const &nameDesc, Bool bShortForm = false);
+};
+
+CNamePools *GetNamePools();
+UChar GetCountryFirstLanguage(UChar countryId);
+
+struct GeoPrimState {
+    Int nPrimitiveType;
+    Int nShading;
+    Int bCullEnable;
+    Int nCullDirection;
+    Int nDepthTestMetod;
+    Int nAlphaBlendMode;
+    Int bAlphaTestEnable;
+    Int nAlphaCompareValue;
+    Int nAlphaTestMethod;
+    Int bTextureEnable;
+    Int nTransparencyMethod;
+    Int nFillMode;
+    Int nBlendOperation;
+    Int nSrcBlend;
+    Int nDstBlend;
+    Float fNumPatchSegments;
+    Int nZWritesEnable;
+};

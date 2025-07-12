@@ -3564,10 +3564,48 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
     return CDBGame::GetInstance();
 }
 
+// TODO: remove this in FM26
 CDBTeam *GetTeamInitTeamByID(CTeamIndex teamIndex) {
     if (teamIndex.index != 0xFFFF && (teamIndex.type & 0x8))
         return GetTeamByUniqueID(teamIndex.ToInt());
     return GetTeam(teamIndex);
+}
+
+UInt GetTeamInitTeamIDFromString(String str) {
+    Utils::Trim(str);
+    UInt teamUID = Utils::SafeConvertInt<UInt>(str, true);
+    if ((teamUID & 0xFFFF) == 0xFFFF)
+        return teamUID;
+    CDBTeam *team = GetTeamByUniqueID(teamUID);
+    if (team)
+        return team->GetTeamID().ToInt();
+    return 0;
+}
+
+UInt GetTeamInitTeamID(WideChar const *line, UInt, UInt) {
+    String l = line;
+    size_t hpos = l.find('-');
+    if (hpos != String::npos)
+        l.erase(hpos);
+    Utils::Trim(l);
+    if (!l.empty()) {
+        auto parts = Utils::Split(line, L',', true, true, false);
+        if (parts.size() >= 1) {
+            UInt teamUID = GetTeamInitTeamIDFromString(parts[0]);
+            if (teamUID != 0) {
+                SafeLog::Write(Utils::Format(L"TeamInit Team: %s (UID %s)", TeamName (CTeamIndex::make(teamUID)), parts[0]));
+                return teamUID;
+            }
+            if (parts.size() >= 2) {
+                teamUID = GetTeamInitTeamIDFromString(parts[1]);
+                if (teamUID != 0) {
+                    SafeLog::Write(Utils::Format(L"TeamInit Team (Fallback): %s (UID %s)", TeamName(CTeamIndex::make(teamUID)), parts[1]));
+                    return teamUID;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 wchar_t const *gCompBlockName = nullptr;
@@ -5991,6 +6029,8 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x10F1A56, OnScriptProcess);
 
         patch::RedirectCall(0x139EA9C, GetTeamInitTeamByID);
+        // TODO: enable for FM26
+        //patch::RedirectCall(0x139EA82, GetTeamInitTeamID);
 
         patch::RedirectCall(0x10F47CB, ChampionsLeagueUniversalSort);
 

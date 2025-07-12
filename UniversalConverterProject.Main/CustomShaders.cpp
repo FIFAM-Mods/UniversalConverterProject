@@ -1,4 +1,5 @@
 #include "CustomShaders.h"
+#include "GameInterfaces.h"
 #include "GfxCoreHook.h"
 #include "UcpSettings.h"
 #include "Utils.h"
@@ -326,6 +327,151 @@ void *METHOD OnConstructEmptyPixelShader(void *t, DUMMY_ARG, void *data) {
     return CallMethodAndReturnDynGlobal<void *>(GfxCoreAddress(0x2E57A0), t, data);
 }
 
+/*
+IDirect3DPixelShader9 *LoadCustomShader(IDirect3DDevice9 *device, Path filename, StringA const &shaderModel) {
+    if (!device)
+        return nullptr;
+    ID3DXBuffer *shaderBuffer = nullptr;
+    ID3DXBuffer *errorBuffer = nullptr;
+    ID3DXConstantTable *constantTable = nullptr;
+    IDirect3DPixelShader9 *pixelShader = nullptr;
+    HRESULT hr = D3DXCompileShaderFromFileW(filename.c_str(), nullptr, nullptr, "main", shaderModel.c_str(), 0,
+        &shaderBuffer, &errorBuffer, &constantTable);
+    if (FAILED(hr)) {
+        if (errorBuffer) {
+            ::Error(Utils::Format(L"Shader compilation error:\n%s\nin file: %s",
+                Utils::AtoW(static_cast<const char *>(errorBuffer->GetBufferPointer())), filename.filename().c_str()));
+            errorBuffer->Release();
+        }
+        else {
+            ::Error(Utils::Format(L"Failed to compile shader (HRESULT = 0x%X)\nin file: %s",
+                hr, filename.filename().c_str()));
+        }
+        return nullptr;
+    }
+    hr = device->CreatePixelShader(static_cast<const DWORD *>(shaderBuffer->GetBufferPointer()), &pixelShader);
+    shaderBuffer->Release();
+    if (constantTable)
+        constantTable->Release();
+    if (FAILED(hr)) {
+        ::Error(Utils::Format(L"Failed to create pixel shader (HRESULT = 0x%X)\nin file: %s",
+            hr, filename.stem().c_str()));
+        return nullptr;
+    }
+    return pixelShader;
+}
+
+unsigned int OrigDirect3DDestroy[1] = {};
+unsigned int OrigDirect3DCreate[3] = {};
+unsigned int OrigDirect3DReset[4] = {};
+IDirect3DPixelShader9 *LuminosityShader = nullptr;
+
+void LoadCustomShaders(IDirect3DDevice9 *device) {
+    LuminosityShader = LoadCustomShader(device, L"plugins\\shaders\\custom\\Luminosity.psh", "ps_3_0");
+}
+
+void UnloadCustomShaders() {
+    if (LuminosityShader)
+        LuminosityShader->Release();
+}
+
+template<unsigned int ID>
+static HRESULT METHOD OnDirect3DCreate(void *t, DUMMY_ARG, int arg) {
+    HRESULT result = CallMethodAndReturnDynGlobal<HRESULT>(OrigDirect3DCreate[ID], t, arg);
+    if (SUCCEEDED(result))
+        LoadCustomShaders(*(IDirect3DDevice9 **)GfxCoreAddress(0xBEF498));
+    return result;
+}
+
+template<unsigned int ID>
+static void *METHOD OnDirect3DDestroy(void *t) {
+    UnloadCustomShaders();
+    return CallMethodAndReturnDynGlobal<void *>(OrigDirect3DDestroy[ID], t);
+}
+
+template<unsigned int ID>
+static HRESULT METHOD OnDirect3DReset(void *t) {
+    UnloadCustomShaders();
+    HRESULT result = CallMethodAndReturnDynGlobal<HRESULT>(OrigDirect3DReset[ID], t);
+    LoadCustomShaders(*(IDirect3DDevice9 **)GfxCoreAddress(0xBEF498));
+    return result;
+}
+
+void SetPixelShader(IDirect3DPixelShader9 *shader) {
+    struct DummyShader {
+        char _1[0x60];
+        IDirect3DPixelShader9 *pD3DShader;
+        char _2[0x18];
+        unsigned int techinqueIndex;
+        char _3[0x10];
+
+    };
+    static_assert(sizeof(DummyShader) == 0x90, "Failed");
+    struct DummyPixelShaderState {
+        char _1[0x80];
+        DummyShader *pShader;
+        char _2[0xC];
+    };
+    static_assert(sizeof(DummyPixelShaderState) == 0x90, "Failed");
+    static DummyShader _DummyShader;
+    static DummyPixelShaderState _DummyPixelShaderState;
+    static bool DummyInitialized = false;
+    if (!DummyInitialized) {
+        _DummyPixelShaderState.pShader = &_DummyShader;
+        _DummyShader.techinqueIndex = 0;
+        DummyInitialized = true;
+    }
+    _DummyShader.pD3DShader = shader;
+    CallDynGlobal(GfxCoreAddress(0x2D79E0), &_DummyShader); // EAGL::SetPixelShader
+    (*(IDirect3DDevice9 **)GfxCoreAddress(0xBEF498))->SetPixelShader(shader);
+}
+
+struct RasterOperationDesc { Char const *name; UInt id; };
+RasterOperationDesc rasterOps[] = {
+    { "Off", 0 },
+    { "Blend", 1 },
+    { "Add", 2 },
+    { "Attenuate", 3 },
+    { "Modulate", 4 },
+    { "Substract", 5 },
+    { "Custom", 6 },
+    { "RenderDecalCreateZMask", 7 },
+    { "RenderBlendUseZMask", 8 },
+    { "Luminosity", 10 },
+    { nullptr, 0 }
+};
+
+bool bCustomPixelShader = false;
+
+void METHOD OnNewQuadRender(void *t, DUMMY_ARG, void *a) {
+    bCustomPixelShader = false;
+    UInt blending = *raw_ptr<UInt>(t, 0x22C);
+    if (blending == 10 && LuminosityShader) { // Luminosity
+        SetPixelShader(LuminosityShader);
+        bCustomPixelShader = true;
+    }
+    CallMethodDynGlobal(GfxCoreAddress(0x3CCBD0), t, a); // CNewQuad::Render
+    bCustomPixelShader = false;
+}
+
+void METHOD OnApplyGeoPrimState(GeoPrimState *state) {
+    if (state->nAlphaBlendMode == 10)
+        SetPixelShader(LuminosityShader);
+    else
+        CallDynGlobal(GfxCoreAddress(0x2D7A30)); // EAGL::ResetPixelShader
+    CallMethodDynGlobal(GfxCoreAddress(0x2D9DE0), state); // GeoPrimState::Apply
+}
+
+void OnGeoPrimStateSetBlending(GeoPrimState *state, Int blending) {
+    CallDynGlobal(GfxCoreAddress(0x3C81B0), state, blending);
+    switch (blending) {
+    case 10:
+        state->nAlphaBlendMode = blending;
+        break;
+    }
+}
+*/
+
 void InstallCustomShaders() {
     if (Settings::GetInstance().DumpShaders)
         DumpShaders();
@@ -346,4 +492,21 @@ void InstallCustomShaders() {
         if (Settings::GetInstance().ShadersReload)
             patch::RedirectCall(GfxCoreAddress(0x16C0C), OnFocusGained);
     }
+    /*
+    OrigDirect3DDestroy[0] = patch::RedirectCall(GfxCoreAddress(0x2D5E33), OnDirect3DDestroy<0>);
+    OrigDirect3DCreate[0] = patch::RedirectCall(GfxCoreAddress(0x2D600F), OnDirect3DCreate<0>);
+    OrigDirect3DCreate[1] = patch::RedirectCall(GfxCoreAddress(0x2D6240), OnDirect3DCreate<1>);
+    OrigDirect3DCreate[2] = patch::RedirectCall(GfxCoreAddress(0x2D6371), OnDirect3DCreate<2>);
+    OrigDirect3DReset[0] = patch::RedirectCall(GfxCoreAddress(0x2D6006), OnDirect3DReset<0>);
+    OrigDirect3DReset[1] = patch::RedirectCall(GfxCoreAddress(0x2D6237), OnDirect3DReset<1>);
+    OrigDirect3DReset[2] = patch::RedirectCall(GfxCoreAddress(0x2D6369), OnDirect3DReset<2>);
+    OrigDirect3DReset[3] = patch::RedirectCall(GfxCoreAddress(0x2D66F5), OnDirect3DReset<3>);
+
+    patch::SetPointer(0x1488637 + 3, rasterOps);
+    patch::SetPointer(0x1489330 + 1, rasterOps);
+    patch::Nop(GfxCoreAddress(0x2DE406), 5);
+    patch::RedirectCall(GfxCoreAddress(0x3C8481), OnGeoPrimStateSetBlending);
+    //patch::SetPointer(GfxCoreAddress(0x550FB0), OnNewQuadRender);
+    patch::RedirectCall(GfxCoreAddress(0x2DE40E), OnApplyGeoPrimState);
+    */
 }

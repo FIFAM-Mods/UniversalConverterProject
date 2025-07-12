@@ -67,6 +67,7 @@
 #include "AbilityColors.h"
 #include "Languages.h"
 #include "NewspaperEuroStats.h"
+#include "EuropeanGoldenShoe.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -103,7 +104,7 @@ public:
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
-            const UInt SaveGameVersion = 46;
+            const UInt SaveGameVersion = 47;
             patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
             patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
 
@@ -189,6 +190,7 @@ public:
             PatchAbilityColors(v);
             PatchLanguages(v);
             PatchNewspaperEuroStats(v);
+            PatchEuropeanGoldenShoe(v);
 
 #ifdef BETA
             DoBetaPatches(v);
@@ -199,6 +201,7 @@ public:
     ~UniversalConverterProject() {
         if (v.id() == ID_FM_13_1030_RLD) {
             UnpatchEABFFixes(v);
+            ClearShadersDataStorage();
         }
     }
 };

@@ -14,6 +14,7 @@
 #include "Random.h"
 #include "ExtendedTeam.h"
 #include "AssetLoader.h"
+#include "FifamLanguage.h"
 
 using namespace plugin;
 
@@ -1691,6 +1692,18 @@ void Sprintf3DMatchParameterAscii(FmString *str, WideChar const *format, Char co
     Call<0x1497B06>(str, format, Utils::AtoW(value).c_str());
 }
 
+UShort METHOD FifaWorldPlayers_AddName(CNamePools *names, DUMMY_ARG, UChar languageId, UInt nameType, WideChar const *name) {
+    return names->AddName(GetCountryFirstLanguage(languageId), nameType, name);
+}
+
+NameDesc *METHOD FifaWorldPlayers_ConstructNameDessc1(NameDesc *desc, DUMMY_ARG, UChar languageId, UShort nameIndex, UChar flags) {
+    return CallMethodAndReturn<NameDesc *, 0x14991AA>(desc, GetCountryFirstLanguage(languageId), nameIndex, flags);
+}
+
+NameDesc *METHOD FifaWorldPlayers_ConstructNameDessc2(NameDesc *desc, DUMMY_ARG, UChar languageId, UShort firstNameIndex, UShort lastNameIndex, Bool bMale) {
+    return CallMethodAndReturn<NameDesc *, 0x14991DD>(desc, GetCountryFirstLanguage(languageId), firstNameIndex, lastNameIndex, bMale);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2304,6 +2317,13 @@ void PatchEABFFixes(FM::Version v) {
         patch::SetPointer(0x706382 + 1, ShowUniqueIDFormat); // stats screen 8
         patch::SetPointer(0x75F98E + 1, ShowUniqueIDFormat); // stats screen 9
         patch::SetPointer(0x75FC1F + 1, ShowUniqueIDFormat); // stats screen 10
+
+        // fix incorrect language ID when FifaWorldPlayers.txt is read (country ID is used instead of language ID)
+        patch::RedirectCall(0xF67419, FifaWorldPlayers_AddName);
+        patch::RedirectCall(0xF67450, FifaWorldPlayers_AddName);
+        patch::RedirectCall(0xF6746B, FifaWorldPlayers_AddName);
+        patch::RedirectCall(0xF67430, FifaWorldPlayers_ConstructNameDessc1);
+        patch::RedirectCall(0xF67483, FifaWorldPlayers_ConstructNameDessc2);
     }
 }
 

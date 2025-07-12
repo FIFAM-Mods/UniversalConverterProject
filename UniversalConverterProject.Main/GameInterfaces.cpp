@@ -5,6 +5,7 @@
 #include "shared.h"
 #endif
 #include "FifamCompRegion.h"
+#include "FifamLanguage.h"
 #include "FifamBeg.h"
 
 using namespace plugin;
@@ -1552,6 +1553,10 @@ const UChar CDBCountry::GetLanguage(UChar number) {
     return plugin::CallMethodAndReturn<UInt, 0xFD71B0>(this, number);
 }
 
+const UChar CDBCountry::GetFirstLanguage() {
+    return plugin::CallMethodAndReturn<UInt, 0xFD71A0>(this);
+}
+
 const Bool CDBCountry::IsPlayerInNationalTeam(UInt playerId) {
     return plugin::CallMethodAndReturn<Bool, 0xFD7CD0>(this, playerId);
 }
@@ -1691,6 +1696,10 @@ Char CDBPlayer::GetAbility(UInt ability, CDBEmployee *employee) {
     return CallMethodAndReturn<UChar, 0xFA57D0>(this, ability, employee);
 }
 
+UInt CDBPlayer::GetEmpicsID() {
+    return CallMethodAndReturn<UInt, 0xF98600>(this);
+}
+
 UChar CDBPlayer::GetNationality(UChar number) {
     return CallMethodAndReturn<UChar, 0xF9AF10>(this, number);
 }
@@ -1705,6 +1714,12 @@ String CDBPlayer::GetName(bool shortForm) {
     WideChar playerName[256];
     CallMethod<0x13255C0>(0, this, playerName, shortForm);
     return playerName;
+}
+
+NameDesc CDBPlayer::GetNameDesc() {
+    NameDesc desc;
+    CallMethod<0xFA25E0>(this, &desc);
+    return desc;
 }
 
 FmVec<CDBSponsorContractAdBoards> &CTeamSponsor::GetAdBoardSponsors() {
@@ -1954,6 +1969,14 @@ void SaveGameReadFloatArray(void *save, Float *values, UInt count) {
     CallMethod<0x1080630>(save, values, count);
 }
 
+UInt SaveGameReadSize(void *save) {
+    return CallMethodAndReturn<UInt, 0x1080780>(save);
+}
+
+void SaveGameReadData(void *save, void *data, UInt size) {
+    CallMethod<0x1080690>(save, data, size);
+}
+
 void SaveGameWriteInt8(void *save, UChar value) {
     CallMethod<0x107F400>(save, value);
 }
@@ -1972,6 +1995,10 @@ void SaveGameWriteFloatArray(void *save, Float const *values, UInt count) {
 
 void SaveGameWriteSize(void *save, UInt value) {
     CallMethod<0x107F670>(save, value);
+}
+
+void SaveGameWriteData(void *save, void *data, UInt size) {
+    CallMethod<0x107F610>(save, data, size);
 }
 
 void SaveGameWriteString(void *save, FmString const &value) {
@@ -2370,6 +2397,10 @@ void CFMListBox::AddTeamName(CTeamIndex const &teamID, UInt color, Int unk) {
     CallMethod<0xD1F060>(this, &teamID, color, unk);
 }
 
+void CFMListBox::AddCompetitionName(CCompID const &compID, UInt color, Int unk) {
+    CallMethod<0xD1D8D0>(this, &compID, color, unk);
+}
+
 void CFMListBox::AddCountryFlag(UInt countryId, Int unk) {
     CallMethod<0xD1E7F0>(this, countryId, unk);
 }
@@ -2404,6 +2435,10 @@ void CFMListBox::SetFont(Char const *fontName) {
 
 CXgTextBox *CFMListBox::GetCellTextBox(UInt rowIndex, UInt columnIndex) {
     return CallMethodAndReturn<CXgTextBox *, 0xD19DB0>(this, rowIndex, columnIndex);
+}
+
+void CFMListBox::Sort(UInt columnIndex, Bool descendingOrder) {
+    CallMethod<0xD18510>(this, columnIndex, descendingOrder);
 }
 
 EAGMoney::EAGMoney() {
@@ -2542,6 +2577,15 @@ Bool GetFirstManagerRegion(UInt &outRegion) {
         }
     }
     return false;
+}
+
+CNamePools *GetNamePools() {
+    return CallAndReturn<CNamePools *, 0x1499D1D>();
+}
+
+UChar GetCountryFirstLanguage(UChar countryId) {
+    CDBCountry *country = GetCountry(countryId);
+    return country ? country->GetFirstLanguage() : FifamLanguage::English;
 }
 
 CCompID CDBRoot::GetFirstContinentalCompetition() {
@@ -2732,4 +2776,36 @@ PixelFormat::PixelFormat(UInt depth, UInt rMask, UInt gMask, UInt bMask, UInt aM
 
 void PixelFormat::Convert(UChar* dst, UInt dstSize, PixelFormat *srcFormat, UChar *src, UInt srcSize, UInt mask) {
     CallMethodDynGlobal(GfxCoreAddress(0x3D93B0), this, dst, dstSize, srcFormat, src, srcSize, mask);
+}
+
+UShort CNamePools::AddName(UChar languageId, UInt nameType, WideChar const *name) {
+    return CallMethodAndReturn<UShort, 0x1499DDA>(this, languageId, nameType, name);
+}
+
+WideChar const *CNamePools::GetNameByIndex(UChar nameType, UInt languageId, UShort index) {
+    return CallMethodAndReturn<WideChar const *, 0x1499EC3>(this, languageId, nameType, index);
+}
+
+WideChar const *CNamePools::FormatName(NameDesc const &nameDesc, Bool bShortForm, WideChar *buf, UInt bufSize) {
+    return CallMethodAndReturn<WideChar const *, 0x149A35E>(this, &nameDesc, bShortForm, buf, bufSize);
+}
+
+String CNamePools::FormatName(NameDesc const &nameDesc, Bool bShortForm) {
+    WideChar buf[1024];
+    FormatName(nameDesc, bShortForm, buf, std::size(buf));
+    return buf;
+}
+
+WideChar const *NameDesc::ToName(WideChar *buf) {
+    return CallAndReturn<WideChar const *, 0x149A616>(this, buf);
+}
+
+WideChar const *NameDesc::ToPlayerStringID(CJDate birthdate, Int empicsId, WideChar *buf) {
+    return CallAndReturn<WideChar const *, 0x149A918>(this, birthdate, empicsId, buf);
+}
+
+String NameDesc::ToPlayerStringID(CJDate birthdate, Int empicsId) {
+    WideChar buf[256];
+    ToPlayerStringID(birthdate, empicsId, buf);
+    return buf;
 }

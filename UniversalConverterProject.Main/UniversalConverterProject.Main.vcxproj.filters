@@ -92,6 +92,7 @@
     <ClCompile Include="AbilityColors.cpp" />
     <ClCompile Include="Languages.cpp" />
     <ClCompile Include="NewspaperEuroStats.cpp" />
+    <ClCompile Include="EuropeanGoldenShoe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -179,6 +180,7 @@
     <ClInclude Include="AbilityColors.h" />
     <ClInclude Include="Languages.h" />
     <ClInclude Include="NewspaperEuroStats.h" />
+    <ClInclude Include="EuropeanGoldenShoe.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">
