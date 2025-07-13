@@ -2,10 +2,10 @@
 #include "GameInterfaces.h"
 #include "Translation.h"
 #include "Utils.h"
+#include "shared.h"
 
 using namespace plugin;
 
-const UInt NUM_LANGUAGES = 105 + 1;
 UInt NewSortedLanguagesIDs[NUM_LANGUAGES];
 
 void __declspec(naked) CareerManagerLanguages_1() {

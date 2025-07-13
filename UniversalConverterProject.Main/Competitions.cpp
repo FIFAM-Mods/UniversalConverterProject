@@ -3564,13 +3564,6 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
     return CDBGame::GetInstance();
 }
 
-// TODO: remove this in FM26
-CDBTeam *GetTeamInitTeamByID(CTeamIndex teamIndex) {
-    if (teamIndex.index != 0xFFFF && (teamIndex.type & 0x8))
-        return GetTeamByUniqueID(teamIndex.ToInt());
-    return GetTeam(teamIndex);
-}
-
 UInt GetTeamInitTeamIDFromString(String str) {
     Utils::Trim(str);
     UInt teamUID = Utils::SafeConvertInt<UInt>(str, true);
@@ -6028,9 +6021,7 @@ void PatchCompetitions(FM::Version v) {
         patch::RedirectCall(0x106B9CE, OnScriptProcess);
         patch::RedirectCall(0x10F1A56, OnScriptProcess);
 
-        patch::RedirectCall(0x139EA9C, GetTeamInitTeamByID);
-        // TODO: enable for FM26
-        //patch::RedirectCall(0x139EA82, GetTeamInitTeamID);
+        patch::RedirectCall(0x139EA82, GetTeamInitTeamID);
 
         patch::RedirectCall(0x10F47CB, ChampionsLeagueUniversalSort);
 

@@ -18,6 +18,8 @@ path GetDocumentsPath();
 void SaveTestFile();
 String GetIniOption(String const &group, String const &key, String const &defaultValue, Path const &filePath);
 
+const UInt NUM_LANGUAGES = 105 + 1;
+
 class SafeLog {
 public:
     static void Clear();
