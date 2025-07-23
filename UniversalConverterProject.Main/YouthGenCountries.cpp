@@ -418,7 +418,7 @@ void METHOD ProcessNTSwitch(void *) {
                 && player->GetNationality(1) != player->GetNationality(0) && player->GetAge() >= 19 && player->GetAge() <= 34
                 && !player->IsInNationalTeam() && !player->IsInU21NationalTeam()
                 && !GetCountry(player->GetNationality(0))->IsPlayerInNationalTeam(player->GetID()) && !player->IsRetiredFromNationalTeam()
-                && !player->IsEndOfCareer() && player->GetNumPlannedYearsForCareer() > 1 && !player->GetStats()->GetNumInternationalCaps()
+                && !player->IsEndOfCareer() && player->GetNumPlannedYearsForCareer() > 1 && !player->GetStatsConst()->GetNumInternationalCaps()
                 )
             {
                 CDBTeam *currentNT = GetTeam(CTeamIndex::make(player->GetNationality(0), 0, 0xFFFF));

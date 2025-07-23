@@ -1124,99 +1124,6 @@ WideChar * METHOD FixAssessmentFormatNumber(void *locale, DUMMY_ARG, Double valu
 	return out;
 }
 
-template<typename T>
-class FmVec {
-public:
-    T *data;
-private:
-    UInt internalSize;
-public:
-    UInt capacity;
-    T *begin;
-    T *end;
-    T *end_buf;
-
-    UInt size() {
-        return (UInt)(end - begin);
-    }
-
-    Bool empty() {
-        return !begin || !end || end <= begin;
-    }
-
-    T *operator[](UInt index) {
-        return &begin[index];
-    }
-};
-
-struct tPlayerName {
-    UInt fromTxt : 8;
-    UInt count : 24;
-    WideChar name[32];
-    UInt length;
-    UInt refCount;
-};
-
-struct tPlayerNames {
-    char field_0;
-    char _pad1[3];
-    FmVec<tPlayerName> vec;
-    bool sorted;
-    char _pad1D[3];
-    unsigned int numNamesFromTxt;
-};
-
-static_assert(sizeof(tPlayerNames) == 0x24, "Failed");
-static_assert(sizeof(tPlayerName) == 0x4C, "Failed");
-
-void DumpPlayerNamePools(void *p, Path const &filename) {
-    TextFileTable file;
-    file.AddRow("pool", "language", "name", "probability", "percentageInGame", "count", "percentageInDB", "fromTXT");
-    Char const *poolName[] = { "femalefirstname", "firstname", "pseudonym", "nickname", "lastname" };
-    for (UInt poolType = 0; poolType < 5; poolType++) {
-        for (UInt languageId = 0; languageId < NUM_LANGUAGES; languageId++) {
-            auto playerNames = CallMethodAndReturn<tPlayerNames *, 0x517C80>(p, languageId, poolType);
-            UInt total = 0;
-            UInt totalDB = 0;
-            for (UInt i = 0; i < playerNames->vec.size(); i++) {
-                total += playerNames->vec[i]->refCount;
-                totalDB += playerNames->vec[i]->count;
-            }
-            if (total == 0)
-                total = 1;
-            if (totalDB == 0)
-                totalDB = 1;
-            for (UInt i = 0; i < playerNames->vec.size(); i++) {
-                file.AddRow(poolName[poolType], FifamLanguage::MakeFromInt(languageId).ToStr(), playerNames->vec[i]->name,
-                    playerNames->vec[i]->refCount,
-                    Utils::Format(L"%.2f", (Float)playerNames->vec[i]->refCount / (Float)total * 100.0f),
-                    playerNames->vec[i]->count,
-                    Utils::Format(L"%.2f", (Float)playerNames->vec[i]->count / (Float)totalDB * 100.0f),
-                    playerNames->vec[i]->fromTxt);
-            }
-        }
-    }
-    file.WriteUnicodeText(filename);
-}
-
-void METHOD DumpPlayerNamePools1_Exe(void *p) {
-    for (UInt poolType = 0; poolType < 5; poolType++) {
-        for (UInt languageId = 0; languageId < NUM_LANGUAGES; languageId++) {
-            auto playerNames = CallMethodAndReturn<tPlayerNames *, 0x517C80>(p, languageId, poolType);
-            for (UInt i = 0; i < playerNames->vec.size(); i++) {
-                playerNames->vec[i]->count = playerNames->vec[i]->refCount;
-                playerNames->vec[i]->fromTxt = i < playerNames->numNamesFromTxt;
-            }
-        }
-    }
-    CallMethod<0x518410>(p);
-}
-
-void METHOD DumpPlayerNamePools2_Exe(void *p) {
-    CallMethod<0x51A7B0>(p);
-    DumpPlayerNamePools(p, L"pool_names.txt");
-}
-
 void PatchEditor(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         GetSponsorNames() = {
@@ -1782,9 +1689,6 @@ void PatchEditor(FM::Version v) {
         // use country language instead of player language to define the pool
         //patch::Nop(0x5218ED, 4);
         //patch::Nop(0x5218ED, 4);
-
-        patch::RedirectCall(0x4D9777, DumpPlayerNamePools1_Exe);
-        patch::RedirectCall(0x4D9781, DumpPlayerNamePools2_Exe);
 
         if (Settings::GetInstance().DisplayFoomID) {
             patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);

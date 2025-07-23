@@ -70,6 +70,18 @@ String CJDate::ToStr() {
 	return Utils::Format(L"%02d.%02d.%04d", GetDays(), GetMonth(), GetYear());
 }
 
+Bool CJDate::IsNull() {
+    return value == 0;
+}
+
+Bool CJDate::operator>(const CJDate &other) const {
+    return value > other.value;
+}
+
+Bool CJDate::operator<(const CJDate &other) const {
+    return value < other.value;
+}
+
 CDBGame *CDBGame::GetInstance() {
     return plugin::CallAndReturn<CDBGame *, 0xF61410>();
 }
@@ -1680,8 +1692,12 @@ UChar CDBPlayer::GetNumPlannedYearsForCareer() {
     return CallMethodAndReturn<UChar, 0xF9C2C0>(this);
 }
 
+CPlayerStats const *CDBPlayer::GetStatsConst() const {
+    return CallMethodAndReturn<CPlayerStats const *, 0xF9CE50>(this);
+}
+
 CPlayerStats *CDBPlayer::GetStats() {
-    return CallMethodAndReturn<CPlayerStats *, 0xF9CE50>(this);
+    return CallMethodAndReturn<CPlayerStats *, 0xF9CDD0>(this);
 }
 
 UChar CDBPlayer::GetPotential() {
@@ -1698,6 +1714,12 @@ Char CDBPlayer::GetAbility(UInt ability, CDBEmployee *employee) {
 
 UInt CDBPlayer::GetEmpicsID() {
     return CallMethodAndReturn<UInt, 0xF98600>(this);
+}
+
+CJDate CDBPlayer::GetBirthdate() {
+    CJDate result;
+    CallMethod<0xF9B2E0>(this, &result);
+    return result;
 }
 
 UChar CDBPlayer::GetNationality(UChar number) {
@@ -2025,9 +2047,37 @@ UChar CParameterFiles::GetProbabilityOfBasquePlayersInYouthTeam() {
     return CallMethodAndReturn<UChar, 0x1028140>(this);
 }
 
-UChar CPlayerStats::GetNumInternationalCaps() {
+UChar CPlayerStats::GetNumInternationalCaps() const {
     return CallMethodAndReturn<UChar, 0x1005F40>(this);
 }
+
+Int CPlayerStats::GetStatsForMatches(CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches, UInt &numMatchesWithMark, UInt &numMOTMs, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks, Bool bWithFriendlies, UInt compIDMask, CJDate startDate, CDBTeam *team, Bool bWithoutQuali) const {
+    return CallMethodAndReturn<Int, 0x1008FD0>(this, &outStats, &numConsecutiveHomeMatches, &numMatchesWithMark, &numMOTMs, &compID, minMinutesForMark, bLocalizedMarks, bWithFriendlies, compIDMask, startDate, team, bWithoutQuali);
+}
+
+void CPlayerStats::SetNumPlayerOfTheMonth(UChar count) { CallMethod<0x1006090>(this, count); }
+
+void CPlayerStats::SetNumPlayerOfTheYear(UChar count) { CallMethod<0x10060B0>(this, count); }
+
+void CPlayerStats::SetNumFifaWorldPlayerAwards(UChar count) { CallMethod<0x10060F0>(this, count); }
+
+void CPlayerStats::SetNumEuropeanPlayerOfTheYear(UChar count) { CallMethod<0x1006120>(this, count); }
+
+void CPlayerStats::AddEuroCupWin() { CallMethod<0x1006930>(this); }
+
+void CPlayerStats::AddWorldCupWin() { CallMethod<0x1006950>(this); }
+
+UChar CPlayerStats::GetNumPlayerOfTheMonth() const { return CallMethodAndReturn<UChar, 0x10060A0>(this); }
+
+UInt CPlayerStats::GetNumPlayerOfTheYear() const { return CallMethodAndReturn<UInt, 0x10060E0>(this); }
+
+UInt CPlayerStats::GetNumFifaWorldPlayerAwards() const { return CallMethodAndReturn<UInt, 0x1006110>(this); }
+
+UChar CPlayerStats::GetNumEuropeanPlayerOfTheYear() const { return CallMethodAndReturn<UChar, 0x1006130>(this); }
+
+UInt CPlayerStats::GetNumECWins() const { return CallMethodAndReturn<UInt, 0x10062D0>(this); }
+
+UInt CPlayerStats::GetNumWCWins() const { return CallMethodAndReturn<UInt, 0x10062E0>(this); }
 
 NetComStorageIterator NetComStorageBegin(eNetComStorage storageType) {
     NetComStorageIterator it;
@@ -2353,6 +2403,22 @@ void CEAMailData::SetFirstTeam(CTeamIndex const &teamID) {
     CallMethod<0x1010610>(this, &teamID);
 }
 
+void CEAMailData::Format(WideChar *dst, UInt maxLen, WideChar const *format, CEAMailData const &mailData) {
+    Call<0x14F6AD2>(dst, maxLen, format, &mailData);
+}
+
+void CEAMailData::SetPlayer(Int index, Int playerId) {
+    CallMethod<0x1010640>(this, index, playerId);
+}
+
+void CEAMailData::SetTeam(Int index, CTeamIndex const &teamID) {
+    CallMethod<0x1010620>(this, index, &teamID);
+}
+
+void CEAMailData::SetTerm(WideChar const *term) {
+    CallMethod<0x100DA00>(this, term);
+}
+
 void CFMListBox::SetVisible(Bool visible) {
     CallVirtualMethod<20>(this, visible);
 }
@@ -2397,7 +2463,7 @@ void CFMListBox::AddTeamName(CTeamIndex const &teamID, UInt color, Int unk) {
     CallMethod<0xD1F060>(this, &teamID, color, unk);
 }
 
-void CFMListBox::AddCompetitionName(CCompID const &compID, UInt color, Int unk) {
+void CFMListBox::AddCompetition(CCompID const &compID, UInt color, Int unk) {
     CallMethod<0xD1D8D0>(this, &compID, color, unk);
 }
 
@@ -2588,6 +2654,26 @@ UChar GetCountryFirstLanguage(UChar countryId) {
     return country ? country->GetFirstLanguage() : FifamLanguage::English;
 }
 
+Int GetIDForObject(UChar type, Int id) {
+    return CallAndReturn<Int, 0x133E310>(type, id);
+}
+
+void *GetObjectByID(Int id) {
+    return CallAndReturn<void *, 0x156EF70>(id);
+}
+
+CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(Int playerId) {
+    return CallAndReturn<CDBMatchesGoalsLeagueList *, 0x103F7B0>(playerId);
+}
+
+CDBPlayerCareerList *GetPlayerCareerList(Int playerId) {
+    return CallAndReturn<CDBPlayerCareerList *, 0x10D6020>(playerId);
+}
+
+CDBNetwork &GetNetwork() {
+    return *(CDBNetwork *)0x3185EF0;
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);
@@ -2714,6 +2800,10 @@ CGuiNode *CXgBaseControl::GetGuiNode() {
     return CallVirtualMethodAndReturn<CGuiNode *, 23>(this);
 }
 
+void CXgBaseControl::SetTooltip(WideChar const *text) {
+    CallVirtualMethod<50>(this, text);
+}
+
 CXgTextBox *CXgFMPanel::GetTextBox(Char const *name) {
     return CallMethodAndReturn<CXgTextBox *, 0xD44240>(this, name);
 }
@@ -2736,6 +2826,46 @@ CXgCheckBox *CXgFMPanel::GetCheckBox(Char const *name) {
 
 CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
     return CallMethodAndReturn<CXgComboBox *, 0xD442C0>(this, name);
+}
+
+Int CXgFMPanel::SetPlayerPortrait(CXgVisibleControl *control, Int playerId, Bool unk) {
+    return CallMethodAndReturn<Int, 0xD4F0B0>(this, control, playerId, unk);
+}
+
+void CXgFMPanel::SetPlayerImage(CXgVisibleControl *control, Int playerId, WideChar const *filePath) {
+    CallMethod<0xD4EAD0>(this, control, playerId, filePath);
+}
+
+void CXgFMPanel::SetPlayerName(CXgVisibleControl *control, Int playerId) {
+    CallMethod<0xD51710>(this, control, playerId);
+}
+
+void CXgFMPanel::SetTeamBadge(CXgVisibleControl *control, CTeamIndex teamID) {
+    CallMethod<0xD516C0>(this, control, teamID);
+}
+
+void CXgFMPanel::SetTeamName(CXgVisibleControl *control, CTeamIndex const &teamID) {
+    CallMethod<0xD51670>(this, control, &teamID);
+}
+
+void CXgFMPanel::SetCountryFlag(CXgVisibleControl *control, UInt countryId) {
+    CallMethod<0xD4EDD0>(this, control, countryId);
+}
+
+void CXgFMPanel::SetCountryFlag(CXgVisibleControl *control, UInt countryId, UInt size) {
+    CallMethod<0xD4EBF0>(this, control, countryId, size);
+}
+
+void CXgFMPanel::SetCountryName(CXgVisibleControl *control, UInt countryId) {
+    CallMethod<0xD4EB40>(this, control, countryId);
+}
+
+void CXgFMPanel::SetCompetitionBadge(CXgVisibleControl *control, CCompID compID, UInt size) {
+    CallMethod<0xD4EEB0>(this, control, compID, size);
+}
+
+void CXgFMPanel::SetCompetitionName(CXgVisibleControl *control, CCompID compID) {
+    CallMethod<0xD52560>(this, control, compID);
 }
 
 VisibleControlAppearance *CXgVisibleControl::GetAppearance() {
@@ -2808,4 +2938,70 @@ String NameDesc::ToPlayerStringID(CJDate birthdate, Int empicsId) {
     WideChar buf[256];
     ToPlayerStringID(birthdate, empicsId, buf);
     return buf;
+}
+
+Bool NetComStorageIterator::operator==(const NetComStorageIterator &other) const {
+    return blockId == other.blockId && index == other.index;
+}
+
+Bool NetComStorageIterator::operator!=(const NetComStorageIterator &other) const {
+    return !(*this == other);
+}
+
+UShort CDBMatchesGoalsLeagueList::GetNumEntries() {
+    return CallMethodAndReturn<UShort, 0x103F340>(this);
+}
+
+UChar CDBMatchesGoalsLeagueList::GetCountryId(Int entryId) {
+    return CallMethodAndReturn<UChar, 0x103ED00>(this, entryId);
+}
+
+UShort CDBMatchesGoalsLeagueList::GetYear(Int entryId) {
+    return CallMethodAndReturn<UShort, 0x103EDE0>(this, entryId);
+}
+
+UShort CDBMatchesGoalsLeagueList::GetLeagueLevel(Int entryId, Bool firstTeam) {
+    return CallMethodAndReturn<UShort, 0x103EDB0>(this, entryId, firstTeam);
+}
+
+UChar CDBMatchesGoalsLeagueList::GetNumGoals(Int entryId, Int compType) {
+    return CallMethodAndReturn<UChar, 0x103F100>(this, entryId, compType);
+}
+
+UChar CDBMatchesGoalsLeagueList::GetNumAssists(Int entryId, Int compType) {
+    return CallMethodAndReturn<UChar, 0x103F130>(this, entryId, compType);
+}
+
+UChar CDBMatchesGoalsLeagueList::GetNumMatches(Int entryId, Int compType) {
+    return CallMethodAndReturn<UChar, 0x103EE10>(this, entryId, compType);
+}
+
+UInt CDBPlayerCareerList::GetNumEntries() {
+    return CallMethodAndReturn<UInt, 0x10D56B0>(this);
+}
+
+CTeamIndex CDBPlayerCareerList::GetTeamIndex(UInt entryId) {
+    CTeamIndex result;
+    CallMethod<0x4894E0>(this, &result, entryId);
+    return result;
+}
+
+CJDate CDBPlayerCareerList::GetStartDate(UInt entryId) {
+    CJDate result;
+    CallMethod<0x489500>(this, &result, entryId);
+    return result;
+}
+
+CJDate CDBPlayerCareerList::GetEndDate(UInt entryId) {
+    CJDate result;
+    CallMethod<0x489520>(this, &result, entryId);
+    return result;
+}
+
+CMatchStatistics::CMatchStatistics() {
+    CallMethod<0x4A33A0>(this);
+}
+
+CNetworkEvent *CDBNetwork::AddEvent(UShort eventId, Short shortId, Int intId, void *unk) {
+    return CallMethodAndReturn<CNetworkEvent *, 0x11206A0>(this, eventId, shortId, intId, unk);
 }

@@ -86,6 +86,9 @@ public:
     void AddRandomDaysCount(UChar direction);
     CJDate AddYears(Int years);
 	String ToStr();
+    Bool IsNull();
+    Bool operator>(const CJDate &other) const;
+    Bool operator<(const CJDate &other) const;
 };
 
 enum eCurrency : Int {
@@ -220,10 +223,13 @@ using FmString = CDynamicStringTemplate<WideChar>;
 template<typename T>
 class FmVec {
 public:
-    T *data;
-private:
-    UInt internalSize;
-public:
+    class Proxy {
+    public:
+        FmVec *myVec;
+    };
+
+    Proxy *proxy;
+    UInt _size;
     UInt capacity;
     T *begin;
     T *end;
@@ -240,6 +246,69 @@ public:
     T *operator[](UInt index) {
         return &begin[index];
     }
+};
+
+template<typename T>
+class FmList {
+public:
+    class Proxy {
+    public:
+        FmList *myVec;
+    };
+
+    class Node {
+    public:
+        Node *next;
+        Node *prev;
+        T value;
+    };
+
+    class Iterator {
+    public:
+        Proxy *proxy;
+        Node *node;
+
+        Iterator(Node *n, Proxy *p) : node(n), proxy(p) {}
+
+        Iterator &operator++() {
+            node = node->next;
+            return *this;
+        }
+
+        Iterator &operator--() {
+            node = node->prev;
+            return *this;
+        }
+
+        bool operator!=(const Iterator &other) const {
+            return node != other.node;
+        }
+
+        bool operator==(const Iterator &other) const {
+            return node == other.node;
+        }
+
+        T &operator*() {
+            return node->value;
+        }
+    };
+
+    size_t size() {
+        return _size;
+    }
+
+    Iterator begin() {
+        return Iterator(head->next, proxy);
+    }
+
+    Iterator end() {
+        return Iterator(head, proxy);
+    }
+
+    Proxy *proxy;
+    Int _unk[4];
+    Node *head;
+    UInt _size;
 };
 
 template<typename TKey, typename TValue>
@@ -481,9 +550,65 @@ class CDBEmployee;
 class CDBStaff;
 class CWorker;
 
+struct CCompID {
+    unsigned short index = 0;
+    unsigned char type = 0;
+    unsigned char countryId = 0;
+
+    void SetFromInt(unsigned int value);
+    unsigned int ToInt() const;
+    std::wstring ToStr() const;
+    static CCompID Make(unsigned char _country, unsigned char _type, unsigned short _index);
+    static CCompID Make(unsigned int value);
+    CCompID BaseCompID() const;
+};
+
+struct CMatchEvent {
+    UInt m_nType;
+    UChar m_nMinute;
+    UChar m_nReason;
+    Char field_6;
+    Char field_7;
+};
+
+class CMatchStatistics {
+public:
+    UInt m_nMinutesPlayed;
+    UInt m_nGoals;
+    UInt m_nAssists;
+    Float m_fMark;
+    UInt m_nForm;
+    UInt m_nYellowCards;
+    UInt m_nYelRedCards;
+    UInt m_nRedCards;
+    UChar m_bManOfTheMatch;
+    Char _pad21[3];
+    UInt m_nSubInMinute;
+    CMatchEvent events[32];
+    UChar field_128;
+    Char _pad129[3];
+
+    CMatchStatistics();
+};
+
+static_assert(sizeof(CMatchStatistics) == 0x12C, "Failed");
+
 class CPlayerStats {
 public:
-    UChar GetNumInternationalCaps();
+    UChar GetNumInternationalCaps() const;
+    Int GetStatsForMatches(CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches, UInt &numMatchesWithMark, UInt &numMOTMs, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks, Bool bWithFriendlies, UInt compIDMask, CJDate startDate, CDBTeam *team, Bool bWithoutQuali) const;
+    void SetNumPlayerOfTheMonth(UChar count);
+    void SetNumPlayerOfTheYear(UChar count);
+    void SetNumFifaWorldPlayerAwards(UChar count);
+    void SetNumEuropeanPlayerOfTheYear(UChar count);
+    void AddEuroCupWin();
+    void AddWorldCupWin();
+    UChar GetNumPlayerOfTheMonth() const;
+    UInt GetNumPlayerOfTheYear() const;
+    UInt GetNumFifaWorldPlayerAwards() const;
+    UChar GetNumEuropeanPlayerOfTheYear() const;
+    UInt GetNumECWins() const;
+    UInt GetNumWCWins() const;
 };
 
 enum ePlayerPositionRole {
@@ -535,11 +660,13 @@ public:
     Bool IsInU21NationalTeam();
     Bool IsEndOfCareer();
     UChar GetNumPlannedYearsForCareer();
+    CPlayerStats const *GetStatsConst() const;
     CPlayerStats *GetStats();
     UChar GetPotential();
     UChar GetPositionRole();
     Char GetAbility(UInt ability, CDBEmployee *employee = nullptr);
     UInt GetEmpicsID();
+    CJDate GetBirthdate();
 };
 
 class CDBStaff {
@@ -572,19 +699,6 @@ public:
     CTeamIndex GetTeamID();
     void GetTeamID(CTeamIndex &out);
     WideChar const *GetName(WideChar const *nameBuf = nullptr);
-};
-
-struct CCompID {
-    unsigned short index = 0;
-    unsigned char type = 0;
-    unsigned char countryId = 0;
-
-    void SetFromInt(unsigned int value);
-    unsigned int ToInt() const;
-    std::wstring ToStr() const;
-    static CCompID Make(unsigned char _country, unsigned char _type, unsigned short _index);
-    static CCompID Make(unsigned int value);
-    CCompID BaseCompID() const;
 };
 
 struct CScriptCommand {
@@ -889,6 +1003,10 @@ public:
     void SetArrayValue(UInt index, Int value);
     Int GetArrayValue(UInt index) const;
     void SetFirstTeam(CTeamIndex const &teamID);
+    static void Format(WideChar *dst, UInt maxLen, WideChar const *format, CEAMailData const &mailData);
+    void SetPlayer(Int index, Int playerId);
+    void SetTeam(Int index, CTeamIndex const &teamID);
+    void SetTerm(WideChar const *term);
 };
 
 class CClubFans {
@@ -1407,6 +1525,9 @@ struct NetComStorageIterator {
     Int index;
     UInt id;
     void *object;
+
+    Bool operator==(const NetComStorageIterator &other) const;
+    Bool operator!=(const NetComStorageIterator &other) const;
 };
 
 NetComStorageIterator NetComStorageBegin(eNetComStorage storageType);
@@ -1498,6 +1619,7 @@ public:
     void SetEnabled(Bool enabled);
     void SetVisible(Bool visible);
     CGuiNode *GetGuiNode();
+    void SetTooltip(WideChar const *text);
 };
 
 struct Rect {
@@ -1569,9 +1691,19 @@ public:
 enum FMListBoxColumnType {
     LBT_COUNTRY = 1,
     LBT_FLAG = 2,
+    LBT_FLAG_2 = 3,
     LBT_CLUB = 4,
+    LBT_CLUB_BADGE = 5,
+    LBT_PLAYER = 6,
+    LBT_EMPLOYEE = 7,
+    LBT_PERSON_3 = 8,
     LBT_INT = 9,
     LBT_FLOAT = 12,
+    LBT_MONEY_1 = 15,
+    LBT_MONEY_2 = 17,
+    LBT_MONEY_3 = 30,
+    LBT_COMP_LOGO = 36,
+    LBT_COMP_NAME = 37,
     LBT_IMAGE = 58,
     LBT_END = 63
 };
@@ -1594,16 +1726,16 @@ public:
     Int GetNumColumns();
     Int GetMaxRows();
     Int GetTotalRows();
-    void AddColumnInt(Int64 value, UInt color, Int unk);
-    void AddColumnFloat(Float value, UInt color, Int unk);
-    void AddColumnString(WideChar const *str, UInt color, Int unk);
+    void AddColumnInt(Int64 value, UInt color, Int unk = 0);
+    void AddColumnFloat(Float value, UInt color, Int unk = 0);
+    void AddColumnString(WideChar const *str, UInt color, Int unk = 0);
     void AddTeamWidget(CTeamIndex const &teamID);
-    void AddTeamName(CTeamIndex const &teamID, UInt color, Int unk);
-    void AddCompetitionName(CCompID const &compID, UInt color, Int unk);
-    void AddCountryFlag(UInt countryId, Int unk);
+    void AddTeamName(CTeamIndex const &teamID, UInt color, Int unk = 0);
+    void AddCompetition(CCompID const &compID, UInt color, Int unk = 0);
+    void AddCountryFlag(UInt countryId, Int unk = 0);
     void AddColumnImage(WideChar const *imagePath);
     void SetRowColor(UInt rowIndex, UInt color);
-    void NextRow(Int unk);
+    void NextRow(Int unk = 0);
     void Create(CXgFMPanel *panel, const char *name);
     Int64 GetCellValue(UInt row, UInt column);
     void SetCellValue(UInt row, UInt column, Int64 value);
@@ -1628,6 +1760,16 @@ public:
     CTrfmNode *GetTransform(Char const *name);
     CXgCheckBox *GetCheckBox(Char const *name);
     CXgComboBox *GetComboBox(Char const *name);
+    Int SetPlayerPortrait(CXgVisibleControl *control, Int playerId, Bool unk = false);
+    void SetPlayerImage(CXgVisibleControl *control, Int playerId, WideChar const *filePath);
+    void SetPlayerName(CXgVisibleControl *control, Int playerId);
+    void SetTeamBadge(CXgVisibleControl *control, CTeamIndex teamID);
+    void SetTeamName(CXgVisibleControl *control, CTeamIndex const &teamID);
+    void SetCountryFlag(CXgVisibleControl *control, UInt countryId);
+    void SetCountryFlag(CXgVisibleControl *control, UInt countryId, UInt size);
+    void SetCountryName(CXgVisibleControl *control, UInt countryId);
+    void SetCompetitionBadge(CXgVisibleControl *control, CCompID compID, UInt size);
+    void SetCompetitionName(CXgVisibleControl *control, CCompID compID);
 };
 
 class CompetitionHosts {
@@ -1767,7 +1909,7 @@ struct HistoricalPlayerEntry {
     UChar age;
     UChar position;
     Char _pad12[2];
-    Int field_14;
+    Int count;
     Int playerId;
     Float mark;
     UChar countryId;
@@ -1805,4 +1947,70 @@ struct GeoPrimState {
     Int nDstBlend;
     Float fNumPatchSegments;
     Int nZWritesEnable;
+};
+
+Int GetIDForObject(UChar type, Int id);
+void *GetObjectByID(Int id);
+
+enum MatchesGoalsCompType {
+    MG_COMP_LEAGUE,
+    MG_COMP_RESERVE,
+    MG_COMP_CUP,
+    MG_COMP_CONTINENTAL,
+    MG_COMP_INTERNATIONAL
+};
+
+class CDBMatchesGoalsLeagueList {
+public:
+    UShort GetNumEntries();
+    UChar GetCountryId(Int entryId);
+    UShort GetYear(Int entryId);
+    UShort GetLeagueLevel(Int entryId, Bool firstTeam);
+    UChar GetNumGoals(Int entryId, Int compType);
+    UChar GetNumAssists(Int entryId, Int compType);
+    UChar GetNumMatches(Int entryId, Int compType);
+};
+
+CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(Int playerId);
+
+class CDBPlayerCareerList {
+public:
+    UInt GetNumEntries();
+    CTeamIndex GetTeamIndex(UInt entryId);
+    CJDate GetStartDate(UInt entryId);
+    CJDate GetEndDate(UInt entryId);
+};
+
+CDBPlayerCareerList *GetPlayerCareerList(Int playerId);
+
+enum eNetworkEventId {
+    NETWORKEVENT_WORLD_PLAYER_GALA = 205
+};
+
+class CNetworkEvent {
+public:
+    UShort m_nShortID;
+    UShort m_nEventID;
+    UInt m_nIntID;
+    void *field_8;
+    Char m_szTextParam[64];
+    UInt m_nStatus;
+    Bool m_bActive;
+    Bool m_bAsynchronous;
+    Char _pad52[2];
+};
+
+static_assert(sizeof(CNetworkEvent) == 0x54, "Failed");
+
+class CDBNetwork {
+public:
+    CNetworkEvent *AddEvent(UShort eventId, Short shortId, Int intId, void *unk = nullptr);
+};
+
+CDBNetwork &GetNetwork();
+
+class CNetComData {
+    void *vtable;
+    UInt m_nStructSize;
+    UInt m_nId;
 };

@@ -80,6 +80,8 @@ void __declspec(naked) App_MakeScreenshot_Exe() {
 }
 
 SHORT __stdcall Screenshot_GetAsyncKeyState(int vKey) {
+    if (Settings::GetInstance().WindowedModeStartValue && GetForegroundWindow() != *(HWND *)GfxCoreAddress(0x669064))
+        return 0;
     return (GetAsyncKeyState(Settings::GetInstance().ScreenshotKey) & 0x8000) != 0;
 }
 

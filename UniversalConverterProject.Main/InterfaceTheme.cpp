@@ -20,11 +20,12 @@ StringA &GetCustomInterfaceFolderA() {
 String GetUIScreenFilenameW(String const &filename) {
     if (!GetCustomInterfaceFolderW().empty()) {
         String screenNameW = ToLower(filename);
-        if (Utils::StartsWith(screenNameW, L"screens/") || Utils::StartsWith(screenNameW, L"screens\\")) {
-            screenNameW = GetCustomInterfaceFolderW() + L"/" + filename;
-            if (FmFileExists(screenNameW))
-                return screenNameW;
-
+        bool hasForwardSlash = Utils::StartsWith(screenNameW, L"screens/");
+        bool hasBackSlash = Utils::StartsWith(screenNameW, L"screens\\");
+        if (hasForwardSlash || hasBackSlash) {
+            String fullPath = GetCustomInterfaceFolderW() + (hasBackSlash ? L'\\' : L'/') + filename;
+            if (FmFileExists(fullPath))
+                return fullPath;
         }
     }
     return filename;
@@ -33,10 +34,12 @@ String GetUIScreenFilenameW(String const &filename) {
 StringA GetUIScreenFilenameA(StringA const &filename) {
     if (!GetCustomInterfaceFolderA().empty()) {
         StringA screenNameA = ToLower(filename);
-        if (Utils::StartsWith(screenNameA, "screens/") || Utils::StartsWith(screenNameA, "screens\\")) {
-            screenNameA = GetCustomInterfaceFolderA() + "/" + filename;
-            if (FmFileExists(screenNameA))
-                return screenNameA;
+        bool hasForwardSlash = Utils::StartsWith(screenNameA, "screens/");
+        bool hasBackSlash = Utils::StartsWith(screenNameA, "screens\\");
+        if (hasForwardSlash || hasBackSlash) {
+            StringA fullPath = GetCustomInterfaceFolderA() + (hasBackSlash ? '\\' : '/') + filename;
+            if (FmFileExists(fullPath))
+                return fullPath;
         }
     }
     return filename;
