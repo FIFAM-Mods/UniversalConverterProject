@@ -2079,6 +2079,14 @@ UInt CPlayerStats::GetNumECWins() const { return CallMethodAndReturn<UInt, 0x100
 
 UInt CPlayerStats::GetNumWCWins() const { return CallMethodAndReturn<UInt, 0x10062E0>(this); }
 
+CDBPlayer *CPlayerStats::GetPlayer() const {
+    return *raw_ptr<CDBPlayer *>(this, 0);
+}
+
+Int CPlayerStats::GetPlayerId() const {
+    return CallMethodAndReturn<Int, 0x1006970>(this);
+}
+
 NetComStorageIterator NetComStorageBegin(eNetComStorage storageType) {
     NetComStorageIterator it;
     Call<0x156F100>(&it, storageType);
@@ -2980,7 +2988,11 @@ UInt CDBPlayerCareerList::GetNumEntries() {
     return CallMethodAndReturn<UInt, 0x10D56B0>(this);
 }
 
-CTeamIndex CDBPlayerCareerList::GetTeamIndex(UInt entryId) {
+CDBPlayerCareerEntry *CDBPlayerCareerList::GetEntry(UInt index) {
+    return CallMethodAndReturn<CDBPlayerCareerEntry *, 0x10D59F0>(this, index);
+}
+
+CTeamIndex CDBPlayerCareerList::GetTeamID(UInt entryId) {
     CTeamIndex result;
     CallMethod<0x4894E0>(this, &result, entryId);
     return result;
@@ -3004,4 +3016,34 @@ CMatchStatistics::CMatchStatistics() {
 
 CNetworkEvent *CDBNetwork::AddEvent(UShort eventId, Short shortId, Int intId, void *unk) {
     return CallMethodAndReturn<CNetworkEvent *, 0x11206A0>(this, eventId, shortId, intId, unk);
+}
+
+UShort CDBPlayerCareerEntry::GetMatches(Bool bFirstTeam) const {
+    return CallMethodAndReturn<UShort, 0x10D5260>(this, bFirstTeam);
+}
+
+UShort CDBPlayerCareerEntry::GetGoals(Bool bFirstTeam) const {
+    return CallMethodAndReturn<UShort, 0x10D5280>(this, bFirstTeam);
+}
+
+CTeamIndex CDBPlayerCareerEntry::GetTeamID() const {
+    CTeamIndex result;
+    CallMethod<0x10D5610>(this, &result);
+    return result;
+}
+
+CJDate CDBPlayerCareerEntry::GetStartDate() const {
+    CJDate result;
+    CallMethod<0x10D5230>(this, &result);
+    return result;
+}
+
+CJDate CDBPlayerCareerEntry::GetEndDate() const {
+    CJDate result;
+    CallMethod<0x10D5250>(this, &result);
+    return result;
+}
+
+Bool CDBPlayerCareerEntry::OnLoan() const {
+    return CallMethodAndReturn<Bool, 0x10D5430>(this);
 }

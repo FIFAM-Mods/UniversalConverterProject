@@ -1704,6 +1704,26 @@ NameDesc *METHOD FifaWorldPlayers_ConstructNameDessc2(NameDesc *desc, DUMMY_ARG,
     return CallMethodAndReturn<NameDesc *, 0x14991DD>(desc, GetCountryFirstLanguage(languageId), firstNameIndex, lastNameIndex, bMale);
 }
 
+CTeamIndex *METHOD CPlayerStats_FindFavouriteTeam(CPlayerStats *stats, DUMMY_ARG, CTeamIndex &outTeamID) {
+    outTeamID.clear();
+    auto l = GetPlayerCareerList(stats->GetPlayerId());
+    UShort maxMatches = 100;
+    for (UInt i = 0; i < l->GetNumEntries(); i++) {
+        UShort numMatches = l->GetEntry(i)->GetMatches(true);
+        if (numMatches > maxMatches) {
+            outTeamID = l->GetEntry(i)->GetTeamID();
+            maxMatches = numMatches;
+        }
+    }
+    // TODO: remove this
+    if (!outTeamID.isNull() && stats->GetPlayer()) {
+        auto p = stats->GetPlayer();
+        SafeLog::Write(Utils::Format(L"Favourite Team for new employee: %s (%s): %s (%d matches))",
+            p->GetName(), TeamName(p->GetCurrentTeam()), TeamName(outTeamID), maxMatches));
+    }
+    return &outTeamID;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2324,6 +2344,14 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xF6746B, FifaWorldPlayers_AddName);
         patch::RedirectCall(0xF67430, FifaWorldPlayers_ConstructNameDessc1);
         patch::RedirectCall(0xF67483, FifaWorldPlayers_ConstructNameDessc2);
+
+        // remove "?" from player history entries
+        patch::SetUInt(0x5D3FA2 + 1, 0);
+        patch::SetUInt(0x5DD9D4 + 1, 0);
+        patch::SetUInt(0x932184 + 1, 0);
+
+        // fix incorrect function CPlayerStats::FindFavouriteTeam
+        patch::RedirectJump(0x1007070, CPlayerStats_FindFavouriteTeam);
     }
 }
 

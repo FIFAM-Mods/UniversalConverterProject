@@ -609,6 +609,8 @@ public:
     UChar GetNumEuropeanPlayerOfTheYear() const;
     UInt GetNumECWins() const;
     UInt GetNumWCWins() const;
+    CDBPlayer *GetPlayer() const;
+    Int GetPlayerId() const;
 };
 
 enum ePlayerPositionRole {
@@ -1973,10 +1975,21 @@ public:
 
 CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(Int playerId);
 
+class CDBPlayerCareerEntry {
+public:
+    UShort GetMatches(Bool bFirstTeam) const;
+    UShort GetGoals(Bool bFirstTeam) const;
+    CTeamIndex GetTeamID() const;
+    CJDate GetStartDate() const;
+    CJDate GetEndDate() const;
+    Bool OnLoan() const;
+};
+
 class CDBPlayerCareerList {
 public:
     UInt GetNumEntries();
-    CTeamIndex GetTeamIndex(UInt entryId);
+    CDBPlayerCareerEntry *GetEntry(UInt index);
+    CTeamIndex GetTeamID(UInt entryId);
     CJDate GetStartDate(UInt entryId);
     CJDate GetEndDate(UInt entryId);
 };
