@@ -3544,7 +3544,7 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
     SetDefaultWinners(FifamCompRegion::Oceania, { FifamCompRegion::New_Zealand, FifamCompRegion::Fiji, FifamCompRegion::Papua_New_Guinea });
 
     auto SetChampion = [](unsigned char region, unsigned char type, UInt teamUID) {
-        CDBCompetition *comp = GetCompetition(region, type, 0);
+        CDBCompetition *comp = GetRoundByRoundType(region, type, ROUND_FINAL);
         if (comp) {
             CDBTeam *team = GetTeamByUniqueID(teamUID);
             if (team)
@@ -3557,7 +3557,7 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
     SetChampion(FifamCompRegion::Africa, FifamCompType::EuroSuperCup, 0x00610001); // UPDATE USM Algier
     SetChampion(FifamCompRegion::Switzerland, FifamCompType::LeagueCup, 0x002F0013); // UPDATE Vaduz
     if (GetStartingYear() == 2024 && GetStartingYear() == GetCurrentYear()) { // UPDATE
-        CDBCompetition *comp = GetCompetition(FifamCompRegion::Asia, FifamCompType::ConferenceLeague, 0);
+        CDBCompetition *comp = GetRoundByRoundType(FifamCompRegion::Asia, FifamCompType::ConferenceLeague, ROUND_FINAL);
         if (comp)
             comp->SetChampion(CTeamIndex::null());
     }
@@ -4318,7 +4318,7 @@ void METHOD GetPositionPromotionsRelegationsPlacesInfo(CDBLeague *league, DUMMY_
 }
 
 void SetupCupDraw(CCompID compId, UShort roundType, Bool unk) {
-    if (compId.countryId == FifamCompRegion::Europe && roundType != ROUND_SEMIFINAL) {
+    if (compId.countryId != FifamCompRegion::Europe || roundType != ROUND_SEMIFINAL) {
         Call<0xF4AB00>(compId, roundType, unk);
         //Error(L"SetupCupDraw: %s %d", compId.ToStr().c_str(), roundType);
     }
@@ -4607,6 +4607,7 @@ unsigned int *METHOD IsCLELQuali(CDBRound *comp, DUMMY_ARG, unsigned int *id) {
 }
 
 UChar gCupDrawCompType = 0;
+UChar gCupDrawCompRegion = 0;
 UChar gCupDrawConferenceLeagueState[5] = {};
 UInt gCupDrawConferenceLeagueRoundIDs[5] = { 10, 9, 12, 13, 14 };
 
@@ -4627,6 +4628,8 @@ void __declspec(naked) CupDraw_Clear() {
 
 void __declspec(naked) CupDraw_Compare1() {
     __asm {
+        mov     al, [esi + 0x1B]
+        mov     gCupDrawCompRegion, al
         mov     al, [esi + 0x1A]
         mov     gCupDrawCompType, al
         cmp     al, 9
@@ -4657,6 +4660,10 @@ void __declspec(naked) CupDraw_Group() {
     }
 }
 
+void LogCompetitionID(UInt id) {
+    SafeLog::Write(Utils::Format(L"CompID: %08X", id));
+}
+
 void __declspec(naked) CupDraw_Process() {
     __asm {
         cmp     esi, 5
@@ -4669,7 +4676,14 @@ void __declspec(naked) CupDraw_Process() {
         mov     edx, gCupDrawConferenceLeagueRoundIDs[esi * TYPE int]
         push    1
         push    edx
-        push    0xF9330000
+        mov     al, gCupDrawCompRegion
+        movzx   edx, al
+        shl     edx, 24
+        or      edx, 0x330000
+        push    edx
+        push    edx
+        Call LogCompetitionID
+        add     esp, 4
         call    SetupCupDraw
         add     esp, 0xC
     NEXT0:

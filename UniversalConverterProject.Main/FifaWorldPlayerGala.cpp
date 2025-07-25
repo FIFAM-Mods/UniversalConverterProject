@@ -187,7 +187,7 @@ void METHOD CalcBallonDOrCandidates(CDBGame *game, DUMMY_ARG, UChar) {
 
 void METHOD AwardBallonDOrWinner(CDBGame *game, DUMMY_ARG, UChar) {
     if (GetCurrentYear() == GetStartingYear()) {
-        WideChar const *Candidates[] = { L"Rodri22061996", L"ViniciusJunior12072000", L"BellinghamJude29062003" };
+        WideChar const *Candidates[] = { L"Rodri22061996", L"ViniciusJunior12072000", L"BellinghamJu29062003" };
         CDBPlayer *winner = nullptr;
         for (UInt i = 0; i < 3; i++) {
             CDBPlayer *player = FindPlayerByStringID(Candidates[i]);
@@ -215,6 +215,18 @@ void METHOD AwardBallonDOrWinner(CDBGame *game, DUMMY_ARG, UChar) {
 }
 
 FmVec<WorldPlayerGalaEntry> *METHOD FIFAWorldPlayerGalaGetGetNominants(CDBGame *game, DUMMY_ARG, FmVec<WorldPlayerGalaEntry> *vec) {
+    //
+
+    WideChar const *Candidates[] = { L"Rodri22061996", L"ViniciusJunior12072000", L"BellinghamJu29062003" };
+    CDBPlayer *winner = nullptr;
+    for (UInt i = 0; i < 3; i++) {
+        CDBPlayer *player = FindPlayerByStringID(Candidates[i]);
+        GetBallonDOrCandidates()[i] = player ? player->GetID() : 0;
+        if (i == 0)
+            winner = player;
+    }
+
+    //
     if (gbBallonDOrScreen) {
         const UInt NUM_NOMINANTS = 3;
         static WorldPlayerGalaEntry entries[NUM_NOMINANTS] = {};
@@ -225,7 +237,7 @@ FmVec<WorldPlayerGalaEntry> *METHOD FIFAWorldPlayerGalaGetGetNominants(CDBGame *
         dummyVec.begin = &entries[0];
         dummyVec.end = dummyVec.end_buf = &entries[NUM_NOMINANTS];
         dummyVec._size = dummyVec.capacity = NUM_NOMINANTS;
-        ValidateBallonDOrCandidates();
+        //ValidateBallonDOrCandidates();
         for (UInt i = 0; i < 3; i++)
             entries[i].m_nPlayerId = GetBallonDOrCandidates()[i];
         CallMethod<0x4F4B40>(vec, &dummyVec);

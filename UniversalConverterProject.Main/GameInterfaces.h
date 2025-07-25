@@ -593,6 +593,8 @@ public:
 
 static_assert(sizeof(CMatchStatistics) == 0x12C, "Failed");
 
+class CDBPlayer;
+
 class CPlayerStats {
 public:
     UChar GetNumInternationalCaps() const;

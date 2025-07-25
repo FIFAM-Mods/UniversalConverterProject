@@ -8,6 +8,7 @@
 #include "shared.h"
 #include <d3dx9.h>
 #include <regex>
+#include "Magick++.h"
 
 using namespace plugin;
 
@@ -92,7 +93,26 @@ WideChar const *Screenshot_WcharToMB(WideChar const *lpWideCharStr) {
 HRESULT __stdcall Screenshot_SaveSurfaceToFile(LPCWSTR pDestFile, D3DXIMAGE_FILEFORMAT DestFormat, LPDIRECT3DSURFACE9 pSrcSurface,
     const PALETTEENTRY *pSrcPalette, const RECT *pSrcRect)
 {
-    return D3DXSaveSurfaceToFileW(pDestFile, (D3DXIMAGE_FILEFORMAT)Settings::GetInstance().ScreenshotFormat, pSrcSurface, pSrcPalette, pSrcRect);
+    HRESULT result = E_FAIL;
+    String filename;
+    if (Settings::GetInstance().ScreenshotFormat == SCREENSHOT_PNG_RECONVERTED) {
+        filename = pDestFile;
+        filename = filename.substr(0, filename.size() - 4) + L".bmp";
+        result = D3DXSaveSurfaceToFileW(filename.c_str(), D3DXIFF_BMP, pSrcSurface, pSrcPalette, pSrcRect);
+    }
+    else {
+        result = D3DXSaveSurfaceToFileW(pDestFile, (D3DXIMAGE_FILEFORMAT)Settings::GetInstance().ScreenshotFormat,
+            pSrcSurface, pSrcPalette, pSrcRect);
+    }
+    if (Settings::GetInstance().ScreenshotFormat == SCREENSHOT_PNG_RECONVERTED && SUCCEEDED(result)) {
+        try {
+            Magick::Image image(ToUTF8(filename));
+            image.write(ToUTF8(pDestFile));
+            remove(filename);
+        }
+        catch (...) {}
+    }
+    return result;
 }
 
 UInt GetNextScreenshotNumber(String const &prefix = String()) {
@@ -141,7 +161,7 @@ void Screenshot_FormatFileName(WideChar *dst, UInt len, WideChar const *, UShort
         wcscat(dst, L".bmp");
     else if (Settings::GetInstance().ScreenshotFormat == D3DXIFF_JPG)
         wcscat(dst, L".jpg");
-    else if (Settings::GetInstance().ScreenshotFormat == D3DXIFF_PNG)
+    else if (Settings::GetInstance().ScreenshotFormat == D3DXIFF_PNG || Settings::GetInstance().ScreenshotFormat == SCREENSHOT_PNG_RECONVERTED)
         wcscat(dst, L".png");
 }
 

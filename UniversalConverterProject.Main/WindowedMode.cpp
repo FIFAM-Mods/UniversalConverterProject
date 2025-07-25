@@ -520,6 +520,7 @@ CXgCheckBox *METHOD OnSetupGameOptionsUI(CXgFMPanel *screen, DUMMY_ARG, char con
     data->cbScreenshotFormat->AddItem(L"BMP", D3DXIFF_BMP);
     data->cbScreenshotFormat->AddItem(L"JPG", D3DXIFF_JPG);
     data->cbScreenshotFormat->AddItem(L"PNG", D3DXIFF_PNG);
+    data->cbScreenshotFormat->AddItem(GetTranslation("IDS_PNG_RECONVERTED"), SCREENSHOT_PNG_RECONVERTED);
     data->cbScreenshotFormat->SetCurrentValue(Settings::GetInstance().ScreenshotFormat);
     data->cbScreenshotName->AddItem(GetTranslation("IDS_SCREENSHOTNAME_0"), SCREENSHOTNAME_TIME);
     data->cbScreenshotName->AddItem(GetTranslation("IDS_SCREENSHOTNAME_1"), SCREENSHOTNAME_NUMBER);
@@ -839,14 +840,6 @@ void *METHOD EntityScreenDestructor(void *screen) {
     return screen;
 }
 
-std::string utf8_encode(const std::wstring &wstr) {
-    if (wstr.empty()) return std::string();
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
-    std::string strTo(size_needed, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
-    return strTo;
-}
-
 void RemoveTextureFromCache(WideChar const *texName) {
     void *texPoolCache = *(void **)GfxCoreAddress(0xBEB484);
     if (texPoolCache) {
@@ -864,7 +857,7 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
     try {
         if (!exists(src))
             return false;
-        std::string u8Src = utf8_encode(src.c_str());
+        std::string u8Src = ToUTF8(src.c_str());
         Magick::Image image(u8Src);
         if (!image.isValid())
             return false;
@@ -881,7 +874,7 @@ Bool InstallPhoto(Path const &gamePath, Path const &dstLocalPath, Path const &sr
         if (!exists(parentDir))
             create_directories(parentDir);
         RemoveTextureFromCache(dstLocalPath.c_str());
-        std::string u8Dst = utf8_encode(dst.c_str());
+        std::string u8Dst = ToUTF8(dst.c_str());
         image.write(u8Dst);
     }
     catch(...) { // ignore any error
@@ -893,7 +886,7 @@ Bool InstallBadge(Path const &gamePath, Path const &badgesDir, String const &bad
     try {
         if (!exists(src))
             return false;
-        std::string u8Src = utf8_encode(src);
+        std::string u8Src = ToUTF8(src);
         Magick::Image image(u8Src);
         if (!image.isValid())
             return false;
@@ -916,7 +909,7 @@ Bool InstallBadge(Path const &gamePath, Path const &badgesDir, String const &bad
             Path dstLocalPath = dstBadgesDir / badgeFileName;
             RemoveTextureFromCache(dstLocalPath.c_str());
             Path dst = gamePath / dstLocalPath;
-            std::string u8Dst = utf8_encode(dst.c_str());
+            std::string u8Dst = ToUTF8(dst.c_str());
             image.write(u8Dst);
         }
     }

@@ -360,7 +360,7 @@ Pair<UInt, Vector<GoldenBootPlayerInfo>> CalcGoldenBootWinner() {
                             Set<UInt> teamIDs;
                             for (UInt e = 0; e < cl->GetNumEntries(); e++) {
                                 if (cl->GetEndDate(e).IsNull() || cl->GetEndDate(e) > seasonStartDate) {
-                                    CTeamIndex teamID = cl->GetTeamIndex(e);
+                                    CTeamIndex teamID = cl->GetTeamID(e);
                                     if (!teamID.isNull() && CDBGame::GetInstance()->IsCountryPlayable(teamID.countryId)
                                         && GetCountry(teamID.countryId)->GetContinent() == FifamContinent::Europe)
                                     {
@@ -810,11 +810,11 @@ void METHOD CreateStatsPlayerTrophiesWrapper(void *vec, DUMMY_ARG, void *data) {
     CallMethod<0x736690>(vec, &w2);
 
     mem = CallAndReturn<void *, 0x15738F3>(sizeof(StatsEuropeanGoldenShoeWrapper));
-    auto w3 = new (mem) StatsEuropeanGoldenShoeWrapper(GetTranslation("IDS_EUROPEAN_GOLDEN_BOOT"));
+    auto w3 = new (mem) StatsEuropeanGoldenShoeWrapper(GetTranslation("IDS_GOLDENBOOT"));
     CallMethod<0x736690>(vec, &w3);
 
     mem = CallAndReturn<void *, 0x15738F3>(sizeof(StatsGoldenShoeCurrentWrapper));
-    auto w4 = new (mem) StatsGoldenShoeCurrentWrapper(GetTranslation("IDS_EUROPEAN_GOLDEN_BOOT_CURRENT"));
+    auto w4 = new (mem) StatsGoldenShoeCurrentWrapper(GetTranslation("IDS_GOLDENBOOT_CURRENT"));
     CallMethod<0x736690>(vec, &w4);
 }
 
@@ -901,7 +901,7 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     ext->ImgGoldenBoot1->SetVisible(players.first <= 1);
     ext->ImgGoldenBoot2->SetVisible(players.first >= 2);
     CEAMailData formatter;
-    for (UInt i = 0; i < Utils::Min(players.first, 5u); i++) {
+    for (UInt i = 0; i < Utils::Min(players.first, 3u); i++) {
         auto const &info = players.second[i];
         CTeamIndex teamID = info.teams.empty() ? CTeamIndex::null() : info.teams[info.teams.size() - 1];
         if (i < 1)
@@ -923,14 +923,12 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
                 ext->TbFlag[i]->SetVisible(true);
             }
         }
-        if (i < 3)
-            formatter.SetTeam(i, teamID);
-        if (i < 5)
-            formatter.SetPlayer(i, info.playerId);
+        formatter.SetTeam(i, teamID);
+        formatter.SetPlayer(i, info.playerId);
     }
     WideChar winnerText[2048];
     CEAMailData::Format(winnerText, std::size(winnerText),
-        GetTranslation(Utils::Format("IDS_GOLDENBOOT_TEXT_%d", players.first > 6 ? 6 : players.first).c_str()), formatter);
+        GetTranslation(Utils::Format("IDS_GOLDENBOOT_TEXT_%d", players.first > 4 ? 4 : players.first).c_str()), formatter);
     ext->TbWinnerText->SetText(winnerText);
 
     struct WinByPlayer {

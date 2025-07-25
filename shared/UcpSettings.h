@@ -23,6 +23,8 @@ enum ScreenshotFileNameFormat {
     SCREENSHOTNAME_TITLE_AND_NUMBER
 };
 
+#define SCREENSHOT_PNG_RECONVERTED 9
+
 class Settings : public SettingsAbstract {
 public:
     SETTINGS_PARAMETER(bool,   ExtendLoansLimit,            "EXTEND_LOANS_LIMIT",             true);

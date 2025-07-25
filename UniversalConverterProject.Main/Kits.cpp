@@ -1873,17 +1873,21 @@ void CheckKitSelection(CTeamIndex const &homeTeamIndex, CTeamIndex const &awayTe
     Bool kitTypesFromFile = false;
     Bool manualKitSelection = false;
     if (bMatch) {
-        UInt *team3dIdsHome = (UInt *)0x311BA68;
-        UInt *team3dIdsAway = (UInt *)0x311BA78;
-        UChar *team3dKitIdsHome = (UChar *)0x311BA50;
-        UChar *team3dKitIdsAway = (UChar *)0x311BA54;
+        UInt *team3dIds = (UInt *)0x311BA68;
+        UChar *team3dKitIds = (UChar *)0x311BA50;
         for (UInt i = 0; i < 8; i++) {
-            if (team3dIdsHome[i] == homeTeamIndex.ToInt() && team3dIdsAway[i] == awayTeamIndex.ToInt()) {
-                resultKits[0] = team3dKitIdsHome[i];
-                resultKits[1] = team3dKitIdsAway[i];
+            if (team3dIds[i] == homeTeamIndex.ToInt()) {
+                resultKits[0] = team3dKitIds[i];
                 manualKitSelection = true;
-                break;
             }
+            if (team3dIds[i] == awayTeamIndex.ToInt()) {
+                resultKits[1] = team3dKitIds[i];
+                manualKitSelection = true;
+            }
+        }
+        if (manualKitSelection) {
+            SafeLog::Write(Utils::Format(L"Manual kit selection (3DMatch): %s (%d) vs %s (%d)",
+                TeamName(homeTeamIndex), resultKits[0], TeamName(awayTeamIndex), resultKits[1]));
         }
     }
     CDBTeam *team1 = GetTeam(homeTeamIndex);
@@ -1990,7 +1994,8 @@ void CheckKitSelection(CTeamIndex const &homeTeamIndex, CTeamIndex const &awayTe
                 resultKits[1] = kitSetsToSelectFrom[0].kitTypeId;
                 resultDistance = kitSetsToSelectFrom[0].distance;
             }
-            SafeLog::Write(Utils::Format(L"%s vs %s: kit %d (%f)", TeamName(team1), TeamName(team2), resultKits[1], resultDistance));
+            SafeLog::Write(Utils::Format(L"Auto kit selection (%s): %s (%d) vs %s (%d, %f)",
+                bMatch ? L"3DMatch" : L"Preview", TeamName(team1), resultKits[0], TeamName(team2), resultKits[1], resultDistance));
         }
     }
     if (bMatch) {

@@ -1,4 +1,4 @@
-#include "EABFFixes.h"
+п»ї#include "EABFFixes.h"
 #include "GameInterfaces.h"
 #include "shared.h"
 #include "Log.h"
@@ -1249,14 +1249,6 @@ void *METHOD Hook_EAA287_map_playerKnowledge__find(FmMap<UInt, UChar> *_map, DUM
 
     return result;
 }
-
-//void *METHOD Hook_EAA287_mapIterator_playerKnowledge__data(FmMap<UInt, UChar>::Iterator *_iterator) {
-//
-//}
-//
-//void UnhandledException_EAA287() {
-//   // MessageBoxW(NULL, L"Unhandled exception at 0xEAA287\n\nPlease make a screensot of this error\nand show to patch developers.\n\nMachen Sie einen Screenshot dieses Fehlers\nund zeigen Sie ihn den Patch-Entwicklern.\n\nПожалуйста, сделайте скриншот этого\nсообщения и покажите его разработичкам.", GetSafePatchName(), MB_ICONERROR);
-//}
 
 void METHOD OnPlayerPlanCareerEndAtGameStart(CDBPlayer *player) {
     if (player->GetAge() >= 37) {           //  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
