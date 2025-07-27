@@ -1340,7 +1340,19 @@ Bool METHOD CXPNG_Read(CXPNG_ *img, DUMMY_ARG, UChar **shapePixels, ImageDesc *d
     return true;
 }
 
+void METHOD OnSamplerSet(void *tar) {
+    CallMethodDynGlobal(GfxCoreAddress(0x2DAE10), tar);
+    auto device = *(IDirect3DDevice9 **)GfxCoreAddress(0xBEF498);
+    for (UInt i = 0; i < 8; i++) {
+        device->SetSamplerState(i, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+        device->SetSamplerState(i, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+        device->SetSamplerState(i, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+    }
+}
+
 void Install3dPatches_FM13() {
+
+    //::Warning("Here");
 
     FindAssets(ASSETS_DIR, "");
 
@@ -2093,4 +2105,6 @@ void Install3dPatches_FM13() {
     // allow compressed files smaller than 128 bytes
     patch::SetUInt(GfxCoreAddress(0x3C5B0D + 1), 8);
     patch::SetUInt(GfxCoreAddress(0x3C5B26 + 1), 8);
+
+    //patch::RedirectCall(GfxCoreAddress(0x2DE423), OnSamplerSet);
 }

@@ -4660,10 +4660,6 @@ void __declspec(naked) CupDraw_Group() {
     }
 }
 
-void LogCompetitionID(UInt id) {
-    SafeLog::Write(Utils::Format(L"CompID: %08X", id));
-}
-
 void __declspec(naked) CupDraw_Process() {
     __asm {
         cmp     esi, 5
@@ -4681,9 +4677,6 @@ void __declspec(naked) CupDraw_Process() {
         shl     edx, 24
         or      edx, 0x330000
         push    edx
-        push    edx
-        Call LogCompetitionID
-        add     esp, 4
         call    SetupCupDraw
         add     esp, 0xC
     NEXT0:

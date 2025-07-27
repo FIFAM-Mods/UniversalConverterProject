@@ -840,20 +840,6 @@ struct NewspaperGoldenBootExtension {
 
 void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     auto ext = raw_ptr<NewspaperGoldenBootExtension>(screen, NewspaperGoldenBootDefaultSize);
-    ext->TbT1 = screen->GetTextBox("_t1");
-    ext->TbClub[0] = screen->GetTextBox("TbClub1");
-    ext->TbClub[1] = screen->GetTextBox("TbClub2");
-    ext->TbPlayer[0] = screen->GetTextBox("TbPlayer1");
-    ext->TbPlayer[1] = screen->GetTextBox("TbPlayer2");
-    ext->TbFlag[0] = screen->GetTextBox("TbFlag1");
-    ext->TbFlag[1] = screen->GetTextBox("TbFlag2");
-    ext->ImgGoldenBoot1 = screen->GetImage("ImgGoldenBoot1");
-    ext->ImgGoldenBoot2 = screen->GetImage("ImgGoldenBoot2");
-    ext->TbWinnerText = screen->GetTextBox("TbWinnerText");
-    ext->TbPicByPlayer = screen->GetTextBox("TbPicByPlayer");
-    ext->TbPicByClub = screen->GetTextBox("TbPicByClub");
-    ext->TbPicByNation = screen->GetTextBox("TbPicByNation");
-    ext->TbPicByLeague = screen->GetTextBox("TbPicByLeague");
     auto LbByPlayer = (CFMListBox *)ext->LbByPlayer;
     auto LbByClub = (CFMListBox *)ext->LbByClub;
     auto LbByNation = (CFMListBox *)ext->LbByNation;
@@ -962,9 +948,6 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     });
     if (vecWinsByPlayer.size() > 30)
         vecWinsByPlayer.resize(30);
-    LbByPlayer->Create(screen, "LbByPlayer"); // Pos       Flag      Player      Wins     
-    CFMListBox::InitColumnTypes(LbByPlayer,      LBT_INT,  LBT_FLAG, LBT_PLAYER, LBT_INT,  LBT_END);
-    CFMListBox::InitColumnFormatting(LbByPlayer, LBF_NONE, LBF_NONE, LBF_NAME,   LBF_NONE, LBF_END);
     LbByPlayer->Clear();
     counter = 0;
     for (auto &w : vecWinsByPlayer) {
@@ -1018,9 +1001,6 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     });
     if (vecWinsByClub.size() > 30)
         vecWinsByClub.resize(30);
-    LbByClub->Create(screen, "LbByClub");   // Pos       Badge           Club      Wins     
-    CFMListBox::InitColumnTypes(LbByClub,      LBT_INT,  LBT_CLUB_BADGE, LBT_CLUB, LBT_INT,  LBT_END);
-    CFMListBox::InitColumnFormatting(LbByClub, LBF_NONE, LBF_NONE,       LBF_NAME, LBF_NONE, LBF_END);
     LbByClub->Clear();
     counter = 0;
     for (auto const &w : vecWinsByClub) {
@@ -1076,9 +1056,6 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     });
     if (vecWinsByNation.size() > 30)
         vecWinsByNation.resize(30);
-    LbByNation->Create(screen, "LbByNation"); // Pos       Flag      Country      Wins     
-    CFMListBox::InitColumnTypes(LbByNation,      LBT_INT,  LBT_FLAG, LBT_COUNTRY, LBT_INT,  LBT_END);
-    CFMListBox::InitColumnFormatting(LbByNation, LBF_NONE, LBF_NONE, LBF_NAME,    LBF_NONE, LBF_END);
     LbByNation->Clear();
     counter = 0;
     for (auto const &w : vecWinsByNation) {
@@ -1118,9 +1095,6 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     });
     if (vecWinsByLeague.size() > 30)
         vecWinsByLeague.resize(30);
-    LbByLeague->Create(screen, "LbByLeague"); // Pos       Logo           League         Wins     
-    CFMListBox::InitColumnTypes(LbByLeague,      LBT_INT,  LBT_COMP_LOGO, LBT_COMP_NAME, LBT_INT, LBT_END);
-    CFMListBox::InitColumnFormatting(LbByLeague, LBF_NONE, LBF_NONE,      LBF_NAME,      LBF_NONE, LBF_END);
     LbByLeague->Clear();
     counter = 0;
     for (auto const &w : vecWinsByLeague) {
@@ -1134,6 +1108,45 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     }
     if (!vecWinsByLeague.empty())
         screen->SetCompetitionBadge(ext->TbPicByLeague, CCompID::Make(vecWinsByLeague[0].countryId, COMP_LEAGUE, 0), 1);
+}
+
+void METHOD OnNewspaperGoldenBootCreateUI(CXgFMPanel *screen) {
+    CallMethod<0xA79080>(screen);
+    auto ext = raw_ptr<NewspaperGoldenBootExtension>(screen, NewspaperGoldenBootDefaultSize);
+    ext->TbT1 = screen->GetTextBox("_t1");
+    ext->TbClub[0] = screen->GetTextBox("TbClub1");
+    ext->TbClub[1] = screen->GetTextBox("TbClub2");
+    ext->TbPlayer[0] = screen->GetTextBox("TbPlayer1");
+    ext->TbPlayer[1] = screen->GetTextBox("TbPlayer2");
+    ext->TbFlag[0] = screen->GetTextBox("TbFlag1");
+    ext->TbFlag[1] = screen->GetTextBox("TbFlag2");
+    ext->ImgGoldenBoot1 = screen->GetImage("ImgGoldenBoot1");
+    ext->ImgGoldenBoot2 = screen->GetImage("ImgGoldenBoot2");
+    ext->TbWinnerText = screen->GetTextBox("TbWinnerText");
+    ext->TbPicByPlayer = screen->GetTextBox("TbPicByPlayer");
+    ext->TbPicByClub = screen->GetTextBox("TbPicByClub");
+    ext->TbPicByNation = screen->GetTextBox("TbPicByNation");
+    ext->TbPicByLeague = screen->GetTextBox("TbPicByLeague");
+    auto LbByPlayer = (CFMListBox *)ext->LbByPlayer;
+    auto LbByClub = (CFMListBox *)ext->LbByClub;
+    auto LbByNation = (CFMListBox *)ext->LbByNation;
+    auto LbByLeague = (CFMListBox *)ext->LbByLeague;
+    LbByPlayer->Create(screen, "LbByPlayer"); // Pos       Flag      Player      Wins     
+    CFMListBox::InitColumnTypes(LbByPlayer, LBT_INT, LBT_FLAG, LBT_PLAYER, LBT_INT, LBT_END);
+    CFMListBox::InitColumnFormatting(LbByPlayer, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+    LbByClub->Create(screen, "LbByClub");   // Pos       Badge           Club      Wins     
+    CFMListBox::InitColumnTypes(LbByClub, LBT_INT, LBT_CLUB_BADGE, LBT_CLUB, LBT_INT, LBT_END);
+    CFMListBox::InitColumnFormatting(LbByClub, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+    LbByNation->Create(screen, "LbByNation"); // Pos       Flag      Country      Wins     
+    CFMListBox::InitColumnTypes(LbByNation, LBT_INT, LBT_FLAG, LBT_COUNTRY, LBT_INT, LBT_END);
+    CFMListBox::InitColumnFormatting(LbByNation, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+    LbByLeague->Create(screen, "LbByLeague"); // Pos       Logo           League         Wins     
+    CFMListBox::InitColumnTypes(LbByLeague, LBT_INT, LBT_COMP_LOGO, LBT_COMP_NAME, LBT_INT, LBT_END);
+    CFMListBox::InitColumnFormatting(LbByLeague, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+
+    // TODO: remove this
+    static char data[0x54];
+    NewspaperGoldenBootFill(screen, 0, data);
 }
 
 CXgFMPanel *METHOD OnNewspaperGoldenBootConstruct(CXgFMPanel *screen, DUMMY_ARG, void *guiInstance) {
@@ -1333,6 +1346,7 @@ void PatchEuropeanGoldenShoe(FM::Version v) {
         // CNewspaperGoldenBoot
         patch::SetUInt(0x4A07D4 + 1, NewspaperGoldenBootDefaultSize + sizeof(NewspaperGoldenBootExtension));
         patch::SetUInt(0x4A07DB + 1, NewspaperGoldenBootDefaultSize + sizeof(NewspaperGoldenBootExtension));
+        patch::SetPointer(0x244E794, OnNewspaperGoldenBootCreateUI);
         patch::RedirectJump(0xA7BBF0, NewspaperGoldenBootFill);
         patch::RedirectCall(0xA78FD2, OnNewspaperGoldenBootConstruct);
         patch::RedirectCall(0xA79050, OnNewspaperGoldenBootDestruct);

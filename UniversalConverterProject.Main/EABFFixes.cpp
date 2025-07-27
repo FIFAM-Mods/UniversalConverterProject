@@ -1716,6 +1716,10 @@ CTeamIndex *METHOD CPlayerStats_FindFavouriteTeam(CPlayerStats *stats, DUMMY_ARG
     return &outTeamID;
 }
 
+Bool METHOD TeamAOG_CanProcessPlayerFrustration(CDBTeam *team, DUMMY_ARG, Bool flag) {
+    return !team->IsManagedByAI(flag);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2344,6 +2348,10 @@ void PatchEABFFixes(FM::Version v) {
 
         // fix incorrect function CPlayerStats::FindFavouriteTeam
         patch::RedirectJump(0x1007070, CPlayerStats_FindFavouriteTeam);
+
+        // TeamAOG::ProcessPlayerFrustration fix (mail message 1074)
+        patch::RedirectCall(0x135B1D4, TeamAOG_CanProcessPlayerFrustration);
+        patch::SetUChar(0x135B2E8 + 1, 1);
     }
 }
 
