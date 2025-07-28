@@ -1640,6 +1640,8 @@ class CXgVisibleControl : public CXgBaseControl {
 public:
     VisibleControlAppearance *GetAppearance();
     Rect *GetRect();
+    void SetBlendCol(UInt color);
+    UInt GetBlendCol();
 };
 
 class CXgBaseButton : public CXgVisibleControl {
@@ -1720,6 +1722,13 @@ enum FMListBoxColumnFormatting {
     LBF_END = 228
 };
 
+class CGuiInstance;
+
+class CXgPanel {
+public:
+    CGuiInstance *GetGuiInstance();
+};
+
 class CXgFMPanel;
 
 class CFMListBox {
@@ -1756,7 +1765,7 @@ public:
     }
 };
 
-class CXgFMPanel {
+class CXgFMPanel : public CXgPanel {
 public:
     CXgTextBox *GetTextBox(Char const *name);
     CXgTextButton *GetTextButton(Char const *name);
@@ -2029,3 +2038,18 @@ class CNetComData {
     UInt m_nStructSize;
     UInt m_nId;
 };
+
+class CCurrentUser {
+public:
+    void SetUseDefaultColors(Bool useDefaultColors);
+    void SetTeamColors(CDBTeam *team);
+};
+
+CCurrentUser &GetCurrentUser();
+
+class CGuiFrame {
+public:
+    void ApplyColorGroups(CGuiInstance *guiInstance);
+};
+
+CGuiFrame *GetGuiFrame();

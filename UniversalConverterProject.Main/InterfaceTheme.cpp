@@ -641,6 +641,9 @@ void PatchInterfaceTheme(FM::Version v) {
 				patch::SetUInt(0x86248B + 1, 0xFFff7769);
 				patch::SetUInt(0x86241E + 1, 0xFF8ab4f8);
 				patch::SetUInt(0x8624F5 + 1, 0xFF8ab4f8);
+                // player comparison - skill difference colors
+                patch::SetUInt(0x5D8AA4 + 1, 0xFFff7769);
+                patch::SetUInt(0x5D8AC4 + 1, 0xFF8ab4f8);
             }
 
             if (theme != LIGHT) {

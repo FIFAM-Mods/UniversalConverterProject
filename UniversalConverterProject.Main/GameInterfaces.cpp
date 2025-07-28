@@ -2682,6 +2682,14 @@ CDBNetwork &GetNetwork() {
     return *(CDBNetwork *)0x3185EF0;
 }
 
+CCurrentUser &GetCurrentUser() {
+    return *(CCurrentUser *)0x3062D28;
+}
+
+CGuiFrame *GetGuiFrame() {
+    return *(CGuiFrame **)0x30C8940;
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);
@@ -2884,6 +2892,14 @@ Rect *CXgVisibleControl::GetRect() {
     return CallVirtualMethodAndReturn<Rect *, 30>(this);
 }
 
+void CXgVisibleControl::SetBlendCol(UInt color) {
+    CallVirtualMethod<31>(this, color);
+}
+
+UInt CXgVisibleControl::GetBlendCol() {
+    return CallVirtualMethodAndReturn<UInt, 32>(this);
+}
+
 void CXgTextBox::SetColor(UInt colorType, UInt colorValue) {
     CallVirtualMethod<74>(this, colorType, colorValue);
 }
@@ -3046,4 +3062,20 @@ CJDate CDBPlayerCareerEntry::GetEndDate() const {
 
 Bool CDBPlayerCareerEntry::OnLoan() const {
     return CallMethodAndReturn<Bool, 0x10D5430>(this);
+}
+
+void CCurrentUser::SetUseDefaultColors(Bool useDefaultColors) {
+    CallMethod<0x431120>(this, useDefaultColors);
+}
+
+void CCurrentUser::SetTeamColors(CDBTeam *team) {
+    CallMethod<0x431000>(this, team);
+}
+
+CGuiInstance *CXgPanel::GetGuiInstance() {
+    return *raw_ptr<CGuiInstance *>(this, 0x20);
+}
+
+void CGuiFrame::ApplyColorGroups(CGuiInstance *guiInstance) {
+    CallMethod<0x4EBF00>(this, guiInstance);
 }

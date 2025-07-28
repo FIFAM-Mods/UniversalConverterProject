@@ -1720,6 +1720,19 @@ Bool METHOD TeamAOG_CanProcessPlayerFrustration(CDBTeam *team, DUMMY_ARG, Bool f
     return !team->IsManagedByAI(flag);
 }
 
+void METHOD OnPlayerInfoCompareRenderPlayerHead(CXgFMPanel *screen, DUMMY_ARG, void **outData, Rect *rect, Int playerId,
+    CTeamIndex const &teamID, Bool bDisplayPortrait, Bool bHasPicture)
+{
+    CallMethod<0xD39C00>(screen, outData, rect, playerId, &teamID, bDisplayPortrait, bHasPicture);
+    auto team = GetTeam(teamID);
+    GetCurrentUser().SetUseDefaultColors(team ? false : true);
+    if (team)
+        GetCurrentUser().SetTeamColors(team);
+    GetGuiFrame()->ApplyColorGroups(screen->GetGuiInstance());
+}
+
+void METHOD PlayerInfoCompare_Recolor(CXgFMPanel *screen) {}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -1912,7 +1925,11 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x6E8F2B, OnGetTeamLeagueTotalLeadershipsInTable);
 
         // player name
-        patch::SetUShort(0x23CF704 + 4, L'.');
+        static WideChar const *PlayerShitNumberFormat = L"%d.";
+        patch::SetPointer(0x5CD250 + 1, PlayerShitNumberFormat);
+        patch::SetPointer(0x5E7A0E + 1, PlayerShitNumberFormat);
+        patch::SetPointer(0xAF0DF7 + 1, PlayerShitNumberFormat);
+        patch::SetPointer(0x5D90C1 + 1, PlayerShitNumberFormat);
 
         // CL/EL registration
         patch::RedirectCall(0x8ACFD2, GetPlayerNullTeam);
@@ -2352,6 +2369,10 @@ void PatchEABFFixes(FM::Version v) {
         // TeamAOG::ProcessPlayerFrustration fix (mail message 1074)
         patch::RedirectCall(0x135B1D4, TeamAOG_CanProcessPlayerFrustration);
         patch::SetUChar(0x135B2E8 + 1, 1);
+
+        // show team colors on player comparison screen
+        patch::RedirectCall(0x5D9098, OnPlayerInfoCompareRenderPlayerHead);
+        patch::SetPointer(0x23D0D50, PlayerInfoCompare_Recolor);
     }
 }
 
