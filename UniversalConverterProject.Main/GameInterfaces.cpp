@@ -572,6 +572,22 @@ CMatches *CDBLeague::GetMatches() {
     return raw_ptr<CMatches>(this, 0x22C8);
 }
 
+void CDBLeague::GetMatch(UInt matchday, UInt matchIndex, CMatch &match) const {
+    CallMethod<0x1051D70>(this, matchday, matchIndex, &match);
+}
+
+void CDBLeague::GetFixtureTeams(UInt matchday, UInt matchIndex, UChar &team1number, UChar &team2number) const {
+    CallMethod<0x1051C70>(this, matchday, matchIndex, &team1number, &team2number);
+}
+
+void CDBLeague::GetFixtureTeams(UInt matchday, UInt matchIndex, CTeamIndex &team1, CTeamIndex &team2) const {
+    CallMethod<0x1051C80>(this, matchday, matchIndex, &team1, &team2);
+}
+
+UInt CDBLeague::GetMatchesInMatchday() {
+    return CallMethodAndReturn<UInt, 0x1050270>(this);
+}
+
 CRoleFactory *GetRoleFactory() {
     return CallAndReturn<CRoleFactory *, 0x124B4F0>();
 }
@@ -652,19 +668,19 @@ CDBTeam *GetTeamByUniqueID(unsigned int uniqueID) {
     return plugin::CallAndReturn<CDBTeam *, 0xF0CCA0>(uniqueID);
 }
 
-CDBPlayer *GetPlayer(Int playerId) {
+CDBPlayer *GetPlayer(UInt playerId) {
     return CallAndReturn<CDBPlayer *, 0xF97C70>(playerId);
 }
 
-CDBEmployee *GetEmployee(Int employeeId) {
+CDBEmployee *GetEmployee(UInt employeeId) {
     return CallAndReturn<CDBEmployee *, 0xEA2A00>(employeeId);
 }
 
-CDBStaff *GetStaff(Int staffId) {
+CDBStaff *GetStaff(UInt staffId) {
     return CallAndReturn<CDBStaff *, 0x11027F0>(staffId);
 }
 
-WideChar const *GetCityName(Int cityId) {
+WideChar const *GetCityName(UInt cityId) {
     return CallAndReturn<WideChar const *, 0x11C14A0>(cityId);
 }
 
@@ -1525,6 +1541,10 @@ UInt GetCurrentMetric() {
     return CallMethodAndReturn<UInt, 0x14AC3A0>(metrics);
 }
 
+CDBGame *Game() {
+    return CDBGame::GetInstance();
+}
+
 bool operator==(CTeamIndex const &a, CTeamIndex const &b) {
     return a.index == b.index && a.countryId == b.countryId && a.type == b.type;
 }
@@ -1895,8 +1915,16 @@ UInt CDBOneMatch::GetRoundPairIndex() {
     return CallMethodAndReturn<UInt, 0xE801B0>(this);
 }
 
+void CDBOneMatch::Dump(WideChar const *dumpFolder) {
+    CallMethod<0xE8F230>(this, dumpFolder);
+}
+
 CDBOneMatch *GetCurrentMatch() {
     return *(CDBOneMatch **)0x3124748;
+}
+
+CDBMatchlist &DBMatchlist() {
+    return *(CDBMatchlist *)0x3124750;
 }
 
 UInt GetGuiColor(UInt colorId) {
@@ -2083,8 +2111,8 @@ CDBPlayer *CPlayerStats::GetPlayer() const {
     return *raw_ptr<CDBPlayer *>(this, 0);
 }
 
-Int CPlayerStats::GetPlayerId() const {
-    return CallMethodAndReturn<Int, 0x1006970>(this);
+UInt CPlayerStats::GetPlayerId() const {
+    return CallMethodAndReturn<UInt, 0x1006970>(this);
 }
 
 NetComStorageIterator NetComStorageBegin(eNetComStorage storageType) {
@@ -2415,7 +2443,7 @@ void CEAMailData::Format(WideChar *dst, UInt maxLen, WideChar const *format, CEA
     Call<0x14F6AD2>(dst, maxLen, format, &mailData);
 }
 
-void CEAMailData::SetPlayer(Int index, Int playerId) {
+void CEAMailData::SetPlayer(Int index, UInt playerId) {
     CallMethod<0x1010640>(this, index, playerId);
 }
 
@@ -2662,19 +2690,19 @@ UChar GetCountryFirstLanguage(UChar countryId) {
     return country ? country->GetFirstLanguage() : FifamLanguage::English;
 }
 
-Int GetIDForObject(UChar type, Int id) {
-    return CallAndReturn<Int, 0x133E310>(type, id);
+UInt GetIDForObject(UChar type, UInt id) {
+    return CallAndReturn<UInt, 0x133E310>(type, id);
 }
 
-void *GetObjectByID(Int id) {
+void *GetObjectByID(UInt id) {
     return CallAndReturn<void *, 0x156EF70>(id);
 }
 
-CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(Int playerId) {
+CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(UInt playerId) {
     return CallAndReturn<CDBMatchesGoalsLeagueList *, 0x103F7B0>(playerId);
 }
 
-CDBPlayerCareerList *GetPlayerCareerList(Int playerId) {
+CDBPlayerCareerList *GetPlayerCareerList(UInt playerId) {
     return CallAndReturn<CDBPlayerCareerList *, 0x10D6020>(playerId);
 }
 
@@ -2706,6 +2734,14 @@ Bool CDBRoot::LaunchesInThisSeason(UInt phase) {
 
 CDBMatchEventEntries *CDBRoot::GetEvents() {
     return *raw_ptr<CDBMatchEventEntries *>(this, 0x2128);
+}
+
+void CDBRoot::GetMatchEvent(Int index, CDBMatchEventEntry &event) {
+    CallMethod<0x11F0160>(this, index, &event);
+}
+
+CDBMatchEventEntry &CDBRoot::GetMatchEvent(Int index) {
+    return *CallMethodAndReturn<CDBMatchEventEntry *, 0x11F01A0>(this, index);
 }
 
 CDBTeam *CClubFans::GetTeam() {
@@ -2742,6 +2778,14 @@ Int CMatch::GetMatchEventsStartIndex() const {
 
 void CMatch::SetMatchEventsStartIndex(Int index) {
     CallMethod<0xF828B0>(this, index);
+}
+
+void CMatch::AddFlag(UInt flag) {
+    CallMethod<0xF828D0>(this, flag);
+}
+
+Bool CMatch::CheckFlag(UInt flag) {
+    return CallMethodAndReturn<Bool, 0xF828E0>(this, flag);
 }
 
 void CMatches::GetMatch(UInt matchday, UInt matchIndex, CMatch &match) const {
@@ -2844,15 +2888,15 @@ CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
     return CallMethodAndReturn<CXgComboBox *, 0xD442C0>(this, name);
 }
 
-Int CXgFMPanel::SetPlayerPortrait(CXgVisibleControl *control, Int playerId, Bool unk) {
+Int CXgFMPanel::SetPlayerPortrait(CXgVisibleControl *control, UInt playerId, Bool unk) {
     return CallMethodAndReturn<Int, 0xD4F0B0>(this, control, playerId, unk);
 }
 
-void CXgFMPanel::SetPlayerImage(CXgVisibleControl *control, Int playerId, WideChar const *filePath) {
+void CXgFMPanel::SetPlayerImage(CXgVisibleControl *control, UInt playerId, WideChar const *filePath) {
     CallMethod<0xD4EAD0>(this, control, playerId, filePath);
 }
 
-void CXgFMPanel::SetPlayerName(CXgVisibleControl *control, Int playerId) {
+void CXgFMPanel::SetPlayerName(CXgVisibleControl *control, UInt playerId) {
     CallMethod<0xD51710>(this, control, playerId);
 }
 
@@ -3078,4 +3122,60 @@ CGuiInstance *CXgPanel::GetGuiInstance() {
 
 void CGuiFrame::ApplyColorGroups(CGuiInstance *guiInstance) {
     CallMethod<0x4EBF00>(this, guiInstance);
+}
+
+CDBMatchEventEntry::CDBMatchEventEntry() {
+    CallMethod<0x1004280>(this);
+}
+
+UInt CDBMatchEventEntry::GetEventType() {
+    return CallMethodAndReturn<UInt, 0x1004370>(this);
+}
+
+UChar CDBMatchEventEntry::GetMinute() {
+    return CallMethodAndReturn<UChar, 0x1004400>(this);
+}
+
+UInt CDBMatchEventEntry::GetPlayerInitiator() {
+    return CallMethodAndReturn<UInt, 0x1004410>(this);
+}
+
+UInt CDBMatchEventEntry::GetPlayerAffected() {
+    return CallMethodAndReturn<UInt, 0x1004430>(this);
+}
+
+UInt CDBMatchEventEntry::GetValue(UInt index) {
+    return CallMethodAndReturn<UInt, 0x1004740>(this, index);
+}
+
+UInt CDBMatchEventEntry::GetReason1() {
+    return CallMethodAndReturn<UInt, 0x1004450>(this);
+}
+
+UInt CDBMatchEventEntry::GetReason2() {
+    return CallMethodAndReturn<UInt, 0x1004460>(this);
+}
+
+Bool CDBMatchEventEntry::IsHomeTeam() {
+    return CallMethodAndReturn<Bool, 0x10043C0>(this);
+}
+
+Bool CDBMatchEventEntry::HasAdditionalData() {
+    return CallMethodAndReturn<Bool, 0x10043D0>(this);
+}
+
+Bool CDBMatchEventEntry::IsMissedPenalty() {
+    return CallMethodAndReturn<Bool, 0x10048C0>(this);
+}
+
+UChar CDBMatchEventEntry::GetPlayerPosition(UChar index) {
+    return CallMethodAndReturn<UChar, 0x1004880>(this, index);
+}
+
+CDBOneMatch *CDBMatchlist::GetMatch(UInt index) {
+    return CallMethodAndReturn<CDBOneMatch *, 0xE884B0>(this, index);
+}
+
+UInt CDBMatchlist::GetNumMatches() {
+    return CallMethodAndReturn<UInt, 0xE884A0>(this);
 }

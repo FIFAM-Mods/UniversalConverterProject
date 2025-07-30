@@ -1733,6 +1733,11 @@ void METHOD OnPlayerInfoCompareRenderPlayerHead(CXgFMPanel *screen, DUMMY_ARG, v
 
 void METHOD PlayerInfoCompare_Recolor(CXgFMPanel *screen) {}
 
+void DumpMatches() {
+    for (UInt i = 0; i < DBMatchlist().GetNumMatches(); i++)
+        DBMatchlist().GetMatch(i)->Dump(L"Matches");
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);

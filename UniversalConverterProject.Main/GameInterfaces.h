@@ -528,6 +528,8 @@ public:
     UShort GetCurrentSeasonNumber();
 };
 
+CDBGame *Game();
+
 struct CTeamIndex {
     unsigned short index;
     unsigned char countryId;
@@ -612,7 +614,7 @@ public:
     UInt GetNumECWins() const;
     UInt GetNumWCWins() const;
     CDBPlayer *GetPlayer() const;
-    Int GetPlayerId() const;
+    UInt GetPlayerId() const;
 };
 
 enum ePlayerPositionRole {
@@ -850,19 +852,85 @@ struct MatchGoalInfo {
     bool isOwnGoal;
 };
 
+enum eGoalType {
+    GOAL_INSIDEBOX = 0,
+    GOAL_OUTSIDEBOX = 1,
+    GOAL_HEADER = 2,
+    GOAL_VOLLEY = 3,
+    GOAL_FREEKICK = 4,
+    GOAL_PENALTY = 5,
+    GOAL_OWNGOAL = 6
+};
+
+enum eMatchEvent {
+    MET_START = 0x0,
+    MET_GOAL = 0x1,
+    MET_OWNGOALS = 0x2,
+    MET_GOALSHOT = 0x3,
+    MET_SAVED_SHOT = 0x4,
+    MET_CONCEDED_GOAL = 0x5,
+    MET_POST_SHOT = 0x6,
+    MET_BAR_SHOT = 0x7,
+    MET_WIDE_SHOT = 0x8,
+    MET_YEL_CARD = 0x9,
+    MET_YELRED_CARD = 0xA,
+    MET_RED_CARD = 0xB,
+    MET_INJURY = 0xC,
+    MET_FOUL = 0xD,
+    MET_WRONGDECISION = 0xE,
+    MET_FREEKICK = 0xF,
+    MET_CORNERKICK = 0x10,
+    MET_SUBST = 0x11,
+    MET_CHANCE = 0x12,
+    MET_PENALTY_KICK = 0x13,
+    MET_PENALTY_AET = 0x14,
+    MET_MANOFTHEMATCH = 0x15,
+    MET_PLAYER_APPEARANCE = 0x16,
+    MET_WHISTLE = 0x18,
+    MET_OFFSIDE = 0x1A,
+    MET_INJURY_MINOR = 0x1B,
+    MET_END = 0x1C,
+    MET_PLAYER_MARK = 0x1E,
+    MET_PLAYER_FORM = 0x1F,
+    MET_ATTENDANCE = 0x20,
+};
+
 class CDBMatchEventEntry {
 public:
-    UChar flags;
+    UChar bHomeTeam : 1;
+    UChar bAdditionalInfo : 1;
+    UChar bMissedPenalty : 1;
     UChar minute;
     UShort eventType;
-    Int playerScorerId;
-    Int playerAssistantId;
-    Int field_C;
-    UChar reason1_or_value;
-    UChar reason2;
-    UChar goalsHome;
-    UChar goalsAway;
+    Int value1;
+    Int value2;
+    UChar playerPositions[3];
+    Char _padF;
+    union {
+        Int value3;
+        struct { // Additional info
+            UChar reason1;
+            UChar reason2;
+            UChar goalsHome;
+            UChar goalsAway;
+        };
+    };
+
+    CDBMatchEventEntry();
+    UInt GetEventType();
+    UChar GetMinute();
+    UInt GetPlayerInitiator();
+    UInt GetPlayerAffected();
+    UInt GetValue(UInt index);
+    UInt GetReason1();
+    UInt GetReason2();
+    Bool IsHomeTeam();
+    Bool HasAdditionalData();
+    Bool IsMissedPenalty();
+    UChar GetPlayerPosition(UChar index);
 };
+
+static_assert(sizeof(CDBMatchEventEntry) == 0x14, "Failed");
 
 class CDBMatchEventEntries : public SimpleContainer<CDBMatchEventEntry> {
 public:
@@ -875,6 +943,8 @@ public:
     void SetFirstContinentalCompetition(CDBCompetition *comp);
     Bool LaunchesInThisSeason(UInt phase);
     CDBMatchEventEntries *GetEvents();
+    void GetMatchEvent(Int index, CDBMatchEventEntry &event);
+    CDBMatchEventEntry &GetMatchEvent(Int index);
 };
 
 class CDBPool : public CDBCompetition {};
@@ -907,6 +977,8 @@ public:
     CMatch();
     Int GetMatchEventsStartIndex() const;
     void SetMatchEventsStartIndex(Int index);
+    void AddFlag(UInt flag);
+    Bool CheckFlag(UInt flag);
 };
 
 static_assert(sizeof(CMatch) == 0xC, "Failed");
@@ -928,6 +1000,10 @@ public:
     void SortTeams(TeamLeaguePositionData *infos, int sortingFlags, int goalsMinMinute, int goalsMaxMinute, int minMatchday, int maxMatchday);
     unsigned int GetCurrentMatchday();
     CMatches *GetMatches();
+    void GetMatch(UInt matchday, UInt matchIndex, CMatch &match) const;
+    void GetFixtureTeams(UInt matchday, UInt matchIndex, UChar &team1number, UChar &team2number) const;
+    void GetFixtureTeams(UInt matchday, UInt matchIndex, CTeamIndex &team1, CTeamIndex &team2) const;
+    UInt GetMatchesInMatchday();
 };
 
 struct SponsorPlacement {
@@ -1008,7 +1084,7 @@ public:
     Int GetArrayValue(UInt index) const;
     void SetFirstTeam(CTeamIndex const &teamID);
     static void Format(WideChar *dst, UInt maxLen, WideChar const *format, CEAMailData const &mailData);
-    void SetPlayer(Int index, Int playerId);
+    void SetPlayer(Int index, UInt playerId);
     void SetTeam(Int index, CTeamIndex const &teamID);
     void SetTerm(WideChar const *term);
 };
@@ -1318,10 +1394,10 @@ FmMap<UInt, CDBCompetition *> &GetCompetitions();
 CDBCountry *GetCountry(UChar countryId);
 CDBTeam *GetTeam(CTeamIndex teamId);
 CDBTeam *GetTeamByUniqueID(unsigned int uniqueID);
-CDBPlayer *GetPlayer(Int playerId);
-CDBEmployee *GetEmployee(Int employeeId);
-CDBStaff *GetStaff(Int staffId);
-WideChar const *GetCityName(Int cityId);
+CDBPlayer *GetPlayer(UInt playerId);
+CDBEmployee *GetEmployee(UInt employeeId);
+CDBStaff *GetStaff(UInt staffId);
+WideChar const *GetCityName(UInt cityId);
 
 CCountryStore *GetCountryStore();
 
@@ -1464,9 +1540,18 @@ public:
 	Bool CheckFlag(UInt flag);
 	void GetResult(UChar &outHome, UChar &outAway);
     UInt GetRoundPairIndex();
+    void Dump(WideChar const *dumpFolder);
 };
 
 CDBOneMatch *GetCurrentMatch();
+
+class CDBMatchlist {
+public:
+    CDBOneMatch *GetMatch(UInt index);
+    UInt GetNumMatches();
+};
+
+CDBMatchlist &DBMatchlist();
 
 UInt GetGuiColor(UInt colorId);
 
@@ -1773,9 +1858,9 @@ public:
     CTrfmNode *GetTransform(Char const *name);
     CXgCheckBox *GetCheckBox(Char const *name);
     CXgComboBox *GetComboBox(Char const *name);
-    Int SetPlayerPortrait(CXgVisibleControl *control, Int playerId, Bool unk = false);
-    void SetPlayerImage(CXgVisibleControl *control, Int playerId, WideChar const *filePath);
-    void SetPlayerName(CXgVisibleControl *control, Int playerId);
+    Int SetPlayerPortrait(CXgVisibleControl *control, UInt playerId, Bool unk = false);
+    void SetPlayerImage(CXgVisibleControl *control, UInt playerId, WideChar const *filePath);
+    void SetPlayerName(CXgVisibleControl *control, UInt playerId);
     void SetTeamBadge(CXgVisibleControl *control, CTeamIndex teamID);
     void SetTeamName(CXgVisibleControl *control, CTeamIndex const &teamID);
     void SetCountryFlag(CXgVisibleControl *control, UInt countryId);
@@ -1819,7 +1904,7 @@ public:
     Int field_20;
     CTeamIndex teamID;
     Int youthCoachRoleId;
-    Int playerIds[100];
+    UInt playerIds[100];
     Int bestSignedPlayerId;
     Int maxSignedPlayerRating;
     Int field_1C4;
@@ -1923,7 +2008,7 @@ struct HistoricalPlayerEntry {
     UChar position;
     Char _pad12[2];
     Int count;
-    Int playerId;
+    UInt playerId;
     Float mark;
     UChar countryId;
     Char _pad21[3];
@@ -1962,8 +2047,8 @@ struct GeoPrimState {
     Int nZWritesEnable;
 };
 
-Int GetIDForObject(UChar type, Int id);
-void *GetObjectByID(Int id);
+UInt GetIDForObject(UChar type, UInt id);
+void *GetObjectByID(UInt id);
 
 enum MatchesGoalsCompType {
     MG_COMP_LEAGUE,
@@ -1984,7 +2069,7 @@ public:
     UChar GetNumMatches(Int entryId, Int compType);
 };
 
-CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(Int playerId);
+CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(UInt playerId);
 
 class CDBPlayerCareerEntry {
 public:
@@ -2005,7 +2090,7 @@ public:
     CJDate GetEndDate(UInt entryId);
 };
 
-CDBPlayerCareerList *GetPlayerCareerList(Int playerId);
+CDBPlayerCareerList *GetPlayerCareerList(UInt playerId);
 
 enum eNetworkEventId {
     NETWORKEVENT_WORLD_PLAYER_GALA = 205

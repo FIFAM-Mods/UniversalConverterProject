@@ -1352,8 +1352,6 @@ void METHOD OnSamplerSet(void *tar) {
 
 void Install3dPatches_FM13() {
 
-    //::Warning("Here");
-
     FindAssets(ASSETS_DIR, "");
 
     //patch::RedirectCall(GfxCoreAddress(0x20484F), OnSetTextureAtId);
