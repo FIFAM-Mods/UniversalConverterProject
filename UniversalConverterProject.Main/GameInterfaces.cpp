@@ -2535,12 +2535,20 @@ void CFMListBox::SetFont(Char const *fontName) {
     CallMethod<0xD1A310>(this, fontName);
 }
 
+void CFMListBox::SetHeaderFont(Char const *fontName) {
+    CallMethod<0xD1A470>(this, fontName);
+}
+
 CXgTextBox *CFMListBox::GetCellTextBox(UInt rowIndex, UInt columnIndex) {
     return CallMethodAndReturn<CXgTextBox *, 0xD19DB0>(this, rowIndex, columnIndex);
 }
 
 void CFMListBox::Sort(UInt columnIndex, Bool descendingOrder) {
     CallMethod<0xD18510>(this, columnIndex, descendingOrder);
+}
+
+CXgFmListBox *CFMListBox::GetXgListBox() {
+    return CallMethodAndReturn<CXgFmListBox *, 0xD18360>(this);
 }
 
 EAGMoney::EAGMoney() {
@@ -2864,6 +2872,10 @@ void CXgBaseControl::SetTooltip(WideChar const *text) {
     CallVirtualMethod<50>(this, text);
 }
 
+void *CXgBaseControl::CastTo(UInt typeId) {
+    return CallVirtualMethodAndReturn<void *, 1>(this, typeId);
+}
+
 CXgTextBox *CXgFMPanel::GetTextBox(Char const *name) {
     return CallMethodAndReturn<CXgTextBox *, 0xD44240>(this, name);
 }
@@ -3182,4 +3194,25 @@ UInt CDBMatchlist::GetNumMatches() {
 
 Char const *CGuiNode::GetUid() const {
     return CallMethodAndReturn<Char const *, 0x1486F36>(this);
+}
+
+CXgFmListBox *CXgFmListBox::Cast(CXgBaseControl *control) {
+    return CallAndReturn<CXgFmListBox *, 0x4EFFF0>(control);
+}
+
+CBuffer::CBuffer(void *data, UInt size) {
+    m_pData = data;
+    m_nSize = size;
+}
+
+Char const *CMinMlGen::CAttrParser::GetString(Char const *attribName, Char const *defaultValue) {
+    return CallVirtualMethodAndReturn<Char const *, 1>(this, attribName, defaultValue);
+}
+
+CMinMlGen::CNode &CMinMlGen::CNode::FindChildNode(Char const *nodeName) {
+    return *CallVirtualMethodAndReturn<CNode *, 6>(this, nodeName);
+}
+
+CMinMlGen::CAttrParser &CMinMlGen::CNode::GetAttrParser(CBuffer const &buf) {
+    return *CallVirtualMethodAndReturn<CAttrParser *, 10>(this, &buf);
 }

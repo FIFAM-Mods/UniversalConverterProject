@@ -1710,6 +1710,7 @@ public:
     void SetVisible(Bool visible);
     CGuiNode *GetGuiNode();
     void SetTooltip(WideChar const *text);
+    void *CastTo(UInt typeId);
 };
 
 struct Rect {
@@ -1732,6 +1733,15 @@ public:
 
 class CXgBaseButton : public CXgVisibleControl {
 public:
+};
+
+class CXgListBoxCompound : public  CXgVisibleControl {
+public:
+};
+
+class CXgFmListBox : public  CXgListBoxCompound {
+public:
+    static CXgFmListBox *Cast(CXgBaseControl *control);
 };
 
 class CXgButton : public CXgBaseButton {
@@ -1839,8 +1849,11 @@ public:
     Int64 GetCellValue(UInt row, UInt column);
     void SetCellValue(UInt row, UInt column, Int64 value);
     void SetFont(Char const *fontName);
+    void SetHeaderFont(Char const *fontName);
     CXgTextBox *GetCellTextBox(UInt rowIndex, UInt columnIndex);
     void Sort(UInt columnIndex, Bool descendingOrder = false);
+    CXgFmListBox *GetXgListBox();
+
     template <typename... ArgTypes>
     static void InitColumnTypes(CFMListBox *listBox, ArgTypes... args) {
         Call<0xD19660>(listBox, args...);
@@ -2139,3 +2152,35 @@ public:
 };
 
 CGuiFrame *GetGuiFrame();
+
+class CBuffer {
+public:
+    void *m_pData;
+    UInt m_nSize;
+
+    CBuffer(void *data, UInt size);
+};
+
+class CMinMlGen {
+public:
+    class CNode;
+
+    class CAttrParser {
+    public:
+        void *vtable;
+        CNode *node;
+        Int field_8;
+
+        Char const *GetString(Char const *attribName, Char const *defaultValue = nullptr);
+    };
+
+    class CBaseNode {
+    public:
+    };
+
+    class CNode : public CBaseNode {
+    public:
+        CNode &FindChildNode(Char const *nodeName);
+        CAttrParser &GetAttrParser(CBuffer const &buf);
+    };
+};

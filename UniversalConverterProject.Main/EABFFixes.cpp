@@ -1733,6 +1733,41 @@ void METHOD OnPlayerInfoCompareRenderPlayerHead(CXgFMPanel *screen, DUMMY_ARG, v
 
 void METHOD PlayerInfoCompare_Recolor(CXgFMPanel *screen) {}
 
+const UInt XgListBoxDefaultSize = 0xE8;
+
+void *METHOD OnXgFmListBoxConstruct(void *xlb, DUMMY_ARG, CGuiNode *guiNode) {
+    CallMethod<0x145BC8B>(xlb, guiNode);
+    memset(raw_ptr<Char>(xlb, XgListBoxDefaultSize), 0, 64 * 2);
+    return xlb;
+}
+
+template <Bool IsHeader>
+void METHOD OnListBoxSetFont(CFMListBox *lb, DUMMY_ARG, Char const *fontName) {
+    CXgFmListBox *xlb = lb->GetXgListBox();
+    if (xlb && CXgFmListBox::Cast(xlb)) {
+        Char const *attrFontName = raw_ptr<Char>(xlb, XgListBoxDefaultSize + 64 * IsHeader);
+        if (attrFontName[0])
+            fontName = attrFontName;
+    }
+    if (IsHeader)
+        lb->SetHeaderFont(fontName);
+    else
+        lb->SetFont(fontName);
+}
+
+void OnParseXgFmListBox(CXgFmListBox *xlb, CGuiInstance *guiInstance, CMinMlGen::CNode &xmlNode) {
+    Call<0x145A86F>(xlb, guiInstance, &xmlNode);
+    auto &attribsNode = xmlNode.FindChildNode("Attribs");
+    CMinMlGen::CAttrParser attribs;
+    attribsNode.GetAttrParser(CBuffer(&attribs, sizeof(CMinMlGen::CAttrParser)));
+    auto fontName = attribs.GetString("Font");
+    if (fontName[0] && strlen(fontName) < 64)
+        strcpy(raw_ptr<Char>(xlb, XgListBoxDefaultSize), fontName);
+    auto headerFontName = attribs.GetString("HeaderFont");
+    if (headerFontName[0] && strlen(headerFontName) < 64)
+        strcpy(raw_ptr<Char>(xlb, XgListBoxDefaultSize + 64), headerFontName);
+}
+
 void DumpMatches() {
     for (UInt i = 0; i < DBMatchlist().GetNumMatches(); i++)
         DBMatchlist().GetMatch(i)->Dump(L"Matches");
@@ -2378,6 +2413,13 @@ void PatchEABFFixes(FM::Version v) {
         // show team colors on player comparison screen
         patch::RedirectCall(0x5D9098, OnPlayerInfoCompareRenderPlayerHead);
         patch::SetPointer(0x23D0D50, PlayerInfoCompare_Recolor);
+
+        // "Font" and "HeaderFont" attributes for FMListBox
+        patch::SetUInt(0x1433F61 + 1, XgListBoxDefaultSize + 64 * 2);
+        patch::RedirectCall(0x1433F86, OnXgFmListBoxConstruct);
+        patch::RedirectCall(0xD1ADC4, OnListBoxSetFont<false>);
+        patch::RedirectCall(0xD1ADD0, OnListBoxSetFont<true>);
+        patch::RedirectCall(0x145CD0B, OnParseXgFmListBox);
     }
 }
 
