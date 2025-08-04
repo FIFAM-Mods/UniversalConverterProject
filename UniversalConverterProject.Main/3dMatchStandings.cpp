@@ -30,11 +30,6 @@ Vector<PopupCompetitionData> &GetPopupKitColors() {
     return popupKitColors;
 }
 
-Vector<PopupCompetitionData> &GetPopupCustomBadge() {
-    static Vector<PopupCompetitionData> popupCustomBadge;
-    return popupCustomBadge;
-}
-
 Vector<PopupCompetitionData> &GetPopupRecolor() {
     static Vector<PopupCompetitionData> popupRecolor;
     return popupRecolor;
@@ -141,9 +136,11 @@ public:
         Bool mHasKitColors = false;
     };
     ColorsData mColors[2];
+    UInt mTeamIDs[2] = {};
+    Bool mReserve[2] = {};
     Bool mOneTeam = false;
 
-    virtual UInt Process(void *guiNode) {
+    virtual UInt Process(CGuiNode *guiNode) {
         void *guiObjectNode = CallVirtualMethodAndReturn<void *, 16>(guiNode); // guiNode->AsGuiObjectNode()
         if (guiObjectNode) {
             void *metadata = CallVirtualMethodAndReturn<void *, 11>(guiObjectNode); // guiObjectNode->Metadata()
@@ -191,6 +188,56 @@ public:
                                                 SetTextBoxColorRGBA(textBox, mColors[teamIndex].mKitColor[colorId - 1]);
                                             return 0;
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                UChar teamIndex = 0;
+                if (!mOneTeam) {
+                    void *dataEntry = CallVirtualMethodAndReturn<void *, 7>(metadata, "Data"); // metadata->GetEntryByKey()
+                    if (dataEntry) {
+                        char const *dataType = CallMethodAndReturn<char const *, 0x511630>(dataEntry); // popupColorEntry->AsString()
+                        if (dataType && ToLower(dataType) == "awayteam")
+                            teamIndex = 1;
+                    }
+                    if (guiNode->GetUid() && strstr(guiNode->GetUid(), "Away"))
+                        teamIndex = 1;
+                }
+                void *customBadgeDirEntry = CallVirtualMethodAndReturn<void *, 7>(metadata, "CustomBadgeDir"); // metadata->GetEntryByKey()
+                if (customBadgeDirEntry) {
+                    char const *customBadgeDir = CallMethodAndReturn<char const *, 0x511630>(customBadgeDirEntry); // popupColorEntry->AsString()
+                    if (customBadgeDir) {
+                        void *control = CallVirtualMethodAndReturn<void *, 29>(guiObjectNode); // guiObjectNode->GetControl()
+                        if (control) {
+                            void *image = CallAndReturn<void *, 0x1448819>(control); // CastToImage()
+                            void *textBox = CallAndReturn<void *, 0x1442B60>(control); // CastToTextBox()
+                            control = image ? image : textBox;
+                            if (control) {
+                                Bool badgeSet = false;
+                                if (mTeamIDs[teamIndex]) {
+                                    String uid = Format(L"%08X", mTeamIDs[teamIndex]);
+                                    if (mReserve[teamIndex]) {
+                                        String badgePath = Utils::AtoW(customBadgeDir) + L"\\" + uid + L"_2.png";
+                                        if (FmFileExists(badgePath)) {
+                                            SetImageFilename(control, badgePath);
+                                            badgeSet = true;
+                                        }
+                                    }
+                                    if (!badgeSet) {
+                                        String badgePath = Utils::AtoW(customBadgeDir) + L"\\" + uid + L".png";
+                                        if (FmFileExists(badgePath)) {
+                                            SetImageFilename(control, badgePath);
+                                            badgeSet = true;
+                                        }
+                                    }
+                                }
+                                if (!badgeSet) {
+                                    String badgePath = Utils::AtoW(customBadgeDir) + L"\\00000000.png";
+                                    if (FmFileExists(badgePath)) {
+                                        SetImageFilename(control, badgePath);
+                                        badgeSet = true;
                                     }
                                 }
                             }
@@ -351,49 +398,6 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
     }
     if (teamsSwapped)
         std::swap(kitType[0], kitType[1]);
-    // custom badges
-    auto badgesData = GetPopupDataForCompetition(GetPopupCustomBadge(), compId);
-    if (!badgesData.paramStr.empty() && badgesData.paramStr != L"-") {
-        char const *badgeNode[2] = { homeBadgeNode, awayBadgeNode };
-        String badgePath[2];
-        void *badge[2] = { nullptr, nullptr };
-        for (UInt t = 0; t < 2; t++) {
-            if (badgeNode[t]) {
-                badge[t] = GetOptionalComponent(screen, badgeNode[t]);
-                if (badge[t]) {
-                    String uid = Format(L"%08X", team[t]->GetTeamUniqueID());
-                    if (isReserve[t]) {
-                        badgePath[t] = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L"_2.png";
-                        if (!FmFileExists(badgePath[t])) {
-                            badgePath[t] = badgesData.paramStr + uid + L"_2.png";
-                            if (!FmFileExists(badgePath[t]))
-                                badgePath[t].clear();
-                        }
-                    }
-                    if (badgePath[t].empty()) {
-                        badgePath[t] = badgesData.paramStr + Format(L"%04d_", GetCurrentYear()) + uid + L".png";
-                        if (!FmFileExists(badgePath[t])) {
-                            badgePath[t] = badgesData.paramStr + uid + L".png";
-                            if (!FmFileExists(badgePath[t]))
-                                badgePath[t].clear();
-                        }
-                    }
-                }
-            }
-        }
-        if (badgesData.paramInt1 == 0) {
-            if (badge[0] && !badgePath[0].empty())
-                SetImageFilename(badge[0], badgePath[0]);
-            if (badge[1] && !badgePath[1].empty())
-                SetImageFilename(badge[1], badgePath[1]);
-        }
-        else if (badgesData.paramInt1 == 1) {
-            if (badge[0] && !badgePath[0].empty() && (!badge[1] || !badgePath[1].empty())) {
-                SetImageFilename(badge[0], badgePath[0]);
-                SetImageFilename(badge[1], badgePath[1]);
-            }
-        }
-    }
     // kit colors
     auto colorsData = GetPopupDataForCompetition(GetPopupKitColors(), compId);
     for (UInt t = 0; t < 2; t++) {
@@ -438,9 +442,13 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
         for (auto k : imgGenKit)
             SetVisible(k, !customKit);
     }
-    // recoloring
+    // recoloring and custom badges
     PopupRecolorProcessor popupProcessor;
     popupProcessor.mOneTeam = oneTeam;
+    popupProcessor.mReserve[0] = isReserve[0];
+    popupProcessor.mReserve[1] = isReserve[1];
+    popupProcessor.mTeamIDs[0] = team[0] ? team[0]->GetTeamUniqueID() : 0;
+    popupProcessor.mTeamIDs[1] = team[1] ? team[1]->GetTeamUniqueID() : 0;
     Map<UInt, Map<UInt, Array<StringA, 10>>> teamColors;
     auto recolorData = GetPopupDataForCompetition(GetPopupRecolor(), compId);
     if (!recolorData.paramStr.empty() && recolorData.paramStr != L"-")
@@ -1029,7 +1037,6 @@ Short *CalcBoundingTeamLabel(Short *outRect, void *control1, void *control2, voi
 void Patch3dMatchStandings(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadPopupDataSettingsFile(GetPopupKitColors(), FM::GameDirPath(L"plugins\\ucp\\popup_kitcolors.dat"), true);
-        ReadPopupDataSettingsFile(GetPopupCustomBadge(), FM::GameDirPath(L"plugins\\ucp\\popup_badges.dat"), true);
         ReadPopupDataSettingsFile(GetPopupRecolor(), FM::GameDirPath(L"plugins\\ucp\\popup_teamcolors.dat"), false);
         // expand struct size
         const UInt newStructSize = STANDINGS3D_ORIGINAL_STRUCT_SIZE + sizeof(Standings3dAdditionalData);

@@ -1391,7 +1391,7 @@ Bool CanDisplayGoldenBootNewspaperScreen() {
         if (CDBGame::GetInstance()->IsCountryPlayable(i) && GetCountry(i)->GetContinent() == FifamContinent::Europe)
             numPlayableCountriesInEurope++;
     }
-    return numPlayableCountriesInEurope > 0;
+    return numPlayableCountriesInEurope >= 0; // TODO: change to >0
 }
 
 void METHOD OnShowGoldenBootScreen(void *t, DUMMY_ARG, UShort screenId, Int employeeId, Int a3) {

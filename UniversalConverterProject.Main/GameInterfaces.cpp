@@ -3179,3 +3179,7 @@ CDBOneMatch *CDBMatchlist::GetMatch(UInt index) {
 UInt CDBMatchlist::GetNumMatches() {
     return CallMethodAndReturn<UInt, 0xE884A0>(this);
 }
+
+Char const *CGuiNode::GetUid() const {
+    return CallMethodAndReturn<Char const *, 0x1486F36>(this);
+}

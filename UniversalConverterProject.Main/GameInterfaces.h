@@ -1689,6 +1689,7 @@ public:
 
 class CGuiNode {
 public:
+    Char const *GetUid() const;
 };
 
 struct MessageDataBase {
