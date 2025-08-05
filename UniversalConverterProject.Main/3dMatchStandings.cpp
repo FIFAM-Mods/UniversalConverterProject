@@ -8,6 +8,7 @@
 #include "Color.h"
 
 const UInt STANDINGS3D_ORIGINAL_STRUCT_SIZE = 0x4F8;
+const UInt Match3DTeamPresentationOriginalSize = 0x57C;
 const UInt NEW_MAX_FONTS = 512;
 
 UChar gNewFonts320[320 * NEW_MAX_FONTS];
@@ -113,10 +114,6 @@ void *GetImage(void *panelInterface, char const *imageName) {
     return CallMethodAndReturn<void *, 0xD44380>(panelInterface, imageName);
 }
 
-void *GetOptionalComponent(void *panelInterface, char const *componentName) {
-    return CallMethodAndReturn<void *, 0xD34CE0>(panelInterface, componentName);
-}
-
 Bool IsSecondLegMatch() {
     void *match = *reinterpret_cast<void **>(0x3124748);
     return match && *raw_ptr<Bool>(match, 0xBB8);
@@ -153,7 +150,8 @@ public:
                         if (control) {
                             void *image = CallAndReturn<void *, 0x1448819>(control); // CastToImage()
                             void *textBox = CallAndReturn<void *, 0x1442B60>(control); // CastToTextBox()
-                            if (image || textBox) {
+                            CXgFmListBox *listBox = CallAndReturn<CXgFmListBox *, 0x148FD5D>(control); // CastToListBox()
+                            if (image || textBox || listBox) {
                                 StringA typeStr = ToLower(popupColorType);
                                 Int teamIndex = -1;
                                 if (Utils::StartsWith(typeStr, "home"))
@@ -174,6 +172,8 @@ public:
                                                 SetImageColorRGBA(image, mColors[teamIndex].mTeamColor[colorId - 1]);
                                             else if (textBox)
                                                 SetTextBoxColorRGBA(textBox, mColors[teamIndex].mTeamColor[colorId - 1]);
+                                            else if (listBox)
+                                                listBox->SetColor(3, mColors[teamIndex].mTeamColor[colorId - 1]);
                                             //::Message("Set team color %s %X", typeStr.c_str(), mColors[teamIndex].mTeamColor[colorId - 1]);
                                             return 0;
                                         }
@@ -186,6 +186,8 @@ public:
                                                 SetImageColorRGBA(image, mColors[teamIndex].mKitColor[colorId - 1]);
                                             else if (textBox)
                                                 SetTextBoxColorRGBA(textBox, mColors[teamIndex].mKitColor[colorId - 1]);
+                                            else if (listBox)
+                                                listBox->SetColor(3, mColors[teamIndex].mKitColor[colorId - 1]);
                                             return 0;
                                         }
                                     }
@@ -314,7 +316,7 @@ UInt GetAltColor(UInt clr) {
     return GenColorToInt(genClr);
 }
 
-void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, char const *awayBadgeNode,
+void Process3dMatchScreenExtensions(CXgFMPanel *screen, char const *homeBadgeNode, char const *awayBadgeNode,
     CTeamIndex _homeTeamID, CTeamIndex _awayTeamID, UInt _compID, bool oneTeam)
 {
     Bool isReserve[2] = { false, false };
@@ -411,7 +413,7 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
                 StringA imgName = imgNamePrefix + ((i == 0) ? "Kit" : "GenKit");
                 if (k != 0)
                     imgName += std::to_string(k);
-                void *img = GetOptionalComponent(screen, imgName.c_str());
+                void *img = screen->GetControlIfExists(imgName.c_str());
                 if (img) {
                     if (i == 0)
                         imgKit.push_back(img);
@@ -568,32 +570,97 @@ void Process3dMatchScreenExtensions(void *screen, char const *homeBadgeNode, cha
     CallVirtualMethod<26>(guiInstance, &popupProcessor, 0);
 }
 
-void METHOD OnSetupMatch3DTeamPresentation(void *screen, DUMMY_ARG, CDBOneMatch *match) {
+void METHOD OnSetupMatch3DTeamPresentation(CXgFMPanel *screen, DUMMY_ARG, CDBOneMatch *match) {
     CallMethod<0xB55900>(screen, match);
-    Process3dMatchScreenExtensions(screen, "TrfmTeam1|TbBadge", "TrfmTeam2|TbBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    CDBTeam *team[2] = { nullptr, nullptr };
+    CTeamIndex teamID[2] = {};
+    teamID[0] = match->GetHomeTeamID();
+    team[0] = GetTeam(teamID[0]);
+    teamID[1] = match->GetAwayTeamID();
+    team[1] = GetTeam(teamID[1]);
+    Process3dMatchScreenExtensions(screen, "TrfmTeam1|TbBadge", "TrfmTeam2|TbBadge", teamID[0], teamID[1], 0, false);
     for (UInt t = 0; t < 2; t++) {
         CDBEmployee *employee = *raw_ptr<CDBEmployee *>(screen, 0x4FC + 0x1C + 0x3C * t);
         if (employee) {
-            void *tb = GetOptionalComponent(screen, (t == 0) ? "TrfmTeam1|TbManagerPhoto" : "TrfmTeam2|TbManagerPhoto");
-            if (tb)
-                Call<0xD4F8E0>(tb, employee, 3, 1);
+            void *TbManagerPhoto = screen->GetControlIfExists((t == 0) ? "TrfmTeam1|TbManagerPhoto" : "TrfmTeam2|TbManagerPhoto");
+            if (TbManagerPhoto)
+                Call<0xD4F8E0>(TbManagerPhoto, employee, 3, 1);
+        }
+        CLineUpController *lineUpController = team[t] ? team[t]->GetLineUp(teamID[t])->GetLineUpController() : nullptr;
+        CXgTextBox *TbFormation = (CXgTextBox *)screen->GetControlIfExists((t == 0) ? "TrfmTeam1|TbFormation" : "TrfmTeam2|TbFormation");
+        if (TbFormation) {
+            TbFormation->SetText(L"");
+            if (team[t]) {
+                if (lineUpController) {
+                    UChar teamPart[] = { TEAMPART_DEFENSE, TEAMPART_MIDFIELD, TEAMPART_OFFENSE };
+                    Vector<String> teamPartStr;
+                    for (auto tp : teamPart) {
+                        UChar count = lineUpController->GetNumPlayersOfTeamPart(tp);
+                        if (count)
+                            teamPartStr.push_back(std::to_wstring(count));
+                    }
+                    String formationStr = Utils::Join(teamPartStr, L'-');
+                    TbFormation->SetText(formationStr.c_str());
+                }
+            }
+        }
+        Char const *lbName = (t == 0) ? "TrfmTeam1|LbSubstitutes" : "TrfmTeam2|LbSubstitutes";
+        if (screen->GetControlIfExists(lbName)) {
+            CFMListBox *listBox = raw_ptr<CFMListBox>(screen, Match3DTeamPresentationOriginalSize + 0x704 * t);
+            listBox->Create(screen, lbName);
+            CFMListBox::InitColumnTypes(listBox, LBT_INT, LBT_PLAYER, LBT_END);
+            CFMListBox::InitColumnFormatting(listBox, LBF_NONE, LBF_NONE, LBF_END);
+            listBox->Clear();
+            if (lineUpController) {
+                for (UInt i = 0; i < lineUpController->GetNumPlayersOnBench(); i++) {
+                    auto player = GetPlayer(lineUpController->GetBenchPlayer(i));
+                    if (player) {
+                        listBox->AddColumnInt(player->GetShirtNumber(!teamID[t].isReserveTeam()));
+                        listBox->AddColumnInt(player->GetID());
+                        listBox->NextRow();
+                    }
+                }
+            }
         }
     }
 }
 
-void *gCurrentTeamPresentationScreen = nullptr;
+CXgFMPanel *gCurrentTeamPresentationScreen = nullptr;
 
-void METHOD OnSetupTeam3DTeamPresentation(void *screen, DUMMY_ARG, void *teamData) {
+void METHOD OnSetupTeam3DTeamPresentation(CXgFMPanel *screen, DUMMY_ARG, void *teamData) {
     gCurrentTeamPresentationScreen = screen;
     CallMethod<0xB570A0>(screen, teamData);
-    Process3dMatchScreenExtensions(screen, nullptr, nullptr, *raw_ptr<CTeamIndex>(teamData, 0x20), CTeamIndex::null(), 0, true);
+    CTeamIndex teamID = *raw_ptr<CTeamIndex>(teamData, 0x20);
+    CDBTeam *team = GetTeam(teamID);
+    Process3dMatchScreenExtensions(screen, nullptr, nullptr, teamID, CTeamIndex::null(), 0, true);
+    CLineUpController *lineUpController = nullptr;
+    IPlayerRoles *playerRoles = nullptr;
+    if (team) {
+        lineUpController = team->GetLineUp(teamID)->GetLineUpController();
+        playerRoles = team->GetLineUpSettings(teamID)->GetRoles();
+    }
+    for (UInt i = 0; i < 11; i++) {
+        CDBPlayer *player = GetPlayer(lineUpController->GetFieldPlayer(i));
+        auto playerTransform = "TrfmPlayer" + std::to_string(i + 1) + "|";
+        auto ImgCaptain = screen->GetControlIfExists((playerTransform + "ImgCaptain").c_str());
+        if (ImgCaptain)
+            ImgCaptain->SetVisible(lineUpController && playerRoles && player && IsPlayerCaptain(player->GetID(), playerRoles, lineUpController));
+        auto TbFlag = screen->GetControlIfExists((playerTransform + "TbFlag").c_str());
+        if (TbFlag) {
+            if (player)
+                SetControlCountryFlag(TbFlag, player->GetNationality());
+            else
+                SetImageFilename(TbFlag, L"");
+        }
+    }
 }
 
-void OnSetStatusWidgetImage(void *widget, const WideChar *imagePath, UInt a, UInt b) {
+void OnSetStatusWidgetImage(CXgVisibleControl *control, const WideChar *imagePath, UInt a, UInt b) {
     if (gCurrentTeamPresentationScreen) {
-        void *buf[3] = { 0, 0, gCurrentTeamPresentationScreen };
-        UInt dummy = 0;
-        CallMethod<0xD5FE50>(buf, Utils::SafeConvertInt<UInt>(imagePath), widget, &dummy);
+        //void *buf[3] = { 0, 0, gCurrentTeamPresentationScreen };
+        //UInt dummy = 0;
+        //CallMethod<0xD5FE50>(buf, Utils::SafeConvertInt<UInt>(imagePath), widget, &dummy);
+        gCurrentTeamPresentationScreen->SetPlayerPortrait(control, Utils::SafeConvertInt<UInt>(imagePath), false);
     }
 }
 
@@ -608,12 +675,12 @@ Float *METHOD OnCalcPlayerLabelPosition(void *t, DUMMY_ARG, Float *out, Float *i
     return out;
 }
 
-void METHOD OnSetupMatch3DStatisticsOverlay(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DStatisticsOverlay(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB3BFD0>(screen, data);
     Process3dMatchScreenExtensions(screen, "TbBadgeHome", "TbBadgeAway", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
-void METHOD OnSetupMatch3DCardOverlay(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DCardOverlay(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB14D40>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 6) {
         void *matchController = *raw_ptr<void *>(screen, 0x48C);
@@ -637,7 +704,7 @@ void METHOD OnSetupMatch3DCardOverlay(void *screen, DUMMY_ARG, void *data) {
                 break;
             }
             for (auto const &s : compsToDisable) {
-                auto comp = GetOptionalComponent(screen, s.c_str());
+                auto comp = screen->GetControlIfExists(s.c_str());
                 if (comp)
                     SetVisible(comp, false);
             }
@@ -645,7 +712,7 @@ void METHOD OnSetupMatch3DCardOverlay(void *screen, DUMMY_ARG, void *data) {
     }
 }
 
-void METHOD OnSetupMatch3DGoalOverlay(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DGoalOverlay(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB15B80>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 1) {
         void *matchController = *raw_ptr<void *>(screen, 0x48C);
@@ -655,7 +722,7 @@ void METHOD OnSetupMatch3DGoalOverlay(void *screen, DUMMY_ARG, void *data) {
             Process3dMatchScreenExtensions(screen, "TbBadge", nullptr, teamID, CTeamIndex::null(), 0, true);
             Vector<StringA> compsToDisable = { "TbYellowCard", "Tb2ndYellowCard", "TbRedCard" };
             for (auto const &s : compsToDisable) {
-                auto comp = GetOptionalComponent(screen, s.c_str());
+                auto comp = screen->GetControlIfExists(s.c_str());
                 if (comp)
                     SetVisible(comp, false);
             }
@@ -663,19 +730,19 @@ void METHOD OnSetupMatch3DGoalOverlay(void *screen, DUMMY_ARG, void *data) {
     }
 }
 
-void METHOD OnSetupMatch3DPitchOverlayStandings(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DPitchOverlayStandings(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB719C0>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 0x2000)
         Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
-void METHOD OnSetupMatch3DPenaltyShootOut(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DPenaltyShootOut(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB38CE0>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) == 0x80)
         Process3dMatchScreenExtensions(screen, "ImgBadgeHome", "ImgBadgeAway", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
-void METHOD OnSetupMatch3DSubstitution(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DSubstitution(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xB3D1F0>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 8) {
         void *matchController = *raw_ptr<void *>(screen, 0x48C);
@@ -690,7 +757,7 @@ void METHOD OnSetupMatch3DSubstitution(void *screen, DUMMY_ARG, void *data) {
     }
 }
 
-void METHOD OnSetupMatch3DManagerSentOff(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetupMatch3DManagerSentOff(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xBFF020>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 0x1000) {
         Int employeeId = *raw_ptr<Int>(data, 0x14);
@@ -707,7 +774,7 @@ void METHOD OnSetupMatch3DManagerSentOff(void *screen, DUMMY_ARG, void *data) {
     }
 }
 
-void METHOD OnSetuMatch3DHalfTimeStats(void *screen, DUMMY_ARG, void *data) {
+void METHOD OnSetuMatch3DHalfTimeStats(CXgFMPanel *screen, DUMMY_ARG, void *data) {
     CallMethod<0xBF4A80>(screen, data);
     if (*raw_ptr<UInt>(data, 0x10) & 0x10000) {
         Bool process = true;
@@ -723,22 +790,22 @@ void METHOD OnSetuMatch3DHalfTimeStats(void *screen, DUMMY_ARG, void *data) {
     }
 }
 
-void METHOD OnCreateStandingsUI(void *standingsInterface) {
+void METHOD OnCreateStandingsUI(CXgFMPanel *screen) {
     // create original UI
-    CallMethod<0xB3AEE0>(standingsInterface);
+    CallMethod<0xB3AEE0>(screen);
     // get additional elements
-    auto additionalData = GetStandingsAdditionalData(standingsInterface);
-    additionalData->mImgAddedTime = GetOptionalComponent(standingsInterface, "ImgAddedTime");
-    additionalData->mTbAddedTime = GetOptionalComponent(standingsInterface, "TbAddedTime");
-    additionalData->mImgAggregate = GetOptionalComponent(standingsInterface, "ImgAggregate");
-    additionalData->mTbAggregate = GetOptionalComponent(standingsInterface, "TbAggregate");
+    auto additionalData = GetStandingsAdditionalData(screen);
+    additionalData->mImgAddedTime = screen->GetControlIfExists("ImgAddedTime");
+    additionalData->mTbAddedTime = screen->GetControlIfExists("TbAddedTime");
+    additionalData->mImgAggregate = screen->GetControlIfExists("ImgAggregate");
+    additionalData->mTbAggregate = screen->GetControlIfExists("TbAggregate");
     additionalData->mHasRedCards = false;
     for (UInt t = 0; t < 2; t++) {
         for (UInt i = 0; i < 3; i++) {
             additionalData->mCards[t][i].mStatus = 0;
             additionalData->mCards[t][i].mEnableTime = 0;
             StringA cardName = (t == 0) ? Utils::Format("HomeRedCard%d", i + 1) :  Utils::Format("AwayRedCard%d", i + 1);
-            additionalData->mCards[t][i].mpCard = GetOptionalComponent(standingsInterface, cardName.c_str());
+            additionalData->mCards[t][i].mpCard = screen->GetControlIfExists(cardName.c_str());
             if (additionalData->mCards[t][i].mpCard) {
                 SetVisible(additionalData->mCards[t][i].mpCard, false);
                 if (!additionalData->mHasRedCards)
@@ -758,7 +825,7 @@ void METHOD OnCreateStandingsUI(void *standingsInterface) {
         SetVisible(additionalData->mImgAggregate, false);
         SetVisible(additionalData->mTbAggregate, false);
     }
-    Process3dMatchScreenExtensions(standingsInterface, "ImgHomeBadge", "ImgAwayBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
+    Process3dMatchScreenExtensions(screen, "ImgHomeBadge", "ImgAwayBadge", CTeamIndex::null(), CTeamIndex::null(), 0, false);
 }
 
 void UpdateTime(void *standingsInterface) {
@@ -1034,6 +1101,20 @@ Short *CalcBoundingTeamLabel(Short *outRect, void *control1, void *control2, voi
     return outRect;
 }
 
+CXgFMPanel * METHOD OnMatch3DTeamPresentationConstruct(CXgFMPanel *screen, DUMMY_ARG, CGuiInstance *guiInstance) {
+    CallMethod<0xB57A70>(screen, guiInstance);
+    CallMethod<0xD1AC00>(raw_ptr<CFMListBox>(screen, Match3DTeamPresentationOriginalSize)); // CFMListBox::CFMListBox()
+    CallMethod<0xD1AC00>(raw_ptr<CFMListBox>(screen, Match3DTeamPresentationOriginalSize + 0x704)); // CFMListBox::CFMListBox()
+    return screen;
+}
+
+CXgFMPanel *METHOD OnMatch3DTeamPresentationDestruct(CXgFMPanel *screen) {
+    CallMethod<0xD182F0>(raw_ptr<CFMListBox>(screen, Match3DTeamPresentationOriginalSize)); // CFMListBox::~CFMListBox()
+    CallMethod<0xD182F0>(raw_ptr<CFMListBox>(screen, Match3DTeamPresentationOriginalSize + 0x704)); // CFMListBox::~CFMListBox()
+    CallMethod<0xB56430>(screen);
+    return screen;
+}
+
 void Patch3dMatchStandings(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadPopupDataSettingsFile(GetPopupKitColors(), FM::GameDirPath(L"plugins\\ucp\\popup_kitcolors.dat"), true);
@@ -1136,5 +1217,11 @@ void Patch3dMatchStandings(FM::Version v) {
         patch::RedirectCall(0xB14A5A, SetOverlayMinuteText);
         patch::RedirectCall(0xB158E1, SetOverlayMinuteText);
         patch::RedirectCall(0xBFEE72, SetOverlayMinuteText);
+
+        // extend Match3DTeamPresentation
+        patch::SetUInt(0xBF6C04 + 1, Match3DTeamPresentationOriginalSize + 0x704 * 2);
+        patch::SetUInt(0xBF6C0B + 1, Match3DTeamPresentationOriginalSize + 0x704 * 2);
+        patch::RedirectCall(0xBF6C37, OnMatch3DTeamPresentationConstruct);
+        patch::RedirectCall(0xB56A03, OnMatch3DTeamPresentationDestruct);
     }
 }

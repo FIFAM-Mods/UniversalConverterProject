@@ -750,6 +750,10 @@ wchar_t const *GetCountryLogoPath(wchar_t *out, unsigned char countryId, int siz
     return plugin::CallAndReturn<wchar_t const *, 0xD3D800>(out, countryId, size);
 }
 
+Bool IsPlayerCaptain(UInt playerId, IPlayerRoles *roles, CLineUpController *lineUpController) {
+    return CallAndReturn<Bool, 0x13248A0>(playerId, roles, lineUpController);
+}
+
 int gfxGetVarInt(char const *varName, int defaultValue) {
     void *expVars = plugin::CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x239120));
     return plugin::CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x239370), expVars, varName, defaultValue);
@@ -1333,6 +1337,14 @@ CClubHistory *CDBTeam::GetClubHistory() {
     return CallMethodAndReturn<CClubHistory *, 0xED1BE0>(this);
 }
 
+LineUp *CDBTeam::GetLineUp(CTeamIndex const &teamID) {
+    return CallMethodAndReturn<LineUp *, 0x1002E10>(this, &teamID);
+}
+
+LineUpSettings *CDBTeam::GetLineUpSettings(CTeamIndex teamID) {
+    return CallMethodAndReturn<LineUpSettings *, 0x10030E0>(this, teamID);
+}
+
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
     for (UInt i = 0; i < GetNumPlayers(); i++) {
         if (GetPlayer(i) == playerId)
@@ -1385,6 +1397,14 @@ CTeamIndex CTeamIndex::null() {
     CTeamIndex result;
     result.clear();
     return result;
+}
+
+Bool CTeamIndex::isFirstTeam() {
+    return type == 0;
+}
+
+Bool CTeamIndex::isReserveTeam() {
+    return type == 1;
 }
 
 Bool operator<(EAGMoney const &a, EAGMoney const &b) { return CallAndReturn<Bool, 0x0149CFFA>(&a, &b); }
@@ -1740,6 +1760,14 @@ CJDate CDBPlayer::GetBirthdate() {
     CJDate result;
     CallMethod<0xF9B2E0>(this, &result);
     return result;
+}
+
+UChar CDBPlayer::GetShirtNumber(Bool firstTeam) {
+    return CallMethodAndReturn<UChar, 0xF9B5B0>(this, firstTeam);
+}
+
+Bool CDBPlayer::IsCaptain() {
+    return CallMethodAndReturn<Bool, 0xFBCE50>(this);
 }
 
 UChar CDBPlayer::GetNationality(UChar number) {
@@ -2726,6 +2754,18 @@ CGuiFrame *GetGuiFrame() {
     return *(CGuiFrame **)0x30C8940;
 }
 
+void SetControlCountryFlag(CXgVisibleControl *control, UChar countryId) {
+    Int minDimension = Utils::Min(control->GetRect()->width, control->GetRect()->height);
+    UInt size = 1; // 32x32
+    if (minDimension >= 65) // [65-]
+        size = 3; // 128x128
+    else if (minDimension >= 33) // [33-64]
+        size = 2; // 64x64
+    WideChar flagPath[260];
+    GetCountryLogoPath(flagPath, countryId, size);
+    SetImageFilename(control, flagPath, 4, 4);
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);
@@ -2898,6 +2938,14 @@ CXgCheckBox *CXgFMPanel::GetCheckBox(Char const *name) {
 
 CXgComboBox *CXgFMPanel::GetComboBox(Char const *name) {
     return CallMethodAndReturn<CXgComboBox *, 0xD442C0>(this, name);
+}
+
+CXgVisibleControl *CXgFMPanel::GetControl(Char const *name) {
+    return CallMethodAndReturn<CXgVisibleControl *, 0xD44300>(this, name);
+}
+
+CXgVisibleControl *CXgFMPanel::GetControlIfExists(Char const *name) {
+    return CallMethodAndReturn<CXgVisibleControl *, 0xD34CE0>(this, name);
 }
 
 Int CXgFMPanel::SetPlayerPortrait(CXgVisibleControl *control, UInt playerId, Bool unk) {
@@ -3215,4 +3263,64 @@ CMinMlGen::CNode &CMinMlGen::CNode::FindChildNode(Char const *nodeName) {
 
 CMinMlGen::CAttrParser &CMinMlGen::CNode::GetAttrParser(CBuffer const &buf) {
     return *CallVirtualMethodAndReturn<CAttrParser *, 10>(this, &buf);
+}
+
+CLineUpController *LineUp::GetLineUpController() {
+    return *raw_ptr<CLineUpController *>(this, 0);
+}
+
+UInt CLineUpController::GetFieldPlayer(UChar index) {
+    return CallVirtualMethodAndReturn<UInt, 1>(this, index);
+}
+
+UInt CLineUpController::GetBenchPlayer(UChar index) {
+    return CallVirtualMethodAndReturn<UInt, 3>(this, index);
+}
+
+UInt CLineUpController::GetPlayer(UChar index) {
+    return CallVirtualMethodAndReturn<UInt, 5>(this, index);
+}
+
+UChar CLineUpController::GetNumPlayersOnField() {
+    return CallVirtualMethodAndReturn<UChar, 20>(this);
+}
+
+UChar CLineUpController::GetNumPlayersOnBench() {
+    return CallVirtualMethodAndReturn<UChar, 21>(this);
+}
+
+UChar CLineUpController::GetNumPlayersWithPosition(UInt position) {
+    return CallVirtualMethodAndReturn<UChar, 22>(this, position);
+}
+
+UChar CLineUpController::GetNumPlayersOfTeamPart(UInt teamPart) {
+    return CallVirtualMethodAndReturn<UChar, 23>(this, teamPart);
+}
+
+UInt CLineUpController::GetPlayerTeamPart(UInt playerId) {
+    return CallVirtualMethodAndReturn<UInt, 37>(this, playerId);
+}
+
+UInt CLineUpController::GetSlotTeamPart(UChar slotIndex) {
+    return CallVirtualMethodAndReturn<UInt, 38>(this, slotIndex);
+}
+
+Bool CLineUpController::GetFormationName(UInt formationId, WideChar *outName, UInt maxLen) {
+    return CallVirtualMethodAndReturn<Bool, 50>(this, formationId, outName, maxLen);
+}
+
+void CLineUpController::GetFormationName(WideChar *outName, UInt maxLen) {
+    CallVirtualMethod<51>(this, outName, maxLen);
+}
+
+IPlayerRoles *LineUpSettings::GetRoles() {
+    return *raw_ptr<IPlayerRoles *>(this, 0x2C);
+}
+
+void CXgListBoxCompound::SetColor(UInt colorType, UInt colorValue) {
+    CallVirtualMethod<90>(this, colorType, colorValue);
+}
+
+UInt CXgListBoxCompound::GetColor(UInt colorType) {
+    return CallVirtualMethodAndReturn<UInt, 91>(this, colorType);
 }

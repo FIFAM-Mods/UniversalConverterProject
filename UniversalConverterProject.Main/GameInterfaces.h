@@ -542,6 +542,8 @@ struct CTeamIndex {
     static CTeamIndex make(unsigned char CountryId, unsigned char Type, unsigned short Index);
     static CTeamIndex make(unsigned int value);
     static CTeamIndex null();
+    Bool isFirstTeam();
+    Bool isReserveTeam();
 };
 
 bool operator==(CTeamIndex const &a, CTeamIndex const &b);
@@ -673,6 +675,8 @@ public:
     Char GetAbility(UInt ability, CDBEmployee *employee = nullptr);
     UInt GetEmpicsID();
     CJDate GetBirthdate();
+    UChar GetShirtNumber(Bool firstTeam = true);
+    Bool IsCaptain();
 };
 
 class CDBStaff {
@@ -1263,6 +1267,43 @@ public:
 
 static_assert(sizeof(CClubHistory) == 0x214, "Failed");
 
+enum eTeamPart {
+    TEAMPART_GOALKEEPER = 0,
+    TEAMPART_DEFENSE = 1,
+    TEAMPART_MIDFIELD = 2,
+    TEAMPART_OFFENSE = 3,
+    TEAMPART_NONE = 5
+};
+
+class IPlayerRoles {
+public:
+};
+
+class CLineUpController {
+public:
+    UInt GetFieldPlayer(UChar index);
+    UInt GetBenchPlayer(UChar index);
+    UInt GetPlayer(UChar index);
+    UChar GetNumPlayersOnField();
+    UChar GetNumPlayersOnBench();
+    UChar GetNumPlayersWithPosition(UInt position);
+    UChar GetNumPlayersOfTeamPart(UInt teamPart);
+    UInt GetPlayerTeamPart(UInt playerId);
+    UInt GetSlotTeamPart(UChar slotIndex);
+    Bool GetFormationName(UInt formationId, WideChar *outName, UInt maxLen);
+    void GetFormationName(WideChar *outName, UInt maxLen);
+};
+
+class LineUp {
+public:
+    CLineUpController *GetLineUpController();
+};
+
+class LineUpSettings {
+public:
+    IPlayerRoles *GetRoles();
+};
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -1301,6 +1342,8 @@ public:
     CTeamStaff *GetTeamStaff();
     CTeamFanshops *GetFanShops();
     CClubHistory *GetClubHistory();
+    LineUp *GetLineUp(CTeamIndex const &teamID);
+    LineUpSettings *GetLineUpSettings(CTeamIndex teamID);
 };
 
 struct CAssessmentInfo {
@@ -1411,6 +1454,7 @@ unsigned short GetStartingYear();
 unsigned short GetCurrentSeasonStartYear();
 unsigned short GetCurrentSeasonEndYear();
 wchar_t const *GetCountryLogoPath(wchar_t *out, unsigned char countryId, int size);
+Bool IsPlayerCaptain(UInt playerId, IPlayerRoles *roles, CLineUpController *lineUpController);
 
 int gfxGetVarInt(char const *varName, int defaultValue);
 char const *gfxGetVarString(char const *varName);
@@ -1737,6 +1781,8 @@ public:
 
 class CXgListBoxCompound : public  CXgVisibleControl {
 public:
+    void SetColor(UInt colorType, UInt colorValue);
+    UInt GetColor(UInt colorType);
 };
 
 class CXgFmListBox : public  CXgListBoxCompound {
@@ -1835,12 +1881,12 @@ public:
     Int GetNumColumns();
     Int GetMaxRows();
     Int GetTotalRows();
-    void AddColumnInt(Int64 value, UInt color, Int unk = 0);
-    void AddColumnFloat(Float value, UInt color, Int unk = 0);
-    void AddColumnString(WideChar const *str, UInt color, Int unk = 0);
+    void AddColumnInt(Int64 value, UInt color = 0xFF1A1A1A, Int unk = 0);
+    void AddColumnFloat(Float value, UInt color = 0xFF1A1A1A, Int unk = 0);
+    void AddColumnString(WideChar const *str, UInt color = 0xFF1A1A1A, Int unk = 0);
     void AddTeamWidget(CTeamIndex const &teamID);
-    void AddTeamName(CTeamIndex const &teamID, UInt color, Int unk = 0);
-    void AddCompetition(CCompID const &compID, UInt color, Int unk = 0);
+    void AddTeamName(CTeamIndex const &teamID, UInt color = 0xFF1A1A1A, Int unk = 0);
+    void AddCompetition(CCompID const &compID, UInt color = 0xFF1A1A1A, Int unk = 0);
     void AddCountryFlag(UInt countryId, Int unk = 0);
     void AddColumnImage(WideChar const *imagePath);
     void SetRowColor(UInt rowIndex, UInt color);
@@ -1872,6 +1918,8 @@ public:
     CTrfmNode *GetTransform(Char const *name);
     CXgCheckBox *GetCheckBox(Char const *name);
     CXgComboBox *GetComboBox(Char const *name);
+    CXgVisibleControl *GetControl(Char const *name);
+    CXgVisibleControl *GetControlIfExists(Char const *name);
     Int SetPlayerPortrait(CXgVisibleControl *control, UInt playerId, Bool unk = false);
     void SetPlayerImage(CXgVisibleControl *control, UInt playerId, WideChar const *filePath);
     void SetPlayerName(CXgVisibleControl *control, UInt playerId);
@@ -2184,3 +2232,5 @@ public:
         CAttrParser &GetAttrParser(CBuffer const &buf);
     };
 };
+
+void SetControlCountryFlag(CXgVisibleControl *control, UChar countryId);
