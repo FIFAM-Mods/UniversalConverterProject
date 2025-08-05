@@ -94,6 +94,7 @@
     <ClCompile Include="NewspaperEuroStats.cpp" />
     <ClCompile Include="EuropeanGoldenShoe.cpp" />
     <ClCompile Include="PlayerCareerList.cpp" />
+    <ClCompile Include="LeagueSplit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="NewspaperEuroStats.h" />
     <ClInclude Include="EuropeanGoldenShoe.h" />
     <ClInclude Include="PlayerCareerList.h" />
+    <ClInclude Include="LeagueSplit.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

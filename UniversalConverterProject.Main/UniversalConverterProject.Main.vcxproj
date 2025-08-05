@@ -123,6 +123,7 @@
     <ClCompile Include="DebugPrint.cpp" />
     <ClCompile Include="EuropeanGoldenShoe.cpp" />
     <ClCompile Include="Languages.cpp" />
+    <ClCompile Include="LeagueSplit.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="AbilityColors.cpp" />
     <ClCompile Include="NewspaperEuroStats.cpp" />
@@ -207,6 +208,7 @@
     <ClInclude Include="DebugPrint.h" />
     <ClInclude Include="EuropeanGoldenShoe.h" />
     <ClInclude Include="Languages.h" />
+    <ClInclude Include="LeagueSplit.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="AbilityColors.h" />
     <ClInclude Include="NewspaperEuroStats.h" />

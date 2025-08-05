@@ -418,7 +418,7 @@ Pair<UInt, Vector<GoldenBootPlayerInfo>> CalcGoldenBootWinner() {
             if (firstLeague && Game()->IsCountryPlayable(countryId)) {
                 Vector<CDBLeague *> leaguesToCheck;
                 leaguesToCheck.push_back(firstLeague);
-                if (IsCompetitionLeagueSplit(leagueID)) {
+                if (IsCompetitionLeagueWithSplit(leagueID)) {
                     for (UInt i = 0; i < 2; i++) {
                         auto relegation = GetLeague(CCompID::Make(countryId, COMP_RELEGATION, i));
                         if (relegation)
@@ -499,7 +499,7 @@ Pair<UInt, Vector<GoldenBootPlayerInfo>> CalcGoldenBootWinner() {
             if (firstLeague && Game()->IsCountryPlayable(countryId)) {
                 Vector<CDBLeague *> leaguesToCheck;
                 leaguesToCheck.push_back(firstLeague);
-                if (IsCompetitionLeagueSplit(leagueID)) {
+                if (IsCompetitionLeagueWithSplit(leagueID)) {
                     for (UInt i = 0; i < 2; i++) {
                         auto relegation = GetLeague(CCompID::Make(countryId, COMP_RELEGATION, i));
                         if (relegation)
