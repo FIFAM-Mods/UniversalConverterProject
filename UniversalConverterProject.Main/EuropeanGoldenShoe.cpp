@@ -11,6 +11,7 @@
 #include "TextFileTable.h"
 #include "FifaWorldPlayerGala.h"
 #include "FifamBeg.h"
+#include "Competitions.h"
 
 using namespace plugin;
 
@@ -412,22 +413,34 @@ Pair<UInt, Vector<GoldenBootPlayerInfo>> CalcGoldenBootWinner() {
     for (UInt countryId = 1; countryId <= 207; countryId++) {
         auto country = GetCountry(countryId);
         if (country->GetContinent() == FifamContinent::Europe) {
-            auto league = GetLeague(countryId, COMP_LEAGUE, 0);
-            if (league && Game()->IsCountryPlayable(countryId)) {
-                auto root = league->GetRoot();
-                Float mp = GetGoalsMultiplier(countryId);
-                for (UInt matchday = 0; matchday < league->GetNumMatchdays(); matchday++) {
-                    for (UInt matchIndex = 0; matchIndex < league->GetMatchesInMatchday(); matchIndex++) {
-                        CMatch match;
-                        league->GetMatch(matchday, matchIndex, match);
-                        if (match.CheckFlag(FifamBeg::_1stPlayed)) {
-                            CDBMatchEventEntry event;
-                            Int eventIndex = match.GetMatchEventsStartIndex();
-                            root->GetMatchEvent(eventIndex, event);
-                            while (event.GetEventType() != MET_END) {
-                                if (event.GetEventType() == MET_GOAL && event.GetMinute() != 250 && event.GetPlayerInitiator())
-                                    playersWithGoals[event.GetPlayerInitiator()] += mp;
-                                root->GetMatchEvent(++eventIndex, event);
+            CCompID leagueID = CCompID::Make(countryId, COMP_LEAGUE, 0);
+            auto firstLeague = GetLeague(leagueID);
+            if (firstLeague && Game()->IsCountryPlayable(countryId)) {
+                Vector<CDBLeague *> leaguesToCheck;
+                leaguesToCheck.push_back(firstLeague);
+                if (IsCompetitionLeagueSplit(leagueID)) {
+                    for (UInt i = 0; i < 2; i++) {
+                        auto relegation = GetLeague(CCompID::Make(countryId, COMP_RELEGATION, i));
+                        if (relegation)
+                            leaguesToCheck.push_back(relegation);
+                    }
+                }
+                for (auto league : leaguesToCheck) {
+                    auto root = league->GetRoot();
+                    Float mp = GetGoalsMultiplier(countryId);
+                    for (UInt matchday = 0; matchday < league->GetNumMatchdays(); matchday++) {
+                        for (UInt matchIndex = 0; matchIndex < league->GetMatchesInMatchday(); matchIndex++) {
+                            CMatch match;
+                            league->GetMatch(matchday, matchIndex, match);
+                            if (match.CheckFlag(FifamBeg::_1stPlayed)) {
+                                CDBMatchEventEntry event;
+                                Int eventIndex = match.GetMatchEventsStartIndex();
+                                root->GetMatchEvent(eventIndex, event);
+                                while (event.GetEventType() != MET_END) {
+                                    if (event.GetEventType() == MET_GOAL && event.GetMinute() != 250 && event.GetPlayerInitiator())
+                                        playersWithGoals[event.GetPlayerInitiator()] += mp;
+                                    root->GetMatchEvent(++eventIndex, event);
+                                }
                             }
                         }
                     }
@@ -481,86 +494,98 @@ Pair<UInt, Vector<GoldenBootPlayerInfo>> CalcGoldenBootWinner() {
     for (UInt countryId = 1; countryId <= 207; countryId++) {
         auto country = GetCountry(countryId);
         if (country->GetContinent() == FifamContinent::Europe) {
-            auto league = GetLeague(countryId, COMP_LEAGUE, 0);
-            if (league && Game()->IsCountryPlayable(countryId)) {
-                auto root = league->GetRoot();
-                Float mp = GetGoalsMultiplier(countryId);
-                for (UInt matchday = 0; matchday < league->GetNumMatchdays(); matchday++) {
-                    for (UInt matchIndex = 0; matchIndex < league->GetMatchesInMatchday(); matchIndex++) {
-                        CMatch match;
-                        league->GetMatch(matchday, matchIndex, match);
-                        if (match.CheckFlag(FifamBeg::_1stPlayed)) {
-                            CDBMatchEventEntry event;
-                            CTeamIndex teams[2] {};
-                            league->GetFixtureTeams(matchday, matchIndex, teams[0], teams[1]);
-                            if (!teams[0].isNull() && !teams[1].isNull()) {
-                                Map<UInt, PlayerAppInfo> appInfo;
-                                Int eventIndex = match.GetMatchEventsStartIndex();
-                                root->GetMatchEvent(eventIndex, event);
-                                while (event.GetEventType() != MET_END) {
-                                    if (event.GetEventType() == MET_PLAYER_APPEARANCE) {
-                                        UInt playerIndex = 0;
-                                        while (event.GetEventType() == MET_PLAYER_APPEARANCE) {
-                                            for (UInt i = 0; i < 3; ++i) {
-                                                UInt appPlayer = event.GetValue(i);
-                                                if (appPlayer && Utils::Contains(playersWithGoals, appPlayer)) {
-                                                    auto &app = appInfo[appPlayer];
-                                                    app.homeTeam = event.IsHomeTeam();
-                                                    app.onTheBench = (playerIndex > 10);
-                                                }
-                                                playerIndex++;
-                                            }
-                                            root->GetMatchEvent(++eventIndex, event);
-                                        }
-                                    }
-                                    if (event.GetEventType() == MET_END)
-                                        break;
-                                    else if (event.GetEventType() == MET_GOAL) {
-                                        if (event.GetMinute() != 250) {
-                                            for (UInt p = 0; p < 2; p++) {
-                                                Bool assist = p == 1;
-                                                UInt playerId = 0;
-                                                if (assist)
-                                                    playerId = (event.GetPlayerInitiator() == event.GetPlayerAffected()) ? 0 : event.GetPlayerAffected();
-                                                else
-                                                    playerId = event.GetPlayerInitiator();
-                                                if (playerId && Utils::Contains(playersWithGoals, playerId)) {
-                                                    auto &c = candidates[playerId];
-                                                    if (assist)
-                                                        c.assists += 1;
-                                                    else {
-                                                        c.goals += 1;
-                                                        c.points += mp;
-                                                        if (event.GetReason1() == GOAL_PENALTY)
-                                                            c.penalties += 1;
+            CCompID leagueID = CCompID::Make(countryId, COMP_LEAGUE, 0);
+            auto firstLeague = GetLeague(leagueID);
+            if (firstLeague && Game()->IsCountryPlayable(countryId)) {
+                Vector<CDBLeague *> leaguesToCheck;
+                leaguesToCheck.push_back(firstLeague);
+                if (IsCompetitionLeagueSplit(leagueID)) {
+                    for (UInt i = 0; i < 2; i++) {
+                        auto relegation = GetLeague(CCompID::Make(countryId, COMP_RELEGATION, i));
+                        if (relegation)
+                            leaguesToCheck.push_back(relegation);
+                    }
+                }
+                for (auto league : leaguesToCheck) {
+                    auto root = league->GetRoot();
+                    Float mp = GetGoalsMultiplier(countryId);
+                    for (UInt matchday = 0; matchday < league->GetNumMatchdays(); matchday++) {
+                        for (UInt matchIndex = 0; matchIndex < league->GetMatchesInMatchday(); matchIndex++) {
+                            CMatch match;
+                            league->GetMatch(matchday, matchIndex, match);
+                            if (match.CheckFlag(FifamBeg::_1stPlayed)) {
+                                CDBMatchEventEntry event;
+                                CTeamIndex teams[2]{};
+                                league->GetFixtureTeams(matchday, matchIndex, teams[0], teams[1]);
+                                if (!teams[0].isNull() && !teams[1].isNull()) {
+                                    Map<UInt, PlayerAppInfo> appInfo;
+                                    Int eventIndex = match.GetMatchEventsStartIndex();
+                                    root->GetMatchEvent(eventIndex, event);
+                                    while (event.GetEventType() != MET_END) {
+                                        if (event.GetEventType() == MET_PLAYER_APPEARANCE) {
+                                            UInt playerIndex = 0;
+                                            while (event.GetEventType() == MET_PLAYER_APPEARANCE) {
+                                                for (UInt i = 0; i < 3; ++i) {
+                                                    UInt appPlayer = event.GetValue(i);
+                                                    if (appPlayer && Utils::Contains(playersWithGoals, appPlayer)) {
+                                                        auto &app = appInfo[appPlayer];
+                                                        app.homeTeam = event.IsHomeTeam();
+                                                        app.onTheBench = (playerIndex > 10);
                                                     }
-                                                    c.playerId = playerId;
+                                                    playerIndex++;
+                                                }
+                                                root->GetMatchEvent(++eventIndex, event);
+                                            }
+                                        }
+                                        if (event.GetEventType() == MET_END)
+                                            break;
+                                        else if (event.GetEventType() == MET_GOAL) {
+                                            if (event.GetMinute() != 250) {
+                                                for (UInt p = 0; p < 2; p++) {
+                                                    Bool assist = p == 1;
+                                                    UInt playerId = 0;
+                                                    if (assist)
+                                                        playerId = (event.GetPlayerInitiator() == event.GetPlayerAffected()) ? 0 : event.GetPlayerAffected();
+                                                    else
+                                                        playerId = event.GetPlayerInitiator();
+                                                    if (playerId && Utils::Contains(playersWithGoals, playerId)) {
+                                                        auto &c = candidates[playerId];
+                                                        if (assist)
+                                                            c.assists += 1;
+                                                        else {
+                                                            c.goals += 1;
+                                                            c.points += mp;
+                                                            if (event.GetReason1() == GOAL_PENALTY)
+                                                                c.penalties += 1;
+                                                        }
+                                                        c.playerId = playerId;
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                    else if (event.GetEventType() == MET_YELRED_CARD || event.GetEventType() == MET_RED_CARD || event.GetEventType() == MET_SUBST) {
-                                        UInt outPlayer = event.GetValue(0);
-                                        if (outPlayer && Utils::Contains(playersWithGoals, outPlayer))
-                                            appInfo[outPlayer].minuteOut = event.GetMinute();
-                                        if (event.GetEventType() == MET_SUBST) {
-                                            UInt inPlayer = event.GetValue(1);
-                                            if (inPlayer && Utils::Contains(playersWithGoals, inPlayer))
-                                                appInfo[inPlayer].minuteIn = event.GetMinute();
+                                        else if (event.GetEventType() == MET_YELRED_CARD || event.GetEventType() == MET_RED_CARD || event.GetEventType() == MET_SUBST) {
+                                            UInt outPlayer = event.GetValue(0);
+                                            if (outPlayer && Utils::Contains(playersWithGoals, outPlayer))
+                                                appInfo[outPlayer].minuteOut = event.GetMinute();
+                                            if (event.GetEventType() == MET_SUBST) {
+                                                UInt inPlayer = event.GetValue(1);
+                                                if (inPlayer && Utils::Contains(playersWithGoals, inPlayer))
+                                                    appInfo[inPlayer].minuteIn = event.GetMinute();
+                                            }
                                         }
+                                        root->GetMatchEvent(++eventIndex, event);
                                     }
-                                    root->GetMatchEvent(++eventIndex, event);
-                                }
-                                for (auto const &[playerId, app] : appInfo) {
-                                    if (!app.onTheBench || app.minuteIn) {
-                                        auto &c = candidates[playerId];
-                                        c.minutesPlayed += Utils::Clamp(
-                                            app.minuteOut ? app.minuteOut - app.minuteIn : event.GetMinute() - app.minuteIn,
-                                            1, 120);
-                                        c.playerId = playerId;
-                                        CTeamIndex team = app.homeTeam ? teams[0] : teams[1];
-                                        if (!Utils::Contains(c.teams, team))
-                                            c.teams.push_back(team);
+                                    for (auto const &[playerId, app] : appInfo) {
+                                        if (!app.onTheBench || app.minuteIn) {
+                                            auto &c = candidates[playerId];
+                                            c.minutesPlayed += Utils::Clamp(
+                                                app.minuteOut ? app.minuteOut - app.minuteIn : event.GetMinute() - app.minuteIn,
+                                                1, 120);
+                                            c.playerId = playerId;
+                                            CTeamIndex team = app.homeTeam ? teams[0] : teams[1];
+                                            if (!Utils::Contains(c.teams, team))
+                                                c.teams.push_back(team);
+                                        }
                                     }
                                 }
                             }
