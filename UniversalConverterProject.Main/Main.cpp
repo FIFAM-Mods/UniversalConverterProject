@@ -68,6 +68,7 @@
 #include "Languages.h"
 #include "NewspaperEuroStats.h"
 #include "EuropeanGoldenShoe.h"
+#include "LeagueSplit.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -150,6 +151,7 @@ public:
             PatchTeamControl(v);
             //InstallEasyEdit(v); -- deprecated since version 2022.1. do not enable
             PatchCompetitions(v);
+            PatchLeagueSplit(v);
             PatchSpareEmployeeFix(v);
             PatchEABFFixes(v);
             PatchLoansLimit(v);

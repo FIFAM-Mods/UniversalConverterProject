@@ -11,7 +11,7 @@
 #include "TextFileTable.h"
 #include "FifaWorldPlayerGala.h"
 #include "FifamBeg.h"
-#include "Competitions.h"
+#include "LeagueSplit.h"
 
 using namespace plugin;
 

@@ -1,8 +1,10 @@
 #include "LeagueSplit.h"
-#include "GameInterfaces.h"
 #include "FifamReadWrite.h"
 #include "FifamCompRegion.h"
 #include "FifamCompType.h"
+#include "FifamBeg.h"
+#include "FifamNation.h"
+#include "shared.h"
 
 using namespace plugin;
 
@@ -425,13 +427,13 @@ unsigned char METHOD GetFACompCountryId_SkipReserveTeams(void *comp) {
     return 45;
 }
 
-void METHOD MyLeagueGetTopScorers(CDBLeague *league, DUMMY_ARG, void *buf, Int minuteMin, Int minuteMax,
+void METHOD MyLeagueGetTopScorers(CDBLeague *league, DUMMY_ARG, TopScorersBuffer &buf, Int minuteMin, Int minuteMax,
     UInt matchdayMin, UInt matchdayMax, UChar flags, Bool clearBuffer, Int sortCriteria1, Int sortCriteria2)
 {
     if (IsCompetitionLeagueWithSplit(league->GetCompID())) {
         Bool initialClear = false;
         if (matchdayMin < league->GetNumMatchdays())
-            CallMethod<0x106E0A0>(league, buf, minuteMin, minuteMax, matchdayMin, matchdayMax, flags, clearBuffer, sortCriteria1, sortCriteria2);
+            CallMethod<0x106E0A0>(league, &buf, minuteMin, minuteMax, matchdayMin, matchdayMax, flags, clearBuffer, sortCriteria1, sortCriteria2);
         else
             initialClear = clearBuffer;
         if (matchdayMax >= league->GetNumMatchdays() && IsCompetitionLeagueWithSplit(league->GetCompID())) {
@@ -440,12 +442,12 @@ void METHOD MyLeagueGetTopScorers(CDBLeague *league, DUMMY_ARG, void *buf, Int m
             for (UInt i = 0; i < 2; i++) {
                 auto relegation = GetLeague(CCompID::Make(league->GetCompID().countryId, COMP_RELEGATION, i));
                 if (relegation)
-                    CallMethod<0x106E0A0>(relegation, buf, minuteMin, minuteMax, splitMin, splitMax, flags, (i == 0) ? initialClear : false, sortCriteria1, sortCriteria2);
+                    CallMethod<0x106E0A0>(relegation, &buf, minuteMin, minuteMax, splitMin, splitMax, flags, (i == 0) ? initialClear : false, sortCriteria1, sortCriteria2);
             }
         }
     }
     else
-        CallMethod<0x106E0A0>(league, buf, minuteMin, minuteMax, matchdayMin, matchdayMax, flags, clearBuffer, sortCriteria1, sortCriteria2);
+        CallMethod<0x106E0A0>(league, &buf, minuteMin, minuteMax, matchdayMin, matchdayMax, flags, clearBuffer, sortCriteria1, sortCriteria2);
 }
 
 UInt METHOD StatsTables_GetLeagueCurrentMatchday(CDBLeague *league) {
@@ -460,6 +462,404 @@ UInt METHOD StatsTables_GetLeagueCurrentMatchday(CDBLeague *league) {
         //leagueSplitMatchday++;
     }
     return currentMatchday + leagueSplitMatchday;
+}
+
+const UInt OriginalNewspaperTopScorerSize = 0x4D8;
+const UInt OriginalNewspaperGoalkeeperSize = 0x4F0;
+
+struct NewspaperTopScorerGkExtension {
+    CXgImage *ImgPicture;
+    CXgTextBox *TbPhoto;
+    CXgTextBox *TbName[2];
+    CXgTextBox *TbDescWithPhoto[2];
+    CXgTextBox *TbDescNoPhoto[2];
+    CXgTextBox *TbTrophy[3];
+    CXgTextBox *TbNotDrawn;
+};
+
+template<Bool IsGK>
+void METHOD OnNewspaperTopScorerGkCreateUI(CXgFMPanel *screen) {
+    if (IsGK)
+        CallMethod<0xA494F0>(screen);
+    else
+        CallMethod<0xA6BBA0>(screen);
+    auto ext = raw_ptr<NewspaperTopScorerGkExtension>(screen, IsGK ? OriginalNewspaperGoalkeeperSize : OriginalNewspaperTopScorerSize);
+    ext->ImgPicture = screen->GetImage("ImgPicture");
+    ext->TbPhoto = screen->GetTextBox("TbPhoto");
+    ext->TbName[0] = screen->GetTextBox("TbName");
+    ext->TbName[1] = screen->GetTextBox("TbNameShadow");
+    ext->TbDescWithPhoto[0] = screen->GetTextBox("TbDescWithPhoto");
+    ext->TbDescWithPhoto[1] = screen->GetTextBox("TbDescWithPhotoShadow");
+    ext->TbDescNoPhoto[0] = screen->GetTextBox("TbDescNoPhoto");
+    ext->TbDescNoPhoto[1] = screen->GetTextBox("TbDescNoPhotoShadow");
+    for (UInt i = 0; i < 3; i++)
+        ext->TbTrophy[i] = screen->GetTextBox(Utils::Format("TbTrophy%d", i + 1).c_str());
+    ext->TbNotDrawn = screen->GetTextBox("TbNotDrawn");
+}
+
+void SetupNewspaperTopScorerGkExtension(NewspaperTopScorerGkExtension *ext, CCompID const &compId, Array<Bool, 3> winners, Bool isGk) {
+    String compIdStr = Utils::Format(L"%08X", compId.ToInt());
+    String basePath = isGk ? L"art_fm\\lib\\Trophies\\goalkeeper\\" : L"art_fm\\lib\\Trophies\\topscorer\\";
+    String imgPath;
+    if (GetFilenameForImageIfExists(imgPath, basePath + L"picture", compIdStr))
+        SetImageFilename(ext->ImgPicture, imgPath.c_str(), 4, 4);
+    Bool hasPhoto = GetFilenameForImageIfExists(imgPath, basePath + L"photo", compIdStr);
+    if (hasPhoto)
+        SetImageFilename(ext->TbPhoto, imgPath.c_str(), 4, 4);
+    ext->TbPhoto->SetVisible(hasPhoto);
+    auto nameText = GetTranslationIfPresent(Utils::Format(isGk ? "IDS_BESTGK_NAME_%08X" : "IDS_TOPSCORER_NAME_%08X", compId.ToInt()).c_str());
+    auto descText = GetTranslationIfPresent(Utils::Format(isGk ? "IDS_BESTGK_DESC_%08X" : "IDS_TOPSCORER_DESC_%08X", compId.ToInt()).c_str());
+    for (UInt i = 0; i < 2; i++) {
+        if (nameText)
+            ext->TbName[i]->SetText(nameText);
+        ext->TbName[i]->SetEnabled(nameText ? true : false);
+        if (descText) {
+            if (hasPhoto)
+                ext->TbDescWithPhoto[i]->SetText(descText);
+            else
+                ext->TbDescNoPhoto[i]->SetText(descText);
+        }
+        ext->TbDescWithPhoto[i]->SetVisible(hasPhoto && descText);
+        ext->TbDescNoPhoto[i]->SetVisible(!hasPhoto && descText);
+    }
+    Bool hasTrophyPic = GetFilenameForImageIfExists(imgPath, basePath, compIdStr);
+    for (UInt i = 0; i < 3; i++) {
+        if (hasTrophyPic && winners[i]) {
+            SetImageFilename(ext->TbTrophy[i], imgPath.c_str(), 4, 4);
+            ext->TbTrophy[i]->SetVisible(true);
+        }
+        else
+            ext->TbTrophy[i]->SetVisible(false);
+    }
+}
+
+CTeamIndex GetPlayerLastTeamFromLeagueInCurrentSeason(UInt playerId, CDBLeague *league) {
+    CDBPlayerCareerList *cl = (CDBPlayerCareerList *)GetObjectByID(GetIDForObject(2, playerId));
+    if (cl && cl->GetNumEntries()) {
+        SafeLog::Write(Utils::Format(L"GetPlayerLastTeamFromLeagueInCurrentSeason1: %s - %d", PlayerName(playerId), cl->GetNumEntries()));
+        CJDate seasonStartDate = Game()->GetCurrentSeasonStartDate();
+        for (Int e = cl->GetNumEntries() - 1; e >= 0; e--) {
+            if (cl->GetEndDate(e).IsNull() || cl->GetEndDate(e) > seasonStartDate) {
+                CTeamIndex teamID = cl->GetTeamID(e);
+                if (!teamID.isNull()) {
+                    SafeLog::Write(Utils::Format(L"GetPlayerLastTeamFromLeagueInCurrentSeason2: %s - %s", PlayerName(playerId), TeamName(teamID)));
+                    auto team = GetTeam(teamID);
+                    if (team && league->IsTeamPresent(teamID)) {
+                        SafeLog::Write(Utils::Format(L"GetPlayerLastTeamFromLeagueInCurrentSeason3: %s - %s", PlayerName(playerId), TeamName(teamID)));
+                        return teamID;
+                    }
+                }
+            }
+        }
+    }
+    return CTeamIndex();
+}
+
+void METHOD SetupNewspaperTopScorer(CXgFMPanel *screen) {
+    UInt numPlayersAdded = 0;
+    Array<Bool, 3> winners = {};
+    auto Tile = raw_ptr<CXgImage *>(screen, 0x48C);
+    auto TbCrest = raw_ptr<CXgTextBox *>(screen, 0x498);
+    auto TbPic = raw_ptr<CXgTextBox *>(screen, 0x4A4);
+    auto TbPlayer = raw_ptr<CXgTextBox *>(screen, 0x4B0);
+    auto TbTeam = raw_ptr<CXgTextBox *>(screen, 0x4BC);
+    auto TbGoals = raw_ptr<CXgTextBox *>(screen, 0x4C8);
+    for (UInt i = 0; i < 3; i++) {
+        Tile[i]->SetVisible(false);
+        TbCrest[i]->SetVisible(false);
+        TbPic[i]->SetVisible(false);
+        TbPlayer[i]->SetVisible(false);
+        TbTeam[i]->SetVisible(false);
+        TbGoals[i]->SetVisible(false);
+    }
+    auto ext = raw_ptr<NewspaperTopScorerGkExtension>(screen, OriginalNewspaperTopScorerSize);
+    CCompID leagueID;
+    auto team = CurrentUser().GetTeam();
+    if (team) {
+        auto league = GetLeague(team->GetFirstTeamLeagueID());
+        if (league) {
+            leagueID = league->GetCompID();
+            TopScorersBuffer topScorers;
+            MyLeagueGetTopScorers(league, 0, topScorers, 0, 120, 0, 120, 3, true, 1, 2);
+            UInt winnerIndex = 0;
+            for (UInt i = 0; i < Utils::Min(3u, topScorers.Size()); i++) {
+                auto topScorer = topScorers.At(i);
+                auto player = GetPlayer(topScorer->GetPlayerId());
+                if (player) {
+                    Tile[numPlayersAdded]->SetVisible(true);
+                    Bool isWinner = numPlayersAdded == 0;
+                    if (isWinner)
+                        winnerIndex = i;
+                    else
+                        isWinner = topScorer->GetGoals() == topScorers.At(winnerIndex)->GetGoals();
+                    screen->SetPlayerName(TbPlayer[numPlayersAdded], player->GetID());
+                    TbPlayer[numPlayersAdded]->SetVisible(true);
+                    screen->SetPlayerPortrait(TbPic[numPlayersAdded], player->GetID());
+                    TbPic[numPlayersAdded]->SetVisible(true);
+                    String goalsStr = Utils::Format(GetTranslation("ID_NUM_GOALS"), topScorer->GetGoals());
+                    TbGoals[numPlayersAdded]->SetText(goalsStr.c_str());
+                    TbGoals[numPlayersAdded]->SetVisible(true);
+                    CTeamIndex teamToDisplay;
+                    //CTeamIndex playerTeamID = player->GetCurrentTeam();
+                    //if (!playerTeamID.isNull()) {
+                    //    auto playerTeam = GetTeam(playerTeamID);
+                    //    if (playerTeam && playerTeam->GetFirstTeamLeagueID() == leagueID)
+                    //        teamToDisplay = playerTeamID;
+                    //}
+                    if (teamToDisplay.isNull())
+                        teamToDisplay = GetPlayerLastTeamFromLeagueInCurrentSeason(player->GetID(), league);
+                    if (!teamToDisplay.isNull()) {
+                        screen->SetTeamName(TbTeam[numPlayersAdded], teamToDisplay);
+                        TbTeam[numPlayersAdded]->SetVisible(true);
+                        screen->SetTeamBadge(TbCrest[numPlayersAdded], teamToDisplay);
+                        TbCrest[numPlayersAdded]->SetVisible(true);
+                    }
+                    winners[numPlayersAdded] = isWinner;
+                    numPlayersAdded++;
+                }
+            }
+        }
+    }
+    ext->TbNotDrawn->SetVisible(numPlayersAdded == 0);
+    SetupNewspaperTopScorerGkExtension(ext, leagueID, winners, false);
+}
+
+struct GkAppearanceInfo {
+    UChar minuteIn = 0, minuteOut = 0, concededGoals = 0;
+    Bool onTheBench = false, homeTeam = false;
+};
+
+struct NewspaperGoalkeeperInfo {
+    UInt playerId = 0;
+    CTeamIndex teamID;
+    UChar matchesPlayed = 0;
+    UChar cleanSheets = 0;
+    UShort goalsConceded = 0;
+    UShort minutesPlayed = 0;
+    Float coefficient = 0.0f;
+};
+
+void METHOD SetupNewspaperGoalkeeper(CXgFMPanel *screen) {
+    UInt numPlayersAdded = 0;
+    Array<Bool, 3> winners = {};
+    auto Tile = raw_ptr<CXgImage *>(screen, 0x48C);
+    auto TbCrest = raw_ptr<CXgTextBox *>(screen, 0x498);
+    auto TbPic = raw_ptr<CXgTextBox *>(screen, 0x4A4);
+    auto TbPlayer = raw_ptr<CXgTextBox *>(screen, 0x4B0);
+    auto TbTeam = raw_ptr<CXgTextBox *>(screen, 0x4BC);
+    auto TbGoals = raw_ptr<CXgTextBox *>(screen, 0x4C8);
+    auto TbMatches = raw_ptr<CXgTextBox *>(screen, 0x4D4);
+    auto TbConcededGoals = raw_ptr<CXgTextBox *>(screen, 0x4E0);
+    for (UInt i = 0; i < 3; i++) {
+        Tile[i]->SetVisible(false);
+        TbCrest[i]->SetVisible(false);
+        TbPic[i]->SetVisible(false);
+        TbPlayer[i]->SetVisible(false);
+        TbTeam[i]->SetVisible(false);
+        TbGoals[i]->SetVisible(false);
+        TbMatches[i]->SetVisible(false);
+        TbConcededGoals[i]->SetVisible(false);
+    }
+    auto ext = raw_ptr<NewspaperTopScorerGkExtension>(screen, OriginalNewspaperGoalkeeperSize);
+    CCompID leagueID;
+    auto team = CurrentUser().GetTeam();
+    if (team) {
+        auto mainLeague = GetLeague(team->GetFirstTeamLeagueID());
+        if (mainLeague) {
+            leagueID = mainLeague->GetCompID();
+            Bool IsEngland = leagueID.index == 0 && leagueID.countryId == FifamNation::England;
+            UInt leagueMatchdays = mainLeague->GetNumMatchdays();
+            UInt leagueSplitMatchdays = 0;
+            Vector<CDBLeague *> leaguesToCheck;
+            leaguesToCheck.push_back(mainLeague);
+            if (IsCompetitionLeagueWithSplit(leagueID)) {
+                for (UInt i = 0; i < 2; i++) {
+                    auto relegation = GetLeague(CCompID::Make(leagueID.countryId, COMP_RELEGATION, i));
+                    if (relegation) {
+                        leaguesToCheck.push_back(relegation);
+                        if (relegation->GetNumMatchdays() > leagueSplitMatchdays)
+                            leagueSplitMatchdays = relegation->GetNumMatchdays();
+                    }
+                }
+                leagueMatchdays += leagueSplitMatchdays;
+            }
+            Map<UInt, NewspaperGoalkeeperInfo> goalkeepersMap;
+            for (auto league : leaguesToCheck) {
+                auto root = league->GetRoot();
+                for (UInt matchday = 0; matchday < league->GetNumMatchdays(); matchday++) {
+                    for (UInt matchIndex = 0; matchIndex < league->GetMatchesInMatchday(); matchIndex++) {
+                        CMatch match;
+                        league->GetMatch(matchday, matchIndex, match);
+                        if (match.CheckFlag(FifamBeg::_1stPlayed)) {
+                            CDBMatchEventEntry event;
+                            CTeamIndex teams[2]{};
+                            league->GetFixtureTeams(matchday, matchIndex, teams[0], teams[1]);
+                            if (!teams[0].isNull() && !teams[1].isNull()) {
+                                Map<UInt, GkAppearanceInfo> appInfo;
+                                Int eventIndex = match.GetMatchEventsStartIndex();
+                                root->GetMatchEvent(eventIndex, event);
+                                while (event.GetEventType() != MET_END) {
+                                    if (event.GetEventType() == MET_PLAYER_APPEARANCE) {
+                                        UInt playerIndex = 0;
+                                        while (event.GetEventType() == MET_PLAYER_APPEARANCE) {
+                                            for (UInt i = 0; i < 3; ++i) {
+                                                UInt appPlayer = event.GetValue(i);
+                                                if (appPlayer) {
+                                                    auto &app = appInfo[appPlayer];
+                                                    app.homeTeam = event.IsHomeTeam();
+                                                    app.onTheBench = (playerIndex > 10);
+                                                }
+                                                playerIndex++;
+                                            }
+                                            root->GetMatchEvent(++eventIndex, event);
+                                        }
+                                    }
+                                    if (event.GetEventType() == MET_END)
+                                        break;
+                                    else if (event.GetEventType() == MET_CONCEDED_GOAL) {
+                                        if (event.GetMinute() != 250) {
+                                            UInt playerId = event.GetPlayerAffected();
+                                            if (playerId) {
+                                                auto &gk = goalkeepersMap[playerId];
+                                                gk.goalsConceded += 1;
+                                                gk.playerId = playerId;
+                                                appInfo[playerId].concededGoals += 1;
+                                            }
+                                        }
+                                    }
+                                    else if (event.GetEventType() == MET_YELRED_CARD || event.GetEventType() == MET_RED_CARD || event.GetEventType() == MET_SUBST) {
+                                        UInt outPlayer = event.GetValue(0);
+                                        if (outPlayer)
+                                            appInfo[outPlayer].minuteOut = event.GetMinute();
+                                        if (event.GetEventType() == MET_SUBST) {
+                                            UInt inPlayer = event.GetValue(1);
+                                            if (inPlayer)
+                                                appInfo[inPlayer].minuteIn = event.GetMinute();
+                                        }
+                                    }
+                                    root->GetMatchEvent(++eventIndex, event);
+                                }
+                                for (auto const &[playerId, app] : appInfo) {
+                                    if (!app.onTheBench || app.minuteIn) {
+                                        CDBPlayer *player = GetPlayer(playerId);
+                                        if (player && (Utils::Contains(goalkeepersMap, playerId) || player->IsGoalkeeper())) {
+                                            auto &gk = goalkeepersMap[playerId];
+                                            gk.playerId = playerId;
+                                            gk.teamID = app.homeTeam ? teams[0] : teams[1];
+                                            Int minutesPlayed = Utils::Clamp(app.minuteOut ?
+                                                app.minuteOut - app.minuteIn : event.GetMinute() - app.minuteIn, 1, 120);
+                                            if (minutesPlayed >= 60)
+                                                gk.matchesPlayed += 1;
+                                            Bool cleanSheet = app.concededGoals == 0 && minutesPlayed >= 90
+                                                && !app.onTheBench && !app.minuteIn && !app.minuteOut;
+                                            if (cleanSheet)
+                                                gk.cleanSheets += 1;
+                                            gk.minutesPlayed += minutesPlayed;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Vector<NewspaperGoalkeeperInfo> goalkeepers;
+            goalkeepers.reserve(goalkeepersMap.size());
+            UChar minMatches = (UChar)((Float)leagueMatchdays * 0.74f); // 38 => 28, 46 => 34, 8 => 5
+            if (minMatches < 1)
+                minMatches = 1;
+            for (auto &[playerId, gk] : goalkeepersMap) {
+                if (IsEngland) {
+                    if (gk.cleanSheets > 0)
+                        goalkeepers.push_back(gk);
+                }
+                else {
+                    if (gk.matchesPlayed >= minMatches) {
+                        gk.coefficient = std::round((Float)gk.goalsConceded / (Float)gk.matchesPlayed * 100.0f) / 100.0f;
+                        goalkeepers.push_back(gk);
+                    }
+                }
+            }
+            if (IsEngland) {
+                Utils::Sort(goalkeepers, [](NewspaperGoalkeeperInfo const &a, NewspaperGoalkeeperInfo const &b) {
+                    if (a.cleanSheets > b.cleanSheets)
+                        return true;
+                    if (b.cleanSheets > a.cleanSheets)
+                        return false;
+                    return a.minutesPlayed > b.minutesPlayed;
+                });
+            } 
+            else {
+                Utils::Sort(goalkeepers, [](NewspaperGoalkeeperInfo const &a, NewspaperGoalkeeperInfo const &b) {
+                    return a.coefficient < b.coefficient;
+                });
+            }
+            UInt winnerIndex = 0;
+            for (UInt i = 0; i < Utils::Min(3u, goalkeepers.size()); i++) {
+                auto const &gk = goalkeepers[i];
+                auto player = GetPlayer(gk.playerId);
+                if (player) {
+                    Tile[numPlayersAdded]->SetVisible(true);
+                    Bool isWinner = numPlayersAdded == 0;
+                    if (isWinner)
+                        winnerIndex = i;
+                    else {
+                        if (IsEngland) {
+                            isWinner = gk.cleanSheets == goalkeepers[winnerIndex].cleanSheets
+                                && gk.minutesPlayed == goalkeepers[winnerIndex].minutesPlayed;
+                        }
+                        else
+                            isWinner = gk.coefficient == goalkeepers[winnerIndex].coefficient;
+                    }
+                    screen->SetPlayerName(TbPlayer[numPlayersAdded], player->GetID());
+                    TbPlayer[numPlayersAdded]->SetVisible(true);
+                    screen->SetPlayerPortrait(TbPic[numPlayersAdded], player->GetID());
+                    TbPic[numPlayersAdded]->SetVisible(true);
+                    // England: matches (TbMatches), clean sheets (TbConcededGoals)
+                    // Spain: matches (TbMatches), conceded goals (TbConcededGoals), coefficient (TbGoals)
+                    String matchesStr = Utils::Format(GetTranslation("IDS_NEWSPAPER_MATCHES"), gk.matchesPlayed);
+                    TbMatches[numPlayersAdded]->SetText(matchesStr.c_str());
+                    TbMatches[numPlayersAdded]->SetVisible(true);
+                    String concededGoalsStr = IsEngland ?
+                        Utils::Format(GetTranslation("IDS_NEWSPAPER_CLEANSHEETS"), gk.cleanSheets) :
+                        Utils::Format(GetTranslation("IDS_NEWSPAPER_CONGOALS"), gk.goalsConceded);
+                    TbConcededGoals[numPlayersAdded]->SetText(concededGoalsStr.c_str());
+                    TbConcededGoals[numPlayersAdded]->SetVisible(true);
+                    String coefficientStr = IsEngland ?
+                        Utils::Format(GetTranslation("IDS_NEWSPAPER_MINUTES"), gk.minutesPlayed) :
+                        Utils::Format(GetTranslation("IDS_NEWSPAPER_COEFFICIENT"), gk.coefficient);
+                    TbGoals[numPlayersAdded]->SetText(coefficientStr.c_str());
+                    TbGoals[numPlayersAdded]->SetVisible(true);
+                    if (!gk.teamID.isNull()) {
+                        screen->SetTeamName(TbTeam[numPlayersAdded], gk.teamID);
+                        TbTeam[numPlayersAdded]->SetVisible(true);
+                        screen->SetTeamBadge(TbCrest[numPlayersAdded], gk.teamID);
+                        TbCrest[numPlayersAdded]->SetVisible(true);
+                    }
+                    winners[numPlayersAdded] = isWinner;
+                    numPlayersAdded++;
+                }
+            }
+        }
+    }
+    ext->TbNotDrawn->SetVisible(numPlayersAdded == 0);
+    SetupNewspaperTopScorerGkExtension(ext, leagueID, winners, true);
+}
+
+Int METHOD OnPlayerInfoGetSeasonStats(CPlayerStats *stats, DUMMY_ARG, CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches,
+    UInt &numMatchesWithMark, UInt &numMOTMs, Bool bCurrentClubOnly, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks,
+    Bool bWithFriendlies, CTeamIndex teamID, UInt compIDMask, Bool bWithoutQuali)
+{
+    Int result = stats->GetSeasonStats(outStats, numConsecutiveHomeMatches, numMatchesWithMark, numMOTMs, bCurrentClubOnly,
+        compID, minMinutesForMark, bLocalizedMarks, bWithFriendlies, teamID, compIDMask, bWithoutQuali);
+    if (IsCompetitionLeagueWithSplit(compID)) {
+        for (UInt i = 0; i < 2; i++) {
+            result += stats->GetSeasonStats(outStats, numConsecutiveHomeMatches, numMatchesWithMark, numMOTMs, bCurrentClubOnly,
+                CCompID::Make(compID.countryId, COMP_RELEGATION, i), minMinutesForMark, bLocalizedMarks, bWithFriendlies, teamID,
+                compIDMask, bWithoutQuali);
+        }
+    }
+    return result;
 }
 
 void PatchLeagueSplit(FM::Version v) {
@@ -595,5 +995,20 @@ void PatchLeagueSplit(FM::Version v) {
         // stats screens - extend max matchday
         patch::RedirectCall(0x785608, StatsTables_GetLeagueCurrentMatchday);
         patch::RedirectCall(0x7853E6, StatsTables_GetLeagueCurrentMatchday);
+
+        // newspaper
+        patch::SetUInt(0xA854A4 + 1, OriginalNewspaperTopScorerSize + sizeof(NewspaperTopScorerGkExtension));
+        patch::SetUInt(0xA854AB + 1, OriginalNewspaperTopScorerSize + sizeof(NewspaperTopScorerGkExtension));
+        patch::SetUInt(0xA855B4 + 1, OriginalNewspaperGoalkeeperSize + sizeof(NewspaperTopScorerGkExtension));
+        patch::SetUInt(0xA855BB + 1, OriginalNewspaperGoalkeeperSize + sizeof(NewspaperTopScorerGkExtension));
+        patch::SetPointer(0x244D15C, OnNewspaperTopScorerGkCreateUI<false>);
+        patch::SetPointer(0x244AAC4, OnNewspaperTopScorerGkCreateUI<true>);
+        patch::RedirectCall(0xA6DDAE, SetupNewspaperTopScorer);
+        patch::RedirectCall(0xA4C04E, SetupNewspaperGoalkeeper);
+
+        // player info stats
+        patch::RedirectCall(0x5CDD7E, OnPlayerInfoGetSeasonStats);
+        patch::RedirectCall(0x5D343D, OnPlayerInfoGetSeasonStats); // print
+
     }
 }

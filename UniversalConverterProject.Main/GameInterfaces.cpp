@@ -82,6 +82,18 @@ Bool CJDate::operator<(const CJDate &other) const {
     return value < other.value;
 }
 
+Bool CJDate::operator==(const CJDate &other) const {
+    return value == other.value;
+}
+
+Bool CJDate::operator>=(const CJDate &other) const {
+    return value >= other.value;
+}
+
+Bool CJDate::operator<=(const CJDate &other) const {
+    return value <= other.value;
+}
+
 CDBGame *CDBGame::GetInstance() {
     return plugin::CallAndReturn<CDBGame *, 0xF61410>();
 }
@@ -829,6 +841,20 @@ Bool FmFileRead(Path const &filepath, void *outData, UInt size) {
     return false;
 }
 
+Bool GetFilenameForImageIfExists(String &out, String const &folder, String const &filename) {
+    String filepath = folder + L"\\" + filename;
+    out = filepath + L".tga";
+    if (FmFileExists(out))
+        return true;
+    out = filepath + L".png";
+    if (FmFileExists(out))
+        return true;
+    out = filepath + L".jpg";
+    if (FmFileExists(out))
+        return true;
+    return false;
+}
+
 void *CreateTextBox(void *screen, char const *name) {
     return CallMethodAndReturn<void *, 0xD44240>(screen, name);
 }
@@ -1093,6 +1119,16 @@ String CountryTag(UChar countryId) {
     return Utils::Format(L"%d %s", countryId, CountryName(countryId));
 }
 
+String PlayerName(CDBPlayer *player) {
+    if (player)
+        return player->GetName();
+    return L"n/a";
+}
+
+String PlayerName(UInt playerId) {
+    return PlayerName(GetPlayer(playerId));
+}
+
 String FlagsToStr(UInt value) {
     Vector<String> vecFlags;
     FifamBeg beg = FifamBeg::MakeFromInt(value);
@@ -1319,6 +1355,18 @@ UChar CDBTeam::GetFirstTeamDivision() {
 
 UChar CDBTeam::GetFirstTeamDivisionLastSeason() {
     return CallMethodAndReturn<UChar, 0xECC6B0>(this);
+}
+
+CCompID CDBTeam::GetFirstTeamLeagueID() {
+    CCompID result;
+    CallMethod<0xECC390>(this, &result);
+    return result;
+}
+
+CCompID CDBTeam::GetTeamLeagueID(CTeamIndex teamID) {
+    CCompID result;
+    CallMethod<0xECC3A0>(this, &result, teamID);
+    return result;
 }
 
 CClubFans *CDBTeam::GetClubFans() {
@@ -1569,6 +1617,10 @@ bool operator==(CTeamIndex const &a, CTeamIndex const &b) {
     return a.index == b.index && a.countryId == b.countryId && a.type == b.type;
 }
 
+bool operator==(CCompID const &a, CCompID const &b) {
+    return a.index == b.index && a.type == b.type && a.countryId == b.countryId;
+}
+
 UChar CDBCountry::GetLeagueAverageLevel() {
     return plugin::CallMethodAndReturn<UChar, 0xFD6FA0>(this);
 }
@@ -1764,6 +1816,10 @@ CJDate CDBPlayer::GetBirthdate() {
 
 UChar CDBPlayer::GetShirtNumber(Bool firstTeam) {
     return CallMethodAndReturn<UChar, 0xF9B5B0>(this, firstTeam);
+}
+
+Bool CDBPlayer::IsGoalkeeper() {
+    return CallMethodAndReturn<Bool, 0xFA2000>(this);
 }
 
 Bool CDBPlayer::IsCaptain() {
@@ -2105,6 +2161,14 @@ UChar CParameterFiles::GetProbabilityOfBasquePlayersInYouthTeam() {
 
 UChar CPlayerStats::GetNumInternationalCaps() const {
     return CallMethodAndReturn<UChar, 0x1005F40>(this);
+}
+
+Int CPlayerStats::GetMatchStats(CCompID const &compId, Int eventIndex, CMatchStatistics &outStats) const {
+    return CallMethodAndReturn<Int, 0x1008F10>(this, &compId, eventIndex, &outStats);
+}
+
+Int CPlayerStats::GetSeasonStats(CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches, UInt &numMatchesWithMark, UInt &numMOTMs, Bool bCurrentClubOnly, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks, Bool bWithFriendlies, CTeamIndex teamID, UInt compIDMask, Bool bWithoutQuali) const {
+    return CallMethodAndReturn<Int, 0x1009EA0>(this, &outStats, &numConsecutiveHomeMatches, &numMatchesWithMark, &numMOTMs, bCurrentClubOnly, &compID, minMinutesForMark, bLocalizedMarks, bWithFriendlies, teamID, compIDMask, bWithoutQuali);
 }
 
 Int CPlayerStats::GetStatsForMatches(CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches, UInt &numMatchesWithMark, UInt &numMOTMs, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks, Bool bWithFriendlies, UInt compIDMask, CJDate startDate, CDBTeam *team, Bool bWithoutQuali) const {
@@ -2746,7 +2810,7 @@ CDBNetwork &GetNetwork() {
     return *(CDBNetwork *)0x3185EF0;
 }
 
-CCurrentUser &GetCurrentUser() {
+CCurrentUser &CurrentUser() {
     return *(CCurrentUser *)0x3062D28;
 }
 
@@ -2964,8 +3028,8 @@ void CXgFMPanel::SetTeamBadge(CXgVisibleControl *control, CTeamIndex teamID) {
     CallMethod<0xD516C0>(this, control, teamID);
 }
 
-void CXgFMPanel::SetTeamName(CXgVisibleControl *control, CTeamIndex const &teamID) {
-    CallMethod<0xD51670>(this, control, &teamID);
+void CXgFMPanel::SetTeamName(CXgVisibleControl *control, CTeamIndex teamID) {
+    CallMethod<0xD51670>(this, control, teamID);
 }
 
 void CXgFMPanel::SetCountryFlag(CXgVisibleControl *control, UInt countryId) {
@@ -3168,6 +3232,10 @@ Bool CDBPlayerCareerEntry::OnLoan() const {
     return CallMethodAndReturn<Bool, 0x10D5430>(this);
 }
 
+CDBTeam *CCurrentUser::GetTeam() {
+    return CallMethodAndReturn<CDBTeam *, 0x430930>(this);
+}
+
 void CCurrentUser::SetUseDefaultColors(Bool useDefaultColors) {
     CallMethod<0x431120>(this, useDefaultColors);
 }
@@ -3323,4 +3391,34 @@ void CXgListBoxCompound::SetColor(UInt colorType, UInt colorValue) {
 
 UInt CXgListBoxCompound::GetColor(UInt colorType) {
     return CallVirtualMethodAndReturn<UInt, 91>(this, colorType);
+}
+
+UShort TopScorer::GetGoals() const { return CallMethodAndReturn<UShort, 0x14E8812>(this); }
+UShort TopScorer::GetPenalties() const { return CallMethodAndReturn<UShort, 0x14E8822>(this); }
+UShort TopScorer::GetDoubles() const { return CallMethodAndReturn<UShort, 0x14E8832>(this); }
+UShort TopScorer::GetHomeMatches() const { return CallMethodAndReturn<UShort, 0x14E8842>(this); }
+UShort TopScorer::GetAssists() const { return CallMethodAndReturn<UShort, 0x14E89A0>(this); }
+UShort TopScorer::GetMatches() const { return CallMethodAndReturn<UShort, 0x14E89C9>(this); }
+UShort TopScorer::GetMOTMs() const { return CallMethodAndReturn<UShort, 0x14E8A13>(this); }
+UInt TopScorer::GetGoalsAndAssists() const { return CallMethodAndReturn<UInt, 0x14E89B0>(this); }
+UInt TopScorer::GetPlayerId() const { return CallMethodAndReturn<UInt, 0x14E8852>(this); }
+Float TopScorer::GetGoalsPerMatch() const { return CallMethodAndReturn<Float, 0x14E89D9>(this); }
+NameDesc *TopScorer::GetNameDesc() const { return CallMethodAndReturn<NameDesc *, 0x14E8A23>(this); }
+WideChar const *TopScorer::GetPlayerName() const { return CallMethodAndReturn<WideChar const *, 0x14E8860>(this); }
+WideChar *TopScorer::GetPlayerName(WideChar *buf, UInt maxLen) const { return CallMethodAndReturn<WideChar *, 0x14E88F8>(this, buf, maxLen); }
+
+TopScorersBuffer::TopScorersBuffer(UInt capacity) {
+    CallMethod<0x14E8ED8>(this, capacity);
+}
+
+TopScorersBuffer::~TopScorersBuffer() {
+    CallMethod<0x14E8EFD>(this);
+}
+
+UInt TopScorersBuffer::Size() const {
+    return CallMethodAndReturn<UInt, 0x14E90BE>(this);
+}
+
+TopScorer *TopScorersBuffer::At(UInt index) {
+    return CallMethodAndReturn<TopScorer *, 0x14E91A9>(this, index);
 }

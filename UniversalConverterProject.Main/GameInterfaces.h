@@ -70,7 +70,7 @@ enum eGuiColor {
 };
 
 class CJDate {
-    UInt value;
+    UInt value = 0;
 public:
     CJDate GetTranslated(int numYears);
     unsigned short GetYear();
@@ -89,6 +89,9 @@ public:
     Bool IsNull();
     Bool operator>(const CJDate &other) const;
     Bool operator<(const CJDate &other) const;
+    Bool operator==(const CJDate &other) const;
+    Bool operator>=(const CJDate &other) const;
+    Bool operator<=(const CJDate &other) const;
 };
 
 enum eCurrency : Int {
@@ -531,9 +534,9 @@ public:
 CDBGame *Game();
 
 struct CTeamIndex {
-    unsigned short index;
-    unsigned char countryId;
-    unsigned char type;
+    unsigned short index = 0;
+    unsigned char countryId = 0;
+    unsigned char type = 0;
 
     unsigned int ToInt() const;
     CTeamIndex firstTeam() const;
@@ -566,6 +569,8 @@ struct CCompID {
     static CCompID Make(unsigned int value);
     CCompID BaseCompID() const;
 };
+
+bool operator==(CCompID const &a, CCompID const &b);
 
 struct CMatchEvent {
     UInt m_nType;
@@ -602,6 +607,8 @@ class CDBPlayer;
 class CPlayerStats {
 public:
     UChar GetNumInternationalCaps() const;
+    Int GetMatchStats(CCompID const &compId, Int eventIndex, CMatchStatistics &outStats) const;
+    Int GetSeasonStats(CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches, UInt &numMatchesWithMark, UInt &numMOTMs, Bool bCurrentClubOnly, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks, Bool bWithFriendlies, CTeamIndex teamID, UInt compIDMask, Bool bWithoutQuali) const;
     Int GetStatsForMatches(CMatchStatistics &outStats, UInt &numConsecutiveHomeMatches, UInt &numMatchesWithMark, UInt &numMOTMs, CCompID const &compID, UInt minMinutesForMark, Bool bLocalizedMarks, Bool bWithFriendlies, UInt compIDMask, CJDate startDate, CDBTeam *team, Bool bWithoutQuali) const;
     void SetNumPlayerOfTheMonth(UChar count);
     void SetNumPlayerOfTheYear(UChar count);
@@ -676,6 +683,7 @@ public:
     UInt GetEmpicsID();
     CJDate GetBirthdate();
     UChar GetShirtNumber(Bool firstTeam = true);
+    Bool IsGoalkeeper();
     Bool IsCaptain();
 };
 
@@ -1338,6 +1346,8 @@ public:
     void OnCompetitionElimination(CCompID const &compID, UInt cupRoundId);
     UChar GetFirstTeamDivision();
     UChar GetFirstTeamDivisionLastSeason();
+    CCompID GetFirstTeamLeagueID();
+    CCompID GetTeamLeagueID(CTeamIndex teamID);
     CClubFans *GetClubFans();
     CTeamStaff *GetTeamStaff();
     CTeamFanshops *GetFanShops();
@@ -1470,6 +1480,8 @@ Bool FmFileImageExists(String const &filepathWithoutExtension, String &resultPat
 UInt FmFileGetSize(Path const &filepath);
 Bool FmFileRead(Path const &filepath, void *outData, UInt size);
 
+Bool GetFilenameForImageIfExists(String &out, String const &folder, String const &filename);
+
 struct ShapeWriterImageRegion {
     Char const *name;
     UInt width;
@@ -1559,6 +1571,8 @@ String CompetitionName(CDBCompetition *comp);
 String CompetitionName(CCompID const &compId);
 String CountryName(UChar countryId);
 String CountryTag(UChar countryId);
+String PlayerName(CDBPlayer *player);
+String PlayerName(UInt playerId);
 
 String FlagsToStr(UInt value);
 String CompetitionType(CDBCompetition *comp);
@@ -1924,7 +1938,7 @@ public:
     void SetPlayerImage(CXgVisibleControl *control, UInt playerId, WideChar const *filePath);
     void SetPlayerName(CXgVisibleControl *control, UInt playerId);
     void SetTeamBadge(CXgVisibleControl *control, CTeamIndex teamID);
-    void SetTeamName(CXgVisibleControl *control, CTeamIndex const &teamID);
+    void SetTeamName(CXgVisibleControl *control, CTeamIndex teamID);
     void SetCountryFlag(CXgVisibleControl *control, UInt countryId);
     void SetCountryFlag(CXgVisibleControl *control, UInt countryId, UInt size);
     void SetCountryName(CXgVisibleControl *control, UInt countryId);
@@ -2188,11 +2202,12 @@ class CNetComData {
 
 class CCurrentUser {
 public:
+    CDBTeam *GetTeam();
     void SetUseDefaultColors(Bool useDefaultColors);
     void SetTeamColors(CDBTeam *team);
 };
 
-CCurrentUser &GetCurrentUser();
+CCurrentUser &CurrentUser();
 
 class CGuiFrame {
 public:
@@ -2234,3 +2249,45 @@ public:
 };
 
 void SetControlCountryFlag(CXgVisibleControl *control, UChar countryId);
+
+class TopScorer {
+public:
+    UInt m_nPlayerId;
+    CJDate m_birthdate;
+    NameDesc m_name;
+    UShort m_nGoals;
+    UShort m_nPenalties;
+    UShort m_nDoubles;
+    UShort m_nHomeMatches;
+    UShort m_nAssists;
+    UShort m_nMOTMs;
+    UShort m_nMatches;
+
+    UShort GetGoals() const;
+    UShort GetPenalties() const;
+    UShort GetDoubles() const;
+    UShort GetHomeMatches() const;
+    UShort GetAssists() const;
+    UShort GetMatches() const;
+    UShort GetMOTMs() const;
+    UInt GetGoalsAndAssists() const;
+    UInt GetPlayerId() const;
+    Float GetGoalsPerMatch() const;
+    NameDesc *GetNameDesc() const;
+    WideChar const *GetPlayerName() const;
+    WideChar *GetPlayerName(WideChar *buf, UInt maxLen) const;
+};
+
+static_assert(sizeof(TopScorer) == 0x1C, "Failed");
+
+class TopScorersBuffer {
+public:
+    UInt m_nCapacity;
+    UInt m_nSize;
+    TopScorer *m_pData;
+
+    TopScorersBuffer(UInt capacity = 20);
+    ~TopScorersBuffer();
+    UInt Size() const;
+    TopScorer *At(UInt index);
+};

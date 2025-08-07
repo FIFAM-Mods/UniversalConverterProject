@@ -5,7 +5,7 @@
 #include "shared.h"
 #include "UcpSettings.h"
 #include "GfxCoreHook.h"
-#include "Competitions.h"
+#include "LeagueSplit.h"
 
 using namespace plugin;
 

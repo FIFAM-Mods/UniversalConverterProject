@@ -8,7 +8,7 @@
 #include "Random.h"
 #include "UcpSettings.h"
 #include "FifamCompLeague.h"
-#include "Competitions.h"
+#include "LeagueSplit.h"
 #include "3dPatches.h"
 #include "Color.h"
 #include "json/json.hpp"

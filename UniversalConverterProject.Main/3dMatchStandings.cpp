@@ -3,7 +3,7 @@
 #include "shared.h"
 #include "license_check/license_check.h"
 #include "GameInterfaces.h"
-#include "Competitions.h"
+#include "LeagueSplit.h"
 #include "Kits.h"
 #include "Color.h"
 

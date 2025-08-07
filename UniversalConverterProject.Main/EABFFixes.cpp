@@ -9,7 +9,7 @@
 #include "FifamCompRegion.h"
 #include "FifamNation.h"
 #include "FifamCompType.h"
-#include "Competitions.h"
+#include "LeagueSplit.h"
 #include "Translation.h"
 #include "Random.h"
 #include "ExtendedTeam.h"
@@ -628,8 +628,7 @@ CTeamIndex * METHOD OnGetMatchInfo(void *info, DUMMY_ARG, CTeamIndex *outTeamId)
     return result;
 }
 
-int METHOD OnGetPlayerMatchInfoForDreamTeam(void *stats, DUMMY_ARG, void *match, int startIndex, void *out) {
-    CCompID *compId = raw_ptr<CCompID>(match, 0);
+Int METHOD OnGetPlayerMatchInfoForDreamTeam(void *stats, DUMMY_ARG, CCompID *compId, Int startIndex, void *out) {
     auto countryId = compId->countryId;
     auto compType = compId->type;
     auto compIndex = compId->index;
@@ -652,7 +651,7 @@ int METHOD OnGetPlayerMatchInfoForDreamTeam(void *stats, DUMMY_ARG, void *match,
     }
     if (!canCalculate)
         return 0;
-    int result = CallMethodAndReturn<int, 0x1008F10>(stats, match, startIndex, out);
+    int result = CallMethodAndReturn<int, 0x1008F10>(stats, compId, startIndex, out);
     if (result != 0) {
         Float coeff = 0.25f;
         if (isLeagueSplit)
@@ -1285,14 +1284,6 @@ UChar METHOD OnGetPlayerKnowledgeLevel(CDBEmployee *employee, DUMMY_ARG, CDBPlay
     return result;
 }
 
-UInt METHOD OnBestGkScreenLeagueGetNumTeams(CDBLeague *league) {
-    UChar minMatches = (UChar)((Float)league->GetNumMatchdays() * 0.74f); // 38 => 28, 46 => 34, 8 => 5
-    if (minMatches < 1)
-        minMatches = 1;
-    patch::SetUChar(0xA4BD08 + 2, minMatches);
-    return league->GetNumOfRegisteredTeams();
-}
-
 CDBEmployee *OnGetEmployee_SimulationScreen(UInt employeeID) {
     return nullptr;
 }
@@ -1725,9 +1716,9 @@ void METHOD OnPlayerInfoCompareRenderPlayerHead(CXgFMPanel *screen, DUMMY_ARG, v
 {
     CallMethod<0xD39C00>(screen, outData, rect, playerId, &teamID, bDisplayPortrait, bHasPicture);
     auto team = GetTeam(teamID);
-    GetCurrentUser().SetUseDefaultColors(team ? false : true);
+    CurrentUser().SetUseDefaultColors(team ? false : true);
     if (team)
-        GetCurrentUser().SetTeamColors(team);
+        CurrentUser().SetTeamColors(team);
     GetGuiFrame()->ApplyColorGroups(screen->GetGuiInstance());
 }
 
@@ -2256,6 +2247,7 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x153B59B, OnFormatLocaleUpper);
         patch::RedirectCall(0x153B5B0, OnFormatLocaleLower);
 
+        // TODO: implement this for youth players
         patch::Nop(0x5CDE07, 2);
         patch::RedirectCall(0x5CDE70, OnFormatAssists);
 
@@ -2277,8 +2269,6 @@ void PatchEABFFixes(FM::Version v) {
 
         // fix 101B264 error - simply remove throw_error call (not really needed there)
         patch::Nop(0x101B25F, 5);
-
-        patch::RedirectCall(0xA4BAF2, OnBestGkScreenLeagueGetNumTeams);
 
         InitializeCriticalSection(&CriticalSection_CDBEmployee__GetPlayerKnowledgeLevel);
 		bGetPlayerKnowledgeLevelCriticalSectionInitialized = true;

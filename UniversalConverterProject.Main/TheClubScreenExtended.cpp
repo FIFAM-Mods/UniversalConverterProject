@@ -30,20 +30,6 @@ void *METHOD OnCreateClubHistoryUI(CXgFMPanel *screen, DUMMY_ARG, char const *na
     return screen->GetTextBox(name);
 }
 
-bool GetClubScreenExtendedImageFilename(String &out, String const &folder, String const &filename) {
-    String filepath = folder + L"\\" + filename;
-    out = filepath + L".tga";
-    if (FmFileExists(out))
-        return true;
-    out = filepath + L".png";
-    if (FmFileExists(out))
-        return true;
-    out = filepath + L".jpg";
-    if (FmFileExists(out))
-        return true;
-    return false;
-}
-
 WideChar const *METHOD OnGetTeamAddress(CDBTeam *team) {
     if (gClubHistoryScreen) {
         auto ext = raw_ptr<ClubHistoryScreenExtension>(gClubHistoryScreen, DEFAULT_CCLUBHISTORY_SIZE);
@@ -54,15 +40,15 @@ WideChar const *METHOD OnGetTeamAddress(CDBTeam *team) {
         static WideChar const *defaultFilenameMascot = L"art\\Lib\\Mascot\\00000000.tga";
         String clubUid = Format(L"%08X", team->GetTeamUniqueID());
         String imgPath;
-        if (GetClubScreenExtendedImageFilename(imgPath, headquartersPath, clubUid))
+        if (GetFilenameForImageIfExists(imgPath, headquartersPath, clubUid))
             SetImageFilename(ext->TbAddressImage, imgPath.c_str(), 4, 4);
-        else if (GetClubScreenExtendedImageFilename(imgPath, headquartersPath, defaultFilename))
+        else if (GetFilenameForImageIfExists(imgPath, headquartersPath, defaultFilename))
             SetImageFilename(ext->TbAddressImage, imgPath.c_str(), 4, 4);
         else
             SetImageFilename(ext->TbAddressImage, defaultFilenameHeadquarters, 4, 4);
-        if (GetClubScreenExtendedImageFilename(imgPath, mascotPath, clubUid))
+        if (GetFilenameForImageIfExists(imgPath, mascotPath, clubUid))
             SetImageFilename(ext->TbMascotImage, imgPath.c_str(), 4, 4);
-        else if (GetClubScreenExtendedImageFilename(imgPath, mascotPath, defaultFilename))
+        else if (GetFilenameForImageIfExists(imgPath, mascotPath, defaultFilename))
             SetImageFilename(ext->TbMascotImage, imgPath.c_str(), 4, 4);
         else
             SetImageFilename(ext->TbMascotImage, defaultFilenameMascot, 4, 4);
