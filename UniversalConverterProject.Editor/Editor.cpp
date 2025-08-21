@@ -1686,10 +1686,6 @@ void PatchEditor(FM::Version v) {
         patch::SetUInt(0x518416 + 1, NUM_LANGUAGES);
         patch::SetUInt(0x51AD26 + 1, NUM_LANGUAGES);
 
-        // use country language instead of player language to define the pool
-        //patch::Nop(0x5218ED, 4);
-        //patch::Nop(0x5218ED, 4);
-
         if (Settings::GetInstance().DisplayFoomID) {
             patch::RedirectCall(0x473234, PlayerFoomID_GetFirstname);
             patch::RedirectCall(0x473280, PlayerFoomID_GetFirstname);

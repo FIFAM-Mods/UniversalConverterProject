@@ -536,18 +536,14 @@ void SetupNewspaperTopScorerGkExtension(NewspaperTopScorerGkExtension *ext, CCom
 CTeamIndex GetPlayerLastTeamFromLeagueInCurrentSeason(UInt playerId, CDBLeague *league) {
     CDBPlayerCareerList *cl = (CDBPlayerCareerList *)GetObjectByID(GetIDForObject(2, playerId));
     if (cl && cl->GetNumEntries()) {
-        SafeLog::Write(Utils::Format(L"GetPlayerLastTeamFromLeagueInCurrentSeason1: %s - %d", PlayerName(playerId), cl->GetNumEntries()));
         CJDate seasonStartDate = Game()->GetCurrentSeasonStartDate();
         for (Int e = cl->GetNumEntries() - 1; e >= 0; e--) {
             if (cl->GetEndDate(e).IsNull() || cl->GetEndDate(e) > seasonStartDate) {
                 CTeamIndex teamID = cl->GetTeamID(e);
                 if (!teamID.isNull()) {
-                    SafeLog::Write(Utils::Format(L"GetPlayerLastTeamFromLeagueInCurrentSeason2: %s - %s", PlayerName(playerId), TeamName(teamID)));
                     auto team = GetTeam(teamID);
-                    if (team && league->IsTeamPresent(teamID)) {
-                        SafeLog::Write(Utils::Format(L"GetPlayerLastTeamFromLeagueInCurrentSeason3: %s - %s", PlayerName(playerId), TeamName(teamID)));
+                    if (team && league->IsTeamPresent(teamID))
                         return teamID;
-                    }
                 }
             }
         }

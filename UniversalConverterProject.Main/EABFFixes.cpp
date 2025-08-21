@@ -1687,6 +1687,14 @@ NameDesc *METHOD FifaWorldPlayers_ConstructNameDessc2(NameDesc *desc, DUMMY_ARG,
     return CallMethodAndReturn<NameDesc *, 0x14991DD>(desc, GetCountryFirstLanguage(languageId), firstNameIndex, lastNameIndex, bMale);
 }
 
+void METHOD OnStatsWorldFootballerOfTheYearNextRow(CFMListBox *listBox, DUMMY_ARG, UInt arg) {
+    listBox->NextRow(arg);
+    String playerName = listBox->GetCellTextBox(listBox->GetNumRows() - 1, 2)->GetText();
+    if (Utils::EndsWith(playerName, L" (C)"))
+        playerName = playerName.substr(0, playerName.size() - 4);
+    listBox->GetCellTextBox(listBox->GetNumRows() - 1, 2)->SetText(playerName.c_str());
+}
+
 CTeamIndex *METHOD CPlayerStats_FindFavouriteTeam(CPlayerStats *stats, DUMMY_ARG, CTeamIndex &outTeamID) {
     outTeamID.clear();
     auto l = GetPlayerCareerList(stats->GetPlayerId());
@@ -1711,7 +1719,7 @@ Bool METHOD TeamAOG_CanProcessPlayerFrustration(CDBTeam *team, DUMMY_ARG, Bool f
     return !team->IsManagedByAI(flag);
 }
 
-void METHOD OnPlayerInfoCompareRenderPlayerHead(CXgFMPanel *screen, DUMMY_ARG, void **outData, Rect *rect, Int playerId,
+void METHOD OnPlayerInfoRenderPlayerHead(CXgFMPanel *screen, DUMMY_ARG, void **outData, Rect *rect, Int playerId,
     CTeamIndex const &teamID, Bool bDisplayPortrait, Bool bHasPicture)
 {
     CallMethod<0xD39C00>(screen, outData, rect, playerId, &teamID, bDisplayPortrait, bHasPicture);
@@ -2387,6 +2395,8 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xF6746B, FifaWorldPlayers_AddName);
         patch::RedirectCall(0xF67430, FifaWorldPlayers_ConstructNameDessc1);
         patch::RedirectCall(0xF67483, FifaWorldPlayers_ConstructNameDessc2);
+        // remove " (C)" from player name on FifaWorldPlayers screen
+        patch::RedirectCall(0x79F39D, OnStatsWorldFootballerOfTheYearNextRow);
 
         // remove "?" from player history entries
         patch::SetUInt(0x5D3FA2 + 1, 0);
@@ -2401,8 +2411,10 @@ void PatchEABFFixes(FM::Version v) {
         patch::SetUChar(0x135B2E8 + 1, 1);
 
         // show team colors on player comparison screen
-        patch::RedirectCall(0x5D9098, OnPlayerInfoCompareRenderPlayerHead);
+        patch::RedirectCall(0x5D9098, OnPlayerInfoRenderPlayerHead);
         patch::SetPointer(0x23D0D50, PlayerInfoCompare_Recolor);
+        // show team colors on youth player screen
+        patch::RedirectCall(0x5E7AD5, OnPlayerInfoRenderPlayerHead);
 
         // "Font" and "HeaderFont" attributes for FMListBox
         patch::SetUInt(0x1433F61 + 1, XgListBoxDefaultSize + 64 * 2);
