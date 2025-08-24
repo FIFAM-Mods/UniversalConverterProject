@@ -1384,10 +1384,6 @@ void METHOD OnNewspaperGoldenBootCreateUI(CXgFMPanel *screen) {
     LbByLeague->Create(screen, "LbByLeague"); // Pos       Logo           League         Wins     
     CFMListBox::InitColumnTypes(LbByLeague, LBT_INT, LBT_COMP_LOGO, LBT_COMP_NAME, LBT_INT, LBT_END);
     CFMListBox::InitColumnFormatting(LbByLeague, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
-
-    // TODO: remove this
-    static char data[0x54];
-    NewspaperGoldenBootFill(screen, 0, data);
 }
 
 CXgFMPanel *METHOD OnNewspaperGoldenBootConstruct(CXgFMPanel *screen, DUMMY_ARG, void *guiInstance) {
@@ -1416,7 +1412,7 @@ Bool CanDisplayGoldenBootNewspaperScreen() {
         if (CDBGame::GetInstance()->IsCountryPlayable(i) && GetCountry(i)->GetContinent() == FifamContinent::Europe)
             numPlayableCountriesInEurope++;
     }
-    return numPlayableCountriesInEurope >= 0; // TODO: change to >0
+    return numPlayableCountriesInEurope > 0;
 }
 
 void METHOD OnShowGoldenBootScreen(void *t, DUMMY_ARG, UShort screenId, Int employeeId, Int a3) {

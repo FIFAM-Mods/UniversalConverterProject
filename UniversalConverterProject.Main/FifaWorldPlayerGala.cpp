@@ -127,45 +127,6 @@ UInt GetNumBallonDOrCandidates() {
     return counter;
 }
 
-void CalcBallonDOrCandidates() {
-    ClearBallonDOrCandidates();
-    struct BallonDOrCandidate {
-        CDBPlayer *player;
-        Float score;
-    };
-    Vector<BallonDOrCandidate> candidates;
-    for (UInt countryId = 1; countryId <= 207; countryId++) {
-        auto team = GetTeam(CTeamIndex::make(countryId, 0, 0xFFFF));
-        if (team) {
-            for (UInt i = 0; i < team->GetNumPlayers(); i++) {
-                CDBPlayer *player = GetPlayer(team->GetPlayer(i));
-                if (player) {
-                    Float score = player->GetBasicLevel(player->GetBestPosition());
-                    candidates.emplace_back(player, score);
-                }
-            }
-        }
-    }
-    Utils::Sort(candidates, [](BallonDOrCandidate const &a, BallonDOrCandidate const &b) {
-        return a.score > b.score;
-    });
-    if (candidates.size() > 50)
-        candidates.resize(50);
-    for (auto &entry : candidates) {
-        //entry.score = 0.0f;
-        // TODO
-
-    }
-    Utils::Sort(candidates, [](BallonDOrCandidate const &a, BallonDOrCandidate const &b) {
-        return a.score > b.score;
-    });
-    for (UInt i = 0; i < candidates.size(); i++)
-        GetBallonDOrCandidates()[i] = candidates[i].player->GetID();
-    SafeLog::Write(L"CalcBallonDOrCandidates:");
-    for (UInt i = 0; i < 3; i++)
-        SafeLog::Write(PlayerName(GetBallonDOrCandidates()[i]));
-}
-
 struct MatchesGoalsAssists {
     unsigned char matches = 0;
     unsigned char goals = 0;
@@ -195,7 +156,7 @@ Float CalcBallonDOrPreviousYear(UChar position, UChar overall, MatchesGoalsAssis
             m.matches * (M_factor * 0.2f) +
             m.numMoTM * T_factor)
             * compWeight;
-    };
+        };
     Float score = 0.0f;
     score += perf(league, W_LEAGUE);
     score += perf(cup, W_CUP);
@@ -204,6 +165,69 @@ Float CalcBallonDOrPreviousYear(UChar position, UChar overall, MatchesGoalsAssis
     score += averageMarkInLeagueMatches * 0.5f * M_factor;
     score *= (1.0f + (overall / 500.0f));
     return score;
+}
+
+void CalcBallonDOrCandidates() {
+    struct BallonDOrCandidate {
+        CDBPlayer *player;
+        Float score;
+    };
+    Vector<BallonDOrCandidate> candidates;
+    for (UInt countryId = 1; countryId <= 207; countryId++) {
+        auto team = GetTeam(CTeamIndex::make(countryId, 0, 0xFFFF));
+        if (team) {
+            for (UInt i = 0; i < team->GetNumPlayers(); i++) {
+                CDBPlayer *player = GetPlayer(team->GetPlayer(i));
+                if (player) {
+                    Float score = player->GetBasicLevel(player->GetBestPosition());
+                    candidates.emplace_back(player, score);
+                }
+            }
+        }
+    }
+    Utils::Sort(candidates, [](BallonDOrCandidate const &a, BallonDOrCandidate const &b) {
+        return a.score > b.score;
+    });
+    if (candidates.size() > 50)
+        candidates.resize(50);
+    UInt year = GetCurrentYear() - 1;
+    for (auto &entry : candidates) {
+        auto player = entry.player;
+        entry.score = 0.0f;
+        // TODO: improve the formula for current season
+        auto matchesGoals = GetPlayerMatchesGoalsList(player->GetID());
+        if (matchesGoals && matchesGoals->GetNumEntries() > 0) {
+            Float averageMark;
+            UChar numAverageMarks = 0;
+            MatchesGoalsAssists mga[5];
+            for (UInt e = 0; e < matchesGoals->GetNumEntries(); e++) {
+                if (matchesGoals->GetYear(e) == year) {
+                    for (UInt c = 0; c < 5; c++) {
+                        mga[c].matches = matchesGoals->GetNumMatches(e, c);
+                        mga[c].goals = matchesGoals->GetNumGoals(e, c);
+                        mga[c].assists = matchesGoals->GetNumAssists(e, c);
+                        mga[c].numMoTM = matchesGoals->GetMOTM(e, c);
+                    }
+                    averageMark = matchesGoals->GetAverageMark(e);
+                    numAverageMarks++;
+                }
+            }
+            if (numAverageMarks > 0)
+                averageMark /= (Float)numAverageMarks;
+
+            entry.score = CalcBallonDOrPreviousYear(player->GetTeamPart(),
+                player->GetBasicLevel(player->GetBestPosition()), mga[0], mga[2], mga[3], mga[4], averageMark);
+        }
+    }
+    Utils::Sort(candidates, [](BallonDOrCandidate const &a, BallonDOrCandidate const &b) {
+        return a.score > b.score;
+    });
+    ClearBallonDOrCandidates();
+    for (UInt i = 0; i < candidates.size(); i++)
+        GetBallonDOrCandidates()[i] = candidates[i].player->GetID();
+    SafeLog::Write(L"CalcBallonDOrCandidates:");
+    for (UInt i = 0; i < 3; i++)
+        SafeLog::Write(PlayerName(GetBallonDOrCandidates()[i]));
 }
 
 void ValidateBallonDOrCandidates() {

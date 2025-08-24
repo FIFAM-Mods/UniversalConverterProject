@@ -393,7 +393,7 @@ void CalcNTTopPlayersLevel(Array<NTSquadOverall, 207> &squads, UShort year) {
 
 void METHOD ProcessNTSwitch(void *) {
     auto date = CDBGame::GetInstance()->GetCurrentDate();
-    if (date.GetMonth() == 5 && date.GetDays() == 1) { // TODO: On 1st May
+    if (date.GetMonth() == 5 && date.GetDays() == 1) {
         Array<NTSquadOverall, 207> ntSquads;
         for (UInt i = 1; i <= 207; i++) {
             CDBTeam *nt = GetTeam(CTeamIndex::make(i, 0, 0xFFFF));
