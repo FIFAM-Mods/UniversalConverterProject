@@ -15,6 +15,7 @@
 #include "ExtendedTeam.h"
 #include "AssetLoader.h"
 #include "FifamLanguage.h"
+#include "DebugPrint.h"
 
 using namespace plugin;
 
@@ -167,8 +168,8 @@ void SortPlayersVec(void *data) {
             return true;
         if (!a)
             return false;
-        UChar levelA = a->GetLevel(a->GetMainPosition());
-        UChar levelB = b->GetLevel(b->GetMainPosition());
+        UChar levelA = a->GetBasicLevel(a->GetBestPosition());
+        UChar levelB = b->GetBasicLevel(b->GetBestPosition());
         if (levelA > levelB)
             return true;
         if (levelB > levelA)
@@ -1260,15 +1261,15 @@ void METHOD OnPlayerPlanCareerEndAtGameStart(CDBPlayer *player) {
             if (rep < 1 || rep > 20)
                 rep = 20;
         }
-        if (player->GetLevel(player->GetMainPosition()) < clubRepToLvl[rep - 1]) {
+        if (player->GetBasicLevel(player->GetBestPosition()) < clubRepToLvl[rep - 1]) {
             CallMethod<0xFCBE50>(player); // original function
             //SafeLog::WriteToFile("career_end_players.txt",
-            //    player->GetName() + L"(" + to_wstring(player->GetLevel(player->GetMainPosition())) + L"/" + to_wstring(rep) + L") - " +
+            //    player->GetName() + L"(" + to_wstring(player->GetBasicLevel(player->GetBestPosition())) + L"/" + to_wstring(rep) + L") - " +
             //    TeamName(teamID) + L"(" + CountryName(teamID.countryId) + L")");
         }
         //else {
         //    SafeLog::WriteToFile("skip_career_end_players.txt", 
-        //        player->GetName() + L"(" + to_wstring(player->GetLevel(player->GetMainPosition())) + L"/" + to_wstring(rep) + L") - " + 
+        //        player->GetName() + L"(" + to_wstring(player->GetBasicLevel(player->GetBestPosition())) + L"/" + to_wstring(rep) + L") - " + 
         //        TeamName(teamID) + L"(" + CountryName(teamID.countryId) + L")");
         //}
     }
@@ -1770,6 +1771,22 @@ void OnParseXgFmListBox(CXgFmListBox *xlb, CGuiInstance *guiInstance, CMinMlGen:
 void DumpMatches() {
     for (UInt i = 0; i < DBMatchlist().GetNumMatches(); i++)
         DBMatchlist().GetMatch(i)->Dump(L"Matches");
+}
+
+void __declspec(naked) IncreaseEmergencyMeetingsCounter() {
+    __asm {
+        inc al
+        mov cx, [esp + 0xC]
+        mov edx, 0x112DCC6
+        jmp edx
+    }
+}
+
+void METHOD OnTeamCalendarUpdate(void *t) {
+    CallMethod<0x112DC60>(t);
+    CDBTeam *team = *raw_ptr<CDBTeam *>(t, 0);
+    if (!team->IsManagedByAI())
+        ::Message(L"MeetingsWeekCounter: %d", *raw_ptr<UChar>(t, 4));
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -2422,6 +2439,11 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0xD1ADC4, OnListBoxSetFont<false>);
         patch::RedirectCall(0xD1ADD0, OnListBoxSetFont<true>);
         patch::RedirectCall(0x145CD0B, OnParseXgFmListBox);
+
+        // Emergency meetings counter fix
+        patch::RedirectJump(0x112DCC1, IncreaseEmergencyMeetingsCounter);
+        // TODO: remove this
+        patch::RedirectCall(0xF43C89, OnTeamCalendarUpdate);
     }
 }
 

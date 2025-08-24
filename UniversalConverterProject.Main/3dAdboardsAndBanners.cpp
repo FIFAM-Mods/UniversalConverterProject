@@ -102,16 +102,16 @@ Bool GetAdboardsTextures() {
                 SafeLog::Write(Utils::Format(L"sponsorsList: %p", sponsorsList));
                 auto &sponsor = team->GetSponsor();
                 SafeLog::Write(Utils::Format(L"sponsor: %p", &sponsor));
-                auto &adboardSponsors = sponsor.GetAdBoardSponsors();
+                FmVec<CDBSponsorContractAdBoards> &adboardSponsors = sponsor.GetAdBoardSponsors();
                 SafeLog::Write(Utils::Format(L"adboardSponsors: %p", &adboardSponsors));
                 if (!adboardSponsors.empty()) {
                     Vector<Pair<String, UChar>> adboards;
                     for (UInt i = 0; i < adboardSponsors.size(); i++) {
                         SafeLog::Write(Utils::Format(L"adboard: %d", i));
-                        auto adboardSponsor = adboardSponsors[i];
+                        CDBSponsorContractAdBoards &adboardSponsor = adboardSponsors[i];
                         SafeLog::Write(Utils::Format(L"adboard: %p", adboardSponsor));
-                        if (adboardSponsor->IsActive()) {
-                            auto &placement = adboardSponsor->GetPlacement();
+                        if (adboardSponsor.IsActive()) {
+                            auto &placement = adboardSponsor.GetPlacement();
                             SafeLog::Write(Utils::Format(L"country: %d index: %d", placement.countryId, placement.index));
                             void *sponsorDesc = CallMethodAndReturn<void *, 0x126E910>(sponsorsList, placement.countryId, placement.index);
                             if (sponsorDesc) {

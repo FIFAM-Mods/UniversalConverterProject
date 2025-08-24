@@ -116,7 +116,7 @@ CTeamIndex *METHOD StoreCurrentPlayerCountry_ScoutingPlayers(CDBPlayer *player, 
     if (!GetTeam(*out))
         *out = player->GetNationalTeam();
     gCurrentPlayerCountry_ScoutingPlayers = out->countryId;
-    gCurrentPlayerGk_ScoutingPlayers = player->GetMainPosition() == 1;
+    gCurrentPlayerGk_ScoutingPlayers = player->GetBestPosition() == 1;
     return out;
 }
 

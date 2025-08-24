@@ -1542,6 +1542,18 @@ Int METHOD OnPlayerInfoCareerFill(CXgFMPanel *screen) {
             ext->TbTrophyWins[i]->SetVisible(true);
             ext->ImgTrophyWins[i]->SetVisible(true);
         }
+        // Disable player level on Player Career screen if player is not fully scouted
+        if (!HidePlayerLevel()) {
+            auto employee = GetManagerWhoLooksForPlayer(player->GetID());
+            Bool hide = employee && employee->GetPlayerKnowledge(player) != 10;
+            Bool display = hide == false;
+            auto ChkFit = *raw_ptr<CXgCheckBox *>(screen, 0x12C4);
+            auto TbColor4 = *raw_ptr<CXgTextBox *>(screen, 0x12F8);
+            auto TbLev = *raw_ptr<CXgTextBox *>(screen, 0x12D4);
+            TbColor4->SetVisible(display);
+            ChkFit->SetVisible(display);
+            TbLev->SetVisible(display);
+        }
     }
     return playerId;
 }
@@ -1573,6 +1585,14 @@ void METHOD OnPlayerStatsLoad(CPlayerStats *stats) {
 CPlayerStats *METHOD PlayerStatsCopy(CPlayerStats *t, DUMMY_ARG, CPlayerStats *other) {
     memcpy(t, other, 128);
     return t;
+}
+
+void METHOD OnPlayerInfoCareerDrawRatingLine(
+    CXgFMPanel *screen, DUMMY_ARG, Int *points, UInt numPoints, void *rect, UInt color, void *data)
+{
+    auto ChkFit = *raw_ptr<CXgCheckBox *>(screen, 0x12C4);
+    if (ChkFit->IsVisible())
+        CallMethod<0x5D68C0>(screen, points, numPoints, rect, color, data);
 }
 
 void PatchEuropeanGoldenShoe(FM::Version v) {
@@ -1609,5 +1629,7 @@ void PatchEuropeanGoldenShoe(FM::Version v) {
         patch::RedirectCall(0xFC4AA8, OnPlayerStatsLoad);
         patch::RedirectJump(0xA9B040, PlayerStatsCopy);
         patch::RedirectJump(0x850230, PlayerStatsCopy);
+        // Disable player level line on Player Career screen if player is not fully scouted
+        patch::RedirectCall(0x5D6AF7, OnPlayerInfoCareerDrawRatingLine);
     }
 }

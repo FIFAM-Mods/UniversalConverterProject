@@ -48,7 +48,7 @@ struct MainMenuExtension {
     void *pTbContinueClubName;
     void *pTbContinueClubLogo;
     void *pTbContinueCountryFlag;
-    UInt updateNumber;
+    Int updateNumber;
     MainMenuTimer timer;
     Int timerCounter;
 };

@@ -243,16 +243,16 @@ void CalcNTSquadOverall(CDBTeam *team, NTSquadOverall &squad) {
             if (player) {
                 switch (player->GetPositionRole()) {
                 case PLAYER_POSITION_ROLE_GK:
-                    gks.push_back(player->GetLevel(player->GetMainPosition()));
+                    gks.push_back(player->GetBasicLevel(player->GetBestPosition()));
                     break;
                 case PLAYER_POSITION_ROLE_DEF:
-                    defenders.push_back(player->GetLevel(player->GetMainPosition()));
+                    defenders.push_back(player->GetBasicLevel(player->GetBestPosition()));
                     break;
                 case PLAYER_POSITION_ROLE_MID:
-                    midfielders.push_back(player->GetLevel(player->GetMainPosition()));
+                    midfielders.push_back(player->GetBasicLevel(player->GetBestPosition()));
                     break;
                 case PLAYER_POSITION_ROLE_ATT:
-                    attackers.push_back(player->GetLevel(player->GetMainPosition()));
+                    attackers.push_back(player->GetBasicLevel(player->GetBestPosition()));
                     break;
                 }
             }
@@ -363,7 +363,7 @@ void CalcNTTopPlayersLevel(Array<NTSquadOverall, 207> &squads, UShort year) {
     while (it.blockId != end.blockId || it.index != end.index) {
         CDBPlayer *player = (CDBPlayer *)it.object;
         if (player && player->GetID() && IsValidNT(player->GetNationality(0))) {
-            UChar level = Utils::Clamp(player->GetLevel(player->GetMainPosition()), 1, 99);
+            UChar level = Utils::Clamp(player->GetBasicLevel(player->GetBestPosition()), 1, 99);
             topPlayers[player->GetNationality(0) - 1][level - 1] += 1;
         }
         NetComStorageNext(it);
@@ -427,7 +427,7 @@ void METHOD ProcessNTSwitch(void *) {
                     NetComStorageNext(it);
                     continue;
                 }
-                UChar currentLevel = player->GetLevel(player->GetMainPosition());
+                UChar currentLevel = player->GetBasicLevel(player->GetBestPosition());
                 if (currentLevel < ntSquads[player->GetNationality(1) - 1].top50level) {
                     NetComStorageNext(it);
                     continue;

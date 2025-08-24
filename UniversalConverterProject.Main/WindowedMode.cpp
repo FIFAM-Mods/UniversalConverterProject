@@ -592,11 +592,11 @@ void METHOD OnProcessGameOptionsCheckboxes(CXgFMPanel *screen, DUMMY_ARG, GuiMes
 void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk1, Int unk2) {
     GameOptionsAdditionalData *data = raw_ptr< GameOptionsAdditionalData>(screen, 0x504);
     if (msg->node == data->cbWindowPosition->GetGuiNode()) {
-        Settings::GetInstance().WindowPosition = data->cbWindowPosition->GetCurrentValue(WINDOWED_MODE_CENTER);
+        Settings::GetInstance().WindowPosition = (Int)data->cbWindowPosition->GetCurrentValue(WINDOWED_MODE_CENTER);
         return;
     }
     else if (msg->node == data->cbTheme->GetGuiNode()) {
-        int themeId = data->cbTheme->GetCurrentValue(0);
+        int themeId = (Int)data->cbTheme->GetCurrentValue(0);
         if (themeId == 1)
             Settings::GetInstance().Theme = "light";
         else if (themeId == 2)
@@ -608,21 +608,21 @@ void METHOD OnProcessGameOptionsComboboxes(CXgFMPanel *screen, DUMMY_ARG, GuiMes
         return;
     }
     else if (msg->node == data->cbWindowBorders->GetGuiNode()) {
-        Settings::GetInstance().WindowBorders = data->cbWindowBorders->GetCurrentValue(WINDOW_BORDERS_NONE);
+        Settings::GetInstance().WindowBorders = (Int)data->cbWindowBorders->GetCurrentValue(WINDOW_BORDERS_NONE);
         if (Settings::GetInstance().WindowBorders != Settings::GetInstance().WindowBordersStartValue)
             RestartGameWarningMessage(screen, "IDS_BORDERS_CHANGE", "IDS_WARNING");
         return;
     }
     if (msg->node == data->cbScreenshotKey->GetGuiNode()) {
-        Settings::GetInstance().ScreenshotKey = data->cbScreenshotKey->GetCurrentValue(VK_SNAPSHOT);
+        Settings::GetInstance().ScreenshotKey = (Int)data->cbScreenshotKey->GetCurrentValue(VK_SNAPSHOT);
         return;
     }
     if (msg->node == data->cbScreenshotFormat->GetGuiNode()) {
-        Settings::GetInstance().ScreenshotFormat = data->cbScreenshotFormat->GetCurrentValue(D3DXIFF_JPG);
+        Settings::GetInstance().ScreenshotFormat = (Int)data->cbScreenshotFormat->GetCurrentValue(D3DXIFF_JPG);
         return;
     }
     if (msg->node == data->cbScreenshotName->GetGuiNode()) {
-        Settings::GetInstance().ScreenshotName = data->cbScreenshotName->GetCurrentValue(SCREENSHOTNAME_TIME);
+        Settings::GetInstance().ScreenshotName = (Int)data->cbScreenshotName->GetCurrentValue(SCREENSHOTNAME_TIME);
         return;
     }
     CallMethod<0x500B20>(screen, msg, unk1, unk2);
@@ -1166,7 +1166,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             GetWindowRect(hWnd, &rect);
             ptOffset.x = ptStart.x - rect.left;
             ptOffset.y = ptStart.y - rect.top;
-            if (ptStart.y <= rect.top + BORDERLESS_MOVEBAR_HEIGHT) {
+            if (ptStart.y <= (rect.top + BORDERLESS_MOVEBAR_HEIGHT)) {
                 bDragging = TRUE;
                 SetCapture(hWnd);
             }

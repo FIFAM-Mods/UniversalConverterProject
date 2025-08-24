@@ -101,17 +101,29 @@ Path &SafeLogPath() {
     return safeLogPath;
 }
 
+CriticalSection &SafeLog::cs() {
+    static CriticalSection criticalSection;
+    return criticalSection;
+}
+
+Map<Path, SafeLog::LogFile> &SafeLog::logFiles() {
+    static Map<Path, SafeLog::LogFile> lf;
+    return lf;
+}
+
 void SafeLog::Clear() {
     if (Settings::GetInstance().EnableMainLog) {
+        CriticalSectionLock lock(cs());
         std::error_code ec;
         if (exists(SafeLogPath(), ec))
             remove(SafeLogPath(), ec);
     }
 }
 
-void SafeLog::Write(String const& msg) {
+void SafeLog::Write(const String &msg) {
     if (Settings::GetInstance().EnableMainLog) {
-        FILE* file = _wfopen(SafeLogPath().c_str(), L"at,ccs=UTF-8");
+        CriticalSectionLock lock(cs());
+        FILE *file = _wfopen(SafeLogPath().c_str(), L"at,ccs=UTF-8");
         if (file) {
             fputws(msg.c_str(), file);
             fputws(L"\n", file);
@@ -122,14 +134,17 @@ void SafeLog::Write(String const& msg) {
 
 void SafeLog::WriteToFile(Path const& fileName, String const& msg, String const& header) {
     if (Settings::GetInstance().EnableAllLogFiles) {
-        static Map<Path, bool> fileCreated;
+        auto &lf = logFiles()[fileName];
+        CriticalSectionLock lock(lf.cs);
         FILE* file = nullptr;
-        if (!Utils::Contains(fileCreated, fileName)) {
+        if (!lf.created) {
             file = _wfopen(fileName.c_str(), L"w,ccs=UTF-8");
-            fileCreated[fileName] = true;
-            if (!header.empty()) {
-                fputws(header.c_str(), file);
-                fputws(L"\n", file);
+            if (file) {
+                if (!header.empty()) {
+                    fputws(header.c_str(), file);
+                    fputws(L"\n", file);
+                }
+                lf.created = true;
             }
         }
         else

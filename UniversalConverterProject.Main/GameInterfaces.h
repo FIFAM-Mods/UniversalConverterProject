@@ -72,6 +72,8 @@ enum eGuiColor {
 class CJDate {
     UInt value = 0;
 public:
+    CJDate();
+    CJDate(UInt year, UInt month, UInt day);
     CJDate GetTranslated(int numYears);
     unsigned short GetYear();
     unsigned char GetMonth();
@@ -246,8 +248,16 @@ public:
         return !begin || !end || end <= begin;
     }
 
-    T *operator[](UInt index) {
-        return &begin[index];
+    T &operator[](UInt index) {
+        return begin[index];
+    }
+
+    FmVec() {
+        plugin::CallMethod<0x40F430>(this);
+    }
+
+    ~FmVec() {
+        plugin::CallMethod<0x40EAA0>(this);
     }
 };
 
@@ -510,6 +520,30 @@ public:
     }
 };
 
+class CGameEvent {
+public:
+    CJDate m_date;
+    UInt m_nEntityId;
+    UInt m_nEventId;
+    UInt m_nFlags;
+    Int m_nParam1;
+    Int m_nParam2;
+    Int m_nParam3;
+    Int m_nParam4;
+    Int m_nParam5;
+
+    CGameEvent(CJDate const &date, UInt entityId, UShort eventId, UShort flags,
+        Int param1, Int param2, Int param3, Int param4, Int param5);
+};
+
+class CGameEvents {
+public:
+    Bool PopEvent(UInt eventType, CJDate date, CGameEvent &out);
+    void AddEvent(UInt type, CGameEvent const &event);
+};
+
+CGameEvents &GameEvents();
+
 class CDBGameOptions {
 public:
     bool CheckFlag(unsigned int flag);
@@ -532,6 +566,7 @@ public:
 };
 
 CDBGame *Game();
+Bool HidePlayerLevel();
 
 struct CTeamIndex {
     unsigned short index = 0;
@@ -652,8 +687,9 @@ public:
     UChar GetPlayingForm();
     UInt GetAge();
     Char GetTalent(CDBEmployee *employee = nullptr);
-    Char GetMainPosition();
-    UChar GetLevel(Char position, Bool special = false);
+    Char GetBestPosition();
+    UChar GetBasicLevel(Char position, CDBEmployee *employee = nullptr);
+    UChar GetLevel(Char position = -1, CDBEmployee *employee = nullptr);
     CTeamIndex GetCurrentTeam();
     EAGMoney GetMarketValue(CDBEmployee *employee = nullptr);
     EAGMoney GetDemandValue();
@@ -685,6 +721,7 @@ public:
     UChar GetShirtNumber(Bool firstTeam = true);
     Bool IsGoalkeeper();
     Bool IsCaptain();
+    UChar GetTeamPart();
 };
 
 class CDBStaff {
@@ -717,7 +754,10 @@ public:
     CTeamIndex GetTeamID();
     void GetTeamID(CTeamIndex &out);
     WideChar const *GetName(WideChar const *nameBuf = nullptr);
+    UChar GetPlayerKnowledge(CDBPlayer *player);
 };
+
+CDBEmployee *GetManagerWhoLooksForPlayer(UInt playerId);
 
 struct CScriptCommand {
     unsigned int m_nCommandId;
@@ -1099,6 +1139,11 @@ public:
     void SetPlayer(Int index, UInt playerId);
     void SetTeam(Int index, CTeamIndex const &teamID);
     void SetTerm(WideChar const *term);
+    void SetStaff(Int index, UInt staffId);
+    void SetManager(UInt managerId);
+    void SetManager2(UInt managerId);
+    void SetPlayerPosition(Int index, UChar position);
+    void SetStaffPosition(UChar position);
 };
 
 class CClubFans {
@@ -1354,6 +1399,10 @@ public:
     CClubHistory *GetClubHistory();
     LineUp *GetLineUp(CTeamIndex const &teamID);
     LineUpSettings *GetLineUpSettings(CTeamIndex teamID);
+    UInt GetAllStaff(FmVec<UInt> const &vec);
+    UInt GetAllStaff(FmVec<CDBStaff> const &vec);
+    UInt GetStaffIdWithRole(UChar role);
+    CDBStaff *GetStaffWithRole(UChar role);
 };
 
 struct CAssessmentInfo {
@@ -1748,6 +1797,7 @@ public:
 class CGuiNode {
 public:
     Char const *GetUid() const;
+    Bool32 CheckFlag(UInt flag) const;
 };
 
 struct MessageDataBase {
@@ -1766,6 +1816,7 @@ class CXgBaseControl {
 public:
     void SetEnabled(Bool enabled);
     void SetVisible(Bool visible);
+    Bool IsVisible();
     CGuiNode *GetGuiNode();
     void SetTooltip(WideChar const *text);
     void *CastTo(UInt typeId);
@@ -2143,6 +2194,8 @@ public:
     UChar GetNumGoals(Int entryId, Int compType);
     UChar GetNumAssists(Int entryId, Int compType);
     UChar GetNumMatches(Int entryId, Int compType);
+    UChar GetMOTM(Int entryId, Int compType);
+    Float GetAverageMark(Int entryId);
 };
 
 CDBMatchesGoalsLeagueList *GetPlayerMatchesGoalsList(UInt playerId);

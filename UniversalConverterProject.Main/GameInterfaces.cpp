@@ -10,6 +10,14 @@
 
 using namespace plugin;
 
+CJDate::CJDate() {
+    value = 0;
+}
+
+CJDate::CJDate(UInt year, UInt month, UInt day) {
+    CallMethod<0x1494A2A>(this, year, month, day);
+}
+
 CJDate CJDate::GetTranslated(int numYears) {
     CJDate result;
     plugin::CallMethod<0x1495EFF>(this, &result, numYears);
@@ -1393,6 +1401,22 @@ LineUpSettings *CDBTeam::GetLineUpSettings(CTeamIndex teamID) {
     return CallMethodAndReturn<LineUpSettings *, 0x10030E0>(this, teamID);
 }
 
+UInt CDBTeam::GetAllStaff(FmVec<CDBStaff> const &vec) {
+    return CallMethodAndReturn<UInt, 0x1019F70>(this, &vec);
+}
+
+UInt CDBTeam::GetStaffIdWithRole(UChar role) {
+    return CallMethodAndReturn<UInt, 0x1017310>(this, role);
+}
+
+CDBStaff *CDBTeam::GetStaffWithRole(UChar role) {
+    return CallMethodAndReturn<CDBStaff *, 0x1017320>(this, role);
+}
+
+UInt CDBTeam::GetAllStaff(FmVec<UInt> const &vec) {
+    return CallMethodAndReturn<UInt, 0x1017290>(this, &vec);
+}
+
 Bool CDBTeam::IsPlayerPresent(UInt playerId) {
     for (UInt i = 0; i < GetNumPlayers(); i++) {
         if (GetPlayer(i) == playerId)
@@ -1609,8 +1633,16 @@ UInt GetCurrentMetric() {
     return CallMethodAndReturn<UInt, 0x14AC3A0>(metrics);
 }
 
+CGameEvents &GameEvents() {
+    return *(CGameEvents *)0x318D640;
+}
+
 CDBGame *Game() {
     return CDBGame::GetInstance();
+}
+
+Bool HidePlayerLevel() {
+    return CallAndReturn<Bool, 0xD2CA20>();
 }
 
 bool operator==(CTeamIndex const &a, CTeamIndex const &b) {
@@ -1619,6 +1651,10 @@ bool operator==(CTeamIndex const &a, CTeamIndex const &b) {
 
 bool operator==(CCompID const &a, CCompID const &b) {
     return a.index == b.index && a.type == b.type && a.countryId == b.countryId;
+}
+
+CDBEmployee *GetManagerWhoLooksForPlayer(UInt playerId) {
+    return CallAndReturn<CDBEmployee *, 0x5C8040>(playerId);
 }
 
 UChar CDBCountry::GetLeagueAverageLevel() {
@@ -1700,12 +1736,16 @@ Char CDBPlayer::GetTalent(CDBEmployee *employee) {
     return CallMethodAndReturn<Char, 0xFB2590>(this, employee);
 }
 
-Char CDBPlayer::GetMainPosition() {
+Char CDBPlayer::GetBestPosition() {
     return CallMethodAndReturn<Char, 0xFAAE10>(this);
 }
 
-UChar CDBPlayer::GetLevel(Char position, Bool special) {
-    return CallMethodAndReturn<unsigned char, 0xFAAD60>(this, position, special);
+UChar CDBPlayer::GetBasicLevel(Char position, CDBEmployee *employee) {
+    return CallMethodAndReturn<UChar, 0xFAAD60>(this, position, employee);
+}
+
+UChar CDBPlayer::GetLevel(Char position, CDBEmployee *employee) {
+    return CallMethodAndReturn<UChar, 0xFC2210>(this, position, employee);
 }
 
 CTeamIndex CDBPlayer::GetCurrentTeam() {
@@ -1824,6 +1864,10 @@ Bool CDBPlayer::IsGoalkeeper() {
 
 Bool CDBPlayer::IsCaptain() {
     return CallMethodAndReturn<Bool, 0xFBCE50>(this);
+}
+
+UChar CDBPlayer::GetTeamPart() {
+    return CallMethodAndReturn<UChar, 0xFAC240>(this);
 }
 
 UChar CDBPlayer::GetNationality(UChar number) {
@@ -2281,6 +2325,10 @@ WideChar const *CDBEmployee::GetName(WideChar const *nameBuf) {
     return GetBase()->GetName(nameBuf);
 }
 
+UChar CDBEmployee::GetPlayerKnowledge(CDBPlayer *player) {
+    return CallMethodAndReturn<UChar, 0xEB9BA0>(this, player);
+}
+
 CWorker *CDBStaff::GetWorker() {
     return *raw_ptr<CWorker *>(this, 0xC);
 }
@@ -2545,6 +2593,26 @@ void CEAMailData::SetTeam(Int index, CTeamIndex const &teamID) {
 
 void CEAMailData::SetTerm(WideChar const *term) {
     CallMethod<0x100DA00>(this, term);
+}
+
+void CEAMailData::SetStaff(Int index, UInt staffId) {
+    CallMethod<0x1010870>(this, index, staffId);
+}
+
+void CEAMailData::SetManager(UInt managerId) {
+    CallMethod<0x100D510>(this, managerId);
+}
+
+void CEAMailData::SetManager2(UInt managerId) {
+    CallMethod<0x100D520>(this, managerId);
+}
+
+void CEAMailData::SetPlayerPosition(Int index, UChar position) {
+    CallMethod<0x100D650>(this, index, position);
+}
+
+void CEAMailData::SetStaffPosition(UChar position) {
+    CallMethod<0x100D7B0>(this, position);
 }
 
 void CFMListBox::SetVisible(Bool visible) {
@@ -2968,6 +3036,10 @@ void CXgBaseControl::SetVisible(Bool visible) {
     CallVirtualMethod<11>(this, visible);
 }
 
+Bool CXgBaseControl::IsVisible() {
+    return GetGuiNode()->CheckFlag(0x200);
+}
+
 CGuiNode *CXgBaseControl::GetGuiNode() {
     return CallVirtualMethodAndReturn<CGuiNode *, 23>(this);
 }
@@ -3168,6 +3240,14 @@ UChar CDBMatchesGoalsLeagueList::GetNumMatches(Int entryId, Int compType) {
     return CallMethodAndReturn<UChar, 0x103EE10>(this, entryId, compType);
 }
 
+UChar CDBMatchesGoalsLeagueList::GetMOTM(Int entryId, Int compType) {
+    return CallMethodAndReturn<UChar, 0x103F280>(this, entryId, compType);
+}
+
+Float CDBMatchesGoalsLeagueList::GetAverageMark(Int entryId) {
+    return CallMethodAndReturn<Float, 0x103F310>(this, entryId);
+}
+
 UInt CDBPlayerCareerList::GetNumEntries() {
     return CallMethodAndReturn<UInt, 0x10D56B0>(this);
 }
@@ -3312,6 +3392,10 @@ Char const *CGuiNode::GetUid() const {
     return CallMethodAndReturn<Char const *, 0x1486F36>(this);
 }
 
+Bool32 CGuiNode::CheckFlag(UInt flag) const {
+    return CallVirtualMethodAndReturn<Bool32, 25>((CGuiNode *)this, flag);
+}
+
 CXgFmListBox *CXgFmListBox::Cast(CXgBaseControl *control) {
     return CallAndReturn<CXgFmListBox *, 0x4EFFF0>(control);
 }
@@ -3421,4 +3505,17 @@ UInt TopScorersBuffer::Size() const {
 
 TopScorer *TopScorersBuffer::At(UInt index) {
     return CallMethodAndReturn<TopScorer *, 0x14E91A9>(this, index);
+}
+
+CGameEvent::CGameEvent(CJDate const &date, UInt entityId, UShort eventId, UShort flags, Int param1, Int param2, Int param3, Int param4, Int param5)
+{
+    CallMethod<0x14DB942>(this, &date, entityId, eventId, flags, param1, param2, param3, param4, param5);
+}
+
+Bool CGameEvents::PopEvent(UInt eventType, CJDate date, CGameEvent &out) {
+    return CallMethodAndReturn<Bool, 0x11EFC20>(this, eventType, date, &out);
+}
+
+void CGameEvents::AddEvent(UInt type, CGameEvent const &event) {
+    CallMethod<0x11EFFA0>(this, type, &event);
 }

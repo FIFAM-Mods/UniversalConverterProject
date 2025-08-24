@@ -5437,32 +5437,17 @@ void METHOD OnPlayerDeparture(CDBPlayer *player, DUMMY_ARG, UInt reason, Bool32 
     CallMethod<0xFB1B80>(player, reason, startAbsence, numDays);
 }
 
-class CGameEvent {
-public:
-    CJDate date;
-    Int entityId;
-    UShort eventId;
-    UShort flags;
-    UInt param1;
-    UInt param2;
-    UInt param3;
-    UInt param4;
-    UInt param5;
-};
-
-static_assert(sizeof(CGameEvent) == 0x20, "Failed");
-
 UInt METHOD OnPoolLaunchRegisterNTNomination(CDBCompetition *comp) {
     return 0;
 }
 
 void METHOD OnCountryProcessEvent(CDBCountry *country, DUMMY_ARG, CGameEvent *event) {
-    if (event->eventId == 1283
-        && event->date.GetMonth() == 6
-        && event->date.GetDays() == 7
-        && event->date.GetYear() % 2)
+    if (event->m_nEventId == 1283
+        && event->m_date.GetMonth() == 6
+        && event->m_date.GetDays() == 7
+        && event->m_date.GetYear() % 2)
     {
-        UChar compType = (event->param1 >> 16) & 0xFF;
+        UChar compType = (event->m_nParam1 >> 16) & 0xFF;
         if (compType == COMP_EURO_CUP || compType == COMP_WORLD_CUP)
             return;
     }
