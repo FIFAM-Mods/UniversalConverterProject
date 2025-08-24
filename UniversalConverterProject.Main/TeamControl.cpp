@@ -8,37 +8,21 @@
 
 using namespace plugin;
 
-bool gHomeTeamAI = false;
-bool gAwayTeamAI = false;
+Bool gHomeTeamAI = false;
+Bool gAwayTeamAI = false;
 
-bool METHOD GetIsHomeTeamManagerByAI(CDBTeam *team, DUMMY_ARG, bool a) {
-    void *match = *(void **)0x3124748;
-    if (match) {
-        CTeamIndex teamIndex;
-        CallMethod<0xE7FD30>(match, &teamIndex, 1);
-        if (teamIndex.type != 0)
-            gHomeTeamAI = false;
-        else
-            gHomeTeamAI = CallMethodAndReturn<bool, 0xECA230>(team, a);
-    }
-    else
-        gHomeTeamAI = CallMethodAndReturn<bool, 0xECA230>(team, a);
+Bool METHOD GetIsHomeTeamManagedByAI(CDBTeam *team, DUMMY_ARG, Bool a) {
+    gHomeTeamAI = team->IsManagedByAI(a);
+    if (GetCurrentMatch() && !GetCurrentMatch()->GetHomeTeamID().isFirstTeam())
+        gHomeTeamAI = true;
     SetVarInt("HUMAN_HOME", (Settings::GetInstance().TeamControl && gHomeTeamAI) ? 0 : 1);
     return gHomeTeamAI;
 }
 
-bool METHOD GetIsAwayTeamManagerByAI(CDBTeam *team, DUMMY_ARG, bool a) {
-    void *match = *(void **)0x3124748;
-    if (match) {
-        CTeamIndex teamIndex;
-        CallMethod<0xE7FD30>(match, &teamIndex, 0);
-        if (teamIndex.type != 0)
-            gAwayTeamAI = false;
-        else
-            gAwayTeamAI = CallMethodAndReturn<bool, 0xECA230>(team, a);
-    }
-    else
-        gAwayTeamAI = CallMethodAndReturn<bool, 0xECA230>(team, a);
+Bool METHOD GetIsAwayTeamManagedByAI(CDBTeam *team, DUMMY_ARG, Bool a) {
+    gAwayTeamAI = team->IsManagedByAI(a);
+    if (GetCurrentMatch() && !GetCurrentMatch()->GetAwayTeamID().isFirstTeam())
+        gAwayTeamAI = true;
     SetVarInt("HUMAN_AWAY", (Settings::GetInstance().TeamControl && gAwayTeamAI) ? 0 : 1);
     return gAwayTeamAI;
 }
@@ -470,8 +454,8 @@ void PatchTeamControl(FM::Version v) {
         if (!Settings::GetInstance().TeamControlDisabledAtGameStart) {
             ReadTeamControlConfig();
 
-            patch::RedirectCall(0x44E5B3, GetIsHomeTeamManagerByAI);
-            patch::RedirectCall(0x44E5CD, GetIsAwayTeamManagerByAI);
+            patch::RedirectCall(0x44E5B3, GetIsHomeTeamManagedByAI);
+            patch::RedirectCall(0x44E5CD, GetIsAwayTeamManagedByAI);
             patch::Nop(0x44E64B, 31);
             patch::RedirectCall(0x44E6A1, OnSetup3dMatchAudio);
             patch::RedirectCall(0xC10BDC, GetManagerShoutsStatus);
