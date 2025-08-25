@@ -2023,7 +2023,7 @@ void Install3dPatches_FM13() {
     // eye colors for starheads
     patch::Nop(GfxCoreAddress(0x92259), 2);
 
-    // fps fix - temporary ; TODO: remove or replace this
+    // fps fix - temporary
     //patch::RedirectJump(GfxCoreAddress(0x3E035), (void *)GfxCoreAddress(0x3E0CE));
 
     // fix hairlod for sub players

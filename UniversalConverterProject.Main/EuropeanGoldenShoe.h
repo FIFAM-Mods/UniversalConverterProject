@@ -14,6 +14,6 @@ enum ePlayerTrophy {
 class CDBPlayer;
 
 void AddPlayerTrophy(ePlayerTrophy type, UShort year, String lastName, String firstName, Date birthdate,
-    UChar countryId, UInt clubId, Bool searchForRealPlayer = true);
-void AddPlayerTrophy(ePlayerTrophy type, UShort year, CDBPlayer *player);
+    UChar countryId, UInt clubId, Bool searchForRealPlayer = true, Bool front = true);
+void AddPlayerTrophy(ePlayerTrophy type, UShort year, CDBPlayer *player, Bool front = true);
 void PatchEuropeanGoldenShoe(FM::Version v);

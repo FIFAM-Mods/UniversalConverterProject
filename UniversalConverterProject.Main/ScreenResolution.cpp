@@ -167,7 +167,7 @@ void Screenshot_FormatFileName(WideChar *dst, UInt len, WideChar const *, UShort
 
 void ModifyAppearanceFor3dRender(VisibleControlAppearance &a, Bool updatePosition = true) {
     Float width = 0.0f, height = 0.0f;
-    if (GetCurrentScreenResolution(width, height) && width > 2000.0f && height > 0.0f) { // TODO: change to width > 2000.0f
+    if (GetCurrentScreenResolution(width, height) && width > 2000.0f && height > 0.0f) {
         Float factorX = width / 1920.0f;
         Float factorY = height / 1080.0f;
         a.rect.width = (Short)((Float)a.rect.width * factorX);

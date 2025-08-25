@@ -277,8 +277,5 @@ void PatchExtendedCountry(FM::Version v) {
 		patch::RedirectCall(0x822CFF, FifaRanking_InitColumnFormatting);
 		patch::RedirectCall(0x822FF7, FifaRanking_AddColumnCountryName);
 		patch::SetPointer(0x240F594, FifaRanking_FillTable);
-
-		// TODO: remove this
-		//patch::RedirectCall(0xF538B8, OnMonday);
 	}
 }

@@ -399,7 +399,7 @@ Int OnShadowFilename3(Char const *dst, Char const *format, Int lighting) {
                         if (hour >= 18 || hour <= 8)
                             lighting = 4;
                         else
-                            lighting = 1; // TODO: mistake was here?
+                            lighting = 1; // mistake was here?
                     }
                 }
             }
@@ -522,7 +522,7 @@ void InstallCustomStadiums3DPatches() {
     //patch::SetPointer(GfxCoreAddress(0x420FAD + 2), &fOne);
     patch::RedirectCall(GfxCoreAddress(0x420FB9), OnSetCustomStadiumScale);
 
-    // temporary - remove flag reset for custom stadiums - TODO
+    // temporary - remove flag reset for custom stadiums
     patch::Nop(GfxCoreAddress(0x208450), 5);
 
     // move stadium rendering

@@ -1707,12 +1707,6 @@ CTeamIndex *METHOD CPlayerStats_FindFavouriteTeam(CPlayerStats *stats, DUMMY_ARG
             maxMatches = numMatches;
         }
     }
-    // TODO: remove this
-    if (!outTeamID.isNull() && stats->GetPlayer()) {
-        auto p = stats->GetPlayer();
-        SafeLog::Write(Utils::Format(L"Favourite Team for new employee: %s (%s): %s (%d matches))",
-            p->GetName(), TeamName(p->GetCurrentTeam()), TeamName(outTeamID), maxMatches));
-    }
     return &outTeamID;
 }
 
@@ -1782,13 +1776,6 @@ void __declspec(naked) IncreaseEmergencyMeetingsCounter() {
     }
 }
 
-void METHOD OnTeamCalendarUpdate(void *t) {
-    CallMethod<0x112DC60>(t);
-    CDBTeam *team = *raw_ptr<CDBTeam *>(t, 0);
-    if (!team->IsManagedByAI())
-        ::Message(L"MeetingsWeekCounter: %d", *raw_ptr<UChar>(t, 4));
-}
-
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -1837,8 +1824,6 @@ void PatchEABFFixes(FM::Version v) {
         //patch::RedirectCall(0x112E07E, EventDay<3>);
 
         patch::RedirectCall(0xEFB001, OnGetTeamHolidaysDate);
-
-        //patch::RedirectJump(0x14AC3A0, GetCurrentMetric); // TODO: remove this (salary tests)
 
         //patch::SetPointer(0x23A8B1C, MyExecuteCallbacks);
 
@@ -2165,12 +2150,6 @@ void PatchEABFFixes(FM::Version v) {
             patch::SetUChar(0x44E54A, 0xEB);
         }
 
-        // TODO :remove this
-        //patch::SetUInt(0x24D25B8, 1);
-        //patch::SetUInt(0x24D25B8 + 4, 2);
-        //patch::SetUInt(0x24D25B8 + 4 * 2, 3);
-        //patch::SetUInt(0x24D25B8 + 4 * 3, 4);
-
         //patch::RedirectJump(0xFFD730, ResolveUserKitPath);
 
         //patch::RedirectJump(0xF985F0, OnGetPlayerSpecialFaceId);
@@ -2240,7 +2219,7 @@ void PatchEABFFixes(FM::Version v) {
         // decrease NP/IP when team relegates to spare
         patch::RedirectCall(0xF1E8DE, OnUpdateTeamPrestigeAndFans);
 
-        // auto-substitutions test - TODO: remove
+        // auto-substitutions test
         //patch::RedirectCall(0x59037E, OnGetSubsList);
         //patch::Nop(0x5929D8, 6);
 
@@ -2341,12 +2320,6 @@ void PatchEABFFixes(FM::Version v) {
 		patch::SetUChar(0x120F57A + 2, 0x36); // fix youth transfer ProbLeagueTransfers/ProbNationalTransfers
 		patch::SetUChar(0x120F592 + 2, 0x37); // fix youth transfer ProbLeagueTransfers/ProbNationalTransfers
 
-		// TODO: test
-		//patch::RedirectCall(0x120F58B, YouthTransfsersCollect<0x120EFD0, LeagueLevel>);
-		//patch::RedirectCall(0x120F5A3, YouthTransfsersCollect<0x120F050, NationalLevel>);
-		//patch::RedirectCall(0x120F5C0, YouthTransfsersCollect<0x120F120, ContinentalLevel>);
-		//patch::RedirectCall(0x120F5CC, YouthTransfsersCollect<0x120F220, IntercontinentalLevel>);
-
         patch::SetUChar(0xF657DB, 0xEB); // enable AOG for English version
         patch::Nop(0x13492E9, 6); // enable AOG for English version
         patch::Nop(0xFD40CB, 6); // AOG - Player Back from Brazil
@@ -2442,8 +2415,6 @@ void PatchEABFFixes(FM::Version v) {
 
         // Emergency meetings counter fix
         patch::RedirectJump(0x112DCC1, IncreaseEmergencyMeetingsCounter);
-        // TODO: remove this
-        patch::RedirectCall(0xF43C89, OnTeamCalendarUpdate);
     }
 }
 

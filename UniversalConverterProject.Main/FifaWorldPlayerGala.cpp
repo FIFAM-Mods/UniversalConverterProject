@@ -3,6 +3,7 @@
 #include "EuropeanGoldenShoe.h"
 #include "FifamNation.h"
 #include "shared.h"
+#include "TextFileTable.h"
 #include <string>
 #include <array>
 
@@ -112,10 +113,6 @@ void METHOD OnFIFAWorldPlayerGalaCreateUI(CXgFMPanel *screen) {
     gbBallonDOrScreen = screenName && strstr(screenName, "BallonDOr");
     CallMethod<0x894DD0>(screen);
     gbBallonDOrScreen = false;
-    // TODO: remove this
-//    static UChar data[0x54];
-//    *raw_ptr<UChar *>(screen, 0x4A8) = data;
-    //
 }
 
 UInt GetNumBallonDOrCandidates() {
@@ -132,6 +129,11 @@ struct MatchesGoalsAssists {
     unsigned char goals = 0;
     unsigned char assists = 0;
     unsigned char numMoTM = 0;
+};
+
+struct BallonDOrCandidate {
+    CDBPlayer *player;
+    Float score;
 };
 
 Float CalcBallonDOrPreviousYear(UChar position, UChar overall, MatchesGoalsAssists const &league,
@@ -168,10 +170,6 @@ Float CalcBallonDOrPreviousYear(UChar position, UChar overall, MatchesGoalsAssis
 }
 
 void CalcBallonDOrCandidates() {
-    struct BallonDOrCandidate {
-        CDBPlayer *player;
-        Float score;
-    };
     Vector<BallonDOrCandidate> candidates;
     for (UInt countryId = 1; countryId <= 207; countryId++) {
         auto team = GetTeam(CTeamIndex::make(countryId, 0, 0xFFFF));
@@ -197,7 +195,7 @@ void CalcBallonDOrCandidates() {
         // TODO: improve the formula for current season
         auto matchesGoals = GetPlayerMatchesGoalsList(player->GetID());
         if (matchesGoals && matchesGoals->GetNumEntries() > 0) {
-            Float averageMark;
+            Float averageMark = 0.0f;
             UChar numAverageMarks = 0;
             MatchesGoalsAssists mga[5];
             for (UInt e = 0; e < matchesGoals->GetNumEntries(); e++) {
@@ -225,9 +223,6 @@ void CalcBallonDOrCandidates() {
     ClearBallonDOrCandidates();
     for (UInt i = 0; i < candidates.size(); i++)
         GetBallonDOrCandidates()[i] = candidates[i].player->GetID();
-    SafeLog::Write(L"CalcBallonDOrCandidates:");
-    for (UInt i = 0; i < 3; i++)
-        SafeLog::Write(PlayerName(GetBallonDOrCandidates()[i]));
 }
 
 void ValidateBallonDOrCandidates() {
@@ -240,10 +235,6 @@ void ValidateBallonDOrCandidates() {
     SafeLog::Write(Utils::Format(L"ValidateBallonDOrCandidates: finalCandidates=%d", finalCandidates.size()));
     if (finalCandidates.size() == 3)
         return;
-    struct BallonDOrCandidate {
-        CDBPlayer *player;
-        Float score;
-    };
     Vector<BallonDOrCandidate> candidates;
     for (UInt countryId = 1; countryId <= 207; countryId++) {
         auto team = GetTeam(CTeamIndex::make(countryId, 0, 0xFFFF));
@@ -262,13 +253,15 @@ void ValidateBallonDOrCandidates() {
     });
     if (candidates.size() > 50)
         candidates.resize(50);
-    UInt year = GetCurrentYear() - 1;
+    UInt year = GetCurrentYear();
+    if (Game()->GetCurrentSeasonNumber() != 1)
+        year -= 1;
     for (auto &entry : candidates) {
         auto player = entry.player;
         entry.score = 0.0f;
         auto matchesGoals = GetPlayerMatchesGoalsList(player->GetID());
         if (matchesGoals && matchesGoals->GetNumEntries() > 0) {
-            Float averageMark;
+            Float averageMark = 0.0f;
             UChar numAverageMarks = 0;
             MatchesGoalsAssists mga[5];
             for (UInt e = 0; e < matchesGoals->GetNumEntries(); e++) {
@@ -304,9 +297,6 @@ void ValidateBallonDOrCandidates() {
     ClearBallonDOrCandidates();
     for (UInt i = 0; i < finalCandidates.size(); i++)
         GetBallonDOrCandidates()[i] = finalCandidates[i]->GetID();
-    SafeLog::Write(L"ValidateBallonDOrCandidates:");
-    for (UInt i = 0; i < 3; i++)
-        SafeLog::Write(PlayerName(GetBallonDOrCandidates()[i]));
 }
 
 void AwardBallonDOrWinner() {
@@ -328,6 +318,7 @@ void AwardBallonDOrWinner() {
             AddPlayerTrophy(PLAYERTROPHY_BALLONDOR, GetCurrentYear(), L"Rodri", L"", Date(22, 6, 1996), FifamNation::Spain, 0x000E000E, false);
     }
     else {
+        ValidateBallonDOrCandidates();
         UInt numCandidates = GetNumBallonDOrCandidates();
         if (numCandidates > 0) {
             AddPlayerTrophy(PLAYERTROPHY_BALLONDOR, GetCurrentYear(), GetPlayer(GetBallonDOrCandidates()[0]));
@@ -390,7 +381,6 @@ Bool METHOD OnGamePopEvent(CGameEvents *gameEvents, DUMMY_ARG, UInt eventType, C
             break;
         case GAMEEVENT_BALLONDOR_GALA:
             SafeLog::Write(Utils::Format(L"%s. Executing Ballon D'Or Gala event", GetCurrentDate().ToStr()));
-            ValidateBallonDOrCandidates();
             AwardBallonDOrWinner();
             break;
         }
@@ -400,7 +390,7 @@ Bool METHOD OnGamePopEvent(CGameEvents *gameEvents, DUMMY_ARG, UInt eventType, C
 
 CDBGame *OnGameStartNewSeason() {
     auto game = Game();
-    GameEvents().AddEvent(0, CGameEvent(CJDate(game->GetCurrentYear(), 6, 29), 0, GAMEEVENT_BALLONDOR_CALC, 0, 0, 0, 0, 0, 0));
+    GameEvents().AddEvent(0, CGameEvent(CJDate(game->GetCurrentYear() + 1, 6, 29), 0, GAMEEVENT_BALLONDOR_CALC, 0, 0, 0, 0, 0, 0));
     SafeLog::Write(L"Registered Ballon D'Or Calculation event");
     GameEvents().AddEvent(0, CGameEvent(CJDate(game->GetCurrentYear(), 9, 22), 0, GAMEEVENT_BALLONDOR_GALA, 0, 0, 0, 0, 0, 0));
     SafeLog::Write(L"Registered Ballon D'Or Gala event");

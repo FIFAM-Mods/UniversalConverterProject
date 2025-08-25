@@ -550,24 +550,5 @@ void PatchForeignersLimit(FM::Version v) {
 			&MyFilterTeamForRotationCollector_GetName
 		};
 		patch::SetPointer(0x13D9848 + 4, MyFilterTeamForRotationCollector_Vtable);
-
-		// TODO: tests
-		//patch::RedirectCall(0x13D8F5E, Collector_AddPlayer);
-		//patch::SetPointer(0x24D02F8, Collect<0x13D8FB0, NationalTeam>);
-		//patch::SetPointer(0x24D0300, Collect<0x13D90D0, Club>);
-		//patch::SetPointer(0x24D02D0, Collect<0x13D9470, FullButInjured>);
-		//patch::SetPointer(0x24D02F0, Collect<0x13D9740, Rotation>);
-		//patch::SetPointer(0x24E2320, Filter<0x1427CE0, Absent>);
-		//patch::SetPointer(0x24E233C, Filter<0x1427D00, Banned>);
-		//patch::SetPointer(0x24E2278, Filter<0x1427B10, EuropeanCup>);
-		//patch::SetPointer(0x24E2224, Filter<0x1427BA0, Excluded>);
-		//patch::SetPointer(0x24E22E0, Filter<0x1427C70, FirstTeam>);
-		//patch::SetPointer(0x24E2240, Filter<0x1427B50, Injured>);
-		//patch::SetPointer(0x24E2298, Filter<0x1427B80, LeaguePermission>);
-		//patch::SetPointer(0x24E2358, Filter<0x1427D20, LoanPlayers>);
-		//patch::SetPointer(0x24E2200, Filter<0x1427BC0, LongtermInjury>);
-		//patch::SetPointer(0x24E225C, Filter<0x1427B30, Suspended>);
-		//patch::SetPointer(0x24E22FC, Filter<0x1427CA0, WorkingPermission>);
-		//patch::SetPointer(0x24E22C4, Filter<0x1427C10, WrongTeam>);
     }
 }

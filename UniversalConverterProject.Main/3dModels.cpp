@@ -49,7 +49,7 @@ void Install3DModelPatches() {
     patch::SetUInt(GfxCoreAddress(0x451CA5 + 1), 0x4FC + MAX_MODELS_PER_SCENE_INSTANCE * 4);
     patch::SetPointer(GfxCoreAddress(0x4535B5 + 1), sceneGroupsData);
     patch::SetUInt(GfxCoreAddress(0x4535AF + 1), std::size(sceneGroupsData));
-    // TODO: realloc more structs
+    // realloc more structs
     //
 #endif
 }

@@ -244,7 +244,7 @@ CompTypeNameDesc gNewCompTypeNames[] = {
 const unsigned char gNumCompetitionTypes = std::size(gNewCompTypeNames);
 
 unsigned int gContinentalCompetitionTypes[] = {
-    COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE, COMP_EURO_SUPERCUP, COMP_TOYOTA, COMP_UIC, COMP_ICC, COMP_CONTINENTAL_1, COMP_CONTINENTAL_2 // TODO: set root for Youth CL and WCC
+    COMP_CHAMPIONSLEAGUE, COMP_UEFA_CUP, COMP_CONFERENCE_LEAGUE, COMP_EURO_SUPERCUP, COMP_TOYOTA, COMP_UIC, COMP_ICC, COMP_CONTINENTAL_1, COMP_CONTINENTAL_2
 };
 
 unsigned int gInternationalCompsTypes[] = { COMP_EURO_NL_Q, 15, 16, COMP_EURO_NL, 17, 18, 32, 33, COMP_NAM_NL_Q, COMP_NAM_NL, COMP_NAM_CUP,
@@ -3618,7 +3618,6 @@ wchar_t const *METHOD OnFindFileBlock(void *file, DUMMY_ARG, wchar_t const *inde
     return CallMethodAndReturn<wchar_t const *, 0x511FF0>(file, index, pc);
 }
 
-// TODO: remake this
 void __declspec(naked) LaunchQualiExec() {
     __asm {
         push    0

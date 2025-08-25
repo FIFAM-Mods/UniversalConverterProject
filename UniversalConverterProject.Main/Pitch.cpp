@@ -175,13 +175,6 @@ Int OnReadLightingFile(char const *filename) {
         gUnkColor1->g = 0.0f;
         gUnkColor1->b = 0.0f;
         gUnkColor1->a = 0.0f;
-        
-        // TODO: mistake? gUnkColor2 must be used?
-        //gUnkColor1->r = 0.0f;
-        //gUnkColor1->g = 0.0f;
-        //gUnkColor1->b = 0.0f;
-        //gUnkColor1->a = 0.0f;
-
     }
     else {
         RGBAReal *grassColor = (RGBAReal *)GfxCoreAddress(0xA7C1D8);
@@ -323,7 +316,7 @@ Int OnReadLightingFile(char const *filename) {
                 gUnkColor1->b = 0.0f;
                 gUnkColor1->a = 0.4f;
 
-                // TODO: mistake? Must be gUnkColor2?
+                // mistake? Must be gUnkColor2?
                 gUnkColor1->r = 0.0f;
                 gUnkColor1->g = 0.0f;
                 gUnkColor1->b = 0.4f;

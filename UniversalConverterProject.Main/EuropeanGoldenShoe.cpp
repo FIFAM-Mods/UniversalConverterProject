@@ -166,7 +166,7 @@ void ReadGoldenShoeConfiig() {
 }
 
 void AddPlayerTrophy(ePlayerTrophy type, UShort year, String lastName, String firstName, Date birthdate,
-    UChar countryId, UInt clubId, Bool searchForRealPlayer)
+    UChar countryId, UInt clubId, Bool searchForRealPlayer, Bool front)
 {
     MyHistoricalPlayerEntry winner;
     memset(&winner, 0, sizeof(MyHistoricalPlayerEntry));
@@ -207,14 +207,11 @@ void AddPlayerTrophy(ePlayerTrophy type, UShort year, String lastName, String fi
         winner.teamID = team->GetTeamID();
     winner.clubId = clubId;
     winner.birthdate.Set(birthdate.year, birthdate.month, birthdate.day);
-
-    if (type == PLAYERTROPHY_BALLONDOR)
-        CallMethod<0xF5C020>(raw_ptr<FmList<HistoricalPlayerEntry>>(CDBGame::GetInstance(), LIST_OFFSET_BALLONDOR), &winner);
-    else if (type == PLAYERTROPHY_BESTINEUROPE)
-        CallMethod<0xF5C020>(raw_ptr<FmList<HistoricalPlayerEntry>>(CDBGame::GetInstance(), LIST_OFFSET_BESTEUROPEAN), &winner);
+    UInt ListOffset = (type == PLAYERTROPHY_BALLONDOR) ? LIST_OFFSET_BALLONDOR : LIST_OFFSET_BESTEUROPEAN;
+    CallMethodDynGlobal(front ? 0xF5BFE0 : 0xF5C020, raw_ptr<void>(Game(), ListOffset), &winner);
 }
 
-void AddPlayerTrophy(ePlayerTrophy type, UShort year, CDBPlayer *player) {
+void AddPlayerTrophy(ePlayerTrophy type, UShort year, CDBPlayer *player, Bool front) {
     MyHistoricalPlayerEntry winner;
     memset(&winner, 0, sizeof(MyHistoricalPlayerEntry));
     winner.year = year;
@@ -233,10 +230,8 @@ void AddPlayerTrophy(ePlayerTrophy type, UShort year, CDBPlayer *player) {
             winner.clubId = team->GetTeamUniqueID();
     }
     winner.birthdate = player->GetBirthdate();
-    if (type == PLAYERTROPHY_BALLONDOR)
-        CallMethod<0xF5C020>(raw_ptr<FmList<HistoricalPlayerEntry>>(CDBGame::GetInstance(), LIST_OFFSET_BALLONDOR), &winner);
-    else if (type == PLAYERTROPHY_BESTINEUROPE)
-        CallMethod<0xF5C020>(raw_ptr<FmList<HistoricalPlayerEntry>>(CDBGame::GetInstance(), LIST_OFFSET_BESTEUROPEAN), &winner);
+    UInt ListOffset = (type == PLAYERTROPHY_BALLONDOR) ? LIST_OFFSET_BALLONDOR : LIST_OFFSET_BESTEUROPEAN;
+    CallMethodDynGlobal(front ? 0xF5BFE0 : 0xF5C020, raw_ptr<void>(Game(), ListOffset), &winner);
 }
 
 void ReadPlayerTrophyConfiig(Path const &filename, ePlayerTrophy type) {
@@ -252,7 +247,7 @@ void ReadPlayerTrophyConfiig(Path const &filename, ePlayerTrophy type) {
                 Date birthdate;
                 r.ReadLineWithSeparator(L'\t', year, lastName, firstName, birthdate, countryId, Hexadecimal(clubId), clubName);
                 if (year > 0 && year < GetStartingYear())
-                    AddPlayerTrophy(type, year, lastName, firstName, birthdate, countryId, clubId);
+                    AddPlayerTrophy(type, year, lastName, firstName, birthdate, countryId, clubId, true, false);
             }
             else
                 r.SkipLine();
@@ -1554,11 +1549,6 @@ Int METHOD OnPlayerInfoCareerFill(CXgFMPanel *screen) {
     return playerId;
 }
 
-UInt METHOD OnGetNumPlayerOfTheYear(CPlayerStats *stats) {
-    PlayerStatsSetBallonDOrWins(stats, PlayerStatsGetBallonDOrWins(stats) + 1);
-    return PlayerStatsGetBallonDOrWins(stats);
-}
-
 void METHOD OnPlayerStatsInit(CPlayerStats *stats) {
     CallMethod<0x1005410>(stats);
     PlayerStatsInitAdditionalStats(stats);
@@ -1616,8 +1606,6 @@ void PatchEuropeanGoldenShoe(FM::Version v) {
         patch::SetUInt(0x5C99DB + 1, PlayerInfoCareerDefaultSize + sizeof(PlayerInfoCareerExtended));
         patch::SetPointer(0x23D0814, OnPlayerInfoCareerCreateUI);
         patch::RedirectCall(0x5D7250, OnPlayerInfoCareerFill);
-        // player of the year (CDBGame)
-        patch::RedirectCall(0xF64FF4, OnGetNumPlayerOfTheYear);
         // additional stats in CPlayerStats
         patch::RedirectCall(0x1006425, OnPlayerStatsInit);
         patch::RedirectCall(0x100644B, OnPlayerStatsInit);

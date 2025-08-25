@@ -524,8 +524,8 @@ class CGameEvent {
 public:
     CJDate m_date;
     UInt m_nEntityId;
-    UInt m_nEventId;
-    UInt m_nFlags;
+    UShort m_nEventId;
+    UShort m_nFlags;
     Int m_nParam1;
     Int m_nParam2;
     Int m_nParam3;
