@@ -419,5 +419,9 @@ void PatchFifaWorldPlayerGala(FM::Version v) {
         patch::RedirectCall(0xF6E1C0, OnGamePopEvent);
         patch::RedirectCall(0xF6EE38, OnGamePopEvent);
         patch::RedirectCall(0xF68BC0, OnGameStartNewSeason);
+
+        // disable the original "World Player"
+        patch::Nop(0xF65067, 1);
+        patch::SetUChar(0xF65067 + 1, 0xE9);
     }
 }

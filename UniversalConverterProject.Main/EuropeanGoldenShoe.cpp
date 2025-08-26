@@ -932,9 +932,9 @@ public:
             t->tbScreenDesc->SetText(GetTranslation("IDS_PLAYER_INFO_ALL_TIME_3"));
             t->tbScreenName->SetText(GetTranslation("IDS_PLAYER_INFO_ALL_TIME_3"));
         }
-                                               // Pos       Flag      Player      Badge           Club     
-        CFMListBox::InitColumnTypes(listBox,      0,        LBT_FLAG, LBT_PLAYER, LBT_CLUB_BADGE, LBT_CLUB, LBT_END);
-        CFMListBox::InitColumnFormatting(listBox, LBF_NONE, LBF_NONE, LBF_NAME,   LBF_NONE,       LBF_NAME, LBF_END);
+                                               // Pos       Flag      Player      Badge      Club     
+        CFMListBox::InitColumnTypes(listBox,      0,        LBT_FLAG, LBT_PLAYER, LBT_IMAGE, LBT_CLUB, LBT_END);
+        CFMListBox::InitColumnFormatting(listBox, LBF_NONE, LBF_NONE, LBF_NAME,   LBF_NONE,  LBF_NAME, LBF_END);
         FillTable(t);
     }
 
@@ -961,6 +961,11 @@ public:
                 listBox->AddTeamName(team->GetTeamID(), color, 0);
             }
             else {
+                String badgeFileName;
+                if (GetFilenameForImageIfExists(badgeFileName, L"badges\\clubs\\32x32", Utils::Format(L"%08X", w.clubId)))
+                    listBox->AddColumnImage(badgeFileName.c_str());
+                else
+                    listBox->AddColumnString(L"", color, 0);
                 auto teamName = GetTranslationIfPresent(Utils::Format("IDS_TEAMNAME_%08X", w.clubId).c_str());
                 if (teamName)
                     listBox->AddColumnString(teamName, color, 0);
@@ -1253,7 +1258,11 @@ void METHOD NewspaperGoldenBootFill(CXgFMPanel *screen, DUMMY_ARG, void *data) {
             auto teamName = GetTranslationIfPresent(Utils::Format("IDS_TEAMNAME_%08X", w.clubUID).c_str());
             if (teamName) {
                 LbByClub->AddColumnInt(counter + 1, color);
-                LbByClub->AddColumnString(L"", color);
+                String badgeFileName;
+                if (GetFilenameForImageIfExists(badgeFileName, L"badges\\clubs\\32x32", Utils::Format(L"%08X", w.clubUID)))
+                    LbByClub->AddColumnImage(badgeFileName.c_str());
+                else
+                    LbByClub->AddColumnString(L"", color);
                 LbByClub->AddColumnString(teamName, color);
                 LbByClub->AddColumnInt(w.count, color);
                 LbByClub->NextRow();
@@ -1368,17 +1377,17 @@ void METHOD OnNewspaperGoldenBootCreateUI(CXgFMPanel *screen) {
     auto LbByNation = (CFMListBox *)ext->LbByNation;
     auto LbByLeague = (CFMListBox *)ext->LbByLeague;
     LbByPlayer->Create(screen, "LbByPlayer"); // Pos       Flag      Player      Wins     
-    CFMListBox::InitColumnTypes(LbByPlayer, LBT_INT, LBT_FLAG, LBT_PLAYER, LBT_INT, LBT_END);
-    CFMListBox::InitColumnFormatting(LbByPlayer, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
-    LbByClub->Create(screen, "LbByClub");   // Pos       Badge           Club      Wins     
-    CFMListBox::InitColumnTypes(LbByClub, LBT_INT, LBT_CLUB_BADGE, LBT_CLUB, LBT_INT, LBT_END);
-    CFMListBox::InitColumnFormatting(LbByClub, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+    CFMListBox::InitColumnTypes(LbByPlayer,      LBT_INT,  LBT_FLAG, LBT_PLAYER, LBT_INT,  LBT_END);
+    CFMListBox::InitColumnFormatting(LbByPlayer, LBF_NONE, LBF_NONE, LBF_NAME,   LBF_NONE, LBF_END);
+    LbByClub->Create(screen, "LbByClub");   // Pos       Badge      Club      Wins     
+    CFMListBox::InitColumnTypes(LbByClub,      LBT_INT,  LBT_IMAGE, LBT_CLUB, LBT_INT,  LBT_END);
+    CFMListBox::InitColumnFormatting(LbByClub, LBF_NONE, LBF_NONE,  LBF_NAME, LBF_NONE, LBF_END);
     LbByNation->Create(screen, "LbByNation"); // Pos       Flag      Country      Wins     
-    CFMListBox::InitColumnTypes(LbByNation, LBT_INT, LBT_FLAG, LBT_COUNTRY, LBT_INT, LBT_END);
-    CFMListBox::InitColumnFormatting(LbByNation, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+    CFMListBox::InitColumnTypes(LbByNation,      LBT_INT,  LBT_FLAG, LBT_COUNTRY, LBT_INT,  LBT_END);
+    CFMListBox::InitColumnFormatting(LbByNation, LBF_NONE, LBF_NONE, LBF_NAME,    LBF_NONE, LBF_END);
     LbByLeague->Create(screen, "LbByLeague"); // Pos       Logo           League         Wins     
-    CFMListBox::InitColumnTypes(LbByLeague, LBT_INT, LBT_COMP_LOGO, LBT_COMP_NAME, LBT_INT, LBT_END);
-    CFMListBox::InitColumnFormatting(LbByLeague, LBF_NONE, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+    CFMListBox::InitColumnTypes(LbByLeague,      LBT_INT,  LBT_COMP_LOGO, LBT_COMP_NAME, LBT_INT,  LBT_END);
+    CFMListBox::InitColumnFormatting(LbByLeague, LBF_NONE, LBF_NONE,      LBF_NAME,      LBF_NONE, LBF_END);
 }
 
 CXgFMPanel *METHOD OnNewspaperGoldenBootConstruct(CXgFMPanel *screen, DUMMY_ARG, void *guiInstance) {

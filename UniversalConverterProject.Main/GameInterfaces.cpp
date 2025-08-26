@@ -891,8 +891,14 @@ Bool FmFileRead(Path const &filepath, void *outData, UInt size) {
     return false;
 }
 
-Bool GetFilenameForImageIfExists(String &out, String const &folder, String const &filename) {
-    String filepath = folder + L"\\" + filename;
+Bool GetFilenameForImageIfExists(String& out, String const& folder, String const& filename) {
+    String filepath;
+    if (folder.empty())
+        filepath = filename;
+    else if (folder[folder.size() - 1] == L'\\' || folder[folder.size() - 1] == L'/')
+        filepath = folder + filename;
+    else
+        filepath = folder + L"\\" + filename;
     out = filepath + L".tga";
     if (FmFileExists(out))
         return true;
