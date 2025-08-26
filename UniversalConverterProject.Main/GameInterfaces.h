@@ -69,10 +69,21 @@ enum eGuiColor {
     COL_BG_PLAYERSTATE_NOTINSQUAD
 };
 
+enum eDayOfWeek {
+    DAY_MONDAY = 0,
+    DAY_TUESDAY = 1,
+    DAY_WEDNESDAY = 2,
+    DAY_THURSDAY = 3,
+    DAY_FRIDAY = 4,
+    DAY_SATURDAY = 5,
+    DAY_SUNDAY = 6,
+};
+
 class CJDate {
     UInt value = 0;
 public:
     CJDate();
+    CJDate(UInt _value);
     CJDate(UInt year, UInt month, UInt day);
     CJDate GetTranslated(int numYears);
     unsigned short GetYear();
@@ -86,9 +97,16 @@ public:
     UInt GetDayOfWeek();
     static CJDate DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year);
     void AddRandomDaysCount(UChar direction);
+    CJDate CJDate::AddDays(Int days);
+    CJDate CJDate::AddWeeks(Int weeks);
+    CJDate CJDate::AddMonths(Int months);
     CJDate AddYears(Int years);
 	String ToStr();
     Bool IsNull();
+    CJDate operator+(Int days) const;
+    CJDate &operator++();
+    CJDate operator++(Int);
+    CJDate &operator+=(Int days);
     Bool operator>(const CJDate &other) const;
     Bool operator<(const CJDate &other) const;
     Bool operator==(const CJDate &other) const;

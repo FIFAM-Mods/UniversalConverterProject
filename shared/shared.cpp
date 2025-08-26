@@ -21,7 +21,7 @@ String GetPatchName() {
 }
 
 Int GetPatchUpdateNumber() {
-    return 1;
+    return 2;
 }
 
 Int GetPatchHotfixNumber() {

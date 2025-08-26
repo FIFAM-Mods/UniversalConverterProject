@@ -188,7 +188,7 @@ public:
             PatchUEFALeaguePhase(v);
             PatchAssessment(v);
             PatchMainMenu(v);
-            //PatchScreenResolution(v);
+            PatchScreenResolution(v);
             PatchAbilityColors(v);
             PatchLanguages(v);
             PatchNewspaperEuroStats(v);

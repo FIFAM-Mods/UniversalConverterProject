@@ -14,6 +14,10 @@ CJDate::CJDate() {
     value = 0;
 }
 
+CJDate::CJDate(UInt _value) {
+    value = _value;
+}
+
 CJDate::CJDate(UInt year, UInt month, UInt day) {
     CallMethod<0x1494A2A>(this, year, month, day);
 }
@@ -68,6 +72,24 @@ void CJDate::AddRandomDaysCount(UChar direction) {
     CallMethod<0x149633E>(this, direction);
 }
 
+CJDate CJDate::AddDays(Int days) {
+    CJDate outDate;
+    CallMethod<0x1495EB2>(this, &outDate, days);
+    return outDate;
+}
+
+CJDate CJDate::AddWeeks(Int weeks) {
+    CJDate outDate;
+    CallMethod<0x1495ED7>(this, &outDate, weeks);
+    return outDate;
+}
+
+CJDate CJDate::AddMonths(Int months) {
+    CJDate outDate;
+    CallMethod<0x1495DD6>(this, &outDate, months);
+    return outDate;
+}
+
 CJDate CJDate::AddYears(Int years) {
     CJDate outDate;
     CallMethod<0x1495EFF>(this, &outDate, years);
@@ -80,6 +102,26 @@ String CJDate::ToStr() {
 
 Bool CJDate::IsNull() {
     return value == 0;
+}
+
+CJDate CJDate::operator+(Int days) const {
+    return CJDate(value + days);
+}
+
+CJDate &CJDate::operator++() {
+    ++value;
+    return *this;
+}
+
+CJDate CJDate::operator++(Int) {
+    CJDate old(*this);
+    ++value;
+    return old;
+}
+
+CJDate &CJDate::operator+=(Int days) {
+    value += days;
+    return *this;
 }
 
 Bool CJDate::operator>(const CJDate &other) const {

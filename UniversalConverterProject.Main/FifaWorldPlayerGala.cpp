@@ -342,19 +342,10 @@ FmVec<WorldPlayerGalaEntry> *METHOD FIFAWorldPlayerGalaGetGetNominants(CDBGame *
         dummyVec._size = dummyVec.capacity = NUM_NOMINANTS;
         for (UInt i = 0; i < 3; i++)
             entries[i].m_nPlayerId = GetBallonDOrCandidates()[i];
-        SafeLog::Write(L"Ballon D'Or nominants:");
-        for (UInt i = 0; i < 3; i++)
-            SafeLog::Write(PlayerName(GetBallonDOrCandidates()[i]));
-        SafeLog::Write(L"Ballon D'Or nominants (dummyVec):");
-        for (UInt i = 0; i < dummyVec.size(); i++)
-            SafeLog::Write(PlayerName(dummyVec[i].m_nPlayerId));
         CallMethod<0x4F4B40>(vec, &dummyVec);
-        SafeLog::Write(L"Ballon D'Or nominants (vec):");
-        for (UInt i = 0; i < vec->size(); i++)
-            SafeLog::Write(PlayerName((*vec)[i].m_nPlayerId));
     }
     else
-        CallMethod<0xF5FAE0>(game, &vec);
+        CallMethod<0xF5FAE0>(game, vec);
     return vec;
 }
 
@@ -390,10 +381,14 @@ Bool METHOD OnGamePopEvent(CGameEvents *gameEvents, DUMMY_ARG, UInt eventType, C
 
 CDBGame *OnGameStartNewSeason() {
     auto game = Game();
-    GameEvents().AddEvent(0, CGameEvent(CJDate(game->GetCurrentYear() + 1, 6, 29), 0, GAMEEVENT_BALLONDOR_CALC, 0, 0, 0, 0, 0, 0));
-    SafeLog::Write(L"Registered Ballon D'Or Calculation event");
-    GameEvents().AddEvent(0, CGameEvent(CJDate(game->GetCurrentYear(), 9, 22), 0, GAMEEVENT_BALLONDOR_GALA, 0, 0, 0, 0, 0, 0));
-    SafeLog::Write(L"Registered Ballon D'Or Gala event");
+    CJDate ballonDORCalcDate(game->GetCurrentYear() + 1, 6, 29);
+    GameEvents().AddEvent(0, CGameEvent(ballonDORCalcDate, 0, GAMEEVENT_BALLONDOR_CALC, 0, 0, 0, 0, 0, 0));
+    SafeLog::Write(L"Registered Ballon D'Or Calculation event on " + ballonDORCalcDate.ToStr());
+    CJDate ballonDOrGalaDate(game->GetCurrentYear(), 9, 22);
+    while (ballonDOrGalaDate.GetDayOfWeek() != DAY_MONDAY)
+        ballonDOrGalaDate++;
+    GameEvents().AddEvent(0, CGameEvent(ballonDOrGalaDate, 0, GAMEEVENT_BALLONDOR_GALA, 0, 0, 0, 0, 0, 0));
+    SafeLog::Write(L"Registered Ballon D'Or Gala event on " + ballonDOrGalaDate.ToStr());
     return game;
 }
 
