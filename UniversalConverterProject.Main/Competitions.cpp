@@ -5436,21 +5436,9 @@ void METHOD OnPlayerDeparture(CDBPlayer *player, DUMMY_ARG, UInt reason, Bool32 
     CallMethod<0xFB1B80>(player, reason, startAbsence, numDays);
 }
 
-UInt METHOD OnPoolLaunchRegisterNTNomination(CDBCompetition *comp) {
-    return 0;
-}
-
-void METHOD OnCountryProcessEvent(CDBCountry *country, DUMMY_ARG, CGameEvent *event) {
-    if (event->m_nEventId == 1283
-        && event->m_date.GetMonth() == 6
-        && event->m_date.GetDays() == 7
-        && event->m_date.GetYear() % 2)
-    {
-        UChar compType = (event->m_nParam1 >> 16) & 0xFF;
-        if (compType == COMP_EURO_CUP || compType == COMP_WORLD_CUP)
-            return;
-    }
-    CallMethod<0xFF4850>(country, event); // CDBCountry::HandleEvent
+void METHOD OnPoolRegisterNTNominationEvent(CGameEvents* gameEvents, DUMMY_ARG, UInt eventType, CGameEvent& event) {
+    if (!(event.m_date.GetYear() % 2))
+        gameEvents->AddEvent(eventType, event);
 }
 
 void PatchCompetitions(FM::Version v) {
@@ -6216,10 +6204,7 @@ void PatchCompetitions(FM::Version v) {
         //patch::RedirectCall(0x01500779, OnPlayerDeparture<0x01500779>);
 
         // remove NT call up event registration for WC and EC in odd years
-        patch::RedirectCall(0x10F1A6C, OnPoolLaunchRegisterNTNomination);
-        patch::RedirectCall(0x10F1A78, OnPoolLaunchRegisterNTNomination);
-
-        patch::RedirectCall(0xF5305B, OnCountryProcessEvent);
+        patch::RedirectCall(0x10F1B25, OnPoolRegisterNTNominationEvent);
         
         // remove Free TV bonus payment for DFB Cup (Germany)
         patch::Nop(0xFDD8B6, 13);
