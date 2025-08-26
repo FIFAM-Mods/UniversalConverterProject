@@ -203,7 +203,8 @@ public:
     ~UniversalConverterProject() {
         if (v.id() == ID_FM_13_1030_RLD) {
             UnpatchEABFFixes(v);
-            ClearShadersDataStorage();
+            if (Settings::GetInstance().EnableCustomShaders)
+                ClearShadersDataStorage();
         }
     }
 };
