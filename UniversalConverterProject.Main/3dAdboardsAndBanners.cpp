@@ -96,29 +96,21 @@ Bool GetAdboardsTextures() {
     if (nullA && Settings::GetInstance().ClubAdboards && team && compId != 0) {
         UInt compType = (compId >> 16) & 0xFF;
         if (compType == COMP_LEAGUE || compType == COMP_FRIENDLY) {
-            SafeLog::Write(Utils::Format(L"team: %s", team->GetName()));
             void *sponsorsList = CallAndReturn<void *, 0x69E9E0>();
             if (sponsorsList) {
-                SafeLog::Write(Utils::Format(L"sponsorsList: %p", sponsorsList));
                 auto &sponsor = team->GetSponsor();
-                SafeLog::Write(Utils::Format(L"sponsor: %p", &sponsor));
                 FmVec<CDBSponsorContractAdBoards> &adboardSponsors = sponsor.GetAdBoardSponsors();
-                SafeLog::Write(Utils::Format(L"adboardSponsors: %p", &adboardSponsors));
                 if (!adboardSponsors.empty()) {
                     Vector<Pair<String, UChar>> adboards;
                     for (UInt i = 0; i < adboardSponsors.size(); i++) {
-                        SafeLog::Write(Utils::Format(L"adboard: %d", i));
                         CDBSponsorContractAdBoards &adboardSponsor = adboardSponsors[i];
-                        SafeLog::Write(Utils::Format(L"adboard: %p", adboardSponsor));
                         if (adboardSponsor.IsActive()) {
                             auto &placement = adboardSponsor.GetPlacement();
-                            SafeLog::Write(Utils::Format(L"country: %d index: %d", placement.countryId, placement.index));
                             void *sponsorDesc = CallMethodAndReturn<void *, 0x126E910>(sponsorsList, placement.countryId, placement.index);
                             if (sponsorDesc) {
                                 String sponsorPath = CallMethodAndReturn<WideChar const *, 0x126D500>(sponsorDesc);
-                                SafeLog::Write(Utils::Format(L"sponsorPath: %s", sponsorPath.c_str()));
                                 if (!sponsorPath.empty() && Utils::StartsWith(Utils::ToLower(sponsorPath), L"sponsors") && Utils::EndsWith(Utils::ToLower(sponsorPath), L".tga") && FmFileExists(sponsorPath))
-                                    adboards.emplace_back(sponsorPath, CallMethodAndReturn<UChar, 0x11BEBA0>(adboardSponsor));
+                                    adboards.emplace_back(sponsorPath, CallMethodAndReturn<UChar, 0x11BEBA0>(&adboardSponsor));
                             }
                         }
                     }

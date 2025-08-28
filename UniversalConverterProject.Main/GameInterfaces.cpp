@@ -2880,7 +2880,7 @@ void ClampTilesToImageBounds(UShort *dst, UShort *src, UInt numTiles, UShort tot
 }
 
 void *opNew(UInt size) {
-    return CallAndReturn<void *, 0x15773B5>();
+    return CallAndReturn<void *, 0x15773B5>(size);
 }
 
 void opDelete(void *data) {
