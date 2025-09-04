@@ -97,9 +97,9 @@ public:
     UInt GetDayOfWeek();
     static CJDate DateFromDayOfWeek(UChar dayOfWeek, UChar month, UShort year);
     void AddRandomDaysCount(UChar direction);
-    CJDate CJDate::AddDays(Int days);
-    CJDate CJDate::AddWeeks(Int weeks);
-    CJDate CJDate::AddMonths(Int months);
+    CJDate AddDays(Int days);
+    CJDate AddWeeks(Int weeks);
+    CJDate AddMonths(Int months);
     CJDate AddYears(Int years);
 	String ToStr();
     Bool IsNull();
@@ -1716,13 +1716,16 @@ UInt SaveGameLoadGetVersion(void *save);
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID);
 
 enum eNetComStorage {
+    STORAGE_GENERAL = 0,
     STORAGE_PLAYERS = 1,
     STORAGE_CAREER_LISTS = 2,
     STORAGE_STAT_LISTS = 3,
     STORAGE_TEAMS = 4,
+    STORAGE_STATICTEAMS = 5, // not used in FM13
     STORAGE_EMPLOYEES = 6,
     STORAGE_STAFF = 7,
     STORAGE_CREDITS_LISTS = 8,
+    STORAGE_TRAINING = 9, // not used in FM13
     STORAGE_MAILS = 11,
     STORAGE_STADIUMS = 12,
     STORAGE_CONTRACT_OFFERS = 14,
@@ -1731,6 +1734,30 @@ enum eNetComStorage {
     STORAGE_COMPLETED_TRANSFERS = 20,
     STORAGE_REFEREES = 21,
     STORAGE_DRAFT_LISTS = 22
+};
+
+struct NetComStorageBlockEntry {
+    UInt id;
+    void *object;
+};
+
+struct NetComStorageBlock {
+    FmVec<NetComStorageBlockEntry> m_vecObjects;
+    Int m_lastIndex;
+    Int m_lastEntry;
+    Int m_lastId;
+    Bool m_hasLastId;
+    Char _pad25[3];
+    CRITICAL_SECTION m_criticalSection;
+};
+
+class CNetComStorage {
+public:
+    Int field_0;
+    Int field_4;
+    Char field_8;
+    Char _pad9[3];
+    NetComStorageBlock m_blocks[16];
 };
 
 struct NetComStorageIterator {
@@ -1936,6 +1963,7 @@ enum FMListBoxColumnType {
     LBT_COMP_LOGO = 36,
     LBT_COMP_NAME = 37,
     LBT_IMAGE = 58,
+    LBT_PLAYER_LEVEL = 59,
     LBT_END = 63
 };
 
@@ -1972,6 +2000,7 @@ public:
     void AddCompetition(CCompID const &compID, UInt color = 0xFF1A1A1A, Int unk = 0);
     void AddCountryFlag(UInt countryId, Int unk = 0);
     void AddColumnImage(WideChar const *imagePath);
+    void AddPlayerLevel(Char value, UInt color = 0xFF1A1A1A, Int unk = 0);
     void SetRowColor(UInt rowIndex, UInt color);
     void NextRow(Int unk = 0);
     void Create(CXgFMPanel *panel, const char *name);

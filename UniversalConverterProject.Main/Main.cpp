@@ -69,6 +69,7 @@
 #include "NewspaperEuroStats.h"
 #include "EuropeanGoldenShoe.h"
 #include "LeagueSplit.h"
+#include "PlayerLevelPatches.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -193,6 +194,7 @@ public:
             PatchLanguages(v);
             PatchNewspaperEuroStats(v);
             PatchEuropeanGoldenShoe(v);
+            PatchPlayerLevelPatches(v);
 
 #ifdef BETA
             DoBetaPatches(v);

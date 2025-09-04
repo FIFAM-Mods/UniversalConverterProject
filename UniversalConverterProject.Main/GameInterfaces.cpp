@@ -2719,6 +2719,10 @@ void CFMListBox::AddColumnImage(WideChar const *imagePath) {
     CallMethod<0xD1E4C0>(this, imagePath);
 }
 
+void CFMListBox::AddPlayerLevel(Char value, UInt color, Int unk) {
+    CallMethod<0xD1DB70>(this, value, color, unk);
+}
+
 void CFMListBox::SetRowColor(UInt rowIndex, UInt color) {
     CallMethod<0xD18C30>(this, rowIndex, color);
 }

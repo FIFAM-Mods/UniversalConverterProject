@@ -128,6 +128,7 @@
     <ClCompile Include="AbilityColors.cpp" />
     <ClCompile Include="NewspaperEuroStats.cpp" />
     <ClCompile Include="PlayerCareerList.cpp" />
+    <ClCompile Include="PlayerLevelPatches.cpp" />
     <ClCompile Include="ScreenResolution.cpp" />
     <ClCompile Include="UEFALeaguePhase.cpp" />
     <ClCompile Include="ClubSponsors.cpp" />
@@ -213,6 +214,7 @@
     <ClInclude Include="AbilityColors.h" />
     <ClInclude Include="NewspaperEuroStats.h" />
     <ClInclude Include="PlayerCareerList.h" />
+    <ClInclude Include="PlayerLevelPatches.h" />
     <ClInclude Include="ScreenResolution.h" />
     <ClInclude Include="UEFALeaguePhase.h" />
     <ClInclude Include="ClubSponsors.h" />
