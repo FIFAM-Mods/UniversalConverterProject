@@ -32,25 +32,36 @@ void METHOD OnPlayerInfoHistoryDrawLevelLine(CXgFMPanel *screen, DUMMY_ARG, Int 
         CallMethod<0x5DD000>(screen, points, numPoints, rect, color, data);
 }
 
-void DisablePlayerLevelOnPlayerHistoryScreen(CXgFMPanel *screen, CDBPlayer *player) {
-    if (!HidePlayerLevel()) {
-        auto employee = GetManagerWhoLooksForPlayer(player->GetID());
-        Bool hide = employee && employee->GetPlayerKnowledge(player) != 10;
-        Bool display = hide == false;
-        auto ChkLevel = *raw_ptr<CXgCheckBox *>(screen, 0xBB8);
-        auto TbColor3 = *raw_ptr<CXgTextBox *>(screen, 0xBB0);
-        auto TbLev = *raw_ptr<CXgTextBox *>(screen, 0xBC0);
-        TbColor3->SetVisible(display);
-        ChkLevel->SetVisible(display);
-        TbLev->SetVisible(display);
-    }
+void METHOD OnPlayerInfoHistoryDrawMarketValueLine(CXgFMPanel *screen, DUMMY_ARG, Int *points,
+    UInt numPoints, void *rect, UInt color, void *data)
+{
+    auto ChkMarketValue = *raw_ptr<CXgCheckBox *>(screen, 0xBB4);
+    if (ChkMarketValue->IsVisible())
+        CallMethod<0x5DD000>(screen, points, numPoints, rect, color, data);
 }
 
 Int METHOD OnPlayerInfoHistoryFill(CXgFMPanel *screen) {
     UInt playerId = CallMethodAndReturn<Int, 0x5DE220>(screen); // CPlayerInfoPanel::GetCurrentPlayerId
     CDBPlayer *player = GetPlayer(playerId);
     if (player) {
-        DisablePlayerLevelOnPlayerHistoryScreen(screen, player);
+        auto employee = GetManagerWhoLooksForPlayer(player->GetID());
+        UChar knowledgeLevel = employee ? employee->GetPlayerKnowledge(player) : 10;
+        if (!HidePlayerLevel()) {
+            Bool display = knowledgeLevel == 10;
+            auto ChkLevel = *raw_ptr<CXgCheckBox *>(screen, 0xBB8);
+            auto TbColor3 = *raw_ptr<CXgTextBox *>(screen, 0xBB0);
+            auto TbLev = *raw_ptr<CXgTextBox *>(screen, 0xBC0);
+            TbColor3->SetVisible(display);
+            ChkLevel->SetVisible(display);
+            TbLev->SetVisible(display);
+        }
+        Bool displayMV = knowledgeLevel >= 7;
+        auto ChkMarketValue = *raw_ptr<CXgCheckBox *>(screen, 0xBB4);
+        auto TbColor1 = screen->GetTextBox("_tbColor1");
+        auto TbMarketValue = *raw_ptr<CXgTextBox *>(screen, 0xBBC);
+        TbColor1->SetVisible(displayMV);
+        ChkMarketValue->SetVisible(displayMV);
+        TbMarketValue->SetVisible(displayMV);
     }
     return playerId;
 }
@@ -70,6 +81,7 @@ void PatchPlayerLevelPatches(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0x5D6AF7, OnPlayerInfoCareerDrawLevelLine);
         patch::RedirectCall(0x5DD1CB, OnPlayerInfoHistoryDrawLevelLine);
+        patch::RedirectCall(0x5DD195, OnPlayerInfoHistoryDrawMarketValueLine);
         patch::RedirectCall(0x5DD841, OnPlayerInfoHistoryFill);
         patch::RedirectCall(0x666494, ObClubTransfersGetPlayerLevel);
         patch::RedirectCall(0x66673B, ObClubTransfersGetPlayerLevel);
