@@ -614,6 +614,14 @@ CDBCompetition *CDBCompetition::NextContinental() {
     return CallMethodAndReturn<CDBCompetition *, 0xF8B6C0>(this);
 }
 
+Int CDBCompetition::GetTeamParticipationStatus(CTeamIndex teamID, CTeamIndex &outOpponentTeam, CDBCompetition *&outComp) {
+    return CallVirtualMethodAndReturn<Int, 15>(this, teamID, &outOpponentTeam, &outComp);
+}
+
+Bool CDBCompetition::IsTeamWinner(CTeamIndex teamID) {
+    return CallVirtualMethodAndReturn<Bool, 28>(this, teamID);
+}
+
 void CDBLeague::SetStartDate(CJDate date) {
     plugin::CallMethod<0x1054390>(this, date);
 }
@@ -712,6 +720,22 @@ CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned
 
 CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index) {
     return plugin::CallAndReturn<CDBPool *, 0xF8C5C0>(region, type, index);
+}
+
+CDBPool *GetPool(CCompID const &id) {
+    return CallAndReturn<CDBPool *, 0xF8C5A0>(&id);
+}
+
+CDBPool *GetPool(unsigned int *id) {
+    return CallAndReturn<CDBPool *, 0xF8C5A0>(id);
+}
+
+CDBPool *GetPool(unsigned int id) {
+    return CallAndReturn<CDBPool *, 0xF8C5A0>(&id);
+}
+
+CDBRoot *GetRoot(UInt region, UShort index) {
+    return CallAndReturn<CDBRoot *, 0xF8B220>(region, index);
 }
 
 FmMap<UInt, CDBCompetition *> &GetCompetitions() {
@@ -2974,6 +2998,14 @@ void CDBRoot::GetMatchEvent(Int index, CDBMatchEventEntry &event) {
 
 CDBMatchEventEntry &CDBRoot::GetMatchEvent(Int index) {
     return *CallMethodAndReturn<CDBMatchEventEntry *, 0x11F01A0>(this, index);
+}
+
+Int CDBRoot::GetTeamUEFACupStatus(CTeamIndex teamID, CTeamIndex &outOpponentTeam, CCompID &outCompID) {
+    return CallMethodAndReturn<Int, 0x11F1680>(this, teamID, &outOpponentTeam, &outCompID);
+}
+
+Int CDBRoot::GetTeamChampionsLeagueStatus(CTeamIndex teamID, CTeamIndex &outOpponentTeam, CCompID &outCompID, WideChar *outCompName, UInt outCompNameLen) {
+    return CallMethodAndReturn<Int, 0x11F14F0>(this, teamID, &outOpponentTeam, &outCompID, outCompName, outCompNameLen);
 }
 
 CDBTeam *CClubFans::GetTeam() {

@@ -840,6 +840,8 @@ public:
     void SetRegisteredTeams(Vector<CTeamIndex> const &teams);
     CDBCompetition *PrevContinental();
     CDBCompetition *NextContinental();
+    Int GetTeamParticipationStatus(CTeamIndex teamID, CTeamIndex &outOpponentTeam, CDBCompetition *&outComp);
+    Bool IsTeamWinner(CTeamIndex teamID);
 };
 
 enum CompDbType {
@@ -1015,6 +1017,8 @@ public:
     CDBMatchEventEntries *GetEvents();
     void GetMatchEvent(Int index, CDBMatchEventEntry &event);
     CDBMatchEventEntry &GetMatchEvent(Int index);
+    Int GetTeamUEFACupStatus(CTeamIndex teamID, CTeamIndex &outOpponentTeam, CCompID &outCompID);
+    Int GetTeamChampionsLeagueStatus(CTeamIndex teamID, CTeamIndex &outOpponentTeam, CCompID &outCompID, WideChar *outCompName = nullptr, UInt outCompNameLen = 0);
 };
 
 class CDBPool : public CDBCompetition {};
@@ -1508,6 +1512,10 @@ CDBRound *GetRound(unsigned int *id);
 CDBRound *GetRound(unsigned int id);
 CDBRound *GetRoundByRoundType(unsigned char region, unsigned char type, unsigned char roundType);
 CDBPool *GetPool(unsigned char region, unsigned char type, unsigned short index);
+CDBPool *GetPool(CCompID const &id);
+CDBPool *GetPool(unsigned int *id);
+CDBPool *GetPool(unsigned int id);
+CDBRoot *GetRoot(UInt region, UShort index);
 
 FmMap<UInt, CDBCompetition *> &GetCompetitions();
 
@@ -2390,4 +2398,49 @@ public:
     ~TopScorersBuffer();
     UInt Size() const;
     TopScorer *At(UInt index);
+};
+
+enum eWidget {
+    WIDGET_LAST6MATCHES = 46,
+    WIDGET_TRANSFERMARKET = 47,
+    WIDGET_TEAMSTATUS = 48,
+    WIDGET_FINANCE = 49,
+    WIDGET_MANAGERSTATUS = 50,
+    WIDGET_BANDINJURIES = 51,
+    WIDGET_CONTRACTS = 52,
+    WIDGET_LEAGUEPOSITION = 53,
+    WIDGET_OUTSTANDING = 54,
+    WIDGET_YOURTOPSCORERS = 55,
+    WIDGET_LEAGUETOPSCORERS = 56,
+    WIDGET_TRAINING = 57,
+    WIDGET_BUILDINGS = 58,
+    WIDGET_LAST6MATCHESRIVAL = 59,
+    WIDGET_SCOUTS = 60,
+    WIDGET_DISCIPLINE = 61,
+    WIDGET_RESERVE = 62,
+    WIDGET_YOUTH = 63,
+    WIDGET_MP3 = 64,
+    WIDGET_INTERESTEDCLUBS = 65,
+    WIDGET_YOUTHCENTERTALENTS = 66,
+    WIDGET_TITLESWON = 67,
+    WIDGET_STADIUMPICTURE = 68,
+    WIDGET_NATIONALTEAMMATCHES = 69,
+    WIDGET_MVPSWORLD = 70,
+    WIDGET_BESTAVERAGERATINGS = 71,
+    WIDGET_YOUTHPLAYERSLASTYEAR = 72,
+    WIDGET_TOPPLAYERSTM = 73,
+    WIDGET_CURRENTHOLDER = 74,
+    WIDGET_MANAGERINFO = 75,
+    WIDGET_BUDGET = 76,
+    WIDGET_MATCHLIST = 77,
+    WIDGET_TABLE = 78,
+    WIDGET_NOTEPAD = 79,
+    WIDGET_LOANEDOUTPLAYERS = 80,
+    WIDGET_ALLCLUBS = 81,
+    WIDGET_LINKS = 82,
+    WIDGET_TACTICS = 83,
+    WIDGET_QUICKFORMATION = 84,
+    WIDGET_HANDY = 85,
+    WIDGET_MOSTIMPROVEDPLAYERS = 86,
+    WIDGET_TABLENATIONALTEAM = 97,
 };

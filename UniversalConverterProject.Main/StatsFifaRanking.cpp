@@ -90,7 +90,7 @@ public:
 		StatsFifaRanking *s = new (scr) StatsFifaRanking(instance);
 		//void *s = CallMethodAndReturn<void *, 0x6E45B0>(scr, screenGui);
 
-		CallMethod<0x4F20E0>(s, instance); // CXgPanel::SetName()
+		CallMethod<0x4F20E0>(s, screenName); // CXgPanel::SetName()
 		CallVirtualMethod<0x11>(instance, s); // screenGui->SetMessageProc()
 		//if (false)
 		//	CallVirtualMethod<5>(s, 0);

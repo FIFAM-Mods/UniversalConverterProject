@@ -804,7 +804,7 @@ public:
         void *scr = CallVirtualMethodAndReturn<void *, 1>(pDummyPool, sizeof(StatsEuropeanGoldenShoe)); // pDummyPool->Allocate()
         Call<0x1573400>(scr, 0, sizeof(StatsEuropeanGoldenShoe)); // CMemoryMgr::Fill()
         StatsEuropeanGoldenShoe *s = new (scr) StatsEuropeanGoldenShoe(instance);
-        CallMethod<0x4F20E0>(s, instance); // CXgPanel::SetName()
+        CallMethod<0x4F20E0>(s, screenName); // CXgPanel::SetName()
         CallVirtualMethod<0x11>(instance, s); // screenGui->SetMessageProc()
         CallVirtualMethod<4>(s); // s->CreateUI()
         return s;
@@ -902,7 +902,7 @@ public:
         void *scr = CallVirtualMethodAndReturn<void *, 1>(pDummyPool, sizeof(StatsGoldenShoeCurrent)); // pDummyPool->Allocate()
         Call<0x1573400>(scr, 0, sizeof(StatsGoldenShoeCurrent)); // CMemoryMgr::Fill()
         StatsGoldenShoeCurrent *s = new (scr) StatsGoldenShoeCurrent(instance);
-        CallMethod<0x4F20E0>(s, instance); // CXgPanel::SetName()
+        CallMethod<0x4F20E0>(s, screenName); // CXgPanel::SetName()
         CallVirtualMethod<0x11>(instance, s); // screenGui->SetMessageProc()
         CallVirtualMethod<4>(s); // s->CreateUI()
         return s;
@@ -1032,7 +1032,7 @@ public:
         void *scr = CallVirtualMethodAndReturn<void *, 1>(pDummyPool, sizeof(StatsPlayerTrophyWinners<ListOffset>)); // pDummyPool->Allocate()
         Call<0x1573400>(scr, 0, sizeof(StatsPlayerTrophyWinners<ListOffset>)); // CMemoryMgr::Fill()
         StatsPlayerTrophyWinners<ListOffset> *s = new (scr) StatsPlayerTrophyWinners<ListOffset>(instance);
-        CallMethod<0x4F20E0>(s, instance); // CXgPanel::SetName()
+        CallMethod<0x4F20E0>(s, screenName); // CXgPanel::SetName()
         CallVirtualMethod<0x11>(instance, s); // screenGui->SetMessageProc()
         CallVirtualMethod<4>(s); // s->CreateUI()
         return s;

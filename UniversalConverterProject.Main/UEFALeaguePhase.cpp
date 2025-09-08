@@ -439,6 +439,23 @@ UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds) {
     return compIds;
 }
 
+UInt GetUEFALeaguePhasePoolCompID(UInt compId) {
+    switch (compId) {
+    case 0xF9090000:
+        return 0xF9090008;
+    case 0xF90A0000:
+        return 0xF90A0006;
+    case 0xF9330000:
+        return 0xF933000A;
+    case 0xF9260000:
+        return 0xF9260005;
+    case 0xFD090003:
+    case 0xFD09000D:
+        return compId;
+    }
+    return 0;
+}
+
 Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
     if (compID.type == COMP_CHAMPIONSLEAGUE || compID.type == COMP_UEFA_CUP || compID.type == COMP_CONFERENCE_LEAGUE || compID.type == COMP_YOUTH_CHAMPIONSLEAGUE) {
         UInt compId = compID.ToInt();
@@ -469,17 +486,29 @@ Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID) {
     return false;
 }
 
-Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp) {
+Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *compForBonuses) {
     Vector<TeamLeaguePhaseInfo> vecTeams;
     if (IsLeaguePhaseBaseID(compId)) {
         UInt numDraws = 0;
         Map<UInt, TeamLeaguePhaseInfo> teams;
+        UInt leaguePhasePoolCompId = GetUEFALeaguePhasePoolCompID(compId);
+        if (leaguePhasePoolCompId != 0) {
+            auto leaguePhasePool = GetPool(leaguePhasePoolCompId);
+            if (leaguePhasePool) {
+                for (UInt i = 0; i < leaguePhasePool->GetNumOfTeams(); i++) {
+                    auto teamID = leaguePhasePool->GetTeamID(i);
+                    if (!teamID.isNull())
+                        teams[teamID.ToInt()] = TeamLeaguePhaseInfo();
+                }
+            }
+        }
         UInt numCompIds = 0;
         UInt *compIds = GetUEFALeaguePhaseMatchdaysCompIDs(compId, numCompIds);
+        UInt numRoundsPlayed = 0;
         for (UInt c = 0; c < numCompIds; c++) {
-            CDBCompetition *comp = GetCompetition(compIds[c]);
-            if (comp && comp->GetDbType() == DB_ROUND && comp->IsFinished()) {
-                CDBRound *r = (CDBRound *)comp;
+            CDBCompetition *compRound = GetCompetition(compIds[c]);
+            if (compRound && compRound->GetDbType() == DB_ROUND && compRound->IsFinished()) {
+                CDBRound *r = (CDBRound *)compRound;
                 for (UInt i = 0; i < r->GetNumOfPairs(); i++) {
                     RoundPair rp;
                     memset(&rp, 0, sizeof(RoundPair));
@@ -510,6 +539,7 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                         }
                     }
                 }
+                numRoundsPlayed++;
             }
         }
         if (!teams.empty()) {
@@ -517,29 +547,42 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                 v.teamId = CTeamIndex::make(k);
                 vecTeams.push_back(v);
             }
-            std::sort(vecTeams.begin(), vecTeams.end(), [](TeamLeaguePhaseInfo const &a, TeamLeaguePhaseInfo const &b) {
-                if (a.points > b.points)
+            if (numRoundsPlayed > 0) {
+                Utils::Sort(vecTeams, [](TeamLeaguePhaseInfo const &a, TeamLeaguePhaseInfo const &b) {
+                    if (a.points > b.points)
+                        return true;
+                    if (b.points > a.points)
+                        return false;
+                    Int gd1 = a.goalsFor - a.goalsAgainst;
+                    Int gd2 = b.goalsFor - b.goalsAgainst;
+                    if (gd1 > gd2)
+                        return true;
+                    if (gd2 > gd1)
+                        return false;
+                    if (a.goalsFor > b.goalsFor)
+                        return true;
+                    if (b.goalsFor > a.goalsFor)
+                        return false;
                     return true;
-                if (b.points > a.points)
-                    return false;
-                Int gd1 = a.goalsFor - a.goalsAgainst;
-                Int gd2 = b.goalsFor - b.goalsAgainst;
-                if (gd1 > gd2)
-                    return true;
-                if (gd2 > gd1)
-                    return false;
-                if (a.goalsFor > b.goalsFor)
-                    return true;
-                if (b.goalsFor > a.goalsFor)
-                    return false;
-                return true;
-            });
+                });
+            }
+            else {
+                Utils::Sort(vecTeams, [](TeamLeaguePhaseInfo const &a, TeamLeaguePhaseInfo const &b) {
+                    auto teamA = GetTeam(a.teamId);
+                    auto teamB = GetTeam(b.teamId);
+                    if (!teamB)
+                        return true;
+                    if (!teamA)
+                        return false;
+                    return wcscoll(teamA->GetName(), teamB->GetName()) < 0;
+                });
+            }
         }
-        if (comp) {
+        if (compForBonuses) {
             Bool isAFC = (compId & 0xFFFF0000) == 0xFD090000;
-            UInt numTeams = Utils::Min(comp->GetNumOfTeams(), vecTeams.size());
-            CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(comp, 0xA0);
-            memset(pTeamIDs, 0, comp->GetNumOfTeams() * 4);
+            UInt numTeams = Utils::Min(compForBonuses->GetNumOfTeams(), vecTeams.size());
+            CTeamIndex *pTeamIDs = *raw_ptr<CTeamIndex *>(compForBonuses, 0xA0);
+            memset(pTeamIDs, 0, compForBonuses->GetNumOfTeams() * 4);
             CAssessmentTable *table = GetAssesmentTable();
             Float points = 0.0f;
             Float pointsIncrease1to8 = 0.25f;
@@ -564,7 +607,7 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
             }
             Int64 shareBonus = shareBonusBase + (Int64)((Double)(drawBonus * numDraws) / 666.0);
             if (!isAFC && compId != 0xF9260000)
-                SafeLog::Write(Utils::Format(L"%s: share bonus %I64d (%u draws)", CompetitionName(comp), shareBonus, numDraws));
+                SafeLog::Write(Utils::Format(L"%s: share bonus %I64d (%u draws)", CompetitionName(compForBonuses), shareBonus, numDraws));
             for (UInt teamPlace = numTeams; teamPlace > 0; teamPlace--) {
                 UInt teamIndex = teamPlace - 1;
                 pTeamIDs[teamIndex] = vecTeams[teamIndex].teamId;
@@ -581,15 +624,15 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                             team->ChangeMoney(5, teamBonus1 + teamBonus2, 0);
                             CEAMailData mailData;
                             mailData.SetMoney(teamBonus1 + teamBonus2);
-                            mailData.SetCompetition(comp->GetCompID());
+                            mailData.SetCompetition(compForBonuses->GetCompID());
                             team->SendMail(3440, mailData, 0); // _COMPETITION: you have earned a bonus of _MONEY.
                             SafeLog::Write(Utils::Format(L"%s: team %s bonus - %I64d (%I64d + %I64d)",
-                                CompetitionName(comp), TeamName(team), teamBonus1 + teamBonus2, teamBonus1, teamBonus2));
+                                CompetitionName(compForBonuses), TeamName(team), teamBonus1 + teamBonus2, teamBonus1, teamBonus2));
                         }
                         if (teamPlace >= eliminatedTeamPlace) {
-                            if (comp->GetCompetitionType() != COMP_CONFERENCE_LEAGUE) { // not yet implemented for Conference League
-                                team->OnCompetitionElimination(comp->GetCompID(), 0); // budget reduce/income
-                                SafeLog::Write(Utils::Format(L"%s: team %s was eliminated", CompetitionName(comp), TeamName(team)));
+                            if (compForBonuses->GetCompetitionType() != COMP_CONFERENCE_LEAGUE) { // not yet implemented for Conference League
+                                team->OnCompetitionElimination(compForBonuses->GetCompID(), 0); // budget reduce/income
+                                SafeLog::Write(Utils::Format(L"%s: team %s was eliminated", CompetitionName(compForBonuses), TeamName(team)));
                             }
                             if (team->GetInternationalPrestige() > 11 && vecTeams[teamIndex].points < 5 &&
                                 !CallMethodAndReturn<Bool, 0xEDE770>(team) // TODO: research - this probably works only for CL/EL
@@ -601,28 +644,28 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                                 else
                                     team->SetInternationalPrestige(team->GetInternationalPrestige() - 2);
                                 CEAMailData mailData2;
-                                mailData2.SetCompetition(comp->GetCompID());
+                                mailData2.SetCompetition(compForBonuses->GetCompID());
                                 team->SendMail(2786, mailData2, 1); // Your results in the _COMPETITION were a joke, and you lost international prestige.
                                 SafeLog::Write(Utils::Format(L"%s: decreased team %s IP from %u to %u - bad results",
-                                    CompetitionName(comp), TeamName(team), previousIP, team->GetInternationalPrestige()));
+                                    CompetitionName(compForBonuses), TeamName(team), previousIP, team->GetInternationalPrestige()));
                             }
                             if (team->GetInternationalPrestige() < 10) {
                                 if (CRandom::GetRandomInt(100) < 80) {
                                     team->SetInternationalPrestige(team->GetInternationalPrestige() + 1);
                                     team->SetNationalPrestige(team->GetNationalPrestige() + 1);
-                                    SafeLog::Write(Utils::Format(L"%s: increased team %s IP and NP by 1 point", CompetitionName(comp), TeamName(team)));
+                                    SafeLog::Write(Utils::Format(L"%s: increased team %s IP and NP by 1 point", CompetitionName(compForBonuses), TeamName(team)));
                                 }
                             }
                             else if (team->GetInternationalPrestige() <= 15) {
                                 if (CRandom::GetRandomInt(100) < 10) {
                                     team->SetInternationalPrestige(team->GetInternationalPrestige() - 1);
-                                    SafeLog::Write(Utils::Format(L"%s: decreased team %s IP by 1 point", CompetitionName(comp), TeamName(team)));
+                                    SafeLog::Write(Utils::Format(L"%s: decreased team %s IP by 1 point", CompetitionName(compForBonuses), TeamName(team)));
                                 }
                             }
                             else {
                                 if (CRandom::GetRandomInt(100) < 20) {
                                     team->SetInternationalPrestige(team->GetInternationalPrestige() - 1);
-                                    SafeLog::Write(Utils::Format(L"%s: decreased team %s IP by 1 point", CompetitionName(comp), TeamName(team)));
+                                    SafeLog::Write(Utils::Format(L"%s: decreased team %s IP by 1 point", CompetitionName(compForBonuses), TeamName(team)));
                                 }
                             }
                         }
@@ -643,7 +686,7 @@ Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition
                     }
                 }
             }
-            comp->SetNumOfRegisteredTeams(numTeams);
+            compForBonuses->SetNumOfRegisteredTeams(numTeams);
         }
     }
     return vecTeams;
@@ -793,7 +836,7 @@ CTeamIndex const & METHOD OnDBRoundRegisterMatch_GetWinner(RoundPair const &pair
     return pair.GetWinner();
 }
 
-void AddUEFALeaguePhaseCompetitionToComboBox(void *comboBox, UInt compId) {
+void AddUEFALeaguePhaseCompetitionToComboBox(CXgComboBox *comboBox, UInt compId) {
     if (IsLastLeaguePhaseMatchdayID(compId)) {
         CDBCompetition *baseComp = GetCompetition(compId & 0xFFFF0000);
         if (baseComp) {
@@ -807,7 +850,7 @@ void AddUEFALeaguePhaseCompetitionToComboBox(void *comboBox, UInt compId) {
                 compIdBase = 0xFD09000D;
                 name = "ID_LEAGUE_PHASE_EAST_TABLE";
             }
-            CallVirtualMethod<83>(comboBox, Format(L"%s (%s)", baseComp->GetName(), GetTranslation(name)).c_str(), compIdBase, 0);
+            comboBox->AddItem(Format(L"%s (%s)", baseComp->GetName(), GetTranslation(name)).c_str(), compIdBase);
         }
     }
 }
@@ -874,7 +917,7 @@ Bool UEFALeaguePhaseChangeCompetition(CFMListBox *listBox, void *data, UInt comp
 
 Int METHOD OnStatsCupFixturesResultsAddOneCompetition(void *t, DUMMY_ARG, UInt *baseCompId, UInt *compId, CDBCompetition *comp) {
     Int result = CallMethodAndReturn<Int, 0x702BC0>(t, baseCompId, compId, comp);
-    AddUEFALeaguePhaseCompetitionToComboBox(*raw_ptr<void *>(t, 0x4D8), *compId);
+    AddUEFALeaguePhaseCompetitionToComboBox(*raw_ptr<CXgComboBox *>(t, 0x4D8), *compId);
     return result;
 }
 
@@ -908,7 +951,7 @@ CXgFMPanel *METHOD OnStatsCupFixturesCreateUI(CXgFMPanel *panel) {
 }
 
 
-Int METHOD OnStandingsCupResultsAddOneCompetition(void *comboBox, DUMMY_ARG, WideChar const *name, UInt compId, Int unk) {
+Int METHOD OnStandingsCupResultsAddOneCompetition(CXgComboBox *comboBox, DUMMY_ARG, WideChar const *name, UInt compId, Int unk) {
     Int result = CallVirtualMethodAndReturn<Int, 83>(comboBox, name, compId, unk);
     AddUEFALeaguePhaseCompetitionToComboBox(comboBox, compId);
     return result;

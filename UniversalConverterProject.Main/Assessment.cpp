@@ -661,7 +661,7 @@ public:
         void *scr = CallVirtualMethodAndReturn<void *, 1>(pDummyPool, sizeof(StatsAssesment)); // pDummyPool->Allocate()
         Call<0x1573400>(scr, 0, sizeof(StatsAssesment)); // CMemoryMgr::Fill()
         StatsAssesment *s = new (scr) StatsAssesment(instance, m_nContinent);
-        CallMethod<0x4F20E0>(s, instance); // CXgPanel::SetName()
+        CallMethod<0x4F20E0>(s, screenName); // CXgPanel::SetName()
         CallVirtualMethod<0x11>(instance, s); // screenGui->SetMessageProc()
         CallVirtualMethod<4>(s); // s->CreateUI()
         return s;

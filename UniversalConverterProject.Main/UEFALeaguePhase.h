@@ -14,7 +14,7 @@ bool DrawUEFALeaguePhase(CDBCompetition *poolTeams, CDBCompetition *poolFixtures
 Bool IsUEFALeaguePhaseCompID(CCompID const &compID);
 UInt *GetUEFALeaguePhaseMatchdaysCompIDs(UInt compId, UInt &numCompIds);
 Bool IsUEFALeaguePhaseMatchdayCompID(CCompID const &compID);
-Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *comp);
+Vector<TeamLeaguePhaseInfo> SortUEFALeaguePhaseTable(UInt compId, CDBCompetition *compForBonuses);
 void UEFALeaguePhaseMatchdayProcessBonuses(CDBRound *, RoundPair const &pair);
 
 void MakeCoefficientBasedPayments(CDBCompetition *comp);
