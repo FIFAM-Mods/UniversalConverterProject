@@ -97,6 +97,7 @@
     <ClCompile Include="LeagueSplit.cpp" />
     <ClCompile Include="PlayerLevelPatches.cpp" />
     <ClCompile Include="WidgetContinental.cpp" />
+    <ClCompile Include="Finances.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -189,6 +190,7 @@
     <ClInclude Include="LeagueSplit.h" />
     <ClInclude Include="PlayerLevelPatches.h" />
     <ClInclude Include="WidgetContinental.h" />
+    <ClInclude Include="Finances.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

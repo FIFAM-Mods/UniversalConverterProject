@@ -1350,6 +1350,13 @@ void METHOD OnSamplerSet(void *tar) {
     }
 }
 
+UInt SetRefereeShoeColor_retn;
+
+void __declspec(naked) SetRefereeShoeColor() {
+    __asm mov dword ptr[esi + 0xFA8], 0xFFFFFFF3
+    __asm jmp SetRefereeShoeColor_retn
+}
+
 void Install3dPatches_FM13() {
 
     FindAssets(ASSETS_DIR, "");
@@ -2105,4 +2112,8 @@ void Install3dPatches_FM13() {
     patch::SetUInt(GfxCoreAddress(0x3C5B26 + 1), 8);
 
     //patch::RedirectCall(GfxCoreAddress(0x2DE423), OnSamplerSet);
+
+    // set default shoe color for referee to black
+    SetRefereeShoeColor_retn = GfxCoreAddress(0x23C94B);
+    patch::RedirectJump(GfxCoreAddress(0x23C945), SetRefereeShoeColor);
 }

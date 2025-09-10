@@ -127,6 +127,7 @@ public:
 
     EAGMoney();
     EAGMoney(Int value, eCurrency currency = CURRENCY_EUR);
+    EAGMoney(UInt value, eCurrency currency = CURRENCY_EUR);
     EAGMoney(Int64 value, eCurrency currency = CURRENCY_EUR);
     EAGMoney(Double value, eCurrency currency = CURRENCY_EUR);
     Int64 GetValue() const;
@@ -134,7 +135,7 @@ public:
     Bool IsValidCurrency(eCurrency currency = CURRENCY_EUR) const;
     Int64 GetValueInCurrency(eCurrency currency = CURRENCY_EUR) const;
     EAGMoney &operator=(Int64 rhs);
-    EAGMoney operator-();
+    EAGMoney Absolute() const;
 };
 
 Bool operator<(EAGMoney const &a, EAGMoney const &b);
@@ -773,6 +774,7 @@ public:
     void GetTeamID(CTeamIndex &out);
     WideChar const *GetName(WideChar const *nameBuf = nullptr);
     UChar GetPlayerKnowledge(CDBPlayer *player);
+    Bool IsHumanManager();
 };
 
 CDBEmployee *GetManagerWhoLooksForPlayer(UInt playerId);
@@ -1166,6 +1168,7 @@ public:
     void SetManager2(UInt managerId);
     void SetPlayerPosition(Int index, UChar position);
     void SetStaffPosition(UChar position);
+    void SetPercentage(UInt percentage);
 };
 
 class CClubFans {
@@ -1379,6 +1382,13 @@ public:
     IPlayerRoles *GetRoles();
 };
 
+class CDBFinance {
+public:
+    CDBTeam *GetTeam();
+    void SetCash(EAGMoney const &value);
+    EAGMoney GetCash();
+};
+
 class CDBTeam {
 public:
     CTeamIndex GetTeamID();
@@ -1425,6 +1435,7 @@ public:
     UInt GetAllStaff(FmVec<CDBStaff> const &vec);
     UInt GetStaffIdWithRole(UChar role);
     CDBStaff *GetStaffWithRole(UChar role);
+    CDBFinance &GetFinance();
 };
 
 struct CAssessmentInfo {

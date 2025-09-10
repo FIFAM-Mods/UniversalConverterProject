@@ -71,6 +71,7 @@
 #include "LeagueSplit.h"
 #include "PlayerLevelPatches.h"
 #include "WidgetContinental.h"
+#include "Finances.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -197,6 +198,7 @@ public:
             PatchEuropeanGoldenShoe(v);
             PatchPlayerLevelPatches(v);
             PatchWidgetContinental(v);
+            PatchFinances(v);
 
 #ifdef BETA
             DoBetaPatches(v);

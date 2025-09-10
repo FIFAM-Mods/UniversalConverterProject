@@ -122,6 +122,7 @@
     <ClCompile Include="Beta.cpp" />
     <ClCompile Include="DebugPrint.cpp" />
     <ClCompile Include="EuropeanGoldenShoe.cpp" />
+    <ClCompile Include="Finances.cpp" />
     <ClCompile Include="Languages.cpp" />
     <ClCompile Include="LeagueSplit.cpp" />
     <ClCompile Include="MainMenu.cpp" />
@@ -209,6 +210,7 @@
     <ClInclude Include="Beta.h" />
     <ClInclude Include="DebugPrint.h" />
     <ClInclude Include="EuropeanGoldenShoe.h" />
+    <ClInclude Include="Finances.h" />
     <ClInclude Include="Languages.h" />
     <ClInclude Include="LeagueSplit.h" />
     <ClInclude Include="MainMenu.h" />

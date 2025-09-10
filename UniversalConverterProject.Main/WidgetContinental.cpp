@@ -112,13 +112,20 @@ public:
         CFMListBox *LbRound = (CFMListBox *)t->LbRound;
         LbRound->Create((CXgFMPanel *)t, "Trfm1|LbRound");
         CFMListBox::InitColumnTypes(LbRound,      LBT_CLUB, LBT_CLUB, LBT_INT,  LBT_CLUB, LBT_CLUB, LBT_END);
-        CFMListBox::InitColumnFormatting(LbRound, LBF_NONE, LBF_NAME, LBF_NONE, LBF_NAME, LBF_NONE, LBF_END);
+        CFMListBox::InitColumnFormatting(LbRound, LBF_NAME, LBF_NONE, LBF_NONE, LBF_NONE, LBF_NAME, LBF_END);
         LbRound->Clear();
         LbRound->SetVisible(false);
         nullptr;
         void *widgetManager = *(void **)0x311B4DC;
-        CDBTeam *team = widgetManager ? CallVirtualMethodAndReturn<CDBTeam *, 11>(widgetManager) : nullptr;
+        CTeamIndex teamID;
+        CDBTeam *team = nullptr;
+        if (widgetManager) {
+            teamID = *CallVirtualMethodAndReturn<CTeamIndex *, 12>(widgetManager);
+            team = CallVirtualMethodAndReturn<CDBTeam *, 11>(widgetManager);
+        }
         if (team) {
+            UInt defaultColor = 0xFF1A1A1A;
+            UInt highlightColor = GetGuiColor(COL_TEXT_INDICATOR_HIGHLIGHT);
             CTeamIndex opponentTeam;
             CCompID compId;
             Int status = GetTeamContinentalCompetitionStatus(team, opponentTeam, compId);
@@ -136,32 +143,34 @@ public:
                     t->compID = comp->GetCompID();
                     t->BtWidgetLink->SetVisible(true);
                     if (comp->GetDbType() == DB_LEAGUE) {
-                        CDBLeague *l = (CDBLeague *)comp;
+                        CDBLeague *league = (CDBLeague *)comp;
                         TeamLeaguePositionData infos[256];
-                        l->SortTeams(infos, l->GetEqualPointsSorting() | 0x80, 0, 120, 0, 120);
-                        for (UInt i = 0; i < l->GetNumOfTeams(); l++) {
+                        league->SortTeams(infos, league->GetEqualPointsSorting() | 0x80, 0, 120, 0, 120);
+                        for (UInt i = 0; i < league->GetNumOfTeams(); i++) {
                             Int lastRowIndex = LbLeague->GetMaxRows() - 1;
                             if (LbLeague->GetNumRows() >= lastRowIndex)
                                 break;
                             TeamLeaguePositionData &info = infos[i];
-                            LbLeague->AddColumnInt(i + 1);
+                            UInt color = info.m_teamID == teamID ? highlightColor : defaultColor;
+                            LbLeague->AddColumnInt(i + 1, color);
                             LbLeague->AddTeamWidget(info.m_teamID);
-                            LbLeague->AddTeamName(info.m_teamID);
-                            LbLeague->AddColumnInt((info.m_nGoalsScored - info.m_nGoalsAgainst));
-                            LbLeague->AddColumnInt(info.m_nPoints);
+                            LbLeague->AddTeamName(info.m_teamID, color);
+                            LbLeague->AddColumnInt(info.m_nGoalsScored - info.m_nGoalsAgainst, color);
+                            LbLeague->AddColumnInt(info.m_nPoints, color);
                             LbLeague->NextRow(0);
-                            UChar colorId = CallMethodAndReturn<UChar, 0x1050510>(l , i);
-                            UInt color = CallAndReturn<UInt, 0xD34510>(colorId, false);
-                            if (color != GetGuiColor(COL_BLANK))
-                                LbLeague->SetRowColor(i, color);
+                            UChar placeColorId = CallMethodAndReturn<UChar, 0x1050510>(league, i);
+                            UInt placeColor = CallAndReturn<UInt, 0xD34510>(placeColorId, false);
+                            if (placeColor != GetGuiColor(COL_BLANK))
+                                LbLeague->SetRowColor(i, placeColor);
                         }
+                        LbLeague->SetVisible(true);
                     }
                     else if (comp->GetDbType() == DB_ROUND) {
-                        CDBRound *r = (CDBRound *)comp;
+                        CDBRound *round = (CDBRound *)comp;
                         Bool winner = false;
                         Bool finalist = false;
-                        if (CallMethodAndReturn<Bool, 0xF81B90>(comp) && r->GetNumOfPairs() == 1) {
-                            if (r->GetRoundPair(0).GetWinner() == team->GetTeamID())
+                        if (CallMethodAndReturn<Bool, 0xF81B90>(comp) && round->GetNumOfPairs() == 1) {
+                            if (round->GetRoundPair(0).GetWinner() == team->GetTeamID())
                                 winner = true;
                             else
                                 finalist = true;
@@ -209,11 +218,12 @@ public:
                                     if (LbLeague->GetNumRows() >= lastRowIndex)
                                         break;
                                     TeamLeaguePhaseInfo &info = vecTeams[i];
-                                    LbLeague->AddColumnInt(i + 1);
+                                    UInt color = info.teamId == teamID ? highlightColor : defaultColor;
+                                    LbLeague->AddColumnInt(i + 1, color);
                                     LbLeague->AddTeamWidget(vecTeams[i].teamId);
-                                    LbLeague->AddTeamName(vecTeams[i].teamId);
-                                    LbLeague->AddColumnInt((info.goalsFor - info.goalsAgainst));
-                                    LbLeague->AddColumnInt(info.points);
+                                    LbLeague->AddTeamName(vecTeams[i].teamId, color);
+                                    LbLeague->AddColumnInt(info.goalsFor - info.goalsAgainst, color);
+                                    LbLeague->AddColumnInt(info.points, color);
                                     LbLeague->NextRow(0);
                                     if (compId == 0xFD090000 || compId == 0xFD090003 || compId == 0xFD09000D) {
                                         if (i < 8)
@@ -236,24 +246,24 @@ public:
                             LbLeague->SetVisible(true);
                         }
                         else {
-                            for (UInt i = 0; i < r->GetNumOfPairs(); i++) {
+                            for (UInt i = 0; i < round->GetNumOfPairs(); i++) {
                                 Int lastRowIndex = LbRound->GetMaxRows() - 1;
                                 if (LbRound->GetNumRows() >= lastRowIndex)
                                     break;
                                 RoundPair rp;
                                 memset(&rp, 0, sizeof(RoundPair));
-                                r->GetRoundPair(i, rp);
+                                round->GetRoundPair(i, rp);
                                 if (rp.AreTeamsValid()) {
+                                    LbRound->AddTeamName(rp.m_n1stTeam, rp.m_n1stTeam == teamID ? highlightColor : defaultColor);
                                     LbRound->AddTeamWidget(rp.m_n1stTeam);
-                                    LbRound->AddTeamName(rp.m_n1stTeam);
                                     String strResult = L"-";
                                     if (rp.TestFlag(FifamBeg::_2ndLeg) && rp.TestFlag(FifamBeg::_2ndPlayed))
-                                        strResult = Utils::Format(L"%d - %d", rp.result1[1], rp.result2[1]);
+                                        strResult = Utils::Format(L"%d-%d", rp.result1[1], rp.result2[1]);
                                     else if (rp.TestFlag(FifamBeg::_1stPlayed))
-                                        strResult = Utils::Format(L"%d - %d", rp.result1[0], rp.result2[0]);
+                                        strResult = Utils::Format(L"%d-%d", rp.result1[0], rp.result2[0]);
                                     LbRound->AddColumnString(strResult.c_str());
-                                    LbRound->AddTeamName(rp.m_n2ndTeam);
                                     LbRound->AddTeamWidget(rp.m_n2ndTeam);
+                                    LbRound->AddTeamName(rp.m_n2ndTeam, rp.m_n2ndTeam == teamID ? highlightColor : defaultColor);
                                     LbRound->NextRow(0);
                                 }
                             }

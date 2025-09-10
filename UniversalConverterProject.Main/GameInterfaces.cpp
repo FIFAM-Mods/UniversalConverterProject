@@ -1485,6 +1485,10 @@ CDBStaff *CDBTeam::GetStaffWithRole(UChar role) {
     return CallMethodAndReturn<CDBStaff *, 0x1017320>(this, role);
 }
 
+CDBFinance &CDBTeam::GetFinance() {
+    return *CallMethodAndReturn<CDBFinance *, 0xED2810>(this);
+}
+
 UInt CDBTeam::GetAllStaff(FmVec<UInt> const &vec) {
     return CallMethodAndReturn<UInt, 0x1017290>(this, &vec);
 }
@@ -2401,6 +2405,10 @@ UChar CDBEmployee::GetPlayerKnowledge(CDBPlayer *player) {
     return CallMethodAndReturn<UChar, 0xEB9BA0>(this, player);
 }
 
+Bool CDBEmployee::IsHumanManager() {
+    return CallMethodAndReturn<Bool, 0xEB1600>(this);
+}
+
 CWorker *CDBStaff::GetWorker() {
     return *raw_ptr<CWorker *>(this, 0xC);
 }
@@ -2687,6 +2695,10 @@ void CEAMailData::SetStaffPosition(UChar position) {
     CallMethod<0x100D7B0>(this, position);
 }
 
+void CEAMailData::SetPercentage(UInt percentage) {
+    CallMethod<0x100D6C0>(this, percentage);
+}
+
 void CFMListBox::SetVisible(Bool visible) {
     CallVirtualMethod<20>(this, visible);
 }
@@ -2795,6 +2807,10 @@ EAGMoney::EAGMoney(Int value, eCurrency currency) {
     CallMethod<0x149C16C>(this, value, currency);
 }
 
+EAGMoney::EAGMoney(UInt value, eCurrency currency) {
+    CallMethod<0x149C16C>(this, value, currency);
+}
+
 EAGMoney::EAGMoney(Int64 value, eCurrency currency) {
     CallMethod<0x149C282>(this, value, currency);
 }
@@ -2824,7 +2840,7 @@ EAGMoney &EAGMoney::operator=(Int64 rhs) {
     return *this;
 }
 
-EAGMoney EAGMoney::operator-() {
+EAGMoney EAGMoney::Absolute() const {
     EAGMoney result;
     CallMethod<0x149CF0A>(this, &result);
     return result;
@@ -3602,4 +3618,18 @@ Bool CGameEvents::PopEvent(UInt eventType, CJDate date, CGameEvent &out) {
 
 void CGameEvents::AddEvent(UInt type, CGameEvent const &event) {
     CallMethod<0x11EFFA0>(this, type, &event);
+}
+
+CDBTeam *CDBFinance::GetTeam() {
+    return *raw_ptr<CDBTeam *>(this, 0x720);
+}
+
+void CDBFinance::SetCash(EAGMoney const &value) {
+    CallMethod<0x10D7530>(this, &value);
+}
+
+EAGMoney CDBFinance::GetCash() {
+    EAGMoney result;
+    CallMethod<0x10D7570>(this, &result);
+    return result;
 }
