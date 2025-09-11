@@ -1211,6 +1211,12 @@ Bool METHOD IsTeamInContinentalCompetition_ClubGeneral(CDBTeam *team, DUMMY_ARG,
     return CallMethodAndReturn<Int, 0xEFE330>(team, &teamID, &compID) != 0;
 }
 
+CDBRound *OnMatchSpeechesGetMatchRound(CCompID const &compID) {
+    if (IsUEFALeaguePhaseMatchdayCompID(compID))
+        return nullptr;
+    return GetRound(compID);
+}
+
 void PatchUEFALeaguePhase(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         // CStatsCupFixturesResults
@@ -1259,6 +1265,8 @@ void PatchUEFALeaguePhase(FM::Version v) {
         patch::RedirectJump(0x10F1780, GetTeamParticipationStatus_Pool);
         patch::RedirectJump(0x1044260, GetTeamParticipationStatus_Round);
         patch::RedirectCall(0x6538AB, IsTeamInContinentalCompetition_ClubGeneral);
+
+        patch::RedirectCall(0x1300C4A, OnMatchSpeechesGetMatchRound); // MatchSpeeches::IsMatchRound
 
         FifamReader r("fmdata\\ParameterFiles\\Media Markets.txt");
         if (r.Available()) {

@@ -1436,6 +1436,7 @@ public:
     UInt GetStaffIdWithRole(UChar role);
     CDBStaff *GetStaffWithRole(UChar role);
     CDBFinance &GetFinance();
+    Float GetAverageAge(CTeamIndex const &teamID);
 };
 
 struct CAssessmentInfo {

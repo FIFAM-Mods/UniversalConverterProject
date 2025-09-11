@@ -1776,6 +1776,25 @@ void __declspec(naked) IncreaseEmergencyMeetingsCounter() {
     }
 }
 
+Bool METHOD PreMatchSpeechEnemyTeamOld_CanAdd(void *preMatchSpeech) {
+    void *matchSpeeches = *raw_ptr<void *>(preMatchSpeech, 0x8);
+    CDBTeam *team = CallMethodAndReturn<CDBTeam *, 0x1306120>(matchSpeeches);
+    if (team) {
+        CDBTeam *opponentTeam = CallMethodAndReturn<CDBTeam *, 0x13061C0>(matchSpeeches);
+        if (opponentTeam) {
+            UInt age = (UInt)roundf(team->GetAverageAge(team->GetTeamID()));
+            UInt ageOpponent = (UInt)roundf(opponentTeam->GetAverageAge(opponentTeam->GetTeamID()));
+            if (ageOpponent > age)
+                return (ageOpponent - age) >= 3;
+        }
+    }
+    return false;
+}
+
+UChar METHOD _GetPriority(void *) {
+    return 5;
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2415,6 +2434,9 @@ void PatchEABFFixes(FM::Version v) {
 
         // Emergency meetings counter fix
         patch::RedirectJump(0x112DCC1, IncreaseEmergencyMeetingsCounter);
+
+        // fix CPreMatchSpeechEnemyTeamOld
+        patch::RedirectJump(0x13096C0, PreMatchSpeechEnemyTeamOld_CanAdd);
     }
 }
 

@@ -1489,6 +1489,10 @@ CDBFinance &CDBTeam::GetFinance() {
     return *CallMethodAndReturn<CDBFinance *, 0xED2810>(this);
 }
 
+Float CDBTeam::GetAverageAge(CTeamIndex const &teamID) {
+    return CallMethodAndReturn<Float, 0xECEA70>(this, &teamID);
+}
+
 UInt CDBTeam::GetAllStaff(FmVec<UInt> const &vec) {
     return CallMethodAndReturn<UInt, 0x1017290>(this, &vec);
 }
