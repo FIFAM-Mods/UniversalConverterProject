@@ -1,17 +1,15 @@
 #include "Formations.h"
-#include "license_check/license_check.h"
+#include "UcpSettings.h"
 #include "tinyxml/tinyxml.h"
 
 using namespace plugin;
 
-const bool USER_FORMATIONS_XML = false;
-
-bool gReadingFormationsXML = USER_FORMATIONS_XML;
+bool gReadingFormationsXML = false;
 
 unsigned char METHOD OnReadFormationsFile(void *t, DUMMY_ARG, wchar_t const *filename) {
     gReadingFormationsXML = true;
     auto result = CallMethodAndReturn<unsigned char, 0x1175B00>(t, filename);
-    gReadingFormationsXML = USER_FORMATIONS_XML;
+    gReadingFormationsXML = false;
     return result;
 }
 
@@ -55,48 +53,31 @@ void OnReadFormationsFileData(wchar_t *buf, unsigned int size, unsigned int coun
 }
 
 void WriteUserFormationsFile(const wchar_t *data, unsigned int elementSize, unsigned int count, FILE *f) {
-    unsigned char *utf8data = new unsigned char[count];
-    for (unsigned int i = 0; i < (count - 1); i++)
-        utf8data[i] = (unsigned char)data[i + 1];
-    utf8data[count - 1] = '\0';
-    FILE *uf = fopen("utf8data.txt", "wb");
-    if (uf) {
-        fwrite(utf8data, 1, count, uf);
-        fclose(uf);
-    }
+    std::string utf8str = ToUTF8(std::wstring(&data[1], count - 1));
     TiXmlDocument doc;
-    doc.Parse((const char *)utf8data, 0, TIXML_ENCODING_UTF8);
+    doc.Parse(reinterpret_cast<const char *>(utf8str.c_str()), 0, TIXML_ENCODING_UTF8);
     TiXmlPrinter printer;
     printer.SetIndent("\t");
     doc.Accept(&printer);
-    const char *formattedData = printer.CStr();
-    FILE *ff = fopen("formattedData.txt", "wb");
-    if (ff) {
-        fwrite(formattedData, 1, printer.Size(), ff);
-        fclose(ff);
-    }
-    unsigned int newDataSize = printer.Size() + 1;
-    wchar_t *newData = new wchar_t[newDataSize];
-    newData[0] = 0xFEFF;
-    for (unsigned int i = 0; i < (newDataSize - 1); i++)
-        newData[i + 1] = (wchar_t)formattedData[i];
-    Call<0x1574A5C>(newData, elementSize, newDataSize, f);
-    FILE *tf = fopen("test.txt", "wb");
-    if (tf) {
-        fwrite(newData, elementSize, newDataSize, tf);
-        fclose(tf);
-    }
-    delete[] utf8data;
-    delete[] newData;
+    std::wstring newStr = ToUTF16(std::string(printer.CStr(), printer.Size()));
+    wchar_t bom = 0xFEFF;
+    Call<0x1574A5C>(&bom, elementSize, 1, f);
+    Call<0x1574A5C>(newStr.data(), elementSize, newStr.size(), f);
 }
 
 void PatchFormations(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        static std::wstring formationsFileName = Magic<'U','C','P','F','o','r','m','a','t','i','o','n','s','.','x','m','l'>(2409944510);
-        patch::SetPointer(0x1176C2F + 1, (void *)formationsFileName.c_str());
+        patch::SetPointer(0x1176C2F + 1, L"UCPFormations.xml");
         patch::RedirectCall(0x1176C50, OnReadFormationsFile);
-        patch::RedirectJump(0x1175B9C, (void *)0x1175BD6);
+        patch::RedirectJump(0x1175B9C, (void *)0x1175BD6); // remove decryption
         patch::RedirectCall(0x1175B86, OnReadFormationsFileData);
+        if (Settings::GetInstance().UserFormationsXml) {
+            patch::SetPointer(0x1172847 + 1, L"UCPUserFormations.xml");
+            patch::SetPointer(0x1176C6B + 1, L"UCPUserFormations.xml");
+            patch::RedirectCall(0x1176C8C, OnReadFormationsFile);
+            patch::RedirectJump(0x1172A10, (void *)0x1172A46); // remove encryption
+            patch::RedirectCall(0x1172A59, WriteUserFormationsFile); // xml ident
+        }
 
         // manager preferred formation multiplier (default = 1.01)
         //static float fManagerPreferredFormationMultiplier = 1.06f;
@@ -104,16 +85,6 @@ void PatchFormations(FM::Version v) {
         
         // 4 defenders limit
         patch::Nop(0x11770F0, 2);
-
-        if (USER_FORMATIONS_XML) {
-            static std::wstring userFormationsFileName = Magic<'U', 'C', 'P', 'U', 's', 'e', 'r', 'F', 'o', 'r', 'm', 'a', 't', 'i', 'o', 'n', 's', '.', 'x', 'm', 'l'>(1449696081);
-            patch::SetPointer(0x1172847 + 1, (void *)userFormationsFileName.c_str());
-            patch::SetPointer(0x1176C6B + 1, (void *)userFormationsFileName.c_str());
-            // temporary
-            patch::RedirectJump(0x1172A10, (void *)0x1172A46);
-            // xml ident
-            patch::RedirectCall(0x1172A59, WriteUserFormationsFile);
-        }
 
         // AI rotation
         

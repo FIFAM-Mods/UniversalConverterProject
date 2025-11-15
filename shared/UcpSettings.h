@@ -93,6 +93,7 @@ public:
     SETTINGS_PARAMETER(wstring, AbilitiesColorSchema,       "ABILITIES_COLOR_SCHEMA",         L"IDS_ABILITIES_SCHEMA_DEFAULT");
     SETTINGS_PARAMETER(bool,   AbilitiesBoldFont,           "ABILITIES_BOLD_FONT",            false);
     SETTINGS_PARAMETER(bool,   AbilitiesAutoReload,         "ABILITIES_AUTO_RELOAD",          false);
+    SETTINGS_PARAMETER(bool,   UserFormationsXml,           "USER_FORMATIONS_XML",            false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;
