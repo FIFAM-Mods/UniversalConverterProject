@@ -90,6 +90,10 @@ void __declspec(naked) HeadCamera_XOffset() {
     }
 }
 
+void OnFormatFaceFileName(char *buf, char const *format, int sideburns, int beardColor, int beard, int skinType, int skinColor) {
+    sprintf(buf, format, sideburns, beardColor, skinType >= 3 ? 0 : beard, skinType, skinColor);
+}
+
 void Install3dPatches() {
 
     FindAssets(ASSETS_DIR, "");
@@ -137,6 +141,9 @@ void Install3dPatches() {
     patch::RedirectCall(RendererAddress(0x9F63E), OnGetHeadResourceName<0x91E11>);
     patch::RedirectCall(RendererAddress(0x919E4), OnGetHeadResourceName<0x91EAA>);
     patch::RedirectCall(RendererAddress(0x9F68E), OnGetHeadResourceName<0x91EAA>);
+
+    // disable beard for female skin types
+    patch::RedirectCall(RendererAddress(0x91C07), OnFormatFaceFileName);
 
    // const unsigned int kitW = 1024;
    // const unsigned int kitH = 2048;
