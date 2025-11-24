@@ -105,6 +105,7 @@
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
+    <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\Resolutions.cpp" />
     <ClCompile Include="..\shared\settings\Settings.cpp" />
     <ClCompile Include="..\shared\shared.cpp" />
@@ -150,7 +151,7 @@
     <ClCompile Include="ForeignersLimit.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="GameInterfaces.cpp" />
-    <ClCompile Include="GenericHeads.cpp" />
+    <ClCompile Include="PlayerAppearance.cpp" />
     <ClCompile Include="GfxCoreHook.cpp" />
     <ClCompile Include="IncreaseSalaryOwnedClub.cpp" />
     <ClCompile Include="InterfaceTheme.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
+    <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\Resolutions.h" />
     <ClInclude Include="..\shared\settings\Settings.h" />
     <ClInclude Include="..\shared\shared.h" />
@@ -238,7 +240,7 @@
     <ClInclude Include="ForeignersLimit.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="GameInterfaces.h" />
-    <ClInclude Include="GenericHeads.h" />
+    <ClInclude Include="PlayerAppearance.h" />
     <ClInclude Include="GfxCoreHook.h" />
     <ClInclude Include="IncreaseSalaryOwnedClub.h" />
     <ClInclude Include="InterfaceTheme.h" />

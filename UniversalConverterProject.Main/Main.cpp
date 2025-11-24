@@ -40,7 +40,7 @@
 #include "Scouting.h"
 #include "Media.h"
 #include "Translation.h"
-#include "GenericHeads.h"
+#include "PlayerAppearance.h"
 #include "CustomStadiums.h"
 #include "GenerateBigIdx.h"
 #include "PortraitDialog.h"
@@ -173,7 +173,7 @@ public:
             PatchPitch(v);
             PatchScouting(v);
             PatchMedia(v);
-            PatchGenericHeads(v);
+            PatchPlayerAppearance(v);
             PatchCustomStadiums(v);
             PatchPortraitDialog(v);
             //PatchPlayerTalks(v);

@@ -23,6 +23,7 @@
 #include "ReserveNames.h"
 #include "Assessment.h"
 #include "Resolutool.h"
+#include "PlayerAppearance.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -70,6 +71,7 @@ public:
             PatchDatabaseOptions(v);
             PatchReserveNames(v);
             PatchAssessment(v);
+            PatchPlayerAppearance(v);
         }
         else if (v.id() == ID_RESOLUTOOL_13_1000) {
             PatchResolutool(v);

@@ -1,7 +1,3 @@
-/*
-    FIFA Manager API
-    Authors: Dmitry (Dmitri,DK,DK22)
-*/
 #pragma once
 #include <string>
 
@@ -62,7 +58,7 @@ namespace plugin {
     inline std::wstring ToLower(std::wstring const &str) {
         std::wstring result;
         for (size_t i = 0; i < str.length(); i++)
-            result += tolower(static_cast<wchar_t>(str[i]));
+            result += towlower(static_cast<wchar_t>(str[i]));
         return result;
     }
 

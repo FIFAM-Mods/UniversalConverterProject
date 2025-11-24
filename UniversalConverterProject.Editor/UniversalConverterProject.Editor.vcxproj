@@ -102,6 +102,7 @@
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
+    <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\Resolutions.cpp" />
     <ClCompile Include="..\shared\settings\Settings.cpp" />
     <ClCompile Include="..\shared\shared.cpp" />
@@ -119,6 +120,7 @@
     <ClCompile Include="FemaleNames.cpp" />
     <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
     <ClCompile Include="Formations.cpp" />
+    <ClCompile Include="PlayerAppearance.cpp" />
     <ClCompile Include="GenericKits.cpp" />
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
@@ -136,6 +138,7 @@
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
+    <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\Resolutions.h" />
     <ClInclude Include="..\shared\settings\Settings.h" />
     <ClInclude Include="..\shared\shared.h" />
@@ -154,6 +157,7 @@
     <ClInclude Include="FemaleNames.h" />
     <ClInclude Include="FixedArchivesReadingForEditor.h" />
     <ClInclude Include="Formations.h" />
+    <ClInclude Include="PlayerAppearance.h" />
     <ClInclude Include="GenericKits.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="LowestLeagues.h" />

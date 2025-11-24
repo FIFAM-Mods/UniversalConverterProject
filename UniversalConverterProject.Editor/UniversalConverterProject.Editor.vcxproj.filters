@@ -35,6 +35,8 @@
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="Resolutool.cpp" />
     <ClCompile Include="..\shared\Resolutions.cpp" />
+    <ClCompile Include="PlayerAppearance.cpp" />
+    <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -71,6 +73,8 @@
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="Resolutool.h" />
     <ClInclude Include="..\shared\Resolutions.h" />
+    <ClInclude Include="PlayerAppearance.h" />
+    <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

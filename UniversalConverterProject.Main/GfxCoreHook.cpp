@@ -4,7 +4,7 @@
 #include "PlayerAccessories.h"
 #include "WindowedMode.h"
 #include "Pitch.h"
-#include "GenericHeads.h"
+#include "PlayerAppearance.h"
 #include "3dAdboardsAndBanners.h"
 #include "CustomStadiums.h"
 #include "3dModels.h"
@@ -34,7 +34,7 @@ bool METHOD OnLoadGfxCore(void **info, DUMMY_ARG, const wchar_t *libFileName, co
             InstallPlayerAccessoriesGfxPatches();
             InstallWindowedMode_GfxCore();
             InstallPitch3D();
-            InstallGenericHeads_GfxCore();
+            InstallPlayerAppearance_GfxCore();
             InstallAdBoardsAndBanners3dPatches();
             InstallCustomStadiums3DPatches();
             Install3DModelPatches();
