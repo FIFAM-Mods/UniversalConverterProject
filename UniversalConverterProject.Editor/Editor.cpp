@@ -19,7 +19,6 @@ using namespace plugin;
 
 //#define EDITOR_READ_TEXT
 //#define EDITOR_WRITE_TEXT
-//#define UPDATE_CLUB_BUDGETS
 
 enum FmLanguage {
     English,
@@ -386,7 +385,6 @@ wchar_t *OnPlayerCommentFormat(const wchar_t *in, const wchar_t *what, const wch
     return CallAndReturn<wchar_t *, 0x5781C0>(out, what, to, in, maxLen);
 }
 
-#ifdef UPDATE_CLUB_BUDGETS
 UInt const minBudget = 50'000;
 
 struct ClubBudget {
@@ -487,7 +485,6 @@ void METHOD OnReadClubTransferBudget(void *reader, DUMMY_ARG, Int *dst) {
             *dst = newCash / 2;
     }
 }
-#endif
 
 template <UInt funcAddr>
 void METHOD SetClubNameForCurrentLanguage(void *club, DUMMY_ARG, const WideChar *name) {
@@ -1238,31 +1235,31 @@ void PatchEditor(FM::Version v) {
             patch::RedirectCall(0x42A300, SetClubFanNameForCurrentLanguage<2620>);
         }
 
-    #ifdef UPDATE_CLUB_BUDGETS
-        patch::RedirectCall(0x4C5563, OnReadClubCapital);
-        patch::RedirectCall(0x4C5571, OnReadClubTransferBudget);
+        if (Settings::GetInstance().ImportBudgets) {
+            patch::RedirectCall(0x4C5563, OnReadClubCapital);
+            patch::RedirectCall(0x4C5571, OnReadClubTransferBudget);
 
-        for (int i = 1; i < 100; i++) {
-            FifamReader reader(Utils::Format(L"ClubBudgets%d.csv", i), 13);
-            if (reader.Available()) {
-                //Error("Reading");
-                reader.SkipLine();
-                while (!reader.IsEof()) {
-                    if (reader.EmptyLine())
-                        reader.SkipLine();
-                    else {
-                        String d;
-                        ClubBudget b;
-                        UInt clubId = 0;
-                        reader.ReadLine(d, d, Hexadecimal(clubId), d, b.cash, b.salaries, b.salariesLeft, b.transfers, b.transfersLeft, b.infrastructure, b.infrastructureLeft,
-                            b.misc, b.miscLeft, b.reserve);
-                        if (clubId != 0 && !Utils::Contains(budgets, clubId))
-                            budgets[clubId] = b;
+            for (int i = 1; i < 100; i++) {
+                FifamReader reader(Utils::Format(L"ClubBudgets%d.csv", i), 13);
+                if (reader.Available()) {
+                    //Error("Reading");
+                    reader.SkipLine();
+                    while (!reader.IsEof()) {
+                        if (reader.EmptyLine())
+                            reader.SkipLine();
+                        else {
+                            String d;
+                            ClubBudget b;
+                            UInt clubId = 0;
+                            reader.ReadLine(d, d, Hexadecimal(clubId), d, b.cash, b.salaries, b.salariesLeft, b.transfers, b.transfersLeft, b.infrastructure, b.infrastructureLeft,
+                                b.misc, b.miscLeft, b.reserve);
+                            if (clubId != 0 && !Utils::Contains(budgets, clubId))
+                                budgets[clubId] = b;
+                        }
                     }
                 }
             }
         }
-    #endif
 
         // Mutex names
         patch::SetUInt(0x540F07 + 1, 0);

@@ -94,6 +94,8 @@ public:
     SETTINGS_PARAMETER(bool,   AbilitiesBoldFont,           "ABILITIES_BOLD_FONT",            false);
     SETTINGS_PARAMETER(bool,   AbilitiesAutoReload,         "ABILITIES_AUTO_RELOAD",          false);
     SETTINGS_PARAMETER(bool,   UserFormationsXml,           "USER_FORMATIONS_XML",            false);
+    SETTINGS_PARAMETER(bool,   ExportBudgets,               "EXPORT_BUDGETS",                 false);
+    SETTINGS_PARAMETER(bool,   ImportBudgets,               "IMPORT_BUDGETS",                 false);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;

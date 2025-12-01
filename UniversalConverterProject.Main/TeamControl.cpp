@@ -46,7 +46,17 @@ bool METHOD GetManagerShoutsStatus(void *screen) {
 }
 
 void ExportClubBudgets() {
-    FifamWriter writer(L"ClubBudgets.csv", 14, FifamVersion());
+    String filename;
+    for (UInt i = 1; i < 100; i++) {
+        filename = Utils::Format(L"ClubBudgets%d.csv", i);
+        if (!exists(filename))
+            break;
+        filename.clear();
+    }
+    if (filename.empty())
+        return;
+    FifamWriter writer(filename, 14, FifamVersion());
+    writer.SetReplaceQuotes(false);
     writer.WriteLine(L"Continent,Country,ClubId,ClubName,Cash,Salaries,SalariesLeft,Transfers,TransfersLeft,Infrstructure,InfrstructureLeft,Misc,MiscLeft,Reserve");
     auto M = [](EAGMoney const &money, UChar currency = 0) {
         return (UInt)CallMethodAndReturn<UInt64, 0x149C9D7>(&money, currency);
@@ -76,6 +86,9 @@ void ExportClubBudgets() {
 }
 
 void *METHOD OnCreateKeepOtherStadiumsCheckbox(void *screen, DUMMY_ARG, char const *name) {
+    if (Settings::GetInstance().ExportBudgets) {
+        ExportClubBudgets();
+    }
     void *originalChk = CallMethodAndReturn<void *, 0xD44260>(screen, name);
     void *teamControlChk = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEnableTeamControl");
     *raw_ptr<void *>(screen, 0xC30) = teamControlChk;
