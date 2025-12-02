@@ -62,24 +62,26 @@ void ExportClubBudgets() {
         return (UInt)CallMethodAndReturn<UInt64, 0x149C9D7>(&money, currency);
     };
     for (UInt i = 1; i <= 207; i++) {
-        CDBCountry *country = &GetCountryStore()->m_aCountries[i];
-        UInt numClubs = *raw_ptr<UInt>(country, 0x19C);
-        for (UInt c = 0; c < numClubs; c++) {
-            CTeamIndex teamIndex = CTeamIndex::make(i, 0, c);
-            CDBTeam *club = GetTeam(teamIndex);
-            if (club) {
-                void *clubFinance = CallMethodAndReturn<void *, 0xED2810>(club);
-                EAGMoney cash;
-                CallMethod<0x10D7570>(clubFinance, &cash);
-                EAGMoney budgets[5];
-                CallVirtualMethod<11>(clubFinance, budgets);
-                EAGMoney money[5];
-                CallMethod<0x10E6BC0>(clubFinance, &money[0]);
-                CallMethod<0x10E09E0>(clubFinance, &money[1]);
-                CallMethod<0x10DB600>(clubFinance, &money[2]);
-                CallMethod<0x10DDBC0>(clubFinance, &money[3]);
-                CallVirtualMethod<53>(clubFinance, &money[4]);
-                writer.WriteLine(Utils::Format(L"\"%s\",\"%s\",0x%08X,\"%s\",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", country->GetContinentName(), country->GetName(), club->GetTeamUniqueID(), club->GetName(), M(cash), M(budgets[0]), M(money[0]), M(budgets[1]), M(money[1]), M(budgets[2]), M(money[2]), M(budgets[3]), M(money[3]), M(money[4])));
+        if (CDBGame::GetInstance()->IsCountryPlayable(i)) {
+            CDBCountry *country = &GetCountryStore()->m_aCountries[i];
+            UInt numClubs = *raw_ptr<UInt>(country, 0x19C);
+            for (UInt c = 0; c < numClubs; c++) {
+                CTeamIndex teamIndex = CTeamIndex::make(i, 0, c);
+                CDBTeam *club = GetTeam(teamIndex);
+                if (club) {
+                    void *clubFinance = CallMethodAndReturn<void *, 0xED2810>(club);
+                    EAGMoney cash;
+                    CallMethod<0x10D7570>(clubFinance, &cash);
+                    EAGMoney budgets[5];
+                    CallVirtualMethod<11>(clubFinance, budgets);
+                    EAGMoney money[5];
+                    CallMethod<0x10E6BC0>(clubFinance, &money[0]);
+                    CallMethod<0x10E09E0>(clubFinance, &money[1]);
+                    CallMethod<0x10DB600>(clubFinance, &money[2]);
+                    CallMethod<0x10DDBC0>(clubFinance, &money[3]);
+                    CallVirtualMethod<53>(clubFinance, &money[4]);
+                    writer.WriteLine(Utils::Format(L"\"%s\",\"%s\",0x%08X,\"%s\",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", country->GetContinentName(), country->GetName(), club->GetTeamUniqueID(), club->GetName(), M(cash), M(budgets[0]), M(money[0]), M(budgets[1]), M(money[1]), M(budgets[2]), M(money[2]), M(budgets[3]), M(money[3]), M(money[4])));
+                }
             }
         }
     }
