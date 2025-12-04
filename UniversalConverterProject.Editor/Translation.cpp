@@ -1,6 +1,7 @@
 #include "Translation.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
+#include "CustomTranslation.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -15,7 +16,7 @@ Bool countryNamesFileRead;
 String GetTranslationFileModifiedPath(String const &originalPath) {
     if (Utils::StartsWith(originalPath, L"fmdata\\")) {
         auto fileName = originalPath.substr(7);
-        auto modifiedPath = Utils::Format(L"fmdata\\%s\\%s", GameLanguage().c_str(), fileName.c_str());
+        auto modifiedPath = Utils::Format(L"fmdata\\translation\\languages\\%s\\%s", GameLanguage().c_str(), fileName.c_str());
         if (exists(modifiedPath))
             return modifiedPath;
     }
@@ -59,18 +60,47 @@ WideChar const *METHOD OnGetCountryNameEditor(void *country) {
 }
 
 void OnGetFaceIDsPath(WideChar *dst, WideChar const *format, WideChar const *arg) {
-    static Path faceIDsPath = FM::GetGameDir() + L"fmdata\\eng\\faceIDs.txt";
+    static Path faceIDsPath = FM::GetGameDir() + L"fmdata\\faceIDs.txt";
     wcscpy(dst, faceIDsPath.c_str());
 }
 
 void OnGetClubIDsPath(WideChar *dst, WideChar const *format, WideChar const *arg) {
-    static Path clubIDsPath = FM::GetGameDir() + L"fmdata\\eng\\ClubIDs.txt";
+    static Path clubIDsPath = FM::GetGameDir() + L"fmdata\\ClubIDs.txt";
     wcscpy(dst, clubIDsPath.c_str());
 }
 
 void OnGetStadiumListPath(WideChar *dst, WideChar const *format, WideChar const *arg) {
-    static Path clubIDsPath = FM::GetGameDir() + L"fmdata\\eng\\StadiumList.txt";
+    static Path clubIDsPath = FM::GetGameDir() + L"fmdata\\StadiumList.txt";
     wcscpy(dst, clubIDsPath.c_str());
+}
+
+struct TranslationData {
+    UInt key;
+    WideChar const *langs[6];
+    Int field_1C;
+};
+
+struct TextContainerRange {
+    TranslationData *begin;
+    TranslationData *end;
+};
+
+TextContainerRange const *FindRangeByHash(TextContainerRange *ret_out, void *begin, void *end, UInt *pHash) {
+    static TranslationData translationData;
+    ret_out->begin = nullptr;
+    ret_out->end = nullptr;
+    for (UInt i = 0; i < NUM_TRANSLATION_TABLES; i++) {
+        auto &table = GetTranslationTable((TranslationTableType)i);
+        auto entry = table.find(*pHash);
+        if (entry != table.end()) {
+            translationData.key = *pHash;
+            for (size_t i = 0; i < 6; i++)
+                translationData.langs[i] = (*entry).second.c_str();
+            ret_out->begin = &translationData;
+            return ret_out;
+        }
+    }
+    return CallAndReturn<TextContainerRange const *, 0x575560>(ret_out, begin, end, pHash);
 }
 
 void PatchTranslation(FM::Version v) {
@@ -80,7 +110,7 @@ void PatchTranslation(FM::Version v) {
         GameLanguage() = Utils::ToLower(gameLanguageStr);
         if (!GameLanguage().empty()) {
             // TODO
-            auto countryNamesFile = path(L"fmdata") / GameLanguage() / L"CountryNames.txt";
+            auto countryNamesFile = path(L"fmdata") / L"translation" / L"languages" / GameLanguage() / L"CountryNames.txt";
             if (exists(countryNamesFile)) {
                 FifamReader countryNamesReader(countryNamesFile, 14);
                 if (countryNamesReader.Available()) {
@@ -93,6 +123,7 @@ void PatchTranslation(FM::Version v) {
                     }
                 }
             }
+            LoadCustomTranslation(GameLanguage(), true);
         }
         patch::RedirectCall(0x4BF101, OnSetLocaleCurrentLanguage);
         patch::RedirectCall(0x4BF0C9, OnReadLocalisationFile);
@@ -102,5 +133,8 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x5100BA, OnGetFaceIDsPath);
         patch::RedirectCall(0x510141, OnGetClubIDsPath);
         patch::RedirectCall(0x548F5B, OnGetStadiumListPath);
+        patch::SetPointer(0x4BE25A + 1, L"%s\\fmdata\\translation\\languages\\%s");
+        patch::RedirectCall(0x57571D, FindRangeByHash);
+        patch::RedirectCall(0x575774, FindRangeByHash);
     }
 }

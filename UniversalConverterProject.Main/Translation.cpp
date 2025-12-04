@@ -2,6 +2,7 @@
 #include "GameInterfaces.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
+#include "CustomTranslation.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -27,13 +28,14 @@ void METHOD OnSetCountryName(void *country, DUMMY_ARG, const WideChar *name) {
     CallMethod<0xFD67C0>(country, name);
 }
 
+String GetLocaleFilename() {
+    return L"fmdata\\translation\\languages\\" + GameLanguage() + L"\\Translations.huf";
+}
+
 const WideChar *GetLocaleShortName(UInt) {
-    if (!GameLanguage().empty()) {
-        auto translationFile = path(L"fmdata") / GameLanguage() / L"Translations.huf";
-        if (exists(translationFile))
-            return GameLanguage().c_str();
-    }
-    return L"eng";
+    static wchar_t localeShortName[32];
+    wcscpy(localeShortName, GameLanguage().c_str());
+    return localeShortName;
 }
 
 const WideChar * METHOD GetCurrentLocaleShortName() {
@@ -44,7 +46,7 @@ template<UInt Addr>
 void METHOD OnReadAdditionalTranslationFile(void *t, DUMMY_ARG, const WideChar *filepath) {
     if (!GameLanguage().empty()) {
         String filename = Path(filepath).filename().c_str();
-        String newFilepath = L"fmdata\\" + GameLanguage() + L"\\" + filename;
+        String newFilepath = L"fmdata\\translation\\languages\\" + GameLanguage() + L"\\" + filename;
         if (exists(newFilepath))
             CallMethod<Addr>(t, newFilepath.c_str());
     }
@@ -273,6 +275,26 @@ void METHOD OnSetDefaultUnits(CDBGameOptions *t, DUMMY_ARG, UInt flag, Bool set)
     CallMethod<0x1041110>(t, flag, !IsDefaultImperialUnits);
 }
 
+Bool METHOD OnLoadTranslationsFile(void *t, DUMMY_ARG, WideChar const *filePath) {
+    String translationFilePath = GetLocaleFilename();
+    ::Message(L"Loading translation from " + translationFilePath);
+    Bool result = CallMethodAndReturn<Bool, 0x14A9811>(t, translationFilePath.c_str());
+    LoadCustomTranslation(GameLanguage(), false, [](Path const &filename) {
+        SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
+    });
+    return result;
+}
+
+WideChar const *METHOD GetGameTextByHashKey(void *t, DUMMY_ARG, UInt key) {
+    for (UInt i = 0; i < NUM_TRANSLATION_TABLES; i++) {
+        auto &table = GetTranslationTable((TranslationTableType)i);
+        auto entry = table.find(key);
+        if (entry != table.end())
+            return (*entry).second.c_str();
+    }
+    return CallMethodAndReturn<wchar_t const *, 0x14A9671>(t, key);
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         auto iniPath = FM::GameDirPath(L"locale.ini");
@@ -280,7 +302,7 @@ void PatchTranslation(FM::Version v) {
         if (!GameLanguage().empty()) {
             IsRussianLanguage = GameLanguage() == L"rus";
             IsUkrainianLanguage = GameLanguage() == L"ukr";
-            auto countryNamesFile = path(L"fmdata") / GameLanguage() / L"CountryNames.txt";
+            auto countryNamesFile = path(L"fmdata") / L"translation" / L"languages" / GameLanguage() / L"CountryNames.txt";
             if (exists(countryNamesFile)) {
                 FifamReader countryNamesReader(countryNamesFile, 14);
                 if (countryNamesReader.Available()) {
@@ -294,6 +316,8 @@ void PatchTranslation(FM::Version v) {
                 }
             }
         }
+        else
+            GameLanguage() = L"eng";
         String currency = GetIniOption(L"OPTIONS", L"LANGUAGE_CURRENCY", L"", iniPath);
         if (currency == L"usd")
             DefaultCurrency = CURRENCY_USD;
@@ -332,5 +356,12 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0xF6559E, OnSetDefaultCurrencySymbol);
         patch::RedirectCall(0xF65619, OnSetDefaultCurrencySymbol);
         patch::RedirectCall(0xF65624, OnSetDefaultUnits);
+
+        patch::RedirectCall(0x14A9C1C, OnLoadTranslationsFile);
+        patch::RedirectCall(0x14A9C43, OnLoadTranslationsFile);
+
+        patch::RedirectCall(0x14A9AF8, GetGameTextByHashKey);
+        patch::RedirectCall(0x14A9B9B, GetGameTextByHashKey);
+        patch::RedirectCall(0x14A9BB8, GetGameTextByHashKey);
     }
 }

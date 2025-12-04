@@ -1,13 +1,26 @@
 #include "DatabaseOptions.h"
 #include "FifamReadWrite.h"
 #include "Editor.h"
+#include "CustomTranslation.h"
+#include "Translation.h"
 #include <Windows.h>
 
 using namespace plugin;
 
-Vector<Pair<StringA, String>> &DatabaseIDs() {
-    static Vector<Pair<StringA, String>> dbs;
-    return dbs;
+Map<StringA, DatabaseInfo> &Databases() {
+    static Map<StringA, DatabaseInfo> dbsMap;
+    return dbsMap;
+}
+
+DatabaseInfo *GetDatabaseInfo(StringA const &id) {
+    if (Utils::Contains(Databases(), id))
+        return &Databases()[id];
+    return nullptr;
+}
+
+Vector<DatabaseInfo> &DatabasesVec() {
+    static Vector<DatabaseInfo> dbsVec;
+    return dbsVec;
 }
 
 wchar_t DatabaseID[256];
@@ -73,20 +86,29 @@ static WideChar const *RestoreFolders[] = {
 };
 
 void ReadDatabaseIDs() {
-    DatabaseIDs().clear();
+    Databases().clear();
+    DatabasesVec().clear();
     FifamReader r(FM::GameDirPath(L"plugins\\ucp\\database_options.txt"));
     if (r.Available()) {
         r.SkipLine();
         while (!r.IsEof()) {
             if (!r.EmptyLine()) {
-                StringA id;
-                String description;
-                bool isWomen = false;
-                r.ReadLineWithSeparator(L'\t', id, isWomen, description);
-                if (!id.empty()) {
-                    wchar_t const *text = GetText(FormatStatic("DATABASE_TITLE_%s", id.c_str()));
-                    if (text)
-                        DatabaseIDs().emplace_back(id, text);
+                DatabaseInfo d;
+                r.ReadLineWithSeparator(L'\t', d.id, d.isWomenDatabase, d.parentDatabaseId);
+                if (!d.id.empty()) {
+                    Path dbFolder = Path(FM::GetGameDir()) / ("database_" + d.id);
+                    if (exists(dbFolder) && exists(dbFolder / "Master.dat")) {
+                        WideChar const *title = GetText(FormatStatic("DATABASE_TITLE_%s", d.id.c_str()));
+                        if (title) {
+                            d.title = title;
+                            WideChar const *description = GetText(FormatStatic("DATABASE_DESCRIPTION_%s", d.id.c_str()));
+                            if (description)
+                                d.description = description;
+                            d.index = DatabasesVec().size();
+                            DatabasesVec().push_back(d);
+                            Databases()[d.id] = d;
+                        }
+                    }
                 }
             }
             else
@@ -221,6 +243,14 @@ void SetDatabaseID(String const &id) {
     patch::SetPointer(0x4FABBF + 3, RestoreFiles);
     patch::SetPointer(0x4FAF20 + 2, RestoreFolders);
     patch::SetUChar(0x4FAF4B + 2, UChar((std::size(RestoreFolders) - 1) * 4));
+
+    // translation
+    Vector<String> dbNames;
+    DatabaseInfo *d = GetDatabaseInfo(Utils::WtoA(id));
+    if (d && !d->parentDatabaseId.empty())
+        dbNames.push_back(Utils::AtoW(d->parentDatabaseId));
+    dbNames.push_back(id);
+    LoadDatabaseCustomTranslation(dbNames, GameLanguage(), true);
 }
 
 int METHOD EULACloseApp(void *) {
@@ -244,8 +274,8 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         EnableWindow(GetDlgItem(hwndDlg, 1953), false);
         SendMessageW(cbDatabase, CB_RESETCONTENT, 0, 0);
         SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)GetText("DATABASE_TITLE"));
-        for (auto const &[id, text] : DatabaseIDs())
-            SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)text.c_str());
+        for (auto const &d : DatabasesVec())
+            SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)d.title.c_str());
         SendMessageW(cbDatabase, 334, 0, 0);
         return TRUE;
     }
@@ -258,8 +288,8 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 int selectedIndex = SendMessageW(cbDatabase, CB_GETCURSEL, 0, 0);
                 if (selectedIndex > 0) {
                     int vecIndex = selectedIndex - 1;
-                    if (vecIndex < (int)DatabaseIDs().size())
-                        SetDatabaseID(AtoW(DatabaseIDs()[vecIndex].first));
+                    if (vecIndex < (int)DatabasesVec().size())
+                        SetDatabaseID(AtoW(DatabasesVec()[vecIndex].id));
                 }
                 EndDialog(hwndDlg, 1);
             }
@@ -278,7 +308,7 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 
 void *CreateDatabaseOptionsDialog() {
     ReadDatabaseIDs();
-    if (DatabaseIDs().size() > 0)
+    if (DatabasesVec().size() > 0)
         DialogBoxParamA(NULL, (LPCSTR)30735, NULL, DatabaseOptionsDialog, 0);
     //else
     //    ::Warning("%d", DatabaseIDs().size());

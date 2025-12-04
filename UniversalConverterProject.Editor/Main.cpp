@@ -35,6 +35,9 @@ public:
     UniversalConverterProject() {
         auto v = FM::GetAppVersion();
         if (v.id() == ID_ED_13_1000) {
+            if (exists(FM::GameDirPath(L"plugins\\CustomTranslation.asi"))) {
+                ::Error("This plugin is not compatible with CustomTranslation plugin. Please delete CustomTranslation plugin.");
+            }
             Settings::GetInstance().Load();
             IsWomensDatabase() = patch::GetUShort(0x66E7A8) == L'W';
             GenerateBigIdx();

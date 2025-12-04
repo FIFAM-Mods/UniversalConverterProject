@@ -1166,7 +1166,7 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
             GetWindowRect(hWnd, &rect);
             ptOffset.x = ptStart.x - rect.left;
             ptOffset.y = ptStart.y - rect.top;
-            if (ptStart.y <= (rect.top + BORDERLESS_MOVEBAR_HEIGHT)) {
+            if (ptStart.y <= (rect.top + (LONG)BORDERLESS_MOVEBAR_HEIGHT)) {
                 bDragging = TRUE;
                 SetCapture(hWnd);
             }

@@ -67,7 +67,6 @@ public:
     SETTINGS_PARAMETER(int,    WCModeSeason_Year,           "WCMODE_SEASON_YEAR",             2025);
     SETTINGS_PARAMETER(int,    WCModeSeason_Month,          "WCMODE_SEASON_MONTH",            7);
     SETTINGS_PARAMETER(int,    WCModeSeason_Day,            "WCMODE_SEASON_DAY",              1);
-    SETTINGS_PARAMETER(int,    DatabaseOption,              "DATABASE_OPTION",                0);
     SETTINGS_PARAMETER(bool,   UseEditorDatabase,           "USE_EDITOR_DATABASE",            false);
     SETTINGS_PARAMETER(bool,   EnableCustomShaders,         "ENABLE_CUSTOM_SHADERS",          false);
     SETTINGS_PARAMETER(bool,   DumpShaders,                 "DUMP_SHADERS",                   false);

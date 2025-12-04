@@ -1854,7 +1854,7 @@ ColorPair GetTeamKitColors(CDBTeam *team, UChar kitTypeId) {
 Float ColorDistance_CIE2000(Color const &e1, Color const &e2) {
     colorm::Rgb clr1(e1.r, e1.g, e1.b);
     colorm::Rgb clr2(e2.r, e2.g, e2.b);
-    return clr1.deltaE_00(clr2);
+    return (Float)clr1.deltaE_00(clr2);
 }
 
 Float ColorPairDistance_CIE2000(ColorPair const &e1, ColorPair const &e2) {

@@ -4,8 +4,12 @@
 #include "UcpSettings.h"
 #include "Random.h"
 #include "Translation.h"
+#include "CustomTranslation.h"
+#include "shared.h"
 
 using namespace plugin;
+
+int DatabaseOption = 0;
 
 Char RandomTalent(Char talent, Int a, Int b, Int c) {
     Int rnd = Random::Get(1, a + b + c);
@@ -82,32 +86,46 @@ void *METHOD OnPlayerGetConract_SalaryCalculation(CDBPlayer *player) {
     return contract;
 }
 
-struct DatabaseOption {
+struct DatabaseInfo {
     StringA id;
-    Bool isWomen = false;
+    StringA parentDatabaseId;
+    Bool isWomenDatabase = false;
+    Bool hasEditorDatabase = false;
+    Int index = -1;
 };
 
-Vector<DatabaseOption> &DatabaseOptions() {
-    static Vector<DatabaseOption> dbs;
-    return dbs;
+Map<StringA, DatabaseInfo> &Databases() {
+    static Map<StringA, DatabaseInfo> dbsMap;
+    return dbsMap;
+}
+
+DatabaseInfo *GetDatabaseInfo(StringA const &id) {
+    if (Utils::Contains(Databases(), id))
+        return &Databases()[id];
+    return nullptr;
+}
+
+Vector<DatabaseInfo> &DatabasesVec() {
+    static Vector<DatabaseInfo> dbsVec;
+    return dbsVec;
 }
 
 void ReadDatabaseIDs() {
-    DatabaseOptions().clear();
+    Databases().clear();
+    DatabasesVec().clear();
     FifamReader r(FM::GameDirPath(L"plugins\\ucp\\database_options.txt"));
     if (r.Available()) {
         r.SkipLine();
         while (!r.IsEof()) {
             if (!r.EmptyLine()) {
-                StringA id;
-                String description;
-                bool isWomen = false;
-                r.ReadLineWithSeparator(L'\t', id, isWomen, description);
-                if (!id.empty()) {
-                    DatabaseOption databaseOption;
-                    databaseOption.id = id;
-                    databaseOption.isWomen = isWomen;
-                    DatabaseOptions().push_back(databaseOption);
+                DatabaseInfo d;
+                r.ReadLineWithSeparator(L'\t', d.id, d.isWomenDatabase, d.parentDatabaseId);
+                if (!d.id.empty()) {
+                    Path dbFolder = Path(FM::GetGameDir()) / ("database_" + d.id);
+                    d.hasEditorDatabase = exists(dbFolder) && exists(dbFolder / "Master.dat");
+                    d.index = DatabasesVec().size();
+                    DatabasesVec().push_back(d);
+                    Databases()[d.id] = d;
                 }
             }
             else
@@ -119,8 +137,8 @@ void ReadDatabaseIDs() {
 String GetDatabaseFolder(unsigned int databaseIndex) {
     if (databaseIndex > 0) {
         databaseIndex -= 1;
-        if (databaseIndex < DatabaseOptions().size())
-            return L"database_" + AtoW(DatabaseOptions()[databaseIndex].id);
+        if (databaseIndex < DatabasesVec().size())
+            return L"database_" + AtoW(DatabasesVec()[databaseIndex].id);
     }
     return L"database";
 }
@@ -140,8 +158,8 @@ void SetDatabaseImage(void *img, unsigned int databaseIndex) {
 void SetDatabaseText(void *textBox, unsigned int databaseIndex) {
     if (databaseIndex > 0) {
         databaseIndex -= 1;
-        if (databaseIndex < DatabaseOptions().size()) {
-            StringA databaseDescKey = "DATABASE_DESC_" + DatabaseOptions()[databaseIndex].id;
+        if (databaseIndex < DatabasesVec().size()) {
+            StringA databaseDescKey = "DATABASE_DESC_" + DatabasesVec()[databaseIndex].id;
             SetText(textBox, GetTranslation(databaseDescKey.c_str()));
         }
         else
@@ -159,28 +177,35 @@ void *METHOD OnCreateWinterTransfersCheckbox(void *screen, DUMMY_ARG, char const
     void *useRealSalaries = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkUseRealSalaries");
     *raw_ptr<void *>(screen, 0xAD0 + 4) = useRealSalaries;
     CallVirtualMethod<84>(useRealSalaries, Settings::GetInstance().UseRealSalaries);
-    void *editorDatabaseCheckbox = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEditorDatabase");
+    CXgCheckBox *editorDatabaseCheckbox = CallMethodAndReturn<CXgCheckBox *, 0xD44260>(screen, "ChkEditorDatabase");
     *raw_ptr<void *>(screen, 0xAD0 + 8) = editorDatabaseCheckbox;
-    CallVirtualMethod<84>(editorDatabaseCheckbox, Settings::GetInstance().UseEditorDatabase);
     void *databasePicture = CallMethodAndReturn<void *, 0xD44380>(screen, "Gamestart_Database1");
     *raw_ptr<void *>(screen, 0xAD0 + 12) = databasePicture;
-    void *databaseComboBox = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbDatabase");
+    CXgComboBox *databaseComboBox = CallMethodAndReturn<CXgComboBox *, 0xD442C0>(screen, "CbDatabase");
     *raw_ptr<void *>(screen, 0xAD0 + 16) = databaseComboBox;
     void* databaseInfo = CreateTextBox(screen, "TbDatabaseInfo");
     *raw_ptr<void*>(screen, 0xAD0 + 20) = databaseInfo;
-    CallVirtualMethod<83>(databaseComboBox, GetTranslation("DATABASE_TITLE"), 0, 0);
-    for (unsigned int i = 0; i < DatabaseOptions().size(); i++) {
-        StringA dbKey = "DATABASE_TITLE_" + DatabaseOptions()[i].id;
-        CallVirtualMethod<83>(databaseComboBox, GetTranslation(dbKey.c_str()), i + 1, 0);
+    databaseComboBox->AddItem(GetTranslation("DATABASE_TITLE"), 0);
+    for (unsigned int i = 0; i < DatabasesVec().size(); i++) {
+        StringA dbKey = "DATABASE_TITLE_" + DatabasesVec()[i].id;
+        databaseComboBox->AddItem(GetTranslation(dbKey.c_str()), i + 1);
     }
-    if (Settings::GetInstance().DatabaseOption > 0) {
-        UInt optionIndex = Settings::GetInstance().DatabaseOption - 1;
-        if (optionIndex >= DatabaseOptions().size())
-            Settings::GetInstance().DatabaseOption = 0;
+    DatabaseOption = 0;
+    Bool enableEditorDatabase = true;
+    for (UInt i = 0; i < DatabasesVec().size(); i++) {
+        if (DatabasesVec()[i].parentDatabaseId == "default") {
+            DatabaseOption = i + 1;
+            enableEditorDatabase = DatabasesVec()[i].hasEditorDatabase;
+        }
     }
-    CallVirtualMethod<70>(databaseComboBox, Settings::GetInstance().DatabaseOption);
-    SetDatabaseImage(databasePicture, Settings::GetInstance().DatabaseOption);
-    SetDatabaseText(databaseInfo, Settings::GetInstance().DatabaseOption);
+    enableEditorDatabase = enableEditorDatabase && Settings::GetInstance().UseEditorDatabase;
+    editorDatabaseCheckbox->SetIsChecked(enableEditorDatabase);
+    if (!enableEditorDatabase)
+        editorDatabaseCheckbox->SetEnabled(false);
+    Settings::GetInstance().UseEditorDatabase = enableEditorDatabase;
+    databaseComboBox->SetCurrentIndex(DatabaseOption);
+    SetDatabaseImage(databasePicture, DatabaseOption);
+    SetDatabaseText(databaseInfo, DatabaseOption);
     *raw_ptr<UInt>(screen, 0xAD0 + 24) = 0;
     return originalChk;
 }
@@ -209,36 +234,49 @@ void METHOD OnProcessGameStartCheckboxes(void *screen, DUMMY_ARG, int *data, int
     CallMethod<0x5247D0>(screen, data, unk);
 }
 
-void METHOD ProcessGameStartDatabaseComboBoxes(void *screen, DUMMY_ARG, int *id, int unk1, int unk2) {
+void METHOD ProcessGameStartDatabaseComboBoxes(void *screen, DUMMY_ARG, Int *id, Int unk1, Int unk2) {
     void *databaseComboBox = *raw_ptr<void *>(screen, 0xAD0 + 16);
     void *databasePicture = *raw_ptr<void *>(screen, 0xAD0 + 12);
     void* databaseInfo = *raw_ptr<void*>(screen, 0xAD0 + 20);
-    bool isPrediction = *raw_ptr<UInt>(screen, 0xAD0 + 24) != 0;
-    if (*id == CallVirtualMethodAndReturn<int, 23>(databaseComboBox)) {
-        int option = CallVirtualMethodAndReturn<int, 94>(databaseComboBox, 0, 0);
+    Bool isPrediction = *raw_ptr<UInt>(screen, 0xAD0 + 24) != 0;
+    if (*id == CallVirtualMethodAndReturn<Int, 23>(databaseComboBox)) {
+        Int option = CallVirtualMethodAndReturn<Int, 94>(databaseComboBox, 0, 0);
         if (!isPrediction)
-            Settings::GetInstance().DatabaseOption = option;
+            DatabaseOption = option;
         SetDatabaseImage(databasePicture, option);
         SetDatabaseText(databaseInfo, option);
+        CXgCheckBox *editorDatabaseCheckbox = *raw_ptr<CXgCheckBox *>(screen, 0xAD0 + 8);
+        Bool enableEditorDatabase = true;
+        if (option > 0) {
+            UInt databaseIndex = option - 1;
+            if (databaseIndex < DatabasesVec().size())
+                enableEditorDatabase = DatabasesVec()[databaseIndex].hasEditorDatabase;
+        }
+        editorDatabaseCheckbox->SetEnabled(enableEditorDatabase);
+        if (!enableEditorDatabase) {
+            editorDatabaseCheckbox->SetIsChecked(false);
+            if (!isPrediction)
+                Settings::GetInstance().EditorDatabase = enableEditorDatabase;
+        }
     }
 }
 
 void *METHOD OnCreateCheckBoxPrediction(void *screen, DUMMY_ARG, char const *name) {
     void *originalChk = CallMethodAndReturn<void *, 0xD44260>(screen, name);
     *raw_ptr<UInt>(screen, 0xAD0 + 24) = 1;
-    void *editorDatabaseCheckbox = CallMethodAndReturn<void *, 0xD44260>(screen, "ChkEditorDatabase1");
+    CXgCheckBox *editorDatabaseCheckbox = CallMethodAndReturn<CXgCheckBox *, 0xD44260>(screen, "ChkEditorDatabase1");
     *raw_ptr<void *>(screen, 0xAD0 + 8) = editorDatabaseCheckbox;
-    CallVirtualMethod<84>(editorDatabaseCheckbox, false);
-    void *databaseComboBox = CallMethodAndReturn<void *, 0xD442C0>(screen, "CbDatabase1");
+    editorDatabaseCheckbox->SetIsChecked(false);
+    CXgComboBox *databaseComboBox = CallMethodAndReturn<CXgComboBox *, 0xD442C0>(screen, "CbDatabase1");
     *raw_ptr<void *>(screen, 0xAD0 + 16) = databaseComboBox;
     void* databaseInfo = CreateTextBox(screen, "TbDatabaseInfo1");
     *raw_ptr<void*>(screen, 0xAD0 + 20) = databaseInfo;
-    CallVirtualMethod<83>(databaseComboBox, GetTranslation("DATABASE_TITLE"), 0, 0);
-    for (unsigned int i = 0; i < DatabaseOptions().size(); i++) {
-        StringA dbKey = "DATABASE_TITLE_" + DatabaseOptions()[i].id;
-        CallVirtualMethod<83>(databaseComboBox, GetTranslation(dbKey.c_str()), i + 1, 0);
+    databaseComboBox->AddItem(GetTranslation("DATABASE_TITLE"), 0);
+    for (unsigned int i = 0; i < DatabasesVec().size(); i++) {
+        StringA dbKey = "DATABASE_TITLE_" + DatabasesVec()[i].id;
+        databaseComboBox->AddItem(GetTranslation(dbKey.c_str()), i + 1);
     }
-    CallVirtualMethod<70>(databaseComboBox, 0);
+    databaseComboBox->SetCurrentIndex(0);
     void *databasePicture = *raw_ptr<void *>(screen, 0xAD0 + 12);
     SetDatabaseImage(databasePicture, 0);
     SetDatabaseText(databaseInfo, 0);
@@ -274,7 +312,7 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
     bool editorDb = CallVirtualMethodAndReturn<unsigned char, 85>(editorDatabaseCheckbox) != 0;
     if (option > 0) {
         UInt databaseIndex = option - 1;
-        if (databaseIndex >= DatabaseOptions().size())
+        if (databaseIndex >= DatabasesVec().size())
             option = 0;
     }
     else if (option < 0)
@@ -284,17 +322,29 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
             CallMethod<0x10F48C0>(t, GetUserDbPath(String()));
         else
             CallMethod<0x10F48C0>(t, L"fmdata\\Restore.dat");
+        LoadDatabaseCustomTranslation({ L"default" }, GameLanguage(), false, [](Path const &filename) {
+            SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
+        });
     }
     else {
         UInt databaseIndex = option - 1;
+        String dbId = AtoW(DatabasesVec()[databaseIndex].id);
         if (editorDb) {
-            String dbPath = GetUserDbPath(AtoW(DatabaseOptions()[databaseIndex].id));
+            String dbPath = GetUserDbPath(dbId);
             CallMethod<0x10F48C0>(t, dbPath.c_str());
         }
         else {
-            String dbPath = L"fmdata\\Restore_" + AtoW(DatabaseOptions()[databaseIndex].id) + L".dat";
+            String dbPath = L"fmdata\\Restore_" + dbId + L".dat";
             CallMethod<0x10F48C0>(t, dbPath.c_str());
         }
+        Vector<String> dbNames;
+        DatabaseInfo *d = GetDatabaseInfo(Utils::WtoA(dbId));
+        if (d && !d->parentDatabaseId.empty())
+            dbNames.push_back(Utils::AtoW(d->parentDatabaseId));
+        dbNames.push_back(dbId);
+        LoadDatabaseCustomTranslation(dbNames, GameLanguage(), false, [](Path const &filename) {
+            SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
+        });
     }
     //::Warning(L"Loading %s", raw_ptr<wchar_t>(t, 0x30));
 }

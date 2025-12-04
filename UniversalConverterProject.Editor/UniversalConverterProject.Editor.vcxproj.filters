@@ -37,6 +37,7 @@
     <ClCompile Include="..\shared\Resolutions.cpp" />
     <ClCompile Include="PlayerAppearance.cpp" />
     <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
+    <ClCompile Include="..\shared\CustomTranslation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -75,6 +76,7 @@
     <ClInclude Include="..\shared\Resolutions.h" />
     <ClInclude Include="PlayerAppearance.h" />
     <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
+    <ClInclude Include="..\shared\CustomTranslation.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

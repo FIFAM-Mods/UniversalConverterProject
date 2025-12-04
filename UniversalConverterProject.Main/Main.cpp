@@ -72,6 +72,7 @@
 #include "PlayerLevelPatches.h"
 #include "WidgetContinental.h"
 #include "Finances.h"
+#include "Shared.h"
 #include <ShlObj.h>
 
 AUTHOR_INFO("Universal Converter Project Main ASI plugin, made by Dmitri");
@@ -101,6 +102,12 @@ public:
         if (v.id() == ID_FM_13_1030_RLD) {
             if (!CheckLicense(Magic<'U', 'n', 'i', 'v', 'e', 'r', 's', 'a', 'l', 'C', 'o', 'n', 'v', 'e', 'r', 't', 'e', 'r', 'P', 'r', 'o', 'j', 'e', 'c', 't', '.', 'M', 'a', 'i', 'n', '.', 'a', 's', 'i'>(1583797143)))
                 return;
+            if (GetPatchTestVersion()) {
+                ::Message(L"This is a test patch version (%s).\nPlease do not redistribute it.", GetPatchTestVersion());
+            }
+            if (exists(FM::GameDirPath(L"plugins\\CustomTranslation.asi"))) {
+                ::Error("This plugin is not compatible with CustomTranslation plugin. Please delete CustomTranslation plugin.");
+            }
             Settings::GetInstance().Load();
             SafeLog::Clear();
             SafeLog::Write(Utils::Format(L"Log started on %s", Utils::CurrentTime()));

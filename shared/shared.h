@@ -7,6 +7,7 @@ String& GameLanguage();
 String GetAppName();
 String GetPatchName();
 String GetPatchVersion();
+WideChar const *GetPatchTestVersion();
 String GetFullAppName(Bool upperCase = false);
 String GetPatchNameWithVersion(Bool upperCase = false);
 Int GetPatchUpdateNumber();

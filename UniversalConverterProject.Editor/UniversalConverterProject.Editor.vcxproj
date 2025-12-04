@@ -101,6 +101,7 @@
   <ItemGroup>
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
+    <ClCompile Include="..\shared\CustomTranslation.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
     <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\Resolutions.cpp" />
@@ -137,6 +138,7 @@
   <ItemGroup>
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
+    <ClInclude Include="..\shared\CustomTranslation.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
     <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\Resolutions.h" />

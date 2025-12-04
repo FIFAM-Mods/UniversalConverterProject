@@ -17,7 +17,7 @@ String GetAppName() {
 }
 
 String GetPatchName() {
-    return L"2025";
+    return L"2026";
 }
 
 Int GetPatchUpdateNumber() {
@@ -33,7 +33,7 @@ Int GetPatchVersionNumber() {
 }
 
 WideChar const *GetPatchTestVersion() {
-    return nullptr;
+    return L"Test 02122025";
 }
 
 String GetPatchVersion() {
