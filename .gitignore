@@ -4,5 +4,6 @@ obj
 Release
 Debug
 output
+build
 *.lib
 *.pdb

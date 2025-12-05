@@ -1,15 +1,32 @@
 #include "Country207.h"
+#include "FifamTypes.h"
+#include "Utils.h"
 
 using namespace plugin;
 
-void *METHOD OnGetCountryFor5YearTable(void *world, DUMMY_ARG, int countryId) {
-    if (countryId == 207)
-        return 0;
-    return CallMethodAndReturn<void *, 0x4C9DC0>(world, countryId);
+int METHOD GetNumberOfLinesInAssessmentSav(void *) {
+    return 208;
 }
 
-int METHOD OnGetNumberOfLinesInAssessmentSav(void *) {
-    return 207;
+UInt AssessmentCountryIDs[208] = {};
+
+void METHOD SortAssessmentCountryIDs(void *sorter) {
+    Vector<UInt> europeanCountries;
+    for (UInt countryId = 1; countryId <= 207; countryId++) {
+        void *world = CallAndReturn<void *, 0x4D3EC0>();
+        void *country = CallMethodAndReturn<void *, 0x4C9DC0>(world, countryId);
+        if (country) {
+            UInt continent = CallMethodAndReturn<UInt, 0x4DE660>(country);
+            if (continent == 0)
+                europeanCountries.push_back(countryId);
+        }
+    }
+    Utils::Sort(europeanCountries, [sorter](UInt country1, UInt country2) {
+        return CallMethodAndReturn<Int, 0x415690>(sorter, 8, country1, country2) > 0;
+    });
+    memset(AssessmentCountryIDs, 0, sizeof(AssessmentCountryIDs));
+    for (UInt i = 0; i < europeanCountries.size(); i++)
+        AssessmentCountryIDs[europeanCountries[i]] = i;
 }
 
 void PatchCountry207(FM::Version v) {
@@ -19,8 +36,9 @@ void PatchCountry207(FM::Version v) {
 
         patch::SetUInt(0x413ED2 + 2, 208);
 
-        //patch::SetUInt(0x416819 + 2, 207);
-        //patch::SetUInt(0x416939 + 2, 208);
+        patch::SetUInt(0x416819 + 2, 207); // assessment
+        patch::SetUInt(0x416939 + 2, 208); // assessment
+        //patch::SetUInt(0x4153F4 + 1, 207); // country sorter
 
         patch::SetUInt(0x421445 + 1, 208);
 
@@ -106,8 +124,6 @@ void PatchCountry207(FM::Version v) {
 
         // 4F5B8E not sure
 
-        //patch::SetUInt(0x4153F4 + 1, 207); // country sorter
-        //patch::SetUInt(0x416819 + 2, 207);
         patch::SetUInt(0x5524F2 + 4, 207);
         // fix legal issues
         patch::SetUInt(0x556E97 + 1, 207);
@@ -125,8 +141,11 @@ void PatchCountry207(FM::Version v) {
         patch::SetUInt(0x45DCCB + 2, 208);
         patch::SetUInt(0x45DDD6 + 1, 208);
 
-        patch::RedirectCall(0x4167FB, OnGetCountryFor5YearTable);
-        patch::RedirectCall(0x4CA3C5, OnGetNumberOfLinesInAssessmentSav);
+        //patch::RedirectCall(0x4167FB, OnGetCountryFor5YearTable);
+        patch::RedirectCall(0x4CA3C5, GetNumberOfLinesInAssessmentSav);
 
+        patch::RedirectCall(0x4167BA, SortAssessmentCountryIDs);
+        patch::SetUShort(0x4167E5, 0x0D8D); // lea ecx,
+        patch::SetPointer(0x4167E5 + 2, &AssessmentCountryIDs[1]); // AssessmentCountryIDs
     }
 }

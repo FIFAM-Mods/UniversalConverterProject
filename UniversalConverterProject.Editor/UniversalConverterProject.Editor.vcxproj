@@ -94,9 +94,15 @@
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>if exist "$(ProjectDir)build\post.py" (
+    python "$(ProjectDir)build\post.py"
+)</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist "$(ProjectDir)build\pre.py" (
+    python "$(ProjectDir)build\pre.py"
+)</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\AssetLoader.cpp" />
