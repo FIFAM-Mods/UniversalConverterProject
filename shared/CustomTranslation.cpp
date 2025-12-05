@@ -28,6 +28,25 @@ TranslationTable &GetTranslationTable(TranslationTableType type) {
     return tables[type];
 }
 
+Bool IsCJKUnifiedIdeograph(WideChar c) {
+    return (c >= 0x4E00 && c <= 0x9FFF);
+}
+
+String AddSpacesBetweenCJK(String const &src) {
+    String out;
+    out.reserve(src.size() + 16);
+    UInt n = src.size();
+    for (UInt i = 0; i < n; ++i) {
+        WideChar c = src[i];
+        out.push_back(c);
+        if (i + 1 < n && IsCJKUnifiedIdeograph(c) && IsCJKUnifiedIdeograph(src[i + 1])) {
+            if (src[i + 1] != L' ')
+                out.push_back(L' ');
+        }
+    }
+    return out;
+}
+
 void LoadTranslationFromFile(Path const &fileName, String const &langName, TranslationTable &out, Function<void(Path const &)> callback) {
     TextFileTable file;
     if (!file.ReadUnicodeText(fileName))
@@ -59,16 +78,23 @@ void LoadTranslationFromFile(Path const &fileName, String const &langName, Trans
     }
     if (langColumn == 0 && defaultColumn == 0)
         return; // language is not present in the file
+    Bool addSpacing = false;
     if (langColumn == 0)
         langColumn = defaultColumn;
+    else
+        addSpacing = langName == L"chi";
     for (UInt row = 1; row < file.NumRows(); row++) {
         String const &key = file.Cell(0, row);
         if (!key.empty()) {
             String const &text = file.Cell(langColumn, row);
-            if (!text.empty() || defaultColumn == 0)
-                out[GetTranslationHash(key)] = text;
+            if (!text.empty() || defaultColumn == 0) {
+                if (addSpacing)
+                    out[GetTranslationHash(key)] = AddSpacesBetweenCJK(text);
+                else
+                    out[GetTranslationHash(key)] = text;
+            }
             else if (defaultColumn != 0 && defaultColumn != langColumn)
-                out[GetTranslationHash(key)] = file.Cell(1, row);
+                out[GetTranslationHash(key)] = file.Cell(defaultColumn, row);
         }
     }
 }
