@@ -97,6 +97,16 @@ public:
             remove(introMusicPath, ec);
     }
 
+    static Char const *GetGameVersion() {
+        static Char gameVersionStr[256] = {};
+        static Bool initialized = false;
+        if (!initialized) {
+            StringA appName = WtoA(GetFullAppName());
+            strcpy(gameVersionStr, appName.c_str());
+        }
+        return gameVersionStr;
+    }
+
     UniversalConverterProject() {
         v = FM::GetAppVersion();
         if (v.id() == ID_FM_13_1030_RLD) {
@@ -115,7 +125,7 @@ public:
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
-            const UInt SaveGameVersion = 47;
+            const UInt SaveGameVersion = 48; // 48 - FM 2026 1.0 savefile
             patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
             patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
 
@@ -129,6 +139,8 @@ public:
 
             patch::RedirectCall(0x4523DD, OnExitGameSaveGameOptions<false>);
             patch::RedirectCall(0x4515E0, OnExitGameSaveGameOptions<true>);
+
+            patch::RedirectJump(0x452F20, GetGameVersion);
 
             path documentsPath = GetDocumentsPath();
             if (!documentsPath.empty()) {

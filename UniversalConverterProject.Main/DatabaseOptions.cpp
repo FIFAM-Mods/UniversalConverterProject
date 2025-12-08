@@ -91,7 +91,17 @@ struct DatabaseInfo {
     StringA parentDatabaseId;
     Bool isWomenDatabase = false;
     Bool hasEditorDatabase = false;
+    Bool isEditorDatabase = false;
     Int index = -1;
+
+    void Clear() {
+        id.clear();
+        parentDatabaseId.clear();
+        isWomenDatabase = false;
+        hasEditorDatabase = false;
+        isEditorDatabase = false;
+        index = -1;
+    }
 };
 
 Map<StringA, DatabaseInfo> &Databases() {
@@ -108,6 +118,11 @@ DatabaseInfo *GetDatabaseInfo(StringA const &id) {
 Vector<DatabaseInfo> &DatabasesVec() {
     static Vector<DatabaseInfo> dbsVec;
     return dbsVec;
+}
+
+DatabaseInfo &CurrentDatabase() {
+    static DatabaseInfo info;
+    return info;
 }
 
 void ReadDatabaseIDs() {
@@ -317,6 +332,7 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
     }
     else if (option < 0)
         option = 0;
+    CurrentDatabase().Clear();
     if (option == 0) {
         if (editorDb)
             CallMethod<0x10F48C0>(t, GetUserDbPath(String()));
@@ -325,9 +341,12 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
         LoadDatabaseCustomTranslation({ L"default" }, GameLanguage(), false, [](Path const &filename) {
             SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
         });
+        CurrentDatabase().isEditorDatabase = false;
     }
     else {
         UInt databaseIndex = option - 1;
+        CurrentDatabase() = DatabasesVec()[databaseIndex];
+        CurrentDatabase().isEditorDatabase = true;
         String dbId = AtoW(DatabasesVec()[databaseIndex].id);
         if (editorDb) {
             String dbPath = GetUserDbPath(dbId);
@@ -349,6 +368,103 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
     //::Warning(L"Loading %s", raw_ptr<wchar_t>(t, 0x30));
 }
 
+WideChar KLFilePathBuffer[2048];
+
+Bool SetKLFilePath(WideChar const *filepath) {
+    wcscpy(KLFilePathBuffer, filepath);
+    auto &db = CurrentDatabase();
+    String modifiedPath;
+    if (!db.id.empty()) {
+        String p = filepath;
+        for (auto &c : p) {
+            if (c == L'/')
+                c = L'\\';
+        }
+        String l = ToLower(p);
+        static String targets[] = { L"script\\", L"parameterfiles\\", L"historic\\", L"configfiles\\", L"towndata\\" };
+        for (auto t : targets) {
+            UInt insertPos = 0;
+            if (StartsWith(l, t))
+                insertPos = t.size();
+            else {
+                auto pos = l.find(L"\\" + t);
+                if (pos != String::npos)
+                    insertPos = pos + t.size() + 1;
+            }
+            if (insertPos != 0) {
+                String withId = p;
+                withId.insert(insertPos, AtoW(db.id) + L"\\");
+                if (exists(withId)) {
+                    wcscpy(KLFilePathBuffer, withId.c_str());
+                    break;
+                }
+                else {
+                    if (!db.parentDatabaseId.empty()) {
+                        String withParent = p;
+                        withParent.insert(insertPos, AtoW(db.parentDatabaseId) + L"\\");
+                        if (exists(withParent)) {
+                            wcscpy(KLFilePathBuffer, withParent.c_str());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return CallAndReturn<Bool, 0x1494558>(KLFilePathBuffer, L".enc");
+}
+
+void __declspec(naked) OnLoadKLFile() {
+    __asm {
+        push [ebp+8]
+        lea ecx, KLFilePathBuffer
+        mov [ebp+8], ecx
+        call SetKLFilePath
+        pop ecx
+        mov ecx, 0x14B2C90
+        jmp ecx
+    }
+}
+
+void METHOD OnLoadDBLoadInfo(void *loadInfo) {
+    CurrentDatabase().Clear();
+    void *save = *(void **)0x3179DD8;
+    if (SaveGameLoadGetVersion(save) >= 48) {
+        auto &db = CurrentDatabase();
+        WideChar bufId[256];
+        bufId[0] = L'\0';
+        SaveGameReadString(save, bufId, std::size(bufId));
+        db.id = WtoA(bufId);
+        bufId[0] = L'\0';
+        SaveGameReadString(save, bufId, std::size(bufId));
+        db.parentDatabaseId = WtoA(bufId);
+        db.isWomenDatabase = SaveGameReadInt32(save);
+        db.hasEditorDatabase = SaveGameReadInt32(save);
+        db.isEditorDatabase = SaveGameReadInt32(save);
+        db.index = (Int)SaveGameReadInt32(save);
+    }
+    Vector<String> dbNames;
+    if (!CurrentDatabase().parentDatabaseId.empty())
+        dbNames.push_back(Utils::AtoW(CurrentDatabase().parentDatabaseId));
+    dbNames.push_back(CurrentDatabase().id.empty() ? L"default" : Utils::AtoW(CurrentDatabase().id));
+    LoadDatabaseCustomTranslation(dbNames, GameLanguage(), false, [](Path const &filename) {
+        SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
+    });
+    CallMethod<0x14F29AB>(loadInfo);
+}
+
+void METHOD OnSaveDBLoadInfo(void *loadInfo) {
+    void *save = *(void **)0x3179DD4;
+    auto const &db = CurrentDatabase();
+    SaveGameWriteString(save, Utils::AtoW(db.id).c_str());
+    SaveGameWriteString(save, Utils::AtoW(db.parentDatabaseId).c_str());
+    SaveGameWriteInt32(save, db.isWomenDatabase);
+    SaveGameWriteInt32(save, db.hasEditorDatabase);
+    SaveGameWriteInt32(save, db.isEditorDatabase);
+    SaveGameWriteInt32(save, (UInt)db.index);
+    CallMethod<0x14F291E>(loadInfo);
+}
+
 void PatchDatabaseOptions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadDatabaseIDs();
@@ -363,5 +479,12 @@ void PatchDatabaseOptions(FM::Version v) {
         patch::RedirectCall(0x524CAF, OnCreateCheckBoxPrediction);
         patch::RedirectCall(0x52486C, OnDatabaseLoaderSetDatabasePath);
         patch::SetUChar(0x524869, 0x57); // push eax => push edi
+
+        // dynamic folder path for text file loader
+        patch::RedirectJump(0x14B2C81, OnLoadKLFile);
+
+        // save & load db info
+        patch::RedirectCall(0x108303C, OnSaveDBLoadInfo);
+        patch::RedirectCall(0x1080DFC, OnLoadDBLoadInfo);
     }
 }

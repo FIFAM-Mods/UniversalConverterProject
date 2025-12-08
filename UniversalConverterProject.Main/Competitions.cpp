@@ -3257,13 +3257,6 @@ WideChar *ReadCompetitionName(void *file, WideChar *out) {
     return result;
 }
 
-void METHOD OnSetupAssessmentEntry(CAssessmentTable *table, DUMMY_ARG, UChar countryIndex, UShort y1, UShort y2, UShort y3, UShort y4, UShort y5, UShort y6) {
-    if (countryIndex == 207) // Kosovo
-        CallMethod<0x121D410>(table, countryIndex, 250, 150, 183, 233, 287, 300); // done for 2024/2025
-    else
-        CallMethod<0x121D410>(table, countryIndex, y1, y2, y3, y4, y5, y6);
-}
-
 CDBCompetition *gCurrentScriptComp = nullptr;
 
 void METHOD OnScriptProcess(CDBCompetition *comp) {
@@ -5519,7 +5512,6 @@ void PatchCompetitions(FM::Version v) {
         patch::SetUChar(0x88F814 + 1, 8); // max teams
         patch::RedirectCall(0x88FA6F, EuropeanCompsParticipantsInitColumns);
 
-        patch::RedirectCall(0xFF203B, OnSetupAssessmentEntry);
         patch::RedirectCall(0x139D4A2, GetCountryAtAssessmentPositionLastYear<0>); // GET_EUROPEAN_ASSESSMENT_CUPWINNER
         patch::RedirectCall(0x139E438, GetCountryAtAssessmentPositionLastYear<0>); // FILL_ASSESSMENT_RESERVES
         patch::RedirectCall(0x139DA74, GetCountryAtAssessmentPositionLastYear<0>); // GET_EUROPEAN_ASSESSMENT_TEAMS
