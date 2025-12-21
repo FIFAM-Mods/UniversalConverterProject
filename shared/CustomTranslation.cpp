@@ -87,8 +87,10 @@ void LoadTranslationFromFile(Path const &fileName, String const &langName, Trans
         String const &key = file.Cell(0, row);
         if (!key.empty()) {
             String const &text = file.Cell(langColumn, row);
-            if (!text.empty() || defaultColumn == 0) {
-                if (addSpacing)
+            if (!text.empty()) {
+                if (text.size() == 1 && text[0] == L' ')
+                    out[GetTranslationHash(key)] = L"";
+                else if (addSpacing)
                     out[GetTranslationHash(key)] = AddSpacesBetweenCJK(text);
                 else
                     out[GetTranslationHash(key)] = text;

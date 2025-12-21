@@ -213,11 +213,10 @@ void *METHOD OnCreateWinterTransfersCheckbox(void *screen, DUMMY_ARG, char const
             enableEditorDatabase = DatabasesVec()[i].hasEditorDatabase;
         }
     }
-    enableEditorDatabase = enableEditorDatabase && Settings::GetInstance().UseEditorDatabase;
-    editorDatabaseCheckbox->SetIsChecked(enableEditorDatabase);
-    if (!enableEditorDatabase)
-        editorDatabaseCheckbox->SetEnabled(false);
-    Settings::GetInstance().UseEditorDatabase = enableEditorDatabase;
+    editorDatabaseCheckbox->SetEnabled(enableEditorDatabase);
+    Bool editorDatabaseChecked = enableEditorDatabase && Settings::GetInstance().UseEditorDatabase;
+    editorDatabaseCheckbox->SetIsChecked(editorDatabaseChecked);
+    Settings::GetInstance().UseEditorDatabase = editorDatabaseChecked;
     databaseComboBox->SetCurrentIndex(DatabaseOption);
     SetDatabaseImage(databasePicture, DatabaseOption);
     SetDatabaseText(databaseInfo, DatabaseOption);

@@ -18,6 +18,8 @@ UChar METHOD OnSetupPlayer3D(void *player3d, DUMMY_ARG, UInt playerId, CTeamInde
     return result;
 }
 
+UChar METHOD RetGender0(void *) { return 0; }
+
 void PatchPlayerAppearance(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
 
@@ -211,6 +213,16 @@ void PatchPlayerAppearance(FM::Version v) {
 
         // FIFA head IDs
         patch::SetUInt(0x3062748, 500'000);
+
+        // 3D appearance for female managers
+        //patch::RedirectCall(0x53CE37, RetGender0);
+        //patch::RedirectCall(0x53D4AC, RetGender0);
+
+        // male manager limits
+        static UInt NumMaleFaces = 338;
+        patch::SetPointer(0x5372D1 + 2, &NumMaleFaces);
+        static UInt NumMaleSkinTypes = 3;
+        patch::SetPointer(0x53731E + 1, &NumMaleSkinTypes);
     }
 }
 

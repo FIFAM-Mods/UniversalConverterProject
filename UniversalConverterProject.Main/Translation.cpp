@@ -277,7 +277,7 @@ void METHOD OnSetDefaultUnits(CDBGameOptions *t, DUMMY_ARG, UInt flag, Bool set)
 
 Bool METHOD OnLoadTranslationsFile(void *t, DUMMY_ARG, WideChar const *filePath) {
     String translationFilePath = GetLocaleFilename();
-    ::Message(L"Loading translation from " + translationFilePath);
+    //::Message(L"Loading translation from " + translationFilePath);
     Bool result = CallMethodAndReturn<Bool, 0x14A9811>(t, translationFilePath.c_str());
     LoadCustomTranslation(GameLanguage(), false, [](Path const &filename) {
         SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
@@ -363,5 +363,7 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x14A9AF8, GetGameTextByHashKey);
         patch::RedirectCall(0x14A9B9B, GetGameTextByHashKey);
         patch::RedirectCall(0x14A9BB8, GetGameTextByHashKey);
+
+        patch::SetPointer(0x7B979B + 1, L"fmdata\\Credits.txt");
     }
 }

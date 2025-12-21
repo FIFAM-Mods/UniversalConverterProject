@@ -21,7 +21,7 @@ String GetPatchName() {
 }
 
 Int GetPatchUpdateNumber() {
-    return 2;
+    return 0;
 }
 
 Int GetPatchHotfixNumber() {
@@ -33,7 +33,7 @@ Int GetPatchVersionNumber() {
 }
 
 WideChar const *GetPatchTestVersion() {
-    return L"Test 05122025";
+    return L"Test 21122025";
 }
 
 String GetPatchVersion() {
