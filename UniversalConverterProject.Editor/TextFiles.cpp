@@ -20,7 +20,7 @@ void PatchTextFiles(FM::Version v) {
         CopyStrMemEditor(0x67E988, L"ParameterFiles\\Club Positions.txt");
         CopyStrMemEditor(0x683508, L"ParameterFiles\\Training Camp New.txt");
         // config files
-        CopyStrMemEditor(0x64F3D8, L"ConfigFiles\\Face Mapping.txt");
-        CopyStrMemEditor(0x681D20, L"ConfigFiles\\Face Mapping.txt");
+        CopyStrMemEditor(0x64F3D8, L"fmdata\\ConfigFiles\\Face Mapping.cfg");
+        CopyStrMemEditor(0x681D20, L"fmdata\\ConfigFiles\\Face Mapping.cfg");
     }
 }

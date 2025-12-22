@@ -3,6 +3,7 @@
 #include "Editor.h"
 #include "CustomTranslation.h"
 #include "Translation.h"
+#include "shared.h"
 #include <Windows.h>
 
 using namespace plugin;
@@ -147,6 +148,12 @@ int METHOD EULACloseApp(void *) {
     return 0;
 }
 
+String GetDatabaseTitle(StringA const &id) {
+    StringA titleKey = Format("DATABASE_TITLE_%s", id.c_str());
+    WideChar const *titleStr = GetText(titleKey.c_str());
+    return titleStr ? titleStr : AtoW(titleKey);
+}
+
 INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (uMsg == WM_INITDIALOG) {
         int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -165,9 +172,7 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         SendMessageW(cbDatabase, CB_RESETCONTENT, 0, 0);
         SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)GetText("DATABASE_TITLE"));
         for (auto const &d : DatabasesVec()) {
-            StringA titleKey = Format("DATABASE_TITLE_%s", d.id.c_str());
-            WideChar const *titleStr = GetText(titleKey.c_str());
-            String title = titleStr ? titleStr : AtoW(titleKey);
+            String title = GetDatabaseTitle(d.id);
             SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)title.c_str());
         }
         SendMessageW(cbDatabase, 334, 0, 0);
@@ -220,16 +225,31 @@ void SetKLFilePath(WideChar const *filepath) {
 
 void __declspec(naked) OnLoadKLFile() {
     __asm {
+        pushad
         lea ebx, KLFilePathBuffer
         mov [esp + 0x38], ebx
         push ebx
         call SetKLFilePath
         add esp, 4
+        popad
         mov edi, [esp + 0x38]
         xor ebx, ebx
         mov ecx, 0x5140F8
         jmp ecx
     }
+}
+
+WideChar const *METHOD GetEditorWindowNamePrefixWithDatabase(void *locale, DUMMY_ARG, Char const *textKey, Int langId) {
+    static WideChar const *sep = L" - ";
+    WideChar const *appPrefix = GetText(textKey);
+    String appName = appPrefix ? appPrefix : (GetAppName() + L' ' + GetPatchName());
+    if (!EndsWith(appName, sep))
+        appName += sep;
+    appName += GetDatabaseTitle(CurrentDatabase().id);
+    appName += sep;
+    static WideChar namePrefix[1024];
+    wcscpy(namePrefix, appName.c_str());
+    return namePrefix;
 }
 
 void PatchDatabaseOptions(FM::Version v) {
@@ -240,5 +260,7 @@ void PatchDatabaseOptions(FM::Version v) {
         patch::RedirectCall(0x4C1307, CreateDatabaseOptionsDialog);
         // dynamic folder path for text file loader
         patch::RedirectJump(0x5140F2, OnLoadKLFile);
+        // window name
+        patch::RedirectCall(0x41419D, GetEditorWindowNamePrefixWithDatabase);
     }
 }

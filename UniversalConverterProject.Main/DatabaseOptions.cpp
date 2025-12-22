@@ -5,7 +5,6 @@
 #include "Random.h"
 #include "Translation.h"
 #include "CustomTranslation.h"
-#include "DatabaseShared.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -365,6 +364,45 @@ Int METHOD OnLoadDatabaseTownDataUniques(void *file, DUMMY_ARG, WideChar const *
     return CallMethodAndReturn<Int, 0x14B2C35>(file, filename);
 }
 
+void __declspec(naked) OnResolveGraphicsFilePath() {
+    __asm {
+        mov eax, [esp + 0xFF8]
+        cmp eax, 0 // badge
+        je badge_case
+        cmp eax, 4 // trophy
+        je trophy_case
+        cmp eax, 18 // xml screen
+        jne done
+//  xml_screen_case:
+        mov ecx, [esp + 0x1000] // ID
+        mov edx, 0x1000
+        jmp check_id
+    badge_case:
+        mov edx, [esp + 0x1000]   // badge subtype
+        test edx, edx
+        jz done // club badge
+        mov ecx, [esp + 0xFFC] // ID
+        mov edx, 0xFFC
+        jmp check_id
+    trophy_case:
+        mov ecx, [esp + 0xFFC] // ID
+        mov edx, 0xFFC
+    check_id:
+        cmp ecx, 0x10000 // ID >= 0x10000
+        jb done
+        call IsWomenDatabase
+        test eax, eax
+        jz done
+        mov ecx, [esp + edx]
+        or ecx, 0x800000 // ID |= 0x800000
+        mov [esp + edx], ecx
+    done:
+        mov eax, [esp + 0xFF8]
+        mov ecx, 0x4DC5FD
+        jmp ecx
+    }
+}
+
 void PatchDatabaseOptions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadDatabaseIDs(false);
@@ -389,5 +427,8 @@ void PatchDatabaseOptions(FM::Version v) {
 
         // TownDataUniques
         patch::RedirectCall(0x12F01E2, OnLoadDatabaseTownDataUniques);
+
+        // special league IDs for women's database
+        patch::RedirectJump(0x4DC5F6, OnResolveGraphicsFilePath);
     }
 }

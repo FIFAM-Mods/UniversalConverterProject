@@ -20,3 +20,4 @@ DatabaseInfo &CurrentDatabase();
 void ReadDatabaseIDs(Bool onlyEditorDatabases = false);
 String GetDatabaseFolder(unsigned int databaseIndex);
 void SetKLFilePath_Shared(WideChar *out, WideChar const *in);
+Bool IsWomenDatabase();

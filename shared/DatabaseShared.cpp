@@ -14,6 +14,10 @@ void DatabaseInfo::Clear() {
     index = -1;
 }
 
+Bool IsWomenDatabase() {
+    return CurrentDatabase().isWomenDatabase;
+}
+
 Map<StringA, DatabaseInfo> &Databases() {
     static Map<StringA, DatabaseInfo> dbsMap;
     return dbsMap;

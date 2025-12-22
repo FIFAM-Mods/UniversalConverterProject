@@ -14,7 +14,6 @@ Int GetPatchUpdateNumber();
 Int GetPatchHotfixNumber();
 Int GetPatchVersionNumber();
 String GetFMDocumentsFolderName();
-Bool &IsWomensDatabase();
 Bool &IsFirstLaunch();
 path GetDocumentsPath();
 void SaveTestFile();

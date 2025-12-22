@@ -50,7 +50,6 @@
     <ClCompile Include="TheClubScreenExtended.cpp" />
     <ClCompile Include="ExtendedPlayer.cpp" />
     <ClCompile Include="PlayerNameEdit.cpp" />
-    <ClCompile Include="WomensDatabase.cpp" />
     <ClCompile Include="3dModels.cpp" />
     <ClCompile Include="InterfaceTheme.cpp" />
     <ClCompile Include="DatabaseOptions.cpp" />
@@ -151,7 +150,6 @@
     <ClInclude Include="TheClubScreenExtended.h" />
     <ClInclude Include="ExtendedPlayer.h" />
     <ClInclude Include="PlayerNameEdit.h" />
-    <ClInclude Include="WomensDatabase.h" />
     <ClInclude Include="3dModels.h" />
     <ClInclude Include="InterfaceTheme.h" />
     <ClInclude Include="DatabaseOptions.h" />

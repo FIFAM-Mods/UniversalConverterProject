@@ -225,7 +225,7 @@ void METHOD MainMenu_TimerEvent(void *t, DUMMY_ARG, Int u, void **data) {
                 SetVisible(ext->pImgUpdatesCircle, false);
                 SetEnabled(ext->pTbUpdatesFMZ, false);
                 SetEnabled(ext->pTbUpdatesModDB, false);
-                ext->updateNumber = GetLastUpdateNumber("fm25");
+                ext->updateNumber = GetLastUpdateNumber("fm26");
                 if (ext->updateNumber == -1)
                     SetVisible(ext->pTbUpdatesUnknown, true);
                 else if (ext->updateNumber > GetPatchVersionNumber()) {

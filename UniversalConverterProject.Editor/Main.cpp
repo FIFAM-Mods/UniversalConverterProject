@@ -39,7 +39,6 @@ public:
                 ::Error("This plugin is not compatible with CustomTranslation plugin. Please delete CustomTranslation plugin.");
             }
             Settings::GetInstance().Load();
-            IsWomensDatabase() = patch::GetUShort(0x66E7A8) == L'W';
             GenerateBigIdx();
             patch::SetUInt(0x5504D5 + 3, 0x20130010); // TODO: binary database version
             // set version (0x2013)

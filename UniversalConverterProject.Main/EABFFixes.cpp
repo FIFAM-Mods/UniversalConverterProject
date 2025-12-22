@@ -1981,7 +1981,7 @@ void PatchEABFFixes(FM::Version v) {
         CopyStrMem(0x24AF7F0, L"fmdata\\ParameterFiles\\UnlockablesWM.txt");
         CopyStrMem(0x24AC620, L"fmdata\\ParameterFiles\\YouthTransfer.txt");
 
-        // congif files
+        // config files
         CopyStrMem(0x23A8728, L"fmdata\\ConfigFiles\\3D Match AdBoards.cfg");
         CopyStrMem(0x2414C80, L"fmdata\\ConfigFiles\\Weekly Progress Banners.cfg");
         CopyStrMem(0x2414E88, L"fmdata\\ConfigFiles\\TicketStyler.cfg");

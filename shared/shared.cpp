@@ -86,11 +86,6 @@ String GetIniOption(String const &group, String const &key, String const &defaul
     return Utils::ToLower(buf);
 }
 
-Bool& IsWomensDatabase() {
-    static Bool isWomensDatabase = false;
-    return isWomensDatabase;
-}
-
 Bool &IsFirstLaunch() {
     static Bool isFirstLaunch = true;
     return isFirstLaunch;

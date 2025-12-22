@@ -49,7 +49,6 @@
 #include "ExtendedPlayer.h"
 #include "ExtendedTeam.h"
 #include "PlayerNameEdit.h"
-#include "WomensDatabase.h"
 #include "InterfaceTheme.h"
 #include "DatabaseOptions.h"
 #include "CustomShaders.h"
@@ -155,7 +154,6 @@ public:
             }
             PatchInterfaceTheme(v);
             PatchDatabaseOptions(v);
-            PatchWomensDatabase(v);
             PatchWorldCup(v);
             PatchLeagueSelection(v);
             PatchMasterDatLimit(v);

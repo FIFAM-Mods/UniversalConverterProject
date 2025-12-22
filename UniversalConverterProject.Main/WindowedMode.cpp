@@ -6,12 +6,12 @@
 #include "shared.h"
 #include "GameInterfaces.h"
 #include "GfxCoreHook.h"
-#include "license_check/license_check.h"
 #include <stack>
 #include "Magick++.h"
 #include "UcpSettings.h"
 #include "MainMenu.h"
 #include "DebugPrint.h"
+#include "DatabaseOptions.h"
 #include <dwmapi.h>
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -1092,6 +1092,8 @@ Int __stdcall MyWndProc(HWND hWnd, UINT uCmd, WPARAM wParam, LPARAM lParam) {
                         else if (entityType == FmEntityType::League) {
                             UInt leagueId = *raw_ptr<UInt>(screen, 0x48C);
                             if (leagueId != 0) {
+                                if (IsWomenDatabase())
+                                    leagueId |= 0x800000;
                                 if (InstallBadge(documentsGraphicsPath, L"Badges\\Leagues", Utils::Format(L"%08X.tga", leagueId), fileName)) {
                                     ClearPathCache();
                                     Path leagueLogoPath = documentsGraphicsPath / L"Badges\\Leagues\\256x256";

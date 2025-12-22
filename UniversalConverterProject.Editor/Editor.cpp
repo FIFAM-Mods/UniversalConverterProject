@@ -1146,11 +1146,8 @@ void PatchEditor(FM::Version v) {
 
         patch::RedirectCall(0x4DFB00, OnCreateCountryRoot);
 
-        // disabele database update request
+        // disable database update request
         patch::SetUChar(0x4C1471, 0xEB);
-
-        // Editor name
-        patch::SetPointer(0x414196 + 1, IsWomensDatabase() ? "Dialog.DialogC.PopupPrefix_womens" : "Dialog.DialogC.PopupPrefix");
 
         /*
         patch::SetUChar(0x4FB120, 0xC3);
