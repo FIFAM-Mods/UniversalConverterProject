@@ -1987,7 +1987,7 @@ void PatchEABFFixes(FM::Version v) {
         CopyStrMem(0x2414E88, L"fmdata\\ConfigFiles\\TicketStyler.cfg");
         CopyStrMem(0x24375D0, L"fmdata\\ConfigFiles\\BadgeEditor.cfg");
         CopyStrMem(0x24660D8, L"fmdata\\ConfigFiles\\Scene Recognizer.cfg");
-        CopyStrMem(0x2468508, L"fmdata\\ConfigFiles\\3D Match Overlays.cfg"); // TODO
+        CopyStrMem(0x2468508, L"fmdata\\ConfigFiles\\3D Match Overlays.cfg");
         CopyStrMem(0x2478668, L"fmdata\\ConfigFiles\\Match Time Clock.cfg");
         CopyStrMem(0x2483800, L"fmdata\\ConfigFiles\\Face Mapping.cfg");
         CopyStrMem(0x2483940, L"fmdata\\ConfigFiles\\Face Mapping - Duplicates.cfg");
@@ -1997,6 +1997,9 @@ void PatchEABFFixes(FM::Version v) {
         CopyStrMem(0x24AEC78, L"fmdata\\ConfigFiles\\SquadWM.cfg");
         CopyStrMem(0x24B03A8, L"fmdata\\ConfigFiles\\Website.cfg");
         CopyStrMem(0x24DE050, L"fmdata\\ConfigFiles\\Lineup Assistant.cfg");
+
+        // towndata
+        patch::SetPointer(0x12F0517 + 1, L"fmdata/TownData/towndata%d.txt");
 
         // all-time league history fix
         patch::RedirectCall(0x6E8F2B, OnGetTeamLeagueTotalLeadershipsInTable);
