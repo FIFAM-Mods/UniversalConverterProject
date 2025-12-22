@@ -464,6 +464,17 @@ void METHOD OnSaveDBLoadInfo(void *loadInfo) {
     CallMethod<0x14F291E>(loadInfo);
 }
 
+Int METHOD OnLoadDatabaseTownDataUniques(void *file, DUMMY_ARG, WideChar const *filename) {
+    if (!CurrentDatabase().id.empty()) {
+        static WideChar buf[1024];
+        wcscpy(buf, L"Database_");
+        wcscat(buf, AtoW(CurrentDatabase().id).c_str());
+        wcscat(buf, L"\\TownDataUniques.txt");
+        filename = buf;
+    }
+    return CallMethodAndReturn<Int, 0x14B2C35>(file, filename);
+}
+
 void PatchDatabaseOptions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         ReadDatabaseIDs();
@@ -485,5 +496,8 @@ void PatchDatabaseOptions(FM::Version v) {
         // save & load db info
         patch::RedirectCall(0x108303C, OnSaveDBLoadInfo);
         patch::RedirectCall(0x1080DFC, OnLoadDBLoadInfo);
+
+        // TownDataUniques
+        patch::RedirectCall(0x12F01E2, OnLoadDatabaseTownDataUniques);
     }
 }
