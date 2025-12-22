@@ -1981,6 +1981,23 @@ void PatchEABFFixes(FM::Version v) {
         CopyStrMem(0x24AF7F0, L"fmdata\\ParameterFiles\\UnlockablesWM.txt");
         CopyStrMem(0x24AC620, L"fmdata\\ParameterFiles\\YouthTransfer.txt");
 
+        // congif files
+        CopyStrMem(0x23A8728, L"fmdata\\ConfigFiles\\3D Match AdBoards.cfg");
+        CopyStrMem(0x2414C80, L"fmdata\\ConfigFiles\\Weekly Progress Banners.cfg");
+        CopyStrMem(0x2414E88, L"fmdata\\ConfigFiles\\TicketStyler.cfg");
+        CopyStrMem(0x24375D0, L"fmdata\\ConfigFiles\\BadgeEditor.cfg");
+        CopyStrMem(0x24660D8, L"fmdata\\ConfigFiles\\Scene Recognizer.cfg");
+        CopyStrMem(0x2468508, L"fmdata\\ConfigFiles\\3D Match Overlays.cfg"); // TODO
+        CopyStrMem(0x2478668, L"fmdata\\ConfigFiles\\Match Time Clock.cfg");
+        CopyStrMem(0x2483800, L"fmdata\\ConfigFiles\\Face Mapping.cfg");
+        CopyStrMem(0x2483940, L"fmdata\\ConfigFiles\\Face Mapping - Duplicates.cfg");
+        CopyStrMem(0x24839B8, L"fmdata\\ConfigFiles\\Face Mapping_new.cfg");
+        CopyStrMem(0x2494098, L"fmdata\\ConfigFiles\\Cup Draws.cfg");
+        CopyStrMem(0x24AA440, L"fmdata\\ConfigFiles\\Generic Badges.cfg");
+        CopyStrMem(0x24AEC78, L"fmdata\\ConfigFiles\\SquadWM.cfg");
+        CopyStrMem(0x24B03A8, L"fmdata\\ConfigFiles\\Website.cfg");
+        CopyStrMem(0x24DE050, L"fmdata\\ConfigFiles\\Lineup Assistant.cfg");
+
         // all-time league history fix
         patch::RedirectCall(0x6E8F2B, OnGetTeamLeagueTotalLeadershipsInTable);
 
