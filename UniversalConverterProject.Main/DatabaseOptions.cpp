@@ -5,6 +5,7 @@
 #include "Random.h"
 #include "Translation.h"
 #include "CustomTranslation.h"
+#include "DatabaseShared.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -84,78 +85,6 @@ void *METHOD OnPlayerGetConract_SalaryCalculation(CDBPlayer *player) {
         }
     }
     return contract;
-}
-
-struct DatabaseInfo {
-    StringA id;
-    StringA parentDatabaseId;
-    Bool isWomenDatabase = false;
-    Bool hasEditorDatabase = false;
-    Bool isEditorDatabase = false;
-    Int index = -1;
-
-    void Clear() {
-        id.clear();
-        parentDatabaseId.clear();
-        isWomenDatabase = false;
-        hasEditorDatabase = false;
-        isEditorDatabase = false;
-        index = -1;
-    }
-};
-
-Map<StringA, DatabaseInfo> &Databases() {
-    static Map<StringA, DatabaseInfo> dbsMap;
-    return dbsMap;
-}
-
-DatabaseInfo *GetDatabaseInfo(StringA const &id) {
-    if (Utils::Contains(Databases(), id))
-        return &Databases()[id];
-    return nullptr;
-}
-
-Vector<DatabaseInfo> &DatabasesVec() {
-    static Vector<DatabaseInfo> dbsVec;
-    return dbsVec;
-}
-
-DatabaseInfo &CurrentDatabase() {
-    static DatabaseInfo info;
-    return info;
-}
-
-void ReadDatabaseIDs() {
-    Databases().clear();
-    DatabasesVec().clear();
-    FifamReader r(FM::GameDirPath(L"plugins\\ucp\\database_options.txt"));
-    if (r.Available()) {
-        r.SkipLine();
-        while (!r.IsEof()) {
-            if (!r.EmptyLine()) {
-                DatabaseInfo d;
-                r.ReadLineWithSeparator(L'\t', d.id, d.isWomenDatabase, d.parentDatabaseId);
-                if (!d.id.empty()) {
-                    Path dbFolder = Path(FM::GetGameDir()) / ("database_" + d.id);
-                    d.hasEditorDatabase = exists(dbFolder) && exists(dbFolder / "Master.dat");
-                    d.index = DatabasesVec().size();
-                    DatabasesVec().push_back(d);
-                    Databases()[d.id] = d;
-                }
-            }
-            else
-                r.SkipLine();
-        }
-    }
-}
-
-String GetDatabaseFolder(unsigned int databaseIndex) {
-    if (databaseIndex > 0) {
-        databaseIndex -= 1;
-        if (databaseIndex < DatabasesVec().size())
-            return L"database_" + AtoW(DatabasesVec()[databaseIndex].id);
-    }
-    return L"database";
 }
 
 void SetDatabaseImage(void *img, unsigned int databaseIndex) {
@@ -370,46 +299,7 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
 WideChar KLFilePathBuffer[2048];
 
 Bool SetKLFilePath(WideChar const *filepath) {
-    wcscpy(KLFilePathBuffer, filepath);
-    auto &db = CurrentDatabase();
-    String modifiedPath;
-    if (!db.id.empty()) {
-        String p = filepath;
-        for (auto &c : p) {
-            if (c == L'/')
-                c = L'\\';
-        }
-        String l = ToLower(p);
-        static String targets[] = { L"script\\", L"parameterfiles\\", L"historic\\", L"configfiles\\", L"towndata\\" };
-        for (auto t : targets) {
-            UInt insertPos = 0;
-            if (StartsWith(l, t))
-                insertPos = t.size();
-            else {
-                auto pos = l.find(L"\\" + t);
-                if (pos != String::npos)
-                    insertPos = pos + t.size() + 1;
-            }
-            if (insertPos != 0) {
-                String withId = p;
-                withId.insert(insertPos, AtoW(db.id) + L"\\");
-                if (exists(withId)) {
-                    wcscpy(KLFilePathBuffer, withId.c_str());
-                    break;
-                }
-                else {
-                    if (!db.parentDatabaseId.empty()) {
-                        String withParent = p;
-                        withParent.insert(insertPos, AtoW(db.parentDatabaseId) + L"\\");
-                        if (exists(withParent)) {
-                            wcscpy(KLFilePathBuffer, withParent.c_str());
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    SetKLFilePath_Shared(KLFilePathBuffer, filepath);
     return CallAndReturn<Bool, 0x1494558>(KLFilePathBuffer, L".enc");
 }
 
@@ -477,7 +367,7 @@ Int METHOD OnLoadDatabaseTownDataUniques(void *file, DUMMY_ARG, WideChar const *
 
 void PatchDatabaseOptions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        ReadDatabaseIDs();
+        ReadDatabaseIDs(false);
         patch::SetUInt(0x47F7A4 + 1, 0xAD0 + 28);
         patch::SetUInt(0x47F7AB + 1, 0xAD0 + 28);
         patch::RedirectCall(0xFD31F6, OnGetPlayerContract_RandomizeTalent);

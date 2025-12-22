@@ -108,6 +108,7 @@
     <ClCompile Include="..\shared\AssetLoader.cpp" />
     <ClCompile Include="..\shared\CompetitionsShared.cpp" />
     <ClCompile Include="..\shared\CustomTranslation.cpp" />
+    <ClCompile Include="..\shared\DatabaseShared.cpp" />
     <ClCompile Include="..\shared\GenerateBigIdx.cpp" />
     <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\Resolutions.cpp" />
@@ -132,7 +133,7 @@
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="LowestLeagues.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="ParameterFiles.cpp" />
+    <ClCompile Include="TextFiles.cpp" />
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="ReserveNames.cpp" />
     <ClCompile Include="Resolutool.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="..\shared\AssetLoader.h" />
     <ClInclude Include="..\shared\CompetitionsShared.h" />
     <ClInclude Include="..\shared\CustomTranslation.h" />
+    <ClInclude Include="..\shared\DatabaseShared.h" />
     <ClInclude Include="..\shared\GenerateBigIdx.h" />
     <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\Resolutions.h" />
@@ -169,7 +171,7 @@
     <ClInclude Include="GenericKits.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="LowestLeagues.h" />
-    <ClInclude Include="ParameterFiles.h" />
+    <ClInclude Include="TextFiles.h" />
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="ReserveNames.h" />
     <ClInclude Include="Resolutool.h" />

@@ -13,7 +13,7 @@
     <ClCompile Include="Competitions.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="Editor.cpp" />
-    <ClCompile Include="ParameterFiles.cpp" />
+    <ClCompile Include="TextFiles.cpp" />
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
@@ -38,6 +38,7 @@
     <ClCompile Include="PlayerAppearance.cpp" />
     <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\CustomTranslation.cpp" />
+    <ClCompile Include="..\shared\DatabaseShared.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -51,7 +52,7 @@
     <ClInclude Include="Competitions.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="Editor.h" />
-    <ClInclude Include="ParameterFiles.h" />
+    <ClInclude Include="TextFiles.h" />
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />
@@ -77,6 +78,7 @@
     <ClInclude Include="PlayerAppearance.h" />
     <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\CustomTranslation.h" />
+    <ClInclude Include="..\shared\DatabaseShared.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

@@ -7,37 +7,11 @@
 
 using namespace plugin;
 
-Map<StringA, DatabaseInfo> &Databases() {
-    static Map<StringA, DatabaseInfo> dbsMap;
-    return dbsMap;
-}
-
-DatabaseInfo *GetDatabaseInfo(StringA const &id) {
-    if (Utils::Contains(Databases(), id))
-        return &Databases()[id];
-    return nullptr;
-}
-
-Vector<DatabaseInfo> &DatabasesVec() {
-    static Vector<DatabaseInfo> dbsVec;
-    return dbsVec;
-}
-
 wchar_t DatabaseID[256];
 wchar_t DatabaseFolderName[256];
 wchar_t DatabaseFolderPath[256];
 wchar_t RestoreBigPath[256];
 wchar_t RestoreBigSubPath[256];
-//wchar_t ScriptFolderName[256];
-//wchar_t ScriptPath[256];
-//wchar_t ScriptLeagueSubPath[256];
-//wchar_t ParameterFolderName[256];
-//wchar_t ParameterStaffGenerationPath[256];
-//wchar_t ParameterPlayerLevelPath[256];
-//wchar_t ParameterPlayerStylesPath[256];
-//wchar_t ParameterClubJobsPath[256];
-//wchar_t ParameterClubPositionsPath[256];
-//wchar_t ParameterTrainingCampNewPath[256];
 wchar_t RestoreFileCountryDataPath[256];
 wchar_t RestoreFileCountryScriptPath[256];
 wchar_t RestoreFileAppearanceDefsPath[256];
@@ -85,38 +59,6 @@ static WideChar const *RestoreFolders[] = {
     nullptr
 };
 
-void ReadDatabaseIDs() {
-    Databases().clear();
-    DatabasesVec().clear();
-    FifamReader r(FM::GameDirPath(L"plugins\\ucp\\database_options.txt"));
-    if (r.Available()) {
-        r.SkipLine();
-        while (!r.IsEof()) {
-            if (!r.EmptyLine()) {
-                DatabaseInfo d;
-                r.ReadLineWithSeparator(L'\t', d.id, d.isWomenDatabase, d.parentDatabaseId);
-                if (!d.id.empty()) {
-                    Path dbFolder = Path(FM::GetGameDir()) / ("database_" + d.id);
-                    if (exists(dbFolder) && exists(dbFolder / "Master.dat")) {
-                        WideChar const *title = GetText(FormatStatic("DATABASE_TITLE_%s", d.id.c_str()));
-                        if (title) {
-                            d.title = title;
-                            WideChar const *description = GetText(FormatStatic("DATABASE_DESCRIPTION_%s", d.id.c_str()));
-                            if (description)
-                                d.description = description;
-                            d.index = DatabasesVec().size();
-                            DatabasesVec().push_back(d);
-                            Databases()[d.id] = d;
-                        }
-                    }
-                }
-            }
-            else
-                r.SkipLine();
-        }
-    }
-}
-
 void SetDatabaseID(String const &id) {
     if (!id.empty())
         wcscpy(DatabaseID, id.c_str());
@@ -149,58 +91,6 @@ void SetDatabaseID(String const &id) {
     patch::SetPointer(0x4BAF55 + 1, RestoreBigPath);
     patch::SetPointer(0x50C7E0 + 1, RestoreBigPath);
     patch::SetPointer(0x4FA94F + 1, RestoreBigSubPath);
-
-    //// script
-    //if (!id.empty()) {
-    //    wcscpy(ScriptFolderName, L"Script_");
-    //    wcscat(ScriptPath, DatabaseID);
-    //}
-    //else
-    //    wcscpy(ScriptFolderName, L"Script");
-    //if (exists(ScriptFolderName) && is_directory(ScriptFolderName)) {
-    //    wcscpy(ScriptPath, L"%s\\");
-    //    wcscat(ScriptPath, ScriptFolderName);
-    //    wcscpy(ScriptLeagueSubPath, ScriptFolderName);
-    //    wcscat(ScriptLeagueSubPath, L"/lg%d.txt");
-    //    wcscpy(RestoreFolderScriptPath, ScriptFolderName);
-    //    patch::SetPointer(0x44911B + 1, ScriptLeagueSubPath);
-    //    patch::SetPointer(0x4E1252 + 1, ScriptLeagueSubPath);
-    //    patch::SetPointer(0x4BE234 + 1, ScriptPath);
-    //}
-    //else
-    //    wcscpy(RestoreFolderScriptPath, L"script");
-    //// parameter files
-    //if (!id.empty()) {
-    //    wcscpy(ParameterFolderName, L"ParameterFiles_");
-    //    wcscat(ParameterFolderName, DatabaseID);
-    //}
-    //else
-    //    wcscpy(ParameterFolderName, L"ParameterFiles");
-    //if (exists(ParameterFolderName) && is_directory(ParameterFolderName)) {
-    //    wcscpy(ParameterStaffGenerationPath, L"%s\\fmdata\\");
-    //    wcscat(ParameterStaffGenerationPath, ParameterFolderName);
-    //    wcscat(ParameterStaffGenerationPath, L"\\Staff Generation.txt");
-    //    wcscpy(ParameterPlayerLevelPath, L"fmdata\\");
-    //    wcscat(ParameterPlayerLevelPath, ParameterFolderName);
-    //    wcscat(ParameterPlayerLevelPath, L"\\Player Level.txt");
-    //    wcscpy(ParameterPlayerStylesPath, L"fmdata\\");
-    //    wcscat(ParameterPlayerStylesPath, ParameterFolderName);
-    //    wcscat(ParameterPlayerStylesPath, L"\\Player Styles.txt");
-    //    wcscpy(ParameterClubJobsPath, ParameterFolderName);
-    //    wcscat(ParameterClubJobsPath, L"\\Club Jobs.txt");
-    //    wcscpy(ParameterClubPositionsPath, ParameterFolderName);
-    //    wcscat(ParameterClubPositionsPath, L"\\Club Positions.txt");
-    //    wcscpy(ParameterTrainingCampNewPath, ParameterFolderName);
-    //    wcscat(ParameterTrainingCampNewPath, L"\\Training Camp New.txt");
-    //    patch::SetPointer(0x4BE4BF + 1, ParameterStaffGenerationPath);
-    //    patch::SetPointer(0x4DB140 + 1, ParameterPlayerLevelPath);
-    //    patch::SetPointer(0x4DB160 + 1, ParameterPlayerLevelPath);
-    //    patch::SetPointer(0x4DB70D + 1, ParameterPlayerStylesPath);
-    //    patch::SetPointer(0x4DB72D + 1, ParameterPlayerStylesPath);
-    //    patch::SetPointer(0x56F38B + 1, ParameterClubJobsPath);
-    //    patch::SetPointer(0x56F68F + 1, ParameterClubPositionsPath);
-    //    patch::SetPointer(0x6D0BA0 + 1, ParameterTrainingCampNewPath);
-    //}
 
     // restore
     wcscpy(RestoreFileCountryDataPath, DatabaseFolderName);
@@ -274,12 +164,17 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         EnableWindow(GetDlgItem(hwndDlg, 1953), false);
         SendMessageW(cbDatabase, CB_RESETCONTENT, 0, 0);
         SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)GetText("DATABASE_TITLE"));
-        for (auto const &d : DatabasesVec())
-            SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)d.title.c_str());
+        for (auto const &d : DatabasesVec()) {
+            StringA titleKey = Format("DATABASE_TITLE_%s", d.id.c_str());
+            WideChar const *titleStr = GetText(titleKey.c_str());
+            String title = titleStr ? titleStr : AtoW(titleKey);
+            SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)title.c_str());
+        }
         SendMessageW(cbDatabase, 334, 0, 0);
         return TRUE;
     }
     else if (uMsg == WM_COMMAND) {
+        CurrentDatabase().Clear();
         unsigned short itemId = LOWORD(wParam);
         unsigned short notifyCode = HIWORD(wParam);
         if (itemId == 1) { // OK
@@ -288,8 +183,10 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 int selectedIndex = SendMessageW(cbDatabase, CB_GETCURSEL, 0, 0);
                 if (selectedIndex > 0) {
                     int vecIndex = selectedIndex - 1;
-                    if (vecIndex < (int)DatabasesVec().size())
+                    if (vecIndex < (int)DatabasesVec().size()) {
                         SetDatabaseID(AtoW(DatabasesVec()[vecIndex].id));
+                        CurrentDatabase() = DatabasesVec()[vecIndex];
+                    }
                 }
                 EndDialog(hwndDlg, 1);
             }
@@ -307,7 +204,7 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 }
 
 void *CreateDatabaseOptionsDialog() {
-    ReadDatabaseIDs();
+    ReadDatabaseIDs(true);
     if (DatabasesVec().size() > 0)
         DialogBoxParamA(NULL, (LPCSTR)30735, NULL, DatabaseOptionsDialog, 0);
     //else
@@ -315,10 +212,33 @@ void *CreateDatabaseOptionsDialog() {
     return CallAndReturn<void *, 0x575200>( );
 }
 
+WideChar KLFilePathBuffer[2048];
+
+void SetKLFilePath(WideChar const *filepath) {
+    SetKLFilePath_Shared(KLFilePathBuffer, filepath);
+}
+
+void __declspec(naked) OnLoadKLFile() {
+    __asm {
+        lea ebx, KLFilePathBuffer
+        mov [esp + 0x38], ebx
+        push ebx
+        call SetKLFilePath
+        add esp, 4
+        mov edi, [esp + 0x38]
+        xor ebx, ebx
+        mov ecx, 0x5140F8
+        jmp ecx
+    }
+}
+
 void PatchDatabaseOptions(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         DatabaseID[0] = L'\0';
         wcscpy(DatabaseFolderName, L"database");
+        CurrentDatabase().Clear();
         patch::RedirectCall(0x4C1307, CreateDatabaseOptionsDialog);
+        // dynamic folder path for text file loader
+        patch::RedirectJump(0x5140F2, OnLoadKLFile);
     }
 }

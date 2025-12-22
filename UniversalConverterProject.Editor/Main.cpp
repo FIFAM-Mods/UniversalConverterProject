@@ -10,7 +10,7 @@
 #include "Competitions.h"
 #include "Formations.h"
 #include "Editor.h"
-#include "ParameterFiles.h"
+#include "TextFiles.h"
 #include "Translation.h"
 #include "RendererHook.h"
 #include "GenerateBigIdx.h"
@@ -67,7 +67,7 @@ public:
             PatchCompetitions(v);
             PatchFormations(v);
             PatchEditor(v);
-            PatchParameterFiles(v);
+            PatchTextFiles(v);
             PatchExtendedPlayer(v);
             //PatchGenericKits(v);
             PatchKits(v);

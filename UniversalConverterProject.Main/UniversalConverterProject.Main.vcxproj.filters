@@ -100,6 +100,7 @@
     <ClCompile Include="Finances.cpp" />
     <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\CustomTranslation.cpp" />
+    <ClCompile Include="..\shared\DatabaseShared.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="Finances.h" />
     <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\CustomTranslation.h" />
+    <ClInclude Include="..\shared\DatabaseShared.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">
