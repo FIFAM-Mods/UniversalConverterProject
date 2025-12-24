@@ -392,7 +392,7 @@ void METHOD MyAddHalfTimeSpeechEffectIcon(void *t, DUMMY_ARG, const WideChar *fi
 
 void * METHOD OnConstructEmployeeOffice(void *office, DUMMY_ARG, CDBEmployee *employee) {
     void *result = CallMethodAndReturn<void *, 0x12F22B0>(office, employee);
-    *raw_ptr<UInt>(office, 4) = 100000;
+    *raw_ptr<UInt>(office, 4) = 100001;
     *raw_ptr<UInt>(office, 12) = 0;
     *raw_ptr<UInt>(office, 16) = 0;
     return result;
@@ -867,6 +867,14 @@ void PatchInterfaceTheme(FM::Version v) {
                 patch::RedirectCall(0xEB4781, OnConstructEmployeeOffice);
                 patch::RedirectCall(0xEB6125, OnConstructEmployeeOffice);
                 patch::RedirectCall(0xEB82A6, OnConstructEmployeeOffice);
+
+                // loading animation frames 8 => 16
+                patch::SetUInt(0x5880DD + 2, 0x8000000F);
+                patch::SetUChar(0x5880E6 + 2, 0xF0);
+                patch::SetUInt(0x7B52E3 + 2, 0x8000000F);
+                patch::SetUChar(0x7B52EC + 2, 0xF0);
+                patch::SetUChar(0x884630 + 6, 16);
+                patch::SetUChar(0xE085E9 + 2, 0xF0);
             }
         }
 
