@@ -4094,18 +4094,18 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             if (compId.index == 0) { // East - top 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> eastTeams = {
-                        0x5F2149, // Atlanta United FC
-                        0x5F3335, // Charlotte Football Club
-                        0x5F221E, // FC Cincinnati
-                        0x5F0002, // Columbus Crew
-                        0x5F214B, // Inter Miami CF
-                        0x5F340C, // Club de Foot Montreal
-                        0x5F000A, // New England Revolution
-                        0x5F1020, // New York City FC
-                        0x5F0006, // New York Red Bulls
-                        0x5F1001, // Orlando City SC
-                        0x5F1003, // Philadelphia Union
-                        0x5F0003, // D.C. United
+                        0x5F0002,
+                        0x5F0006,
+                        0x5F0022,
+                        0x5F1001,
+                        0x5F1003,
+                        0x5F1020,
+                        0x5F2149,
+                        0x5F214B,
+                        0x5F221E,
+                        0x5F3335,
+                        0x5F340C,
+                        0x5F3421
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !Utils::Contains(eastTeams, team->GetTeamUniqueID()))
@@ -4123,18 +4123,18 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             else if (compId.index == 1) { // West - bottom 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> westTeams = {
-                        0x5F0008, // FC Dallas
-                        0x5F0004, // Sporting Kansas City
-                        0x5F214A, // Los Angeles Football Club
-                        0x5F1004, // Minnesota United FC
-                        0x5F0012, // Portland Timbers
-                        0x5F000B, // Real Salt Lake
-                        0x5F0016, // Seattle Sounders FC
-                        0x5F000D, // Vancouver Whitecaps FC
-                        0x5F3421, // St. Louis City SC
-                        0x5F0007, // Houston Dynamo FC
-                        0x5F0024, // San Jose Earthquakes
-                        0x5F2073, // Nashville SC
+                        0x5F0003,
+                        0x5F0005,
+                        0x5F0007,
+                        0x5F0008,
+                        0x5F0009,
+                        0x5F000B,
+                        0x5F000D,
+                        0x5F0012,
+                        0x5F0016,
+                        0x5F1004,
+                        0x5F214A,
+                        0x5F3285
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !Utils::Contains(westTeams, team->GetTeamUniqueID()))
