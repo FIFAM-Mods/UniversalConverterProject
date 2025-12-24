@@ -2325,9 +2325,9 @@ void OnGetSpare(CDBCompetition **ppComp) {
                         countries.push_back(SouthAmerica_ParticipantsCountries[i]);
                     auto teams = comp->GetRegisteredTeams();
                     if (teams.empty()) {
-                        auto flamengo = GetTeamByUniqueID(0x00360003); // UPDATE
-                        if (flamengo)
-                            teams.push_back(flamengo->GetTeamID());
+                        auto u20winner = GetTeamByUniqueID(0x00360003); // UPDATE Flamengo
+                        if (u20winner)
+                            teams.push_back(u20winner->GetTeamID());
                         else
                             teams.push_back(CTeamIndex::make(FifamNation::Brazil, FifamClubTeamType::First, 1));
                     }
@@ -2571,7 +2571,7 @@ void OnGetSpare(CDBCompetition **ppComp) {
         else if (id.countryId == FifamCompRegion::Canada) {
             if (id.type == COMP_FA_CUP && id.index == 0 && comp->GetNumOfTeams() == 14) {
                 Vector<CTeamIndex> canadianClubs;
-                if (GetStartingYear() == GetCurrentYear() && GetCurrentYear() == 2024) { // UPDATE: every season
+                if (GetStartingYear() == GetCurrentYear() && GetCurrentYear() == 2025) { // UPDATE: every season
                     static const UInt CanadianChampionshipByeTeams[] = { 0x5F0022, 0x5F000D }; // Toronto FC, Vancouver Whitecaps FC
                     for (UInt clubUID : CanadianChampionshipByeTeams) {
                         CDBTeam *team = GetTeamByUniqueID(clubUID);
@@ -3505,10 +3505,10 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
         }
         if (region == FifamCompRegion::Europe && rounds[2] && champions[2].isNull()) {
             // UPDATE
-            CDBTeam *olympiacos = GetTeamByUniqueID(0x00160008);
-            if (olympiacos && olympiacos->GetTeamID() != champions[0] && olympiacos->GetTeamID() != champions[1]) {
-                rounds[2]->SetChampion(olympiacos->GetTeamID());
-                champions[2] = olympiacos->GetTeamID();
+            CDBTeam *confWinner = GetTeamByUniqueID(0x000E0009); // Chelsea
+            if (confWinner && confWinner->GetTeamID() != champions[0] && confWinner->GetTeamID() != champions[1]) {
+                rounds[2]->SetChampion(confWinner->GetTeamID());
+                champions[2] = confWinner->GetTeamID();
             }
         }
         Set<UInt> addedChampions;
@@ -4995,20 +4995,14 @@ CDBCompetition *EndOfSeasonSummaryGetFirstCompetition(UChar region, UChar type, 
 }
 
 CDBCompetition *EndOfSeasonSummaryGetSecondCompetition(UChar region, UChar type, UChar roundType) {
-    if (gTransitionScreenRegion == FifamCompRegion::Oceania)
-        return GetFIFAClubCupInThisYear();
     return GetRoundByRoundType(gTransitionScreenRegion, COMP_UEFA_CUP, ROUND_FINAL);
 }
 
 CDBCompetition *EndOfSeasonSummaryGetThirdCompetition(UChar region, UChar type, UShort index) {
     if (gTransitionScreenRegion == FifamCompRegion::SouthAmerica || gTransitionScreenRegion == FifamCompRegion::Africa)
         return GetCompetition(gTransitionScreenRegion, COMP_EURO_SUPERCUP, 0);
-    else if (gTransitionScreenRegion == FifamCompRegion::Oceania) {
-        auto wcc = GetFIFAClubCupInThisYear();
-        if (wcc && wcc->GetCompetitionType() == COMP_WORLD_CLUB_CHAMP)
-            return GetRoundByRoundType(FifamCompRegion::Europe, COMP_TOYOTA, ROUND_FINAL);
-        return nullptr;
-    }
+    else if (gTransitionScreenRegion == FifamCompRegion::Oceania)
+        return GetFIFAClubCupInThisYear();
     return GetRoundByRoundType(region, COMP_CONFERENCE_LEAGUE, ROUND_FINAL);
 }
 
@@ -5022,8 +5016,12 @@ CDBCompetition *EndOfSeasonSummaryGetFourthCompetition(CCompID const &compID) {
         if (leaguesCup)
             return leaguesCup;
     }
-    else if (gTransitionScreenRegion == FifamCompRegion::Oceania)
+    else if (gTransitionScreenRegion == FifamCompRegion::Oceania) {
+        auto wcc = GetFIFAClubCupInThisYear();
+        if (wcc && wcc->GetCompetitionType() == COMP_WORLD_CLUB_CHAMP)
+            return GetRoundByRoundType(FifamCompRegion::Europe, COMP_TOYOTA, ROUND_FINAL);
         return nullptr;
+    }
     return GetFIFAClubCupInThisYear();
 }
 
