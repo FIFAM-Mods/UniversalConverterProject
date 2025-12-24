@@ -3544,16 +3544,12 @@ CDBGame *OnGetGameInstanceSetupCompetitionWinners() {
                 comp->SetChampion(team->GetTeamID());
         }
     };
-    SetChampion(FifamCompRegion::SouthAmerica, FifamCompType::EuroSuperCup, 0x0039002F); // UPDATE Club Independiente del Valle
-    SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::EuroSuperCup, 0x0053000B); // UPDATE Club Tigres U.A.N.L.
-    SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::ConferenceLeague, 0x005C1006); // UPDATE SV Robinhood
-    SetChampion(FifamCompRegion::Africa, FifamCompType::EuroSuperCup, 0x00610001); // UPDATE USM Algier
+    SetChampion(FifamCompRegion::SouthAmerica, FifamCompType::EuroSuperCup, 0x00360004); // UPDATE Club Fluminense Football Club
+    SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::EuroSuperCup, 0x00530001); // UPDATE Club de Futbol America
+    SetChampion(FifamCompRegion::NorthAmerica, FifamCompType::ConferenceLeague, 0x0052101D); // UPDATE Cavalier FC
+    SetChampion(FifamCompRegion::Africa, FifamCompType::EuroSuperCup, 0x006F0001); // UPDATE Zamalek Sporting Club
+    SetChampion(FifamCompRegion::Asia, FifamCompType::ConferenceLeague, 0x00BD305D); // UPDATE FK Arkadag
     SetChampion(FifamCompRegion::Switzerland, FifamCompType::LeagueCup, 0x002F0013); // UPDATE Vaduz
-    if (GetStartingYear() == 2024 && GetStartingYear() == GetCurrentYear()) { // UPDATE
-        CDBCompetition *comp = GetRoundByRoundType(FifamCompRegion::Asia, FifamCompType::ConferenceLeague, ROUND_FINAL);
-        if (comp)
-            comp->SetChampion(CTeamIndex::null());
-    }
     return CDBGame::GetInstance();
 }
 
