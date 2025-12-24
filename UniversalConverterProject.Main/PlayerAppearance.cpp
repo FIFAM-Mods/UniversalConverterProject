@@ -20,8 +20,85 @@ UChar METHOD OnSetupPlayer3D(void *player3d, DUMMY_ARG, UInt playerId, CTeamInde
 
 UChar METHOD RetGender0(void *) { return 0; }
 
+CManagerAppearance *METHOD GetManagerAppearanceWithExendedHairId(void *manager) {
+    CManagerAppearance *app = CallMethodAndReturn<CManagerAppearance *, 0x15079D5>(manager);
+    app->m_nBeard = app->m_nSideburns;
+    app->m_nSideburns = 0;
+    return app;
+}
+
+void __declspec(naked) HairID_GameStartPlayerAppearance_Action1() {
+    __asm {
+        dec eax
+        mov [esp + 0xE], al
+        mov dl, ah
+        and dl, 0xF
+        mov cl, [esp + 0x12]
+        and cl, 0xF0
+        or cl, dl
+        mov [esp + 0x12], cl
+        mov ecx, [esi + 0x49C]
+        mov eax, 0x537958
+        jmp eax
+    }
+}
+
+void __declspec(naked) HairID_GameStartPlayerAppearance_RedrawManagerHead() {
+    __asm {
+        dec eax
+        mov [esp + 0x6], al
+        mov dl, ah
+        and dl, 0xF
+        mov cl, [esp + 0xA]
+        and cl, 0xF0
+        or cl, dl
+        mov [esp + 0xA], cl
+        mov ecx, [esi + 0x49C]
+        mov eax, 0x536EF3
+        jmp eax
+    }
+}
+
+void __declspec(naked) HairID_RenderDataFromPlayerAppearance_1() {
+    __asm {
+        mov eax, [esp + 4]
+        movzx ecx, byte ptr [eax + 2] // hair ID bits 0-7
+        movzx edx, byte ptr [eax + 6] // hair ID bits 8-11
+        and edx, 0xF
+        shl edx, 8
+        or ecx, edx
+        mov edx, 0x4534F8
+        jmp edx
+    }
+}
+
+void __declspec(naked) HairID_RenderDataFromPlayerAppearance_2() {
+    __asm {
+        mov eax, 0
+        mov edx, 0x45357C
+        jmp edx
+    }
+}
+
 void PatchPlayerAppearance(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
+        
+        // Extended hairstyle ID
+        
+        // CGameStartPlayerAppearance::CreateUI
+        patch::RedirectCall(0x537559, GetManagerAppearanceWithExendedHairId); // hairstyle
+        patch::SetUShort(0x53755E, 0xB70F); // movzx ecx, byte ptr [eax+2] => movzx ecx, word ptr [eax+2]
+        patch::RedirectCall(0x5375B7, GetManagerAppearanceWithExendedHairId); // sideburns
+        // CGameStartPlayerAppearance::Action1
+        patch::RedirectJump(0x53794C, HairID_GameStartPlayerAppearance_Action1); // hairstyle
+        patch::Nop(0x537998, 4); // sideburns
+        // CGameStartPlayerAppearance::RedrawManagerHead
+        patch::RedirectJump(0x536EE7, HairID_GameStartPlayerAppearance_RedrawManagerHead);
+        patch::Nop(0x536F33, 4); // sideburns
+        // RenderDataFromPlayerAppearance
+        patch::RedirectJump(0x4534F0, HairID_RenderDataFromPlayerAppearance_1); // hairstyle
+        patch::RedirectJump(0x453575, HairID_RenderDataFromPlayerAppearance_2); // sideburns
+
 
         //patch::RedirectCall(0x417F87, OnSetupPlayer3D);
 

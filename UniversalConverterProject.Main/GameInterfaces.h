@@ -700,6 +700,32 @@ struct NameDesc {
 
 static_assert(sizeof(NameDesc) == 0x6, "Failed");
 
+class CPlayerAppearance {
+public:
+    UShort m_nFace;
+    UChar m_nHairStyle;
+    UChar m_nBeard;
+    UChar m_nSkinColor : 4;
+    UChar m_nVariation : 4;
+    UChar m_nBeardColor : 4;
+    UChar m_nHairColor : 4;
+    UChar m_nSideburns : 4;
+    UChar m_nEyeColor : 4;
+    UChar _pad7;
+};
+
+static_assert(sizeof(CPlayerAppearance) == 0x8, "Failed");
+
+class CManagerAppearance : public CPlayerAppearance {
+public:
+    UChar m_nStyleOfClothing;
+    UChar m_nClothId;
+    UChar m_nHeight;
+    UChar m_nWeight;
+};
+
+static_assert(sizeof(CManagerAppearance) == 0xC, "Failed");
+
 class CDBPlayer {
 public:
     // 0 to 20
