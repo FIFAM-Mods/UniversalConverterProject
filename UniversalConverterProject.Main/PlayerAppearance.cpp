@@ -468,6 +468,52 @@ Int METHOD GetLowMedHairId(void *player) {
     return 0;
 }
 
+struct CountryAppearanceEntry {
+    UInt type;
+    UInt total;
+};
+
+Bool ReaderUsesNewAppearance(void *reader) {
+    return BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x11);
+}
+
+void METHOD CountryYouthAppearance_ReadNewVersion(void *reader, DUMMY_ARG, UInt *pOut) {
+    if (ReaderUsesNewAppearance(reader)) {
+        void *country = (UChar *)pOut - 0x1C8;
+        using AppVec = FmVec<CountryAppearanceEntry>;
+        AppVec &vec = *raw_ptr<AppVec>(country, 0x264);
+        UInt count = 0;
+        BinaryReaderReadUInt32(reader, &count);
+        CallMethod<0x5032D0>(&vec, count, 0, 0);
+        for (UInt i = 0; i < vec.size(); i++) {
+            BinaryReaderReadUInt32(reader, &vec[i].type);
+            BinaryReaderReadUInt32(reader, &vec[i].total);
+        }
+    }
+    else
+        BinaryReaderReadUInt32(reader, pOut);
+}
+
+Bool METHOD CountryYouthAppearance_ShouldReadOldVersion(void *reader, DUMMY_ARG, UInt year, UInt version) {
+    return BinaryReaderIsVersionGreaterOrEqual(reader, 0x2011, 0x1)
+        && !ReaderUsesNewAppearance(reader);
+}
+
+void METHOD CountryYouthAppearance_ReadHairStyle(void *reader, DUMMY_ARG, UInt *pOut, UInt count) {
+    if (!ReaderUsesNewAppearance(reader))
+        BinaryReaderReadUInt32Array(reader, pOut, count);
+}
+
+void METHOD CountryYouthAppearance_ReadBeard(void *reader, DUMMY_ARG, UInt *pOut) {
+    if (!ReaderUsesNewAppearance(reader))
+        BinaryReaderReadUInt32(reader, pOut);
+}
+
+void METHOD CountryYouthAppearance_ReadFaceType(void *reader, DUMMY_ARG, UInt *pOut, UInt count) {
+    if (!ReaderUsesNewAppearance(reader))
+        BinaryReaderReadUInt32Array(reader, pOut, count);
+}
+
 void InstallPlayerAppearance_GfxCore() {
     for (Int i = 0; i < (Int)std::size(hairLODs); i++) {
         if (!Settings::GetInstance().UseHairLODs || i == 0)
@@ -491,4 +537,11 @@ void InstallPlayerAppearance_GfxCore() {
     patch::Nop(GfxCoreAddress(0x920B0), 2);
     patch::SetUShort(GfxCoreAddress(0x920B2), 0xCE8B);
     patch::RedirectCall(GfxCoreAddress(0x920B2 + 2), GetLowMedHairId);
+
+    // move AppearanceDefs country entries before teams
+    patch::RedirectCall(0xFF1EE3, CountryYouthAppearance_ReadNewVersion);
+    patch::RedirectCall(0xFF1EF3, CountryYouthAppearance_ReadHairStyle);
+    patch::RedirectCall(0xFF1F01, CountryYouthAppearance_ReadBeard);
+    patch::RedirectCall(0xFF1F11, CountryYouthAppearance_ReadFaceType);
+    patch::RedirectCall(0xFF31CF, CountryYouthAppearance_ShouldReadOldVersion);
 }

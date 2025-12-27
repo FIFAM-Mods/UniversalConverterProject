@@ -299,6 +299,51 @@ void NAKED HairID_CDlgPlayerpoolChange() {
     }
 }
 
+template<typename T>
+class FmVec {
+public:
+    class Proxy {
+    public:
+        FmVec *myVec;
+    };
+
+    Proxy *proxy;
+    UInt _size;
+    UInt capacity;
+    T *begin;
+    T *end;
+    T *end_buf;
+
+    UInt size() {
+        return (UInt)(end - begin);
+    }
+
+    Bool empty() {
+        return !begin || !end || end <= begin;
+    }
+
+    T &operator[](UInt index) {
+        return begin[index];
+    }
+};
+
+struct CountryAppearanceEntry {
+    UInt type;
+    UInt total;
+};
+
+void METHOD WriteCountryAppearanceDefs(void *writer, DUMMY_ARG, Int) {
+    auto WriteUInt = [&writer](UInt value) { CallMethod<0x551000>(writer, value); };
+    void *country = *raw_ptr<void *>(writer, 0x24);
+    using AppVec = FmVec<CountryAppearanceEntry>;
+    AppVec &vec = *raw_ptr<AppVec>(country, 0x1B40);
+    WriteUInt(vec.size());
+    for (UInt i = 0; i < vec.size(); i++) {
+        WriteUInt(vec[i].type);
+        WriteUInt(vec[i].total);
+    }
+}
+
 void PatchPlayerAppearance(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         // sideburns
@@ -567,5 +612,10 @@ void PatchPlayerAppearance(FM::Version v) {
         // CDlgPlayerpoolChange
         patch::RedirectJump(0x489B34, HairID_CDlgPlayerpoolChange);
         patch::SetBytes(0x489BA4, "6A 00 90 90 90 90 90 90"); // push 0
+
+        // move AppearanceDefs country entries before teams
+        patch::RedirectCall(0x4E8493, WriteCountryAppearanceDefs);
+        patch::RedirectJump(0x4E8498, (void *)0x4E84C6);
+        patch::RedirectJump(0x4E8DB8, (void *)0x4E8E57);
     }
 }

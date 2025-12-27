@@ -1766,6 +1766,7 @@ bool BinaryReaderCheckFourcc(void *reader, UInt fourcc);
 void BinaryReaderReadUInt16(void *reader, UShort *out);
 void BinaryReaderReadUInt8(void *reader, UChar *out);
 void BinaryReaderReadFloat(void *reader, Float *out);
+void BinaryReaderReadUInt32Array(void *reader, UInt *out, UInt count);
 void SaveGameReadString(void *save, WideChar *out, UInt maxLen);
 void SaveGameWriteString(void *save, WideChar const *str);
 void SaveGameReadInt8(void *save, UChar &out);

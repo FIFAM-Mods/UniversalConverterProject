@@ -2207,6 +2207,10 @@ void BinaryReaderReadFloat(void *reader, Float *out) {
     CallMethod<0x1338BF0>(reader, out);
 }
 
+void BinaryReaderReadUInt32Array(void *reader, UInt *out, UInt count) {
+    CallMethod<0x1338B30>(reader, out, count);
+}
+
 void SaveGameReadString(void *save, WideChar *out, UInt maxLen) {
     CallMethod<0x1080EB0>(save, out, maxLen);
 }
