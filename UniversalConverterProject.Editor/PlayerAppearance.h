@@ -1,4 +1,4 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 
 void PatchPlayerAppearance(FM::Version v);

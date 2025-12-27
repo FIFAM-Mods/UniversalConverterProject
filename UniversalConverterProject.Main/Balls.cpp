@@ -1,7 +1,6 @@
 #include "Balls.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
-#include "license_check/license_check.h"
 #include "GameInterfaces.h"
 #include "FifamCompRegion.h"
 #include "FifamContinent.h"
@@ -114,7 +113,7 @@ void __declspec(naked) GetBallModelExec() {
 }
 
 void ReadBallInfos() {
-    FifamReader reader(Magic<'p','l','u','g','i','n','s','\\','u','c','p','\\','b','a','l','l','s','.','d','a','t'>(777301247), 14);
+    FifamReader reader(FM::GameDirPath(L"plugins\\ucp\\balls.dat"), 14);
     if (reader.Available()) {
         while (!reader.IsEof()) {
             if (!reader.EmptyLine()) {

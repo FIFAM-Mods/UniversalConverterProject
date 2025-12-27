@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string>
 #include <set>
-#include "plugin-std.h"
+#include "plugin.h"
 #include "Utils.h"
 
 using namespace std;

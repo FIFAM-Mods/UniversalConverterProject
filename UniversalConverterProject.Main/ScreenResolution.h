@@ -1,5 +1,5 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 
 void PatchScreenResolution(FM::Version v);
 void InstallScreenResolution_GfxCore();

@@ -1,5 +1,5 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 
 wchar_t const *GetText(char const *key);
 

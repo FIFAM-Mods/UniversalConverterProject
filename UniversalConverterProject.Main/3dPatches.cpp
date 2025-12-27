@@ -6,7 +6,6 @@
 #include "UcpSettings.h"
 #include "Exception.h"
 #include "Translation.h"
-#include "license_check/license_check.h"
 #include "shared.h"
 #include "d3dx9.h"
 #include "FifamReadWrite.h"

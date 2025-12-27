@@ -1,4 +1,4 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 
 void PatchLeagueSelection(FM::Version v);

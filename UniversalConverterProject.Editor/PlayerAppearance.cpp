@@ -238,6 +238,10 @@ void __stdcall OnAppearanceFilterComboBoxSetCurrSel(HWND hCombo) {
     SendMessageW(hCombo, CB_SETCURSEL, 0, 0);
 }
 
+void METHOD ConvertPlayerAppearanceFromFM09(void *app, DUMMY_ARG, UChar hairStyle, UInt face, UChar hairColor, UChar beard) {
+    memset(app, 0, 8);
+}
+
 void PatchPlayerAppearance(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         // sideburns
@@ -492,5 +496,8 @@ void PatchPlayerAppearance(FM::Version v) {
         patch::SetUChar(0x486C98, 0x51); // push ecx
         patch::RedirectCall(0x486C98 + 1, OnAppearanceFilterComboBoxSetCurrSel);
         patch::Nop(0x486C98 + 1 + 5, 6);
+
+        // remove FM09 generator
+        patch::RedirectJump(0x5A36C0, ConvertPlayerAppearanceFromFM09);
     }
 }

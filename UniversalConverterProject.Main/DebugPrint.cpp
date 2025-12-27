@@ -1,5 +1,5 @@
 #include "DebugPrint.h"
-#include "plugin-std.h"
+#include "plugin.h"
 
 FifamDebug::FifamDebug() {
     hDebugModule = LoadLibraryA("plugins\\FifamDebug.asi");

@@ -2,7 +2,7 @@
 #include "FifamTypes.h"
 #include "Utils.h"
 #include "TextFileTable.h"
-#include "license_check/license_check.h"
+#include "LicenseCheck.h"
 #include "Random.h"
 #include "Compiler.h"
 #include "FifamReadWrite.h"
@@ -64,7 +64,7 @@ Bool METHOD OnWriteCountryData(void *country, DUMMY_ARG, void *file) {
     WideChar* filePath = raw_ptr<WideChar>(file, 0x10);
     static Path newPath;
     newPath = filePath;
-    static std::wstring newSavFormat = Magic<'u', 'c', 'p', 's', 'a', 'v'>(144798475);
+    static std::wstring newSavFormat = Magic<'u','c','p','s','a','v'>();
     newPath.replace_extension(newSavFormat);
     wcscpy_s(filePath, 260, newPath.c_str());
     CallMethod<0x512F00>(file);
@@ -77,7 +77,7 @@ Bool METHOD OnReadCountryData(void *file, DUMMY_ARG, WideChar const *filePath, I
     gReadingStatus = 1;
     static Path newPath;
     newPath = filePath;
-    static std::wstring newSavFormat = Magic<'u', 'c', 'p', 's', 'a', 'v'>(144798475);
+    static std::wstring newSavFormat = Magic<'u','c','p','s','a','v'>();
     newPath.replace_extension(newSavFormat);
     Bool result = CallMethodAndReturn<Bool, 0x5140D0>(file, newPath.c_str(), encoding);
     gReadingStatus = -1;
@@ -178,7 +178,7 @@ void __declspec(naked) MySetEnableMenu() {
 }
 
 void OnGetFreeAgentsFilePath(WideChar *dest, WideChar const *format, WideChar const *dbPath) {
-    String freeAgentsFilePathFormat = Magic<'%','s','/','W','i','t','h','o','u','t','.','u','c','p','s','a','v'>(1898339310);
+    String freeAgentsFilePathFormat = Magic<'%','s','/','W','i','t','h','o','u','t','.','u','c','p','s','a','v'>();
     swprintf(dest, freeAgentsFilePathFormat.c_str(), dbPath);
 }
 
@@ -259,7 +259,7 @@ Int METHOD ImportScript(void *dlg) {
                         String fileContent;
                         while (!scriptReader.IsEof()) {
                             fileContent += scriptReader.ReadFullLine();
-                            fileContent.append(Magic<0xA>(3068980695));
+                            fileContent.append(L"\n");
                         }
                         String compiledScript, compiledFixture, compiledData;
                         CompilerOptions options;
@@ -274,7 +274,7 @@ Int METHOD ImportScript(void *dlg) {
                             UInt dwRetVal = GetTempPathW(MAX_PATH, lpTempPathBuffer);
                             if (dwRetVal > 0 && dwRetVal < MAX_PATH) {
                                 Path tempPath = lpTempPathBuffer;
-                                tempPath /= Magic<'C', 'o', 'u', 'n', 't', 'r', 'y', 'S', 'c', 'r', 'i', 'p', 't', 'X', '.', 's', 'a', 'v'>(292907193);
+                                tempPath /= L"CountryScriptX.sav";
                                 FifamWriter scriptWriter(tempPath, 13, GetFifamVersion(13), true);
                                 if (scriptWriter.Available()) {
                                     scriptWriter.Write(compiledScript);
@@ -345,7 +345,7 @@ Int METHOD ImportScript(void *dlg) {
                                                             levelName = levels[l].leagueNames[0];
                                                     }
                                                     else
-                                                        levelName = Utils::Format(Magic<'L','e','a','g','u','e',' ','L','e','v','e','l',' ','%','d'>(2791402137), l + 1);
+                                                        levelName = Utils::Format(L"League Level %d", l + 1);
                                                 }
                                                 if (!levelName.empty()) {
                                                     for (UInt t = 0; t < 6; t++) {
@@ -359,21 +359,21 @@ Int METHOD ImportScript(void *dlg) {
                                         CallMethod<0x45E6B0>(gDlgMainMenu);
                                     }
                                     else
-                                        Error(Magic<'U','a','b','l','e',' ','t','o',' ','o','p','e','n',' ','a',' ','f','i','l','e',' ','w','i','t','h',' ','g','e','n','e','r','a','t','e','d',' ','s','c','r','i','p','t',' ','c','o','d','e'>(67622265));
+                                        Error(L"Unable to open a file with generated script code");
                                     CallMethod<0x514080>(fmFile);
                                 }
                                 else
-                                    Error(Magic<'U','a','b','l','e',' ','t','o',' ','c','r','e','a','t','e',' ','a',' ','f','i','l','e',' ','f','o','r',' ','g','e','n','e','r','a','t','e','d',' ','s','c','r','i','p','t',' ','c','o','d','e'>(3293126749));
+                                    Error(L"Unable to create a file for generated script code");
                             }
                             else
-                                Error(Utils::Format(Magic<'U', 'n', 'a', 'b', 'l', 'e', ' ', 't', 'o', ' ', 'c', 'r', 'e', 'a', 't', 'e', ' ', 'a', ' ', 't', 'e', 'm', 'p', 'o', 'r', 'a', 'r', 'y', ' ', 'f', 'i', 'l', 'e', ' ', 'f', 'o', 'r', ' ', 'c', 'u', 's', 't', 'o', 'm', ' ', 's', 'c', 'r', 'i', 'p', 't', ' ', '(', '%', 's', ')'>(3791467810), scriptFileName));
+                                Error(Utils::Format(L"Unable to create a temporary file for custom script (%s)", scriptFileName));
                         }
                         else
-                            Error(Utils::Format(Magic<'U', 'n', 'a', 'b', 'l', 'e', ' ', 't', 'o', ' ', 'c', 'o', 'm', 'p', 'i', 'l', 'e', ' ', 'c', 'u', 's', 't', 'o', 'm', ' ', 's', 'c', 'r', 'i', 'p', 't', ' ', '(', '%', 's', ')', ':', 0xA, '%', 's'>(1493177856), scriptFileName, compiledScript.c_str()));
+                            Error(Utils::Format(L"Unable to compile custom script (%s):\n%s", scriptFileName, compiledScript.c_str()));
                         gCompiledComps.clear();
                     }
                     else
-                        Error(Utils::Format(Magic<'U', 'n', 'a', 'b', 'l', 'e', ' ', 't', 'o', ' ', 'o', 'p', 'e', 'n', ' ', 'c', 'u', 's', 't', 'o', 'm', ' ', 's', 'c', 'r', 'i', 'p', 't', ' ', '(', '%', 's', ')'>(3807250146), scriptFileName));
+                        Error(Utils::Format(L"Unable to open custom script (%s)", scriptFileName));
                 }
             }
         }
@@ -1156,11 +1156,11 @@ void PatchEditor(FM::Version v) {
 
         patch::SetUChar(0x45EE21, 0xEB);
 
-        static std::wstring newClbFormat = Magic<'u', 'c', 'p', 'c', 'l', 'b'>(1969560182);
+        static std::wstring newClbFormat = Magic<'u','c','p','c','l','b'>();
         patch::SetPointer(0x4601E1 + 1, (void *)newClbFormat.c_str());
         patch::SetPointer(0x46033B + 1, (void *)newClbFormat.c_str());
 
-        static std::wstring newSavFormat = Magic<'u', 'c', 'p', 's', 'a', 'v'>(144798475);
+        static std::wstring newSavFormat = Magic<'u','c','p','s','a','v'>();
         patch::SetPointer(0x4536D2 + 1, (void *)newSavFormat.c_str());
 
     #ifndef EDITOR_WRITE_TEXT

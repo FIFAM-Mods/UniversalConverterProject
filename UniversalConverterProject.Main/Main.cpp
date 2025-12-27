@@ -1,5 +1,5 @@
-#include "plugin-std.h"
-#include "license_check/license_check.h"
+#include "plugin.h"
+#include "LicenseCheck.h"
 #include "shared.h"
 #include "UcpSettings.h"
 #include "WorldCup.h"
@@ -109,7 +109,7 @@ public:
     UniversalConverterProject() {
         v = FM::GetAppVersion();
         if (v.id() == ID_FM_13_1030_RLD) {
-            if (!CheckLicense(Magic<'U', 'n', 'i', 'v', 'e', 'r', 's', 'a', 'l', 'C', 'o', 'n', 'v', 'e', 'r', 't', 'e', 'r', 'P', 'r', 'o', 'j', 'e', 'c', 't', '.', 'M', 'a', 'i', 'n', '.', 'a', 's', 'i'>(1583797143)))
+            if (!CheckPluginName(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','M','a','i','n','.','a','s','i'>()))
                 return;
             if (GetPatchTestVersion()) {
                 ::Message(L"This is a test patch version (%s).\nPlease do not redistribute it.", GetPatchTestVersion());

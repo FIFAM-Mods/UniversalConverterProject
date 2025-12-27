@@ -1,8 +1,3 @@
-/*
-    FIFA Manager API
-    Authors: Dmitry (Dmitri,DK,DK22)
-    Version 2021.01
-*/
 #pragma once
 #ifdef _USING_V110_SDK71_
 #ifndef _WIN_OBJBASE_UNKNOWN_DEFINED
@@ -18,126 +13,108 @@ typedef struct IUnknown IUnknown;
 #include "Error.h"
 #include "Other.h"
 #include "Patch.h"
+#include "LicenseCheck.h"
+
+enum ePluginApp {
+    APP_UNKNOWN = 0,
+    APP_MANAGER = 1,
+    APP_EDITOR = 2,
+    APP_RESOLUTOOL = 3,
+    APP_COUNT
+};
 
 #define VERSION_UNKNOWN 0
 
-#define APP_MANAGER 1
-#define APP_EDITOR  2
-#define APP_FIFA    3
-#define APP_EURO    4
-#define APP_WC      5
-#define APP_CL      6
-#define APP_RESOLUTOOL 15
+#define FM_VERSION(game, v1, v2, v3, v4, prot, app) \
+    ( ((unsigned int)(game) << 24) | \
+      ((unsigned int)(v1)   << 20) | \
+      ((unsigned int)(v2)   << 16) | \
+      ((unsigned int)(v3)   << 12)  | \
+      ((unsigned int)(v4)   << 8)  | \
+      ((unsigned int)(prot) << 4)  | \
+      ((unsigned int)(app)) )
 
-#define ID_FM_14_1000     0xE100001
+#define ID_FM_14_1000     FM_VERSION(14, 1,0,0,0, 1, APP_MANAGER)
 #define VERSION_FM_14 ID_FM_14_1000
 
-#define ID_FM_13_1030_RLD 0xD103011
+#define ID_FM_13_1030_RLD FM_VERSION(13, 1,0,3,0, 2, APP_MANAGER)
 #define VERSION_FM_13 ID_FM_13_1030_RLD
 
-#define ID_FM_12_1003_RZ  0xC100311
+#define ID_FM_12_1003_RZ  FM_VERSION(12, 1,0,0,3, 2, APP_MANAGER)
 #define VERSION_FM_12 ID_FM_12_1003_RZ
 
-#define ID_FM_11_1003     0xB100301
-#define ID_FM_11_1002     0xB100201
-#define ID_FM_11_1000_RLD 0xB100011
+#define ID_FM_11_1003     FM_VERSION(11, 1,0,0,3, 0, APP_MANAGER)
+#define ID_FM_11_1002     FM_VERSION(11, 1,0,0,2, 0, APP_MANAGER)
+#define ID_FM_11_1000_RLD FM_VERSION(11, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_11 ID_FM_11_1000_RLD
 
-#define ID_FM_10_1000_C   0xA100011
+#define ID_FM_10_1000_C   FM_VERSION(10, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_10 ID_FM_10_1000_C
 
-#define ID_FM_09_1000_C   0x9101011
+#define ID_FM_09_1000_C   FM_VERSION(9, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_09 ID_FM_09_1000_C
 
-#define ID_FM_08_1020_C   0x8102011
-#define ID_FM_08_1020     0x8102001
-#define ID_FM_08_1000_FL  0x8100011
-#define ID_FM_08_1000     0x8100001
+#define ID_FM_08_1020_C   FM_VERSION(8, 1,0,2,0, 2, APP_MANAGER)
+#define ID_FM_08_1020     FM_VERSION(8, 1,0,2,0, 1, APP_MANAGER)
+#define ID_FM_08_1000_FL  FM_VERSION(8, 1,0,0,0, 2, APP_MANAGER)
+#define ID_FM_08_1000     FM_VERSION(8, 1,0,0,0, 1, APP_MANAGER)
 #define VERSION_FM_08 ID_FM_08_1020_C
 
-#define ID_FM_07_1000_C   0x7100011
+#define ID_FM_07_1000_C   FM_VERSION(7, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_07 ID_FM_07_1000_C
 
-#define ID_FM_06_1000_C   0x6100011
+#define ID_FM_06_1000_C   FM_VERSION(6, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_06 ID_FM_06_1000_C
 
-#define ID_FM_05_1000_C   0x5100011
-#define ID_FM_05_1010_C   0x5101011
+#define ID_FM_05_1000_C   FM_VERSION(5, 1,0,0,0, 2, APP_MANAGER)
+#define ID_FM_05_1010_C   FM_VERSION(5, 1,0,1,0, 2, APP_MANAGER)
 #define VERSION_FM_05 ID_FM_05_1010_C
 
-#define ID_FM_04_1000_C   0x4100011
+#define ID_FM_04_1000_C   FM_VERSION(4, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_04 ID_FM_04_1000_C
 
-#define ID_FM_03_1000_C   0x3100011
+#define ID_FM_03_1000_C   FM_VERSION(3, 1,0,0,0, 2, APP_MANAGER)
 #define VERSION_FM_03 ID_FM_03_1000_C
 
-#define ID_ED_14_1000     0xE100002
+#define ID_ED_14_1000     FM_VERSION(14, 1,0,0,0, 1, APP_EDITOR)
 #define VERSION_ED_14 ID_ED_14_1000
 
-#define ID_ED_13_1000     0xD100002
+#define ID_ED_13_1000     FM_VERSION(13, 1,0,0,0, 1, APP_EDITOR)
 #define VERSION_ED_13 ID_ED_13_1000
 
-#define ID_ED_12_1000     0xC100002
+#define ID_ED_12_1000     FM_VERSION(12, 1,0,0,0, 1, APP_EDITOR)
 #define VERSION_ED_12 ID_ED_12_1000
 
-#define ID_ED_11_1003     0xB100302
-#define ID_ED_11_1000     0xB100002
+#define ID_ED_11_1003     FM_VERSION(11, 1,0,0,3, 1, APP_EDITOR)
+#define ID_ED_11_1000     FM_VERSION(11, 1,0,0,0, 1, APP_EDITOR)
 #define VERSION_ED_11 ID_ED_11_1000
 
-#define ID_ED_10_9010     0xA901002
+#define ID_ED_10_9010     FM_VERSION(10, 9,0,1,0, 1, APP_EDITOR)
 #define VERSION_ED_10 ID_ED_10_9010
 
-#define ID_ED_09_9010     0x9901002
+#define ID_ED_09_9010     FM_VERSION(9, 9,0,1,0, 1, APP_EDITOR)
 #define VERSION_ED_09 ID_ED_09_9010
 
-#define ID_ED_08_8071     0x8807102
+#define ID_ED_08_8071     FM_VERSION(8, 8,0,7,1, 1, APP_EDITOR)
 #define VERSION_ED_08 ID_ED_08_8071
 
-#define ID_ED_07_7020     0x7702002
+#define ID_ED_07_7020     FM_VERSION(7, 7,0,2,0, 1, APP_EDITOR)
 #define VERSION_ED_07 ID_ED_07_7020
 
-#define ID_ED_06_5001     0x6500102
+#define ID_ED_06_5001     FM_VERSION(6, 5,0,0,1, 1, APP_EDITOR)
 #define VERSION_ED_06 ID_ED_06_5001
 
-#define ID_ED_05_4000     0x5400002
+#define ID_ED_05_4000     FM_VERSION(5, 4,0,0,0, 1, APP_EDITOR)
 #define VERSION_ED_05 ID_ED_05_4000
 
-#define ID_ED_04_1016     0x4101602
-#define ID_ED_04_1020     0x4102002
+#define ID_ED_04_1016     FM_VERSION(4, 1,0,1,6, 1, APP_EDITOR)
+#define ID_ED_04_1020     FM_VERSION(4, 1,0,2,0, 1, APP_EDITOR)
 #define VERSION_ED_04 ID_ED_04_1020
 
-#define ID_ED_03_1002     0x3100202
+#define ID_ED_03_1002     FM_VERSION(3, 1,0,0,2, 1, APP_EDITOR)
 #define VERSION_ED_03 ID_ED_03_1002
 
-#define ID_FIFA_05_1000_C 0x5100013
-#define VERSION_FIFA_05 ID_FIFA_05_1000_C
-
-#define ID_FIFA_07_1100_C   0x7110013
-#define VERSION_FIFA_07 ID_FIFA_07_1100_C
-
-#define ID_FIFA_08_1000_C   0x8100013
-#define ID_FIFA_08_1200_C   0x8120013
-#define VERSION_FIFA_08 ID_FIFA_08_1200_C
-
-#define ID_FIFA_10_1000_C 0xA100013
-#define VERSION_FIFA_10 ID_FIFA_10_1000_C
-
-#define ID_EURO_04_1000_C   0x4100014
-#define VERSION_EURO_04 ID_EURO_04_1000_C
-
-#define ID_EURO_08_1000_C   0x8100014
-#define VERSION_EURO_08 ID_EURO_08_1000_C
-
-#define ID_WC_06_1000_C   0x6100015
-#define VERSION_WC_06 ID_WC_06_1000_C
-
-#define ID_CL_04_05_1000_C   0x5100016
-#define VERSION_CL_04_05 ID_CL_04_05_1000_C
-
-#define ID_CL_06_07_1000_C   0x7100016
-#define VERSION_CL_06_07 ID_CL_06_07_1000_C
-
-#define ID_RESOLUTOOL_13_1000 0xD10000F
+#define ID_RESOLUTOOL_13_1000 FM_VERSION(13, 1,0,0,0, 1, APP_RESOLUTOOL)
 #define VERSION_RESOLUTOOL_13 ID_RESOLUTOOL_13_1000
 
 namespace FM {
@@ -145,13 +122,13 @@ namespace FM {
 class Version {
     union {
         struct {
-            unsigned char mApp : 4;
-            unsigned char mProtection : 4;
-            unsigned char mVersion4 : 4;
-            unsigned char mVersion3 : 4;
-            unsigned char mVersion2 : 4;
-            unsigned char mVersion1 : 4;
-            unsigned char mGame : 4;
+            unsigned int mApp : 4;
+            unsigned int mProtection : 4;
+            unsigned int mVersion4 : 4;
+            unsigned int mVersion3 : 4;
+            unsigned int mVersion2 : 4;
+            unsigned int mVersion1 : 4;
+            unsigned int mGame : 8;
         };
         unsigned int mId;
     };
@@ -168,23 +145,17 @@ public:
     inline unsigned char protection() { return mProtection; }
 
     inline std::wstring name() {
-        if (mApp < 1 || mApp > 6)
+        if (mApp == APP_UNKNOWN || mApp >= APP_COUNT)
             return L"Unknown";
         static wchar_t const *AppName[] = {
             L"Unknown",
             L"Manager",
             L"Editor",
-            L"FIFA",
-            L"EURO",
-            L"World Cup",
-            L"Champions League"
+            L"Resolutool"
         };
-        if (mApp == APP_CL) {
-            return plugin::Format(L"%s %02d/%02d v.%d.%d.%d.%d (%s)", AppName[mApp], mGame - 1, mGame,
-                mVersion1, mVersion2, mVersion3, mVersion4, mProtection ? L"unlocked" : L"license");
-        }
-        return plugin::Format(L"%s %02d v.%d.%d.%d.%d (%s)", AppName[mApp], mGame,
-            mVersion1, mVersion2, mVersion3, mVersion4, mProtection ? L"unlocked" : L"license");
+        static wchar_t const *Protection[] = { L"", L" (license)" };
+        return plugin::Format(L"%s %02d v.%d.%d.%d.%d%s", AppName[mApp], mGame,
+            mVersion1, mVersion2, mVersion3, mVersion4, Protection[mProtection == 1]);
     }
 };
 
@@ -208,26 +179,18 @@ inline Version DetectAppVersion() {
 
     case 0x3C8D830: // ?
         return ID_FM_14_1000;
-
-    case 0x403A10: // decrypted
-        return ID_FM_13_1030_RLD;
-
     case 0x1203AB4: // decrypted
         return ID_FM_12_1003_RZ;
-
     case 0x1743049: // encrypted
         return ID_FM_11_1003;
     case 0x179B049: // encrypted
         return ID_FM_11_1002;
     case 0x1736049: // decrypted
         return ID_FM_11_1000_RLD;
-
     case 0x153C4C0:
         return ID_FM_10_1000_C;
-
     case 0x3140A52:
         return ID_FM_09_1000_C;
-
     case 0x1C03990:
         return ID_FM_08_1020_C;
     case 0x17F6CF0:
@@ -236,22 +199,16 @@ inline Version DetectAppVersion() {
         return ID_FM_08_1000_FL;
     case 0x1789B30:
         return ID_FM_08_1000;
-
     case 0xBC0B69:
         return ID_FM_07_1000_C;
-
     case 0xA26F90:
         return ID_FM_06_1000_C;
-
     case 0xB71005:
         return ID_FM_05_1010_C;
-
     case 0xB6E005:
         return ID_FM_05_1000_C;
-
     case 0xCF2865:
         return ID_FM_04_1000_C;
-
     case 0x938B91:
         return ID_FM_03_1000_C;
 
@@ -286,35 +243,7 @@ inline Version DetectAppVersion() {
     case 0x46CA70:
         return ID_ED_03_1002;
 
-    // FIFA
-
-    case 0x8EE005:
-        return ID_FIFA_05_1000_C;
-    case 0x820FE3:
-        return ID_FIFA_07_1100_C;
-    case 0x173CE10:
-        return ID_FIFA_08_1200_C;
-    case 0x1C22525:
-        return ID_FIFA_08_1000_C;
-    case 0x408FC0:
-        return ID_FIFA_10_1000_C;
-
-    // EURO
-
-    case 0x179B600:
-        return ID_EURO_08_1000_C;
-
-    // WC
-
-    case 0x77F7BB:
-        return ID_WC_06_1000_C;
-
-    // CL
-
-    case 0x930005:
-        return ID_CL_04_05_1000_C;
-
-    // RESOLUTOOL
+    // Resolutool
 
     case 0x502B92:
         return ID_RESOLUTOOL_13_1000;
@@ -343,15 +272,19 @@ inline Version GetEditorVersion() {
     return VERSION_UNKNOWN;
 }
 
-inline std::wstring GetProcessName() {
+inline std::wstring GetProcessName(bool withExtension = true) {
+    std::wstring result;
     wchar_t filepath[MAX_PATH + 1];
     wchar_t outname[MAX_PATH + 1];
+    wchar_t ext[MAX_PATH + 1];
     DWORD length = GetModuleFileNameW(NULL, filepath, MAX_PATH);
     if (length > 0) {
-        _wsplitpath(filepath, NULL, NULL, outname, NULL);
-        return outname;
+        _wsplitpath(filepath, NULL, NULL, outname, ext);
+        result = outname;
+        if (withExtension)
+            result += ext;
     }
-    return std::wstring();
+    return result;
 }
 
 inline std::wstring GetProcessDir() {
@@ -404,6 +337,26 @@ inline std::wstring GameDirPath(std::wstring const &subPath) {
 
 inline std::wstring GameDirPath(std::wstring const &subPath, std::wstring extension) {
     return GameDirPath(subPath) + extension;
+}
+
+inline std::wstring GetPluginName() {
+    HMODULE hModule = nullptr;
+    if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCWSTR>(&GetGameDir), &hModule)) {
+        wchar_t filepath[MAX_PATH];
+        wchar_t outname[MAX_PATH];
+        wchar_t outext[MAX_PATH];
+        DWORD len = GetModuleFileNameW(hModule, filepath, MAX_PATH);
+        if (len > 0) {
+            _wsplitpath(filepath, NULL, NULL, outname, outext);
+            return std::wstring(outname) + outext;
+        }
+    }
+    return std::wstring();
+}
+
+inline bool UnknownVersionMessage() {
+    return plugin::Error(L"Your game version is not supported by this plugin.\nPlugin: %s\nGame process: %s\nEntryPoint: %llX",
+        GetPluginName().c_str(), GetProcessName().c_str(), GetEntryPoint());
 }
 
 }

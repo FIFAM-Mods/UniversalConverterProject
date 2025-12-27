@@ -1,5 +1,5 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 #include "FifamTypes.h"
 #include "GameInterfaces.h"
 

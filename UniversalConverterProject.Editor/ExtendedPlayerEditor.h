@@ -1,5 +1,5 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 
 struct PlayerExtension {
     wchar_t *jerseyName;

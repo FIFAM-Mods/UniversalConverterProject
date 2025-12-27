@@ -18,7 +18,6 @@
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
     <ClCompile Include="ExtendedPlayerEditor.cpp" />
-    <ClCompile Include="WomensDatabase.cpp" />
     <ClCompile Include="GenericKits.cpp" />
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="DatabaseOptions.cpp" />
@@ -57,7 +56,6 @@
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />
     <ClInclude Include="ExtendedPlayerEditor.h" />
-    <ClInclude Include="WomensDatabase.h" />
     <ClInclude Include="GenericKits.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="DatabaseOptions.h" />

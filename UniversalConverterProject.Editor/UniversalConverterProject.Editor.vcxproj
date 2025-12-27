@@ -79,7 +79,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;WIN32_LEAN_AND_MEAN;_HAS_STD_BYTE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(SolutionDir)shared;$(SolutionDir)shared\fifam-api\include\;$(SolutionDir)ScriptCompiler;$(SolutionDir)..\DXSDK\9.0c\Include;$(SolutionDir)..\fifam\fmapi;$(SolutionDir)..\fifam\generic;$(SolutionDir)..\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)shared;$(SolutionDir)shared\fifam-api;$(SolutionDir)ScriptCompiler;$(SolutionDir)..\DXSDK\9.0c\Include;$(SolutionDir)..\fifam\fmapi;$(SolutionDir)..\fifam\generic;$(SolutionDir)..\ImageMagick-Windows\png;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -140,7 +140,6 @@
     <ClCompile Include="StaffNames.cpp" />
     <ClCompile Include="Talent6Stars.cpp" />
     <ClCompile Include="Translation.cpp" />
-    <ClCompile Include="WomensDatabase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\AssetLoader.h" />
@@ -178,7 +177,6 @@
     <ClInclude Include="StaffNames.h" />
     <ClInclude Include="Talent6Stars.h" />
     <ClInclude Include="Translation.h" />
-    <ClInclude Include="WomensDatabase.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

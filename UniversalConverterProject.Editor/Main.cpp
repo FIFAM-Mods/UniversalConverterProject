@@ -1,4 +1,4 @@
-#include "plugin-std.h"
+#include "plugin.h"
 #include "ClubIDs.h"
 #include "FixedArchivesReadingForEditor.h"
 #include "Talent6Stars.h"
@@ -35,6 +35,8 @@ public:
     UniversalConverterProject() {
         auto v = FM::GetAppVersion();
         if (v.id() == ID_ED_13_1000) {
+            if (!CheckPluginName(Magic<'U','n','i','v','e','r','s','a','l','C','o','n','v','e','r','t','e','r','P','r','o','j','e','c','t','.','E','d','i','t','o','r','.','a','s','i'>()))
+                return;
             if (exists(FM::GameDirPath(L"plugins\\CustomTranslation.asi"))) {
                 ::Error("This plugin is not compatible with CustomTranslation plugin. Please delete CustomTranslation plugin.");
             }

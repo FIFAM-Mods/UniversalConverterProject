@@ -101,8 +101,39 @@ void METHOD GenerateRefereeAppearance(CDBReferee *ref, DUMMY_ARG, CPlayerAppeara
     GlobalRandom().SetSeed(seed1, seed2);
 }
 
-void METHOD ConvertPlayerAppearanceFromFM09(CPlayerAppearance *app, UChar hairStyle, UInt face, UChar hairColor, UChar beard) {
+void METHOD ConvertPlayerAppearanceFromFM09(CPlayerAppearance *app, DUMMY_ARG, UChar hairStyle, UInt face, UChar hairColor, UChar beard) {
     app->Clear();
+}
+
+UInt METHOD CPlayerAppearance_GetFIFAHairID(CPlayerAppearance *app) {
+    UInt hairId = app->m_nHairStyle | (app->m_nSideburns << 8);
+    return (hairId < std::size(hairTypes)) ? hairTypes[hairId] : 0u;
+}
+
+UInt METHOD CPlayerAppearance_GetFIFASideburnsID(CPlayerAppearance *app) {
+    return 0;
+}
+
+void __declspec(naked) HairID_Setup3DMatchManager() {
+    __asm {
+        movzx edx, byte ptr[esi + 0x99E] // hair ID bits 0-7
+        movzx eax, byte ptr[esi + 0x9A2] // hair ID bits 8-11
+        and eax, 0xF
+        shl eax, 8
+        or edx, eax
+        mov eax, 0x40C6A6
+        jmp eax
+    }
+}
+
+void __declspec(naked) HairID_Setup3DMatchReferee_1() {
+    __asm {
+        mov [esi + 0x322], dl
+        mov ecx, dword ptr [esp + 0xA]
+
+        mov edx, 0x413C30
+        jmp edx
+    }
 }
 
 void PatchPlayerAppearance(FM::Version v) {
@@ -133,6 +164,19 @@ void PatchPlayerAppearance(FM::Version v) {
         // TODO: CTeamYouthPlayerGenerator::SetupYouthPlayer
         patch::RedirectJump(0xFD5AA0, GenerateRefereeAppearance);
         patch::RedirectJump(0xEA26D0, ConvertPlayerAppearanceFromFM09);
+        // CPlayerAppearance methods
+        patch::RedirectJump(0x40BE60, CPlayerAppearance_GetFIFAHairID);
+        patch::RedirectJump(0x40BE80, CPlayerAppearance_GetFIFASideburnsID);
+        // 3d match manager
+        patch::RedirectJump(0x40C69F, HairID_Setup3DMatchManager);
+        patch::SetUShort(0x40C756, 0x006A); // push 0
+        patch::Nop(0x40C756 + 2, 6);
+        // 3d match referee
+        patch::SetUShort(0x413BE4, 0x8B90); //  movzx ecx, byte ptr [esp+0xA] => mov ecx, dword ptr [esp+0xA]
+        patch::RedirectJump(0x413C27, HairID_Setup3DMatchReferee_1);
+        
+        // 3d match player
+
 
         //patch::RedirectCall(0x417F87, OnSetupPlayer3D);
 

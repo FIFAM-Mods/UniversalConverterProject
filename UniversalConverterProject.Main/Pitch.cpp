@@ -2,7 +2,6 @@
 #include "FifamTypes.h"
 #include "GfxCoreHook.h"
 #include "FifamReadWrite.h"
-#include "license_check/license_check.h"
 #include "GameInterfaces.h"
 #include "FifamNation.h"
 #include "Random.h"
@@ -93,7 +92,7 @@ StadiumData *GetTeamStadiumData(UInt teamId, UInt teamType) {
 }
 
 void ReadStadiumDataFile() {
-    FifamReader reader(Magic<'p', 'l', 'u', 'g', 'i', 'n', 's', '\\', 'u', 'c', 'p', '\\', 's', 't', 'a', 'd', 'i', 'u', 'm', 'd', 'a', 't', 'a', '.', 'c', 's', 'v'>(1264444409), 14);
+    FifamReader reader(FM::GameDirPath(L"plugins\\ucp\\stadiumdata.csv"), 14);
     if (reader.Available()) {
         reader.SkipLine();
         while (!reader.IsEof()) {

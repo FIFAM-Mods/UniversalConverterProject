@@ -1,5 +1,5 @@
 #pragma once
-#include "plugin-std.h"
+#include "plugin.h"
 
 void PatchPitch(FM::Version v);
 void InstallPitch3D();
