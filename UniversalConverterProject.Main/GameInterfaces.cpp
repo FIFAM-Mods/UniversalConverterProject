@@ -1058,6 +1058,10 @@ void SetTransformVisible(void *trfm, Bool visible) {
         CallVirtualMethod<24>(trfm, 0x100, visible);
 }
 
+CRandom &GlobalRandom() {
+    return *(CRandom *)0x31E3F08;
+}
+
 String TeamName(CDBTeam *team) {
     if (team)
         return team->GetName();
@@ -1787,6 +1791,10 @@ void CDBCountry::SetFifaRanking(Float value) {
 
 Float CDBCountry::GetFifaRanking() {
 	return *raw_ptr<Float>(this, 0x284);
+}
+
+void CDBCountry::GenerateAppearance(CPlayerAppearance *appearance) {
+    CallMethod<0xFF0D80>(this, appearance);
 }
 
 TeamLeaguePositionData::TeamLeaguePositionData() {
@@ -3636,4 +3644,36 @@ EAGMoney CDBFinance::GetCash() {
     EAGMoney result;
     CallMethod<0x10D7570>(this, &result);
     return result;
+}
+
+UChar CDBReferee::GetCountryId() {
+    return CallMethodAndReturn<UChar, 0xFD5400>(this);
+}
+
+WideChar const *CDBReferee::GetName(WideChar *pBuffer) {
+    return CallMethodAndReturn<WideChar const *, 0xFD5410>(this, pBuffer);
+}
+
+NameDesc *CDBReferee::GetNameDesc() {
+    return CallMethodAndReturn<NameDesc *, 0xFD5430>(this);
+}
+
+UInt CDBReferee::GetType() {
+    return CallMethodAndReturn<UInt, 0xFD5440>(this);
+}
+
+WideChar const *CDBReferee::GetTypeName() {
+    return CallMethodAndReturn<WideChar const *, 0xFD5450>(this);
+}
+
+void CDBReferee::SetType(UInt type) {
+    CallMethod<0xFD5470>(this, type);
+}
+
+UInt CDBReferee::GetID() {
+    return CallMethodAndReturn<UInt, 0xFD5480>(this);
+}
+
+void CPlayerAppearance::Clear() {
+    CallMethod<0xEA17F0>(this);
 }

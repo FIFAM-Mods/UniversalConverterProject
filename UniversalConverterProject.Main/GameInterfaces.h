@@ -712,6 +712,8 @@ public:
     UChar m_nSideburns : 4;
     UChar m_nEyeColor : 4;
     UChar _pad7;
+
+    void Clear();
 };
 
 static_assert(sizeof(CPlayerAppearance) == 0x8, "Failed");
@@ -804,6 +806,17 @@ public:
 };
 
 CDBEmployee *GetManagerWhoLooksForPlayer(UInt playerId);
+
+class CDBReferee {
+public:
+    UChar GetCountryId();
+    WideChar const *GetName(WideChar *pBuffer = nullptr);
+    NameDesc *GetNameDesc();
+    UInt GetType();
+    WideChar const *GetTypeName();
+    void SetType(UInt type);
+    UInt GetID();
+};
 
 struct CScriptCommand {
     unsigned int m_nCommandId;
@@ -1527,6 +1540,7 @@ public:
     const Bool IsPlayerInNationalTeam(UInt playerId);
 	void SetFifaRanking(Float value);
 	Float GetFifaRanking();
+    void GenerateAppearance(CPlayerAppearance *appearance);
 };
 
 class CCountryStore {
@@ -1645,6 +1659,9 @@ void SetTransformVisible(void *trfm, Bool visible);
 
 class CRandom {
 public:
+    Int value1;
+    Int value2;
+
     void SetSeed(Int seed1, Int seed2);
     void GetSeed(Int &seed1, Int &seed2);
     // Returns a random integer in [0, maxExclusive)
@@ -1654,6 +1671,8 @@ public:
     // Returns a random float in [0.0f, maxExclusive)
     Float GetRandomFloat(Float maxExclusive);
 };
+
+CRandom &GlobalRandom();
 
 class CParameterFiles {
 public:

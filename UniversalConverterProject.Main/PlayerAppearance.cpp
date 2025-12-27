@@ -4,6 +4,7 @@
 #include "GameInterfaces.h"
 #include "Utils.h"
 #include "UcpSettings.h"
+#include "FifamAppearanceDefs.h"
 
 using namespace plugin;
 
@@ -80,11 +81,35 @@ void __declspec(naked) HairID_RenderDataFromPlayerAppearance_2() {
     }
 }
 
+void METHOD OnAppearanceDefGenerateRandomAppearance(void *t, DUMMY_ARG, Int *params) {
+    CallMethod<0x1381400>(t, params);
+    Int hairId = params[FifamAppearanceDefs::ParamHair];
+    params[FifamAppearanceDefs::ParamHair] = hairId & 0xFF;
+    params[FifamAppearanceDefs::ParamSideburns] = (hairId >> 8) & 0xF;
+}
+
+UInt METHOD GetPlayerEmpics0(void *p) { return 0; }
+
+void METHOD GenerateRefereeAppearance(CDBReferee *ref, DUMMY_ARG, CPlayerAppearance *app) {
+    Int hash = 0;
+    Int seed1 = 0, seed2 = 0;
+    auto name = ref->GetName();
+    CallMethod<0x14B5C9D>(&hash, name, wcslen(name) * 2); // CGuiHash::Generate
+    GlobalRandom().GetSeed(seed1, seed2);
+    GlobalRandom().SetSeed(hash, ~hash);
+    GetCountry(ref->GetCountryId())->GenerateAppearance(app);
+    GlobalRandom().SetSeed(seed1, seed2);
+}
+
+void METHOD ConvertPlayerAppearanceFromFM09(CPlayerAppearance *app, UChar hairStyle, UInt face, UChar hairColor, UChar beard) {
+    app->Clear();
+}
+
 void PatchPlayerAppearance(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        
+
         // Extended hairstyle ID
-        
+
         // CGameStartPlayerAppearance::CreateUI
         patch::RedirectCall(0x537559, GetManagerAppearanceWithExendedHairId); // hairstyle
         patch::SetUShort(0x53755E, 0xB70F); // movzx ecx, byte ptr [eax+2] => movzx ecx, word ptr [eax+2]
@@ -98,7 +123,16 @@ void PatchPlayerAppearance(FM::Version v) {
         // RenderDataFromPlayerAppearance
         patch::RedirectJump(0x4534F0, HairID_RenderDataFromPlayerAppearance_1); // hairstyle
         patch::RedirectJump(0x453575, HairID_RenderDataFromPlayerAppearance_2); // sideburns
-
+        // CPlayerGenerator::SetAppearance
+        patch::Nop(0xFA7A22, 2); // always generate appearance
+        patch::RedirectCall(0xFF0E52, OnAppearanceDefGenerateRandomAppearance);
+        // remove appearance recreation feature
+        patch::RedirectCall(0xEF639D, GetPlayerEmpics0);
+        patch::RedirectCall(0xF38EF4, GetPlayerEmpics0);
+        patch::RedirectCall(0xF3B501, GetPlayerEmpics0);
+        // TODO: CTeamYouthPlayerGenerator::SetupYouthPlayer
+        patch::RedirectJump(0xFD5AA0, GenerateRefereeAppearance);
+        patch::RedirectJump(0xEA26D0, ConvertPlayerAppearanceFromFM09);
 
         //patch::RedirectCall(0x417F87, OnSetupPlayer3D);
 
