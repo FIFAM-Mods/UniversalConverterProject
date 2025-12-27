@@ -769,6 +769,7 @@ public:
     Bool IsGoalkeeper();
     Bool IsCaptain();
     UChar GetTeamPart();
+    CPlayerAppearance *GetAppearance();
 };
 
 class CDBStaff {
@@ -816,6 +817,11 @@ public:
     WideChar const *GetTypeName();
     void SetType(UInt type);
     UInt GetID();
+};
+
+class CRegenPlayer {
+public:
+    CPlayerAppearance *GetAppearance();
 };
 
 struct CScriptCommand {

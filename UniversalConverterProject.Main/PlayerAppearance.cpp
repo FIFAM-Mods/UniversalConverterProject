@@ -126,22 +126,24 @@ void __declspec(naked) HairID_Setup3DMatchManager() {
     }
 }
 
-void __declspec(naked) HairID_Setup3DMatchReferee_1() {
+void NAKED HairID_Setup3DMatchReferee_1() {
     __asm {
-        mov [esi + 0x322], dl
-        mov ecx, dword ptr [esp + 0xA]
-        mov edx, 0x413C30
+        movzx ecx, byte ptr [esp + 0xA] // hair ID bits 0-7
+        movzx edx, byte ptr [esi + 0xE] // hair ID bits 8-11
+        and edx, 0xF
+        shl edx, 8
+        or ecx, edx
+        mov edx, 0x413BE9
         jmp edx
     }
 }
 
 void __declspec(naked) HairID_Setup3DMatchReferee_2() {
     __asm {
-        shr ecx, 8
-        and ecx, 0xF
-        mov [esi + 0x320], cl
-        mov edx, 0x413C3E
-        jmp edx
+        mov [esi + 0x31C], dl
+        mov [esi + 0x320], dh
+        mov ecx, 0x413C02
+        jmp ecx
     }
 }
 
@@ -153,6 +155,43 @@ void __declspec(naked) HairID_Setup3DMatchReferee_3() {
         shl eax, 8
         or edx, eax
         mov eax, 0x40D546
+        jmp eax
+    }
+}
+
+UInt METHOD CDBPlayer_GetHairstyle(CDBPlayer *player) {
+    CPlayerAppearance *app = player->GetAppearance();
+    return app->m_nHairStyle | (app->m_nSideburns << 8);
+}
+
+void METHOD CDBPlayer_SetHairstyle(CDBPlayer *player, UInt hairstyle) {
+    CPlayerAppearance *app = player->GetAppearance();
+    app->m_nHairStyle = hairstyle & 0xFF;
+    app->m_nSideburns = (hairstyle >> 8) & 0xF;
+}
+
+UInt METHOD CRegenPlayer_GetHairstyle(CRegenPlayer *regen) {
+    CPlayerAppearance *app = regen->GetAppearance();
+    return app->m_nHairStyle | (app->m_nSideburns << 8);
+}
+
+void NAKED HairID_Setup3DMatchPlayer_1() {
+    __asm {
+        mov [esi + 0x31C], al
+        mov [esi + 0x320], ah
+        mov eax, 0x413E80
+        jmp eax
+    }
+}
+
+void NAKED HairID_Setup3DMatchPlayer_2() {
+    __asm {
+        movzx edx, [edi + 0x31C] // hair ID bits 0-7
+        movzx eax, [edi + 0x320] // hair ID bits 8-11
+        and eax, 0xF
+        shl eax, 8
+        or edx, eax
+        mov eax, 0x40D9D9
         jmp eax
     }
 }
@@ -182,25 +221,36 @@ void PatchPlayerAppearance(FM::Version v) {
         patch::RedirectCall(0xEF639D, GetPlayerEmpics0);
         patch::RedirectCall(0xF38EF4, GetPlayerEmpics0);
         patch::RedirectCall(0xF3B501, GetPlayerEmpics0);
-        // TODO: CTeamYouthPlayerGenerator::SetupYouthPlayer
+        // other
         patch::RedirectJump(0xFD5AA0, GenerateRefereeAppearance);
         patch::RedirectJump(0xEA26D0, ConvertPlayerAppearanceFromFM09);
         // CPlayerAppearance methods
         patch::RedirectJump(0x40BE60, CPlayerAppearance_GetFIFAHairID);
         patch::RedirectJump(0x40BE80, CPlayerAppearance_GetFIFASideburnsID);
+        // CDBPlayer methods
+        patch::RedirectJump(0xF9B3D0, CDBPlayer_GetHairstyle);
+        patch::RedirectJump(0xF9B3C0, CDBPlayer_SetHairstyle);
+        // CRegenPlayer methods
+        patch::RedirectJump(0x135FF60, CRegenPlayer_GetHairstyle);
+        patch::Nop(0xF02595, 3); // CTeamYouthPlayerGenerator::SetupYouthPlayer
         // 3d match manager
         patch::RedirectJump(0x40C69F, HairID_Setup3DMatchManager);
         patch::SetBytes(0x40C756, "6A 00 90 90 90 90 90 90"); // push 0
         // 3d match referee
-        patch::SetUShort(0x413BE4, 0x8B90); //  movzx ecx, byte ptr [esp+0xA] => mov ecx, dword ptr [esp+0xA]
-        patch::RedirectJump(0x413C27, HairID_Setup3DMatchReferee_1);
-        patch::SetPointer(0x413C30 + 4, hairTypes);
-        patch::SetBytes(0x413C30, "90 8B 0C 85"); // movzx ecx, byte ptr ds:hairTypes[ecx*4] => mov ecx, dword ptr ds:hairTypes[ecx*4]
-        patch::RedirectJump(0x413C38, HairID_Setup3DMatchReferee_2);
+        patch::RedirectJump(0x413BE4, HairID_Setup3DMatchReferee_1);
+        patch::SetBytes(0x413BEF, "90 8B 14 8D"); // movzx edx, byte ptr ds:hairTypes[ecx*4] => mov edx, byte ptr ds:hairTypes[ecx*4]
+        patch::RedirectJump(0x413BFC, HairID_Setup3DMatchReferee_2);
+        patch::Nop(0x413C2D, 17);
         patch::RedirectJump(0x40D53E, HairID_Setup3DMatchReferee_3);
         patch::SetBytes(0x40D5CD, "6A 00 90 90 90 90 90 90 90"); // push 0
         // 3d match player
-
+        patch::RedirectCall(0x413E67, CDBPlayer_GetHairstyle);
+        patch::Nop(0x413E6C, 4);
+        patch::SetBytes(0x413E70, "90 8B 04 85"); // movzx eax, byte ptr ds:hairTypes[edx*4] => mov eax, dword ptr ds:hairTypes[eax*4]
+        patch::RedirectJump(0x413E7A, HairID_Setup3DMatchPlayer_1);
+        patch::Nop(0x413EB8, 28);
+        patch::RedirectJump(0x40D9D2, HairID_Setup3DMatchPlayer_2);
+        patch::SetBytes(0x40DA5D, "6A 00 90 90 90 90 90 90"); // push 0
 
         //patch::RedirectCall(0x417F87, OnSetupPlayer3D);
 

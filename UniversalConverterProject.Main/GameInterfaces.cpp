@@ -1958,6 +1958,10 @@ UChar CDBPlayer::GetTeamPart() {
     return CallMethodAndReturn<UChar, 0xFAC240>(this);
 }
 
+CPlayerAppearance *CDBPlayer::GetAppearance() {
+    return CallMethodAndReturn<CPlayerAppearance *, 0xF9B340>(this);
+}
+
 UChar CDBPlayer::GetNationality(UChar number) {
     return CallMethodAndReturn<UChar, 0xF9AF10>(this, number);
 }
@@ -3676,4 +3680,8 @@ UInt CDBReferee::GetID() {
 
 void CPlayerAppearance::Clear() {
     CallMethod<0xEA17F0>(this);
+}
+
+CPlayerAppearance *CRegenPlayer::GetAppearance() {
+    return CallMethodAndReturn<CPlayerAppearance *, 0x135FF10>(this);
 }

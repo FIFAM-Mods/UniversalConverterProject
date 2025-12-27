@@ -78,6 +78,17 @@ UChar METHOD CPlayer_GetSideburnsType(void *t) {
     return 0;
 }
 
+void METHOD CRegen_SetHairStyle(void *t, DUMMY_ARG, UShort id) {
+    *raw_ptr<UChar>(t, 0x94) = UChar(id & 0xFF);
+    *raw_ptr<UChar>(t, 0x96) = UChar((id >> 8) & 0xFF);
+}
+
+UInt METHOD CRegen_GetHairStyle(void *t) {
+    UInt low = UInt(*raw_ptr<UChar>(t, 0x94));
+    UInt high = UInt(*raw_ptr<UChar>(t, 0x96));
+    return (high << 8) | low;
+}
+
 void __declspec(naked) CDBFM09ToFIFAFaceParamMapper_GenerateAppearance1() {
     __asm {
         mov edi, [esp + 0x44]
@@ -122,6 +133,20 @@ bool METHOD OnReadSavPlayerSideburns(void *file, DUMMY_ARG, UChar *out, WideChar
     return true;
 }
 
+bool METHOD OnReadSavRegenHairStyle(void *file, DUMMY_ARG, UChar *out) {
+    UChar *regen = out - 0x94;
+    UShort hairId = 0;
+    CallMethod<0x513480>(file, &hairId); // read UShort
+    CPlayer_SetHairStyle(regen, 0, hairId);
+    return true;
+}
+
+bool METHOD OnReadSavRegenSideburns(void *file, DUMMY_ARG, UChar *out) {
+    UChar dummy = 0;
+    CallMethod<0x5133A0>(file, &dummy); // read UChar
+    return true;
+}
+
 bool METHOD OnWriteSavPlayerHairStyle(void *file, DUMMY_ARG, UChar *data, WideChar character) {
     UChar *player = data - 0x1DA;
     UShort hairId = (UShort)CPlayer_GetHairStyle(player);
@@ -131,6 +156,17 @@ bool METHOD OnWriteSavPlayerHairStyle(void *file, DUMMY_ARG, UChar *data, WideCh
 bool METHOD OnWriteSavPlayerSideburns(void *file, DUMMY_ARG, UChar *data, WideChar character) {
     UChar zero = 0;
     return CallMethodAndReturn<Bool, 0x514670>(file, &zero, character); // write UChar
+}
+
+bool METHOD OnWriteSavRegenHairStyle(void *file, DUMMY_ARG, UChar *data) {
+    UChar *player = data - 0x94;
+    UShort hairId = (UShort)CRegen_GetHairStyle(player);
+    return CallMethodAndReturn<Bool, 0x514770>(file, &hairId); // write UShort
+}
+
+bool METHOD OnWriteSavRegenSideburns(void *file, DUMMY_ARG, UChar *data) {
+    UChar zero = 0;
+    return CallMethodAndReturn<Bool, 0x514630>(file, &zero); // write UChar
 }
 
 struct AppearanceComboBoxItem {
@@ -240,6 +276,27 @@ void __stdcall OnAppearanceFilterComboBoxSetCurrSel(HWND hCombo) {
 
 void METHOD ConvertPlayerAppearanceFromFM09(void *app, DUMMY_ARG, UChar hairStyle, UInt face, UChar hairColor, UChar beard) {
     memset(app, 0, 8);
+}
+
+void NAKED HairID_CPlayer_SetAppearance() {
+    __asm {
+        mov [ecx + 0x1DA], dl
+        mov [ecx + 0x1DC], dh
+        mov edx, 0x51C27A
+        jmp edx
+    }
+}
+
+void NAKED HairID_CDlgPlayerpoolChange() {
+    __asm {
+        movzx ecx, byte ptr [eax + 0x94]
+        movzx edx, byte ptr [eax + 0x96]
+        and edx, 0xF
+        shl edx, 8
+        or ecx, edx
+        mov edx, 0x489B3B
+        jmp edx
+    }
 }
 
 void PatchPlayerAppearance(FM::Version v) {
@@ -455,6 +512,7 @@ void PatchPlayerAppearance(FM::Version v) {
         patch::SetUChar(0x488947, 0x39); // cmp byte ptr [esp+0x34], al => cmp dword ptr [esp+0x34], eax
         // CPlayer::SetAppearance
         patch::SetUChar(0x51C265, 0x8B); // mov dl, [esp+8] => mov edx, [esp+8]
+        patch::RedirectJump(0x51C274, HairID_CPlayer_SetAppearance);
         patch::Nop(0x51C2BA, 6); // sideburns set
         //
         patch::Nop(0x488CD6, 3); // movzx eax, al
@@ -463,7 +521,9 @@ void PatchPlayerAppearance(FM::Version v) {
         patch::SetUShort(0x4F7A80, 0xD88B); // mov bl, al => mov ebx, eax
         patch::SetUShort(0x4F7A87, 0xC33B); // cmp al, bl => cmp eax, ebx
         patch::RedirectCall(0x53456F, CPlayer_GetHairStyle_LowPart);
+        patch::RedirectCall(0x535068, CPlayer_GetHairStyle_LowPart);
         patch::RedirectCall(0x53458D, CPlayer_GetHairStyle_HighPart);
+        patch::RedirectCall(0x535086, CPlayer_GetHairStyle_HighPart);
         // CDBFM09ToFIFAFaceParamMapper::GenerateAppearance
         patch::Nop(0x5A020B, 3);
         patch::Nop(0x5A00BB, 3);
@@ -477,9 +537,13 @@ void PatchPlayerAppearance(FM::Version v) {
         // .sav reading
         patch::RedirectCall(0x52720E, OnReadSavPlayerHairStyle);
         patch::RedirectCall(0x52723E, OnReadSavPlayerSideburns);
+        patch::RedirectCall(0x53489E, OnReadSavRegenHairStyle);
+        patch::RedirectCall(0x5348BA, OnReadSavRegenSideburns);
         // .sav writing
         patch::RedirectCall(0x51F90F, OnWriteSavPlayerHairStyle);
         patch::RedirectCall(0x51F93F, OnWriteSavPlayerSideburns);
+        patch::RedirectCall(0x53470C, OnWriteSavRegenHairStyle);
+        patch::RedirectCall(0x534728, OnWriteSavRegenSideburns);
 
         // sorting in appearance comboboxes
         patch::SetUChar(0x4B6244, 0x51); // push ecx
@@ -499,5 +563,9 @@ void PatchPlayerAppearance(FM::Version v) {
 
         // remove FM09 generator
         patch::RedirectJump(0x5A36C0, ConvertPlayerAppearanceFromFM09);
+
+        // CDlgPlayerpoolChange
+        patch::RedirectJump(0x489B34, HairID_CDlgPlayerpoolChange);
+        patch::SetBytes(0x489BA4, "6A 00 90 90 90 90 90 90"); // push 0
     }
 }
