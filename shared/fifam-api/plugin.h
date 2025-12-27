@@ -179,6 +179,8 @@ inline Version DetectAppVersion() {
 
     case 0x3C8D830: // ?
         return ID_FM_14_1000;
+    case 0x403A10: // decrypted
+        return ID_FM_13_1030_RLD;
     case 0x1203AB4: // decrypted
         return ID_FM_12_1003_RZ;
     case 0x1743049: // encrypted
