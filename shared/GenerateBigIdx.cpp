@@ -73,18 +73,7 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
     vector<unsigned int> archiveNamesOffsets;
     vector<string> fileNamesList;
     set<string> updateFiles;
-    set<string> ignoreFiles = {
-        "art_fm\\lib\\ClubFacilities\\building_03_12_3.tpi",
-        "art_fm\\lib\\ClubFacilities\\building_03_13_3.tpi",
-        "badges\\clubs\\256x256\\2024_002D0004.tga",
-        "badges\\clubs\\128x128\\2024_002D0004.tga",
-        "badges\\clubs\\64x64\\2024_002D0004.tga",
-        "badges\\clubs\\32x32\\2024_002D0004.tga",
-        "badges\\clubs\\256x256\\2024_001500B1.tga",
-        "badges\\clubs\\128x128\\2024_001500B1.tga",
-        "badges\\clubs\\64x64\\2024_001500B1.tga",
-        "badges\\clubs\\32x32\\2024_001500B1.tga"
-    };
+    set<string> ignoreFiles = {};
     unsigned int archivesCount = 0;
     unsigned int filesCount = 0;
     unsigned int currentNamesListOffset = 0;

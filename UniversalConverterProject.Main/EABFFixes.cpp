@@ -1791,8 +1791,24 @@ Bool METHOD PreMatchSpeechEnemyTeamOld_CanAdd(void *preMatchSpeech) {
     return false;
 }
 
-UChar METHOD _GetPriority(void *) {
-    return 5;
+void __declspec(naked) SetLowestLeaguesMultiplier() {
+    __asm {
+        mov dword ptr[esp + 40], 3
+        mov ebp, 0x10F07C7
+        jmp ebp
+    }
+}
+
+Int METHOD GetMaxLoans(Int) {
+    return 100;
+}
+
+bool METHOD SetProScoutingSystemCost(void *money, DUMMY_ARG, __int64, int currency) {
+    return CallMethodAndReturn<bool, 0x149C6BB>(money, 500'000ll, currency);
+}
+
+bool METHOD SetProScoutingSystemUpdatesCost(void *money, DUMMY_ARG, __int64, int currency) {
+    return CallMethodAndReturn<bool, 0x149C6BB>(money, 10'000ll, currency);
 }
 
 void PatchEABFFixes(FM::Version v) {
@@ -2005,11 +2021,11 @@ void PatchEABFFixes(FM::Version v) {
         patch::RedirectCall(0x6E8F2B, OnGetTeamLeagueTotalLeadershipsInTable);
 
         // player name
-        static WideChar const *PlayerShitNumberFormat = L"%d.";
-        patch::SetPointer(0x5CD250 + 1, PlayerShitNumberFormat);
-        patch::SetPointer(0x5E7A0E + 1, PlayerShitNumberFormat);
-        patch::SetPointer(0xAF0DF7 + 1, PlayerShitNumberFormat);
-        patch::SetPointer(0x5D90C1 + 1, PlayerShitNumberFormat);
+        static WideChar const *PlayerShirtNumberFormat = L"%d.";
+        patch::SetPointer(0x5CD250 + 1, PlayerShirtNumberFormat);
+        patch::SetPointer(0x5E7A0E + 1, PlayerShirtNumberFormat);
+        patch::SetPointer(0xAF0DF7 + 1, PlayerShirtNumberFormat);
+        patch::SetPointer(0x5D90C1 + 1, PlayerShirtNumberFormat);
 
         // CL/EL registration
         patch::RedirectCall(0x8ACFD2, GetPlayerNullTeam);
@@ -2457,6 +2473,30 @@ void PatchEABFFixes(FM::Version v) {
 
         // fix CPreMatchSpeechEnemyTeamOld
         patch::RedirectJump(0x13096C0, PreMatchSpeechEnemyTeamOld_CanAdd);
+
+        patch::Nop(0xFD30E6, 4); // talent 6 stars
+
+        patch::SetUChar(0xCF4FD7, 0xEB); // increase salary owned club
+
+        // lowest leagues
+        patch::RedirectJump(0x10F07C0, SetLowestLeaguesMultiplier);
+        patch::Nop(0x10F07C0 + 5, 2);
+
+        patch::RedirectJump(0x10CB820, GetMaxLoans);
+        patch::RedirectJump(0x10CB8B0, GetMaxLoans);
+        patch::RedirectJump(0x10CB850, GetMaxLoans);
+        patch::RedirectJump(0x10CB880, GetMaxLoans);
+        patch::RedirectJump(0x10CB790, GetMaxLoans);
+        patch::RedirectJump(0x10CB760, GetMaxLoans);
+        patch::RedirectJump(0x10CB7C0, GetMaxLoans);
+        patch::RedirectJump(0x10CB7F0, GetMaxLoans);
+        patch::RedirectJump(0x10CB730, GetMaxLoans);
+        patch::RedirectJump(0x10CB700, GetMaxLoans);
+        patch::RedirectJump(0x10CB910, GetMaxLoans);
+        patch::RedirectJump(0x10CB8E0, GetMaxLoans);
+
+        patch::RedirectCall(0xEA52F5, SetProScoutingSystemCost);
+        patch::RedirectCall(0xEA5385, SetProScoutingSystemUpdatesCost);
     }
 }
 

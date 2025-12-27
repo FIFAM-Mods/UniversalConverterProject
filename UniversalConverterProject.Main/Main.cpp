@@ -4,15 +4,10 @@
 #include "UcpSettings.h"
 #include "WorldCup.h"
 #include "LeagueSelection.h"
-#include "MasterDatLimit.h"
-#include "Talent6Stars.h"
-#include "TournamentFinalists.h"
 #include "NationalTeamManagers.h"
 #include "GfxCoreHook.h"
 #include "PlayerMatchEvents.h"
 #include "FifaWorldPlayerGala.h"
-#include "ScoutingSystems.h"
-#include "LowestLeagues.h"
 #include "PlayerDevelopment.h"
 #include "StaffNames.h"
 #include "ForeignersLimit.h"
@@ -21,13 +16,11 @@
 #include "Competitions.h"
 #include "EABFFixes.h"
 #include "SpareEmployeeFix.h"
-#include "LoansLimit.h"
 #include "EuCountries.h"
 #include "Minikits.h"
 #include "Balls.h"
 #include "ExcludeNames.h"
 #include "3dMatchStandings.h"
-#include "IncreaseSalaryOwnedClub.h"
 #include "Kits.h"
 #include "MiscFormerCupOpponents.h"
 #include "PlayerAccessories.h"
@@ -124,6 +117,7 @@ public:
             patch::SetUChar(0x451B92, 0xEB); // remove EA logo
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
+            patch::SetUInt(0x1338FE4 + 1, 0x10000000); // 64 MB > 256 MB master.dat size limit
             const UInt SaveGameVersion = 48; // 48 - FM 2026 1.0 savefile
             patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
             patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
@@ -156,15 +150,10 @@ public:
             PatchDatabaseOptions(v);
             PatchWorldCup(v);
             PatchLeagueSelection(v);
-            PatchMasterDatLimit(v);
-            PatchTalentStars(v);
-            PatchTournamentFinalists(v);
             PatchNationalTeamManagers(v);
             PatchGfxCoreHook(v);
             PatchPlayerMatchEvents(v);
             PatchFifaWorldPlayerGala(v);
-            PatchScoutingSystems(v);
-            PatchLowestLeagues(v);
             //PatchPlayerDevelopment(v);
             PatchStaffNames(v);
             PatchForeignersLimit(v);
@@ -174,13 +163,11 @@ public:
             PatchLeagueSplit(v);
             PatchSpareEmployeeFix(v);
             PatchEABFFixes(v);
-            PatchLoansLimit(v);
             PatchEuCountries(v);
             PatchMinikits(v);
             PatchBalls(v);
             PatchExcludeNames(v);
             Patch3dMatchStandings(v);
-            PatchIncreaseSalaryOwnedClub(v);
             PatchKits(v);
             PatchMiscFormerCupOpponents(v);
             PatchPlayerAccessories(v);
