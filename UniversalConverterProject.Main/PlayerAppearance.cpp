@@ -116,8 +116,8 @@ UInt METHOD CPlayerAppearance_GetFIFASideburnsID(CPlayerAppearance *app) {
 
 void __declspec(naked) HairID_Setup3DMatchManager() {
     __asm {
-        movzx edx, byte ptr[esi + 0x99E] // hair ID bits 0-7
-        movzx eax, byte ptr[esi + 0x9A2] // hair ID bits 8-11
+        movzx edx, byte ptr [esi + 0x99E] // hair ID bits 0-7
+        movzx eax, byte ptr [esi + 0x9A2] // hair ID bits 8-11
         and eax, 0xF
         shl eax, 8
         or edx, eax
@@ -130,9 +130,30 @@ void __declspec(naked) HairID_Setup3DMatchReferee_1() {
     __asm {
         mov [esi + 0x322], dl
         mov ecx, dword ptr [esp + 0xA]
-
         mov edx, 0x413C30
         jmp edx
+    }
+}
+
+void __declspec(naked) HairID_Setup3DMatchReferee_2() {
+    __asm {
+        shr ecx, 8
+        and ecx, 0xF
+        mov [esi + 0x320], cl
+        mov edx, 0x413C3E
+        jmp edx
+    }
+}
+
+void __declspec(naked) HairID_Setup3DMatchReferee_3() {
+    __asm {
+        movzx edx, [esp + 0x54C] // hair ID bits 0-7
+        movzx eax, [esp + 0x550] // hair ID bits 8-11
+        and eax, 0xF
+        shl eax, 8
+        or edx, eax
+        mov eax, 0x40D546
+        jmp eax
     }
 }
 
@@ -169,12 +190,15 @@ void PatchPlayerAppearance(FM::Version v) {
         patch::RedirectJump(0x40BE80, CPlayerAppearance_GetFIFASideburnsID);
         // 3d match manager
         patch::RedirectJump(0x40C69F, HairID_Setup3DMatchManager);
-        patch::SetUShort(0x40C756, 0x006A); // push 0
-        patch::Nop(0x40C756 + 2, 6);
+        patch::SetBytes(0x40C756, "6A 00 90 90 90 90 90 90"); // push 0
         // 3d match referee
         patch::SetUShort(0x413BE4, 0x8B90); //  movzx ecx, byte ptr [esp+0xA] => mov ecx, dword ptr [esp+0xA]
         patch::RedirectJump(0x413C27, HairID_Setup3DMatchReferee_1);
-        
+        patch::SetPointer(0x413C30 + 4, hairTypes);
+        patch::SetBytes(0x413C30, "90 8B 0C 85"); // movzx ecx, byte ptr ds:hairTypes[ecx*4] => mov ecx, dword ptr ds:hairTypes[ecx*4]
+        patch::RedirectJump(0x413C38, HairID_Setup3DMatchReferee_2);
+        patch::RedirectJump(0x40D53E, HairID_Setup3DMatchReferee_3);
+        patch::SetBytes(0x40D5CD, "6A 00 90 90 90 90 90 90 90"); // push 0
         // 3d match player
 
 
