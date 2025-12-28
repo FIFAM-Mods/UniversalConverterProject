@@ -5,6 +5,7 @@
 #include "Random.h"
 #include "Translation.h"
 #include "CustomTranslation.h"
+#include "LeagueSelection.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -292,6 +293,7 @@ void METHOD OnDatabaseLoaderSetDatabasePath(void *t, DUMMY_ARG, void *screen) {
             SafeLog::Write(L"Loading custom translation file: " + filename.wstring());
         });
     }
+    DecidePreferredLeagues();
     //::Warning(L"Loading %s", raw_ptr<wchar_t>(t, 0x30));
 }
 

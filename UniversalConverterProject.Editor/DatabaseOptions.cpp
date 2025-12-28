@@ -149,7 +149,7 @@ int METHOD EULACloseApp(void *) {
 }
 
 String GetDatabaseTitle(StringA const &id) {
-    StringA titleKey = Format("DATABASE_TITLE_%s", id.c_str());
+    StringA titleKey = id.empty() ? "DATABASE_TITLE" : Format("DATABASE_TITLE_%s", id.c_str());
     WideChar const *titleStr = GetText(titleKey.c_str());
     return titleStr ? titleStr : AtoW(titleKey);
 }
@@ -170,7 +170,7 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         HWND cbDatabase = GetDlgItem(hwndDlg, 2068);
         EnableWindow(GetDlgItem(hwndDlg, 1953), false);
         SendMessageW(cbDatabase, CB_RESETCONTENT, 0, 0);
-        SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)GetText("DATABASE_TITLE"));
+        SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)GetDatabaseTitle(StringA()).c_str());
         for (auto const &d : DatabasesVec()) {
             String title = GetDatabaseTitle(d.id);
             SendMessageW(cbDatabase, CB_ADDSTRING, 0, (LPARAM)title.c_str());

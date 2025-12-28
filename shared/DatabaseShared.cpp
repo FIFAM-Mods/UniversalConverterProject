@@ -39,7 +39,7 @@ DatabaseInfo &CurrentDatabase() {
     return info;
 }
 
-void ReadDatabaseIDs(Bool onlyEditorDatabases) {
+void ReadDatabaseIDs(Bool editor) {
     Databases().clear();
     DatabasesVec().clear();
     FifamReader r(FM::GameDirPath(L"plugins\\ucp\\database_options.txt"));
@@ -51,8 +51,12 @@ void ReadDatabaseIDs(Bool onlyEditorDatabases) {
                 r.ReadLineWithSeparator(L'\t', d.id, d.isWomenDatabase, d.parentDatabaseId);
                 if (!d.id.empty()) {
                     Path dbFolder = Path(FM::GetGameDir()) / ("database_" + d.id);
-                    Bool hasEditorDatabase = exists(dbFolder) && exists(dbFolder / "Master.dat");
-                    if (!onlyEditorDatabases || hasEditorDatabase) {
+                    Bool hasEditorDatabase = false;
+                    if (editor)
+                        hasEditorDatabase = exists(dbFolder) && exists(dbFolder / "data" / "CountryData1.sav");
+                    else
+                        hasEditorDatabase = exists(dbFolder) && exists(dbFolder / "Master.dat");
+                    if (!editor || hasEditorDatabase) {
                         d.hasEditorDatabase = hasEditorDatabase;
                         d.index = DatabasesVec().size();
                         DatabasesVec().push_back(d);

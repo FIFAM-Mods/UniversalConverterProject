@@ -17,7 +17,7 @@ Map<StringA, DatabaseInfo> &Databases();
 DatabaseInfo *GetDatabaseInfo(StringA const &id);
 Vector<DatabaseInfo> &DatabasesVec();
 DatabaseInfo &CurrentDatabase();
-void ReadDatabaseIDs(Bool onlyEditorDatabases = false);
+void ReadDatabaseIDs(Bool editor);
 String GetDatabaseFolder(unsigned int databaseIndex);
 void SetKLFilePath_Shared(WideChar *out, WideChar const *in);
 Bool IsWomenDatabase();
