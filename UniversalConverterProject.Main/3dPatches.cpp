@@ -510,15 +510,18 @@ void __declspec(naked) OnSkyModel() {
     }
 }
 
-unsigned int gCurrentPlayerLoadPlayerId1 = 0;
-unsigned int gCurrentPlayerLoadPlayerId2 = 0;
-unsigned int gCurrentPlayerLoadPlayerId3 = 0;
-unsigned int gCurrentPlayerLoadPlayerId4 = 0;
+UInt gCurrentPlayerLoadPlayerId1 = 0;
+Int gCurrentPlayerLoadFaceType1 = -1;
+UInt gCurrentPlayerLoadPlayerId2 = 0;
+Int gCurrentPlayerLoadFaceType2 = -1;
+Int gCurrentPlayerLoadFaceType3 = -1;
 
 void METHOD OnLoadFifaPlayer1(void *player, DUMMY_ARG, void *playerInfo, void *resource, bool loadBody, void *resMan) {
     gCurrentPlayerLoadPlayerId1 = *raw_ptr<unsigned int>(playerInfo, 4);
+    gCurrentPlayerLoadFaceType1 = *raw_ptr<Int>(playerInfo, 0x20);
     CallMethodDynGlobal(GfxCoreAddress(0x39142B), player, playerInfo, resource, loadBody, resMan);
     gCurrentPlayerLoadPlayerId1 = 0;
+    gCurrentPlayerLoadFaceType1 = -1;
 }
 
 int METHOD OnGetPlayerEffTexture1(void *t, DUMMY_ARG, char const *name, bool cached, bool cube) {
@@ -527,13 +530,20 @@ int METHOD OnGetPlayerEffTexture1(void *t, DUMMY_ARG, char const *name, bool cac
         if (!customEffTexPath.empty())
             return CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x39DEFA), t, customEffTexPath.c_str(), false, cube);
     }
-    return CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x39DEFA), t, name, cached, cube);
+    Bool female = gCurrentPlayerLoadFaceType1 >= 3 && gCurrentPlayerLoadFaceType1 <= 7;
+    return CallMethodAndReturnDynGlobal<int>(GfxCoreAddress(0x39DEFA), t, female ? "eff_female.dds" : "eff.dds", cached, cube);
 }
 
-void OnLoadFifaPlayer2(void *playerInfo, unsigned int playerId) {
+template<UInt PlayerDefOffset>
+void OnLoadFifaPlayer2(void *playerInfo, void *playerDef) {
+    playerDef = ((UChar *)playerDef - PlayerDefOffset);
+    unsigned int playerId = *raw_ptr<unsigned int>(playerDef, 0x1044);
+    unsigned int faceType = *raw_ptr<unsigned int>(playerDef, 0x10B8);
     gCurrentPlayerLoadPlayerId2 = playerId;
+    gCurrentPlayerLoadFaceType2 = faceType;
     CallDynGlobal(GfxCoreAddress(0x202430), playerInfo, playerId);
     gCurrentPlayerLoadPlayerId2 = 0;
+    gCurrentPlayerLoadFaceType2 = -1;
 }
 
 int OnGetPlayerEffTexture2(char const *name) {
@@ -542,27 +552,57 @@ int OnGetPlayerEffTexture2(char const *name) {
         if (!customEffTexPath.empty())
             return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x459040), customEffTexPath.c_str());
     }
-    return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x459040), name);
+    Bool female = gCurrentPlayerLoadFaceType2 >= 3 && gCurrentPlayerLoadFaceType2 <= 7;
+    return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x459040), female ? "eff_female.dds" : "eff.dds");
+}
+
+template<UInt PlayerDefOffset>
+void OnLoadFifaPlayer3(void *playerInfo, void *playerDef, int) {
+    playerDef = ((UChar *)playerDef - PlayerDefOffset);
+    unsigned int hairId = *raw_ptr<unsigned int>(playerDef, 0x109C);
+    unsigned int hairColorId = *raw_ptr<unsigned int>(playerDef, 0x1070);
+    unsigned int faceType = *raw_ptr<unsigned int>(playerDef, 0x10B8);
+    gCurrentPlayerLoadFaceType3 = faceType;
+    CallDynGlobal(GfxCoreAddress(0x202580), playerInfo, hairId, hairColorId);
+    gCurrentPlayerLoadFaceType3 = -1;
+}
+
+int OnGetPlayerEffTexture3(char const *name) {
+    Bool female = gCurrentPlayerLoadFaceType3 >= 3 && gCurrentPlayerLoadFaceType3 <= 7;
+    return CallAndReturnDynGlobal<int>(GfxCoreAddress(0x459040), female ? "eff_female.dds" : "eff.dds");
 }
 
 void OnPreLoadFifaPlayerTex(char const *name, int a, bool b) {
     bool loadDefaultEff = false;
+    bool loadDefaultEffFemale = false;
     for (int i = 0; i < 26; i++) {
         void *playerDesc = (void *)(GfxCoreAddress(0xABEDE0 + i * 4832));
         unsigned int fifaId = *raw_ptr<unsigned int>(playerDesc, 0x1044);
         unsigned int useGenHead = *raw_ptr<unsigned int>(playerDesc, 0x1058);
+        unsigned int faceType = *raw_ptr<unsigned int>(playerDesc, 0x10B8);
+        bool female = faceType >= 3 && faceType <= 7;
         if (!useGenHead && fifaId < 500'000) {
             auto customEffTexPath = AssetFileName("eff_" + Utils::Format("%d", fifaId) + ".dds");
             if (!customEffTexPath.empty())
                 CallDynGlobal(GfxCoreAddress(0x4590F0), customEffTexPath.c_str(), a, b);
+            else {
+                if (female)
+                    loadDefaultEffFemale = true;
+                else
+                    loadDefaultEff = true;
+            }
+        }
+        else {
+            if (female)
+                loadDefaultEffFemale = true;
             else
                 loadDefaultEff = true;
         }
-        else
-            loadDefaultEff = true;
     }
     if (loadDefaultEff)
-        CallDynGlobal(GfxCoreAddress(0x4590F0), name, a, b);
+        CallDynGlobal(GfxCoreAddress(0x4590F0), "eff.dds", a, b);
+    if (loadDefaultEffFemale)
+        CallDynGlobal(GfxCoreAddress(0x4590F0), "eff_female.dds", a, b);
 }
 
 char const *EVENT_NAMES[] = {
@@ -1787,9 +1827,17 @@ void Install3dPatches_FM13() {
     patch::RedirectCall(GfxCoreAddress(0x3A05D6), OnLoadFifaPlayer1);
     patch::RedirectCall(GfxCoreAddress(0x392423), OnGetPlayerEffTexture1);
 
-    patch::RedirectCall(GfxCoreAddress(0x20272C), OnLoadFifaPlayer2);
-    patch::RedirectCall(GfxCoreAddress(0x204253), OnLoadFifaPlayer2);
+    patch::RedirectCall(GfxCoreAddress(0x20272C), OnLoadFifaPlayer2<0>);
+    patch::SetUChar(GfxCoreAddress(0x20272A), 0x55); // push eax => push ebp
+    patch::RedirectCall(GfxCoreAddress(0x204253), OnLoadFifaPlayer2<0x1070>);
+    patch::SetUChar(GfxCoreAddress(0x204251), 0x56); // push ecx => push esi
     patch::RedirectCall(GfxCoreAddress(0x2024AF), OnGetPlayerEffTexture2);
+
+    patch::RedirectCall(GfxCoreAddress(0x202745), OnLoadFifaPlayer3<0>);
+    patch::SetUChar(GfxCoreAddress(0x202743), 0x55); // push ecx => push ebp
+    patch::RedirectCall(GfxCoreAddress(0x204244), OnLoadFifaPlayer3<0x1070>);
+    patch::SetUChar(GfxCoreAddress(0x204242), 0x56); // push edx => push esi
+    patch::RedirectCall(GfxCoreAddress(0x202604), OnGetPlayerEffTexture3);
 
     patch::RedirectCall(GfxCoreAddress(0x201F46), OnPreLoadFifaPlayerTex);
 

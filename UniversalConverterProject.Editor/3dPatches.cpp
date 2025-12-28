@@ -29,10 +29,12 @@ bool METHOD OnSetFifaTexture(void *t, DUMMY_ARG, int samplerIndex) {
     return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB74D), t, samplerIndex);
 }
 
-unsigned int gCurrentPlayerLoadPlayerId = 0;
+UInt gCurrentPlayerLoadPlayerId = 0;
+Int gCurrentPlayerLoadFaceType = -1;
 
 void METHOD OnLoadFifaPlayer(void *player, DUMMY_ARG, void *playerInfo, void *resource, bool loadBody, void *resMan) {
-    gCurrentPlayerLoadPlayerId = *raw_ptr<unsigned int>(playerInfo, 4);
+    gCurrentPlayerLoadPlayerId = *raw_ptr<UInt>(playerInfo, 4);
+    gCurrentPlayerLoadFaceType = *raw_ptr<Int>(playerInfo, 0x20);
     //void *textures = raw_ptr<void>(player, 0x20);
     //CallMethodDynGlobal(RendererAddress(0xAC0C3), textures); // clear loaded textures
     //*raw_ptr<unsigned int>(textures, 0x0) = 0;
@@ -44,6 +46,7 @@ void METHOD OnLoadFifaPlayer(void *player, DUMMY_ARG, void *playerInfo, void *re
     CallMethodDynGlobal(RendererAddress(0x9E6CA), player, playerInfo, resource, loadBody, resMan);
     UpdateKitCollar(player);
     gCurrentPlayerLoadPlayerId = 0;
+    gCurrentPlayerLoadFaceType = -1;
 }
 
 int METHOD OnGetPlayerEffTexture(void *t, DUMMY_ARG, char const *name, bool cached, bool cube) {
@@ -52,7 +55,8 @@ int METHOD OnGetPlayerEffTexture(void *t, DUMMY_ARG, char const *name, bool cach
         if (!customEffTexPath.empty())
             return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB9FE), t, customEffTexPath.c_str(), false, cube);
     }
-    return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB9FE), t, name, cached, cube);
+    Bool female = gCurrentPlayerLoadFaceType >= 3 && gCurrentPlayerLoadFaceType <= 7;
+    return CallMethodAndReturnDynGlobal<int>(RendererAddress(0xAB9FE), t, female ? "eff_female.dds" : "eff.dds", cached, cube);
 }
 
 void *METHOD Test1(void *t, DUMMY_ARG, int a) {
