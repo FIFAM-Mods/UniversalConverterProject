@@ -3010,6 +3010,16 @@ void SetControlCountryFlag(CXgVisibleControl *control, UChar countryId) {
     SetImageFilename(control, flagPath, 4, 4);
 }
 
+void GetNameStringID(WideChar *out, Int languageId, Int firstNameIndex, Int lastNameIndex, Int commonNameIndex, Bool bMale, UInt birthdate, UInt empicsId) {
+    Call<0x4DC530>(out, languageId, firstNameIndex, lastNameIndex, commonNameIndex, bMale, birthdate, empicsId);
+}
+
+String GetNameStringID(Int languageId, Int firstNameIndex, Int lastNameIndex, Int commonNameIndex, Bool bMale, UInt birthdate, UInt empicsId) {
+    static WideChar buf[256];
+    GetNameStringID(buf, languageId, firstNameIndex, lastNameIndex, commonNameIndex, bMale, birthdate, empicsId);
+    return buf;
+}
+
 CCompID CDBRoot::GetFirstContinentalCompetition() {
     CCompID result;
     CallMethod<0x11F0A10>(this, &result);

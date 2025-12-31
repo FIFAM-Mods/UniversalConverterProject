@@ -2508,3 +2508,7 @@ enum eWidget {
     WIDGET_MOSTIMPROVEDPLAYERS = 86,
     WIDGET_TABLENATIONALTEAM = 97,
 };
+
+void GetNameStringID(WideChar *out, Int languageId, Int firstNameIndex, Int lastNameIndex, Int commonNameIndex, Bool bMale, UInt birthdate, UInt empicsId);
+
+String GetNameStringID(Int languageId, Int firstNameIndex, Int lastNameIndex, Int commonNameIndex, Bool bMale, UInt birthdate, UInt empicsId);

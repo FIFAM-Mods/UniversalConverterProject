@@ -12,12 +12,11 @@
 #include "Utils.h"
 #include "PlayerAccessories.h"
 #include "AssetLoader.h"
+#include "InterfaceTheme.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
 using namespace plugin;
-
-unsigned int gPortraitsStyle = 0;
 
 const unsigned int NUM_PLAYERS = 25; // 11 * 2 players + 1 referee + 2 linesmen
 struct ResFormatArg { int *a; int b; };
@@ -1819,8 +1818,6 @@ void Install3dPatches_FM13() {
     //patch::SetPointer(GfxCoreAddress(0x4096B1 + 1), FshLoadCB);
     //patch::SetPointer(GfxCoreAddress(0x4096E6 + 1), FshLoadCB);
 
-    gPortraitsStyle = GetPrivateProfileIntW(L"MAIN", L"Portraits", 0, L".\\installer.ini");
-
     patch::RedirectCall(GfxCoreAddress(0x3791BE), OnLoadFifaPlayer1);
     patch::RedirectCall(GfxCoreAddress(0x379769), OnLoadFifaPlayer1);
     patch::RedirectCall(GfxCoreAddress(0x37A2C9), OnLoadFifaPlayer1);
@@ -1933,7 +1930,7 @@ void Install3dPatches_FM13() {
     static Float NewZ = -110.0f;
     static Float NewY = 101.4f;
  
-    if (gPortraitsStyle == 2) {
+    if (PortraitsStyle == PORTRAITSTYLE_FIFAM) {
         NewDist = 9.0f;
         NewZ = -110.0f;
         NewY = 100.5f;

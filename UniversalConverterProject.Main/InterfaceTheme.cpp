@@ -1,11 +1,13 @@
 #include "InterfaceTheme.h"
 #include "GameInterfaces.h"
+#include "DatabaseOptions.h"
 #include "UcpSettings.h"
 #include "Utils.h"
 
 using namespace plugin;
 
 Bool IsDarkTheme = false;
+UInt PortraitsStyle = PORTRAITSTYLE_FOOM;
 
 String &GetCustomInterfaceFolderW() {
     static String custom1;
@@ -509,10 +511,56 @@ void FormatLeagueBadgeShortFormat(WideChar *out, UInt length, WideChar const *fo
     out[4] = L'\0';
 }
 
+enum PortraitSubType {
+    PORTRAIT_PLAYER = 0,
+    PORTRAIT_STAFF = 1,
+    PORTRAIT_REFEREE = 2,
+    PORTRAIT_EMPLOYEE = 3
+};
+
+struct PortraitResolverDesc {
+    UInt type;
+    UInt id;
+    UInt subtype; // 0 - player, 1 - staff, 2 - referee, 3 - employee
+    UInt size; // 0 - 3 - regular (160x160), 4 - xxl (512x512)
+    UInt namePoolId;
+    UInt firstNameIndex;
+    UInt lastNameIndex;
+    UInt commonNameIndex;
+    UInt isMale;
+    UInt birthDateInt;
+    UInt empicsId;
+};
+
+void FormatGenericPortraitPath(WideChar *out, UInt length, WideChar const *format, WideChar const *dir, PortraitResolverDesc *info) {
+    String filename = L"Generic";
+    static WideChar const *PortraitTypeNames[] = { L"Player", L"Staff", L"Referee", L"Employee" };
+    filename += PortraitTypeNames[info->subtype < std::size(PortraitTypeNames) ? info->subtype : 0];
+    Bool isMale = (info->subtype == PORTRAIT_PLAYER) ? !IsWomenDatabase() : (info->isMale != 0);
+    filename += isMale ? L"Male" : L"Female";
+    filename += L"_" + to_wstring(PortraitsStyle);
+    Bool isPlayerOrStaff = (info->subtype == PORTRAIT_PLAYER || info->subtype == PORTRAIT_STAFF);
+    StringA uid = Utils::WtoA(GetNameStringID(info->namePoolId, info->firstNameIndex, info->lastNameIndex, info->commonNameIndex,
+        info->isMale, isPlayerOrStaff ? info->birthDateInt : 0, isPlayerOrStaff ? info->empicsId : 0));
+    Int variation = (hash<StringA>{}(uid) % 10) + 1;
+    filename += L"_v" + to_wstring(variation);
+    if (IsDarkTheme)
+        filename += L"_dark";
+    _snwprintf(out, length, format, dir, filename.c_str());
+}
+
+Bool METHOD Staff_HasPortrait_RetTrue(CDBStaff *) {
+    return true;
+}
+
 void PatchInterfaceTheme(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
 
         //patch::SetPointer(0x246CC5C, MyCreateUI);
+
+        PortraitsStyle = GetPrivateProfileIntW(L"MAIN", L"Portraits", PORTRAITSTYLE_FOOM, FM::GameDirPath(L"installer.ini").c_str());
+        if (PortraitsStyle != PORTRAITSTYLE_FOOM && PortraitsStyle != PORTRAITSTYLE_FIFAM)
+            PortraitsStyle = PORTRAITSTYLE_FOOM;
 
         GetCustomInterfaceFolderA() = Settings::GetInstance().Theme;
         if (!GetCustomInterfaceFolderA().empty()) {
@@ -891,5 +939,9 @@ void PatchInterfaceTheme(FM::Version v) {
         patch::RedirectCall(0x651B46, ClubFixtures_StoreScore);
         patch::RedirectCall(0x651F5E, ClubFixtures_AddColumnResultEmpty);
         patch::RedirectCall(0x651B63, ClubFixtures_AddColumnResult);
+
+        patch::RedirectCall(0x4DEF3C, FormatGenericPortraitPath);
+        patch::SetBytes(0x4DEF21, "8D 4C 24 40 51"); // push offset "Generic" => lea ecx, [esp+0x40] ; push ecx
+        patch::RedirectCall(0x69B7D2, Staff_HasPortrait_RetTrue);
     }
 }

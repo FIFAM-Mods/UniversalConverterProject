@@ -9,7 +9,7 @@
 #include "UcpSettings.h"
 #include "FifamCompLeague.h"
 #include "LeagueSplit.h"
-#include "3dPatches.h"
+#include "InterfaceTheme.h"
 #include "Color.h"
 #include "json/json.hpp"
 #include <fstream>
@@ -1210,7 +1210,7 @@ DefaultKitRenderData *gRenderKitDataForGkKit = nullptr;
 
 template <bool IsHeadScene>
 void *OnGenerateKitResourceForScenes(UInt *out, PlayerRenderData *kitParams, DefaultKitRenderData *data, void *resMan) {
-    if (!IsHeadScene || gPortraitsStyle == 2) {
+    if (!IsHeadScene || PortraitsStyle == PORTRAITSTYLE_FIFAM) {
         gRenderPlayerDataForGkKit = kitParams;
         gRenderKitDataForGkKit = data;
         return CallAndReturnDynGlobal<void *>(GfxCoreAddress(0x38FAEE), out, kitParams, data, resMan);
