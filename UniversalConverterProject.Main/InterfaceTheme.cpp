@@ -940,8 +940,8 @@ void PatchInterfaceTheme(FM::Version v) {
         patch::RedirectCall(0x651F5E, ClubFixtures_AddColumnResultEmpty);
         patch::RedirectCall(0x651B63, ClubFixtures_AddColumnResult);
 
-        patch::RedirectCall(0x4DEF3C, FormatGenericPortraitPath);
-        patch::SetBytes(0x4DEF21, "8D 4C 24 40 51"); // push offset "Generic" => lea ecx, [esp+0x40] ; push ecx
-        patch::RedirectCall(0x69B7D2, Staff_HasPortrait_RetTrue);
+        //patch::RedirectCall(0x4DEF3C, FormatGenericPortraitPath);
+        //patch::SetBytes(0x4DEF21, "8D 4C 24 40 51"); // push offset "Generic" => lea ecx, [esp+0x40] ; push ecx
+        //patch::RedirectCall(0x69B7D2, Staff_HasPortrait_RetTrue);
     }
 }

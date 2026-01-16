@@ -1,5 +1,4 @@
 #include "ExtendedPlayerEditor.h"
-#include "FifamTypes.h"
 
 using namespace plugin;
 
@@ -43,6 +42,7 @@ void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, void *world) {
     ext->creator = 0;
     ext->fifaId = 0;
     ext->footballManagerId = -1;
+    //ext->isFemale = false;
     return player;
 }
 
@@ -155,6 +155,11 @@ void *gDatabaseStaff = nullptr;
 
 Bool METHOD OnReadStaffFoomIdFromDatabase(void *t, DUMMY_ARG, Char const *name) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
+    //if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0x11)) {
+    //    UInt isFemale = 0;
+    //    CallMethod<0x513560>(t, &isFemale);
+    //    ext->isFemale = isFemale;
+    //}
     if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE))
         CallMethod<0x513560>(t, &ext->creator);
     if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
@@ -164,6 +169,8 @@ Bool METHOD OnReadStaffFoomIdFromDatabase(void *t, DUMMY_ARG, Char const *name) 
 
 Bool METHOD OnWriteStaffFoomIdToDatabase(void *t, DUMMY_ARG, WideChar const *name) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
+    //UInt isFemale = ext->isFemale;
+    //CallMethod<0x514510>(t, &isFemale);
     CallMethod<0x514510>(t, &ext->creator);
     CallMethod<0x514510>(t, &ext->footballManagerId);
     return CallMethodAndReturn<Bool, 0x513290>(t, name);
@@ -184,6 +191,11 @@ void METHOD OnWriteStaff(void *t, DUMMY_ARG, void *writer) {
 void METHOD OnReadStaffNoHeader(void **ps, DUMMY_ARG, void *reader) {
     CallMethod<0x5738E0>(ps, reader);
     PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
+    //if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0x11)) {
+    //    UInt isFemale = 0;
+    //    CallMethod<0x513560>(reader, &isFemale);
+    //    ext->isFemale = isFemale;
+    //}
     if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xE))
         CallMethod<0x513560>(reader, &ext->creator);
     if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xC))
@@ -193,6 +205,8 @@ void METHOD OnReadStaffNoHeader(void **ps, DUMMY_ARG, void *reader) {
 void METHOD OnWriteStaffNoHeader(void **ps, DUMMY_ARG, void *writer) {
     CallMethod<0x5736F0>(ps, writer);
     PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
+    //UInt isFemale = ext->isFemale;
+    //CallMethod<0x514510>(writer, &isFemale);
     CallMethod<0x514510>(writer, &ext->creator);
     CallMethod<0x514510>(writer, &ext->footballManagerId);
 }

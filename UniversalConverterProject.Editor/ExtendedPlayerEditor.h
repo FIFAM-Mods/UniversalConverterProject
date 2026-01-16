@@ -1,16 +1,18 @@
 #pragma once
 #include "plugin.h"
+#include "FifamTypes.h"
 
 struct PlayerExtension {
-    wchar_t *jerseyName;
-    unsigned int creator;
-    unsigned int fifaId;
-    int footballManagerId;
+    WideChar *jerseyName;
+    UInt creator;
+    UInt fifaId;
+    Int footballManagerId;
+    //Bool isFemale;
 };
 
 struct RefereeExtension {
-    unsigned int creator;
-    int footballManagerId;
+    UInt creator;
+    Int footballManagerId;
 };
 
 struct ClubExtension {

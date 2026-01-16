@@ -108,7 +108,7 @@ void SetKLFilePath_Shared(WideChar *out, WideChar const *in) {
                 withId.insert(insertPos, AtoW(db.id) + L"\\");
                 if (exists(withId)) {
                     wcscpy(out, withId.c_str());
-                    ::Message(L"Loading database-specific file:\n" + withId); // TODO: testing, remove this
+                    //::Message(L"Loading database-specific file:\n" + withId); // TODO: testing, remove this
                     return;
                 }
             }
@@ -117,7 +117,7 @@ void SetKLFilePath_Shared(WideChar *out, WideChar const *in) {
                 withParent.insert(insertPos, AtoW(db.parentDatabaseId) + L"\\");
                 if (exists(withParent)) {
                     wcscpy(out, withParent.c_str());
-                    ::Message(L"Loading database-specific file (from parent db):\n" + withParent); // TODO: testing, remove this
+                    //::Message(L"Loading database-specific file (from parent db):\n" + withParent); // TODO: testing, remove this
                     return;
                 }
             }
