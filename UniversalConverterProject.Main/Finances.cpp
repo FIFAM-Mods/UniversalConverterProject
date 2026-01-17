@@ -5,6 +5,8 @@
 
 using namespace plugin;
 
+const Float DefaultTaxRate = 65.0f;
+
 struct TaxInfo {
     UShort year = 0;
     UInt minProfit = 0;
@@ -32,7 +34,9 @@ TaxInfo GetCountryTax(UChar countryId, UShort year) {
             }
         }
     }
-    return CountryTaxes()[0][0];
+    if (!CountryTaxes()[0].empty())
+        return CountryTaxes()[0][0];
+    return DefaultTaxRate;
 }
 
 Float GetAIClubsRefundingRate() {
@@ -119,9 +123,9 @@ void PatchFinances(FM::Version v) {
                     });
                 }
             }
-            if (CountryTaxes()[0].empty())
-                CountryTaxes()[0].emplace_back(65.0f);
         }
+        if (CountryTaxes()[0].empty())
+            CountryTaxes()[0].emplace_back(DefaultTaxRate);
         patch::Nop(0xF3C5EF, 5); // remove operator*=
         patch::Nop(0xF3C60A, 2); // operator> branch is always executed
         patch::Nop(0xF3C675, 5); // remove operator-
