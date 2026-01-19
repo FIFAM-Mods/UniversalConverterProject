@@ -12,7 +12,7 @@ struct TaxInfo {
     UInt minProfit = 0;
     Float taxValue = 0.0f;
 
-    TaxInfo(Float _taxValue, UInt _minProfit = 0, Short _year = 0) {
+    TaxInfo(Float _taxValue, UInt _minProfit = 0, UShort _year = 0) {
         taxValue = _taxValue;
         minProfit = _minProfit;
         year = _year;
@@ -36,7 +36,7 @@ TaxInfo GetCountryTax(UChar countryId, UShort year) {
     }
     if (!CountryTaxes()[0].empty())
         return CountryTaxes()[0][0];
-    return DefaultTaxRate;
+    return TaxInfo(DefaultTaxRate);
 }
 
 Float GetAIClubsRefundingRate() {

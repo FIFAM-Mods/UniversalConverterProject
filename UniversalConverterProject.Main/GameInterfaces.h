@@ -791,6 +791,16 @@ public:
     WideChar const *GetName(WideChar const *nameBuf = nullptr);
 };
 
+struct EmployeeLanguage {
+    UChar id;
+    UChar level : 7;
+    UChar learning : 1;
+    UChar numWeeks;
+    UChar _pad3;
+};
+
+VALIDATE_SIZE(EmployeeLanguage, 4);
+
 class CDBEmployee {
 public:
     CDBEmployeeBase *GetBase();
@@ -798,7 +808,12 @@ public:
     void SetFirstNationality(UChar countryId);
     void SetSecondNationality(UChar countryId);
     void SetLanguage(UChar languageId);
+    UChar GetLanguage();
+    EmployeeLanguage &GetAdditionalLanguage();
     void SetAdditionalLanguageLevel(UChar index, UChar languageId, UChar level);
+    UInt GetNumLanguagesWithLevel(UChar minLevel);
+    UInt GetNumLearningLanguages();
+    Bool32 IsLearningAnyLanguage();
     CTeamIndex GetTeamID();
     void GetTeamID(CTeamIndex &out);
     WideChar const *GetName(WideChar const *nameBuf = nullptr);

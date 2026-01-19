@@ -2403,8 +2403,28 @@ void CDBEmployee::SetLanguage(UChar languageId) {
     CallMethod<0xEA35B0>(this, languageId);
 }
 
+UChar CDBEmployee::GetLanguage() {
+    return CallMethodAndReturn<UChar, 0xEA35C0>(this);
+}
+
+EmployeeLanguage &CDBEmployee::GetAdditionalLanguage() {
+    return *CallMethodAndReturn<EmployeeLanguage *, 0xEA35D0>(this);
+}
+
 void CDBEmployee::SetAdditionalLanguageLevel(UChar index, UChar languageId, UChar level) {
     CallMethod<0xEA35E0>(this, index, languageId, level);
+}
+
+UInt CDBEmployee::GetNumLanguagesWithLevel(UChar minLevel) {
+    return CallMethodAndReturn<UInt, 0xEA3610>(this, minLevel);
+}
+
+UInt CDBEmployee::GetNumLearningLanguages() {
+    return CallMethodAndReturn<UInt, 0xEA3670>(this);
+}
+
+Bool32 CDBEmployee::IsLearningAnyLanguage() {
+    return CallMethodAndReturn<Bool32, 0xEA36B0>(this);
 }
 
 CTeamIndex CDBEmployee::GetTeamID() {

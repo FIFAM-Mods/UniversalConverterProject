@@ -1277,7 +1277,7 @@ CTeamIndex METHOD League_GetHostTeam(CDBTeam *team) {
                 gHost_League_MatchIndex, StadiumTagWithCountry(hostTeam)));
         }
         else if(gMyDBLeague_Launch->GetRegion() == FifamCompRegion::Oceania
-            && gMyDBLeague_Launch->GetCompetitionType() == COMP_CHAMPIONSLEAGUE
+            && gMyDBLeague_Launch->GetCompetitionType() == COMP_UEFA_CUP
             && gMyDBLeague_Launch->GetRoundType() == ROUND_QUALI)
         {
             UChar hostCountryId = GetOFCChampionsLeagueQualiGroupHost(GetCurrentSeasonStartYear());
@@ -1322,11 +1322,13 @@ CTeamIndex METHOD CompetitionHosts_GetHostStadium_Round(CompetitionHosts *hosts,
 Bool IsContinentalCompetitionWithHost(CCompID const &compId) {
     UChar type = compId.type;
     UChar region = compId.countryId;
-    if (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania) { // OFC Champions League
+    if (type == COMP_UEFA_CUP && region == FifamCompRegion::Oceania) { // OFC Champions League
         auto comp = GetCompetition(compId);
         if (comp && comp->GetRoundType() != ROUND_QUALI && comp->GetRoundType() != ROUND_QUALI2)
             return true;
     }
+    if (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania) // OFC Professional League
+        return true;
     if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica) // U20 Libertadores
         return true;
     if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) // Caribbean Shield
@@ -1372,7 +1374,7 @@ void SelectHostForCompetition(CDBCompetition *comp) {
         return;
     }
     Set<UChar> previousHosts = GetCompetitionPreviousHosts(comp);
-    if (type == COMP_OFC_CUP || type == COMP_OFC_CUP_Q || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
+    if (type == COMP_OFC_CUP || type == COMP_OFC_CUP_Q || ((type == COMP_CHAMPIONSLEAGUE || type == COMP_UEFA_CUP) && region == FifamCompRegion::Oceania))
         previousHosts.insert(GetOFCChampionsLeagueQualiGroupHost(GetCurrentSeasonStartYear() + 1));
     Vector<UChar> hostCandidates;
     if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) {
@@ -1432,7 +1434,7 @@ void SelectHostForCompetition(CDBCompetition *comp) {
                 canAddThisCountry = country->GetContinent() == FifamContinent::Asia;
             else if (type == COMP_AFRICA_CUP)
                 canAddThisCountry = country->GetContinent() == FifamContinent::Africa;
-            else if (type == COMP_OFC_CUP || type == COMP_OFC_CUP_Q || (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania))
+            else if (type == COMP_OFC_CUP || type == COMP_OFC_CUP_Q || ((type == COMP_CHAMPIONSLEAGUE || type == COMP_UEFA_CUP) && region == FifamCompRegion::Oceania))
                 canAddThisCountry = country->GetContinent() == FifamContinent::Oceania;
             else if (type == COMP_FINALISSIMA)
                 canAddThisCountry = country->GetContinent() == FifamContinent::Europe || country->GetContinent() == FifamContinent::SouthAmerica;
@@ -4090,6 +4092,7 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> eastTeams = {
                         0x5F0002,
+                        0x5F0003,
                         0x5F0006,
                         0x5F0022,
                         0x5F1001,
@@ -4099,8 +4102,7 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
                         0x5F214B,
                         0x5F221E,
                         0x5F3335,
-                        0x5F340C,
-                        0x5F3421
+                        0x5F340C
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !Utils::Contains(eastTeams, team->GetTeamUniqueID()))
@@ -4118,7 +4120,6 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
             else if (compId.index == 1) { // West - bottom 12
                 if (GetCurrentYear() == GetStartingYear()) {
                     Set<UInt> westTeams = {
-                        0x5F0003,
                         0x5F0005,
                         0x5F0007,
                         0x5F0008,
@@ -4129,7 +4130,8 @@ CTeamIndex * METHOD OnGetTabXToYTeamLeaguePositionDataGetTeamID(void *data) {
                         0x5F0016,
                         0x5F1004,
                         0x5F214A,
-                        0x5F3285
+                        0x5F3285,
+                        0x5F3421
                     };
                     CDBTeam *team = GetTeam(*teamId);
                     if (team && !Utils::Contains(westTeams, team->GetTeamUniqueID()))
