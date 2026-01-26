@@ -122,7 +122,7 @@ Bool IsEuropeanFreeTradeAssociation(Int countryId) {
 }
 
 Bool IsOrganizationOfTurkicStates(Int countryId) {
-    return countryId == FifamNation::Azerbaijan || countryId == FifamNation::Kazakhstan || countryId == FifamNation::Kyrgyzstan || countryId == FifamNation::Turkey || countryId == FifamNation::Uzbekistan;
+    return countryId == FifamNation::Azerbaijan || countryId == FifamNation::Kazakhstan || countryId == FifamNation::Kyrgyzstan || countryId == FifamNation::Turkey || countryId == FifamNation::Uzbekistan || countryId == FifamNation::Turkmenistan;
 }
 
 Bool METHOD IsForeignNationForCompetition(CDBCompetition *comp, DUMMY_ARG, Int teamCountryId, Int playerNation) {
@@ -244,6 +244,32 @@ Bool METHOD IsForeignNationForCompetition(CDBCompetition *comp, DUMMY_ARG, Int t
             || playerNation == FifamNation::Algeria
             || playerNation == FifamNation::Morocco
             || playerNation == FifamNation::Tunisia
+            )
+        {
+            return false;
+        }
+        break;
+    case FifamNation::Switzerland:
+        if (IsEuropeanUnion(playerNation) || IsEuropeanFreeTradeAssociation(playerNation))
+            return false;
+        break;
+    case FifamNation::Italy:
+        if (IsEuropeanUnion(playerNation) || IsEuropeanFreeTradeAssociation(playerNation))
+            return false;
+        break;
+    case FifamNation::Japan:
+        if (IsAfricanCaribbeanAndPacificGroupOfStates(playerNation)
+            || IsEuropeanFreeTradeAssociation(playerNation)
+            || IsOrganizationOfTurkicStates(playerNation)
+            || playerNation == FifamNation::Vietnam
+            || playerNation == FifamNation::Thailand
+            || playerNation == FifamNation::Myanmar
+            || playerNation == FifamNation::Cambodia
+            || playerNation == FifamNation::Singapore
+            || playerNation == FifamNation::Indonesia
+            || playerNation == FifamNation::Malaysia
+            || playerNation == FifamNation::Qatar
+            || playerNation == FifamNation::Morocco
             )
         {
             return false;
