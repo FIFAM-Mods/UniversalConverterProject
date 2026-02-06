@@ -33,7 +33,7 @@ Int GetPatchVersionNumber() {
 }
 
 WideChar const *GetPatchTestVersion() {
-    return L"Test 17012026";
+    return L"Test 060226";
 }
 
 String GetPatchVersion() {

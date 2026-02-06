@@ -1,4 +1,4 @@
-#include "FixedArchivesReadingForEditor.h"
+#include "ArtArchives.h"
 #include "FifamTypes.h"
 #include "shared.h"
 
@@ -49,7 +49,7 @@ void METHOD OnAddArchive(void *t, DUMMY_ARG, void *archive) {
     }
 }
 
-void PatchArchivesReadingForEditor(FM::Version v) {
+void PatchArtArchives(FM::Version v) {
     if (v.id() == ID_ED_13_1000) {
         auto allArchives = CollectArtArchives(FM::GetGameDir());
         for (auto const &i : allArchives) {

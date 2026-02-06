@@ -126,7 +126,7 @@
     <ClCompile Include="EditorChiefExecExport.cpp" />
     <ClCompile Include="ExtendedPlayerEditor.cpp" />
     <ClCompile Include="FemaleNames.cpp" />
-    <ClCompile Include="FixedArchivesReadingForEditor.cpp" />
+    <ClCompile Include="ArtArchives.cpp" />
     <ClCompile Include="Formations.cpp" />
     <ClCompile Include="PlayerAppearance.cpp" />
     <ClCompile Include="GenericKits.cpp" />
@@ -164,7 +164,7 @@
     <ClInclude Include="EditorChiefExecExport.h" />
     <ClInclude Include="ExtendedPlayerEditor.h" />
     <ClInclude Include="FemaleNames.h" />
-    <ClInclude Include="FixedArchivesReadingForEditor.h" />
+    <ClInclude Include="ArtArchives.h" />
     <ClInclude Include="Formations.h" />
     <ClInclude Include="PlayerAppearance.h" />
     <ClInclude Include="GenericKits.h" />

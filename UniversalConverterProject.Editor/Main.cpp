@@ -1,6 +1,6 @@
 #include "plugin.h"
 #include "ClubIDs.h"
-#include "FixedArchivesReadingForEditor.h"
+#include "ArtArchives.h"
 #include "Talent6Stars.h"
 #include "EditorChiefExecExport.h"
 #include "LowestLeagues.h"
@@ -58,7 +58,7 @@ public:
             PatchRendererHook(v);
             PatchTranslation(v);
             PatchClubIDs(v);
-            PatchArchivesReadingForEditor(v);
+            PatchArtArchives(v);
             //PatchTalentStars(v);
             PatchEditorChiefExecExport(v);
             PatchLowestLeagues(v);
