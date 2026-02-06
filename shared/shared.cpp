@@ -86,6 +86,49 @@ String GetIniOption(String const &group, String const &key, String const &defaul
     return Utils::ToLower(buf);
 }
 
+Vector<StringA> CollectArtArchives(Path const &rootFolder) {
+    vector<string> archiveNames;
+    for (auto const &i : directory_iterator(rootFolder)) {
+        auto p = i.path();
+        if (is_regular_file(p) && Utils::ToLower(p.extension().string()) == ".big") {
+            auto fileName = Utils::ToLower(p.filename().string());
+            if (Utils::StartsWith(fileName, "art_"))
+                archiveNames.push_back(fileName);
+        }
+    }
+    string updatePrefix = "art_update";
+    Utils::Sort(archiveNames, [&updatePrefix](string const &a, string const &b) {
+        auto GetUpdateNumber = [&updatePrefix](string const &updateFilename) {
+            string stem = updateFilename.substr(0, updateFilename.size() - 4);
+            if (!Utils::StartsWith(stem, updatePrefix))
+                return 0;
+            size_t pos = updatePrefix.length();
+            string numStr;
+            while (pos < stem.length() && isdigit(static_cast<unsigned char>(stem[pos]))) {
+                numStr += stem[pos];
+                ++pos;
+            }
+            if (numStr.empty())
+                return 0;
+            return Utils::SafeConvertInt<int>(numStr);
+        };
+        bool aIsUpdate = Utils::StartsWith(a, updatePrefix);
+        bool bIsUpdate = Utils::StartsWith(b, updatePrefix);
+        if (aIsUpdate != bIsUpdate)
+            return aIsUpdate;
+        if (aIsUpdate) {
+            int aVersion = GetUpdateNumber(a);
+            int bVersion = GetUpdateNumber(b);
+            if (aVersion != bVersion)
+                return aVersion > bVersion;
+            return a < b;
+        }
+        else
+            return a < b;
+    });
+    return archiveNames;
+}
+
 Bool &IsFirstLaunch() {
     static Bool isFirstLaunch = true;
     return isFirstLaunch;

@@ -1,5 +1,6 @@
 #include "WinHeader.h"
 #include "GenerateBigIdx.h"
+#include "shared.h"
 #include <vector>
 #include <map>
 #include <filesystem>
@@ -12,30 +13,20 @@
 using namespace std;
 using namespace std::filesystem;
 
-vector<string> archiveNames13 = { // 48
-    "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
-    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big",
-    "art_09.big", "art_10.big", "art_11.big", "art_12.big", "art_13.big", "art_14.big", "art_15.big", "art_16.big",
-    "art_17.big", "art_18.big", // 18
+vector<string> fixedArchiveNames13 = { // 25
     "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
     "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_32.big", "data\\zdata_33.big", // 5
     "data\\zdata_34.big", "data\\zdata_36.big",  "data\\zdata_38.big", "data\\zdata_39.big", "data\\zdata_40.big", // 5
     "data\\zdata_45.big", "data\\zdata_46.big", // 2
-    "badges.big", "badges_small.big", // 2
     "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big", // 4
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
 
-vector<string> archiveNames14 = { // 48
-    "update2.big", "update_portraits2.big", "update.big", "update_portraits.big", // 4
-    "art_01.big", "art_02.big", "art_03.big", "art_04.big", "art_05.big", "art_06.big", "art_07.big", "art_08.big",
-    "art_09.big", "art_10.big", "art_11.big", "art_12.big", "art_13.big", "art_14.big", "art_15.big", "art_16.big",
-    "art_17.big", "art_18.big", // 18
+vector<string> fixedArchiveNames14 = { // 25
     "data\\zdata_01.big", "data\\zdata_02.big", "data\\zdata_03.big", "data\\zdata_04.big", "data\\zdata_05.big", // 5
     "data\\zdata_06.big", "data\\zdata_07.big", "data\\zdata_15.big", "data\\zdata_33.big", "data\\zdata_34.big", // 5
     "data\\zdata_35.big", "data\\zdata_37.big", "data\\zdata_39.big", "data\\zdata_40.big", "data\\zdata_41.big", // 5
     "data\\zdata_47.big", "data\\zdata_48.big", // 2
-    "badges.big", "badges_small.big", // 2
     "data\\GenKits.big", "data\\badgeart.big", "data\\screens.big", "data\\Fifa2k4Dat.big", // 4
     "data\\stadium\\generator\\Crowd.big", "data\\stadium\\generator\\Stadelems.big", "data\\stadium\\generator\\StadMain.big" // 3
 };
@@ -95,7 +86,7 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
                 if (fileSize >= 4) {
                     if (fileSize >= 16) {
                         if (data_at<unsigned int>(fileData) == 'FGIB') {
-                            bool isUpdate = Utils::StartsWith(archiveNames[i], "update");
+                            bool isUpdate = Utils::StartsWith(archiveNames[i], "art_update") || Utils::StartsWith(archiveNames[i], "update");
                             unsigned int numFiles = _byteswap_ulong(data_at<unsigned int>(fileData, 8));
                             unsigned char* fileDesc = (unsigned char*)((unsigned int)fileData + 16);
                             for (unsigned int i = 0; i < numFiles; i++) {
@@ -174,14 +165,17 @@ bool GenerateBigIdx(path const& rootFolder, vector<string> const& archiveNames, 
 
 void GenerateBigIdx() {
     path rootFolder = FM::GetGameDir();
-    path bigIdxPath = rootFolder / L"big.idx";
+    path bigIdxPath = rootFolder / "big.idx";
     error_code ec;
     if (!exists(bigIdxPath, ec) || !is_regular_file(bigIdxPath, ec)) {
         try {
             unsigned int gameId = 13;
-            if (exists(rootFolder / L"data" / L"zdata_48.big"))
+            if (exists(rootFolder / "data" / "zdata_48.big"))
                 gameId = 14;
-            GenerateBigIdx(rootFolder, gameId == 14 ? archiveNames14 : archiveNames13, gameId);
+            vector<string> archiveNames = CollectArtArchives(rootFolder);
+            vector<string> const &fixedArchiveNames = (gameId == 14) ? fixedArchiveNames14 : fixedArchiveNames13;
+            archiveNames.insert(archiveNames.end(), fixedArchiveNames.begin(), fixedArchiveNames.end());
+            GenerateBigIdx(rootFolder, archiveNames, gameId);
         }
         catch (exception &e) {
             plugin::Error("An error occured during big.idx regeneration\n%s", e.what());

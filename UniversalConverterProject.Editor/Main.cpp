@@ -86,6 +86,7 @@ public:
         if (v.id() == ID_ED_13_1000) {
             //if (Settings::GetInstance().EnableCustomShaders)
             //    ClearShadersDataStorage();
+            ClearArtArchives();
         }
     }
 };
