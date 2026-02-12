@@ -1,4 +1,4 @@
-#include "FifaWorldPlayerGala.h"
+﻿#include "FifaWorldPlayerGala.h"
 #include "GameInterfaces.h"
 #include "EuropeanGoldenShoe.h"
 #include "FifamNation.h"
@@ -26,9 +26,9 @@ struct WorldPlayerGalaList {
 };
 
 Vector<Pair<String, Float>> FifaNominantes = {
-    /*  1 */ { L"ViniciusJunior12072000", 1.52f },
-    /*  2 */ { L"Rodri22061996", 1.44f },
-    /*  3 */ { L"BellinghamJu29062003", 1.34f }
+    /*  1 */ { L"DembeleOu15051997", 1.50f },
+    /*  2 */ { L"LamineYamal13072007", 1.39f },
+    /*  3 */ { L"Vitinha13022000", 1.35f }
 };
 
 Array<Int, 3> &GetBallonDOrCandidates() {
@@ -53,7 +53,7 @@ void METHOD CollectWorldPlayerGalaNominantes(WorldPlayerGalaList *list) {
     // collect default
     CallMethod<0x1136190>(list);
 
-    if (GetCurrentYear() == 2024) {
+    if (GetCurrentYear() == 2025) {
         Vector<CDBPlayer *> nominantesPlayers;
         for (UInt i = 0; i < 50; i++) {
             if (list->m_apPlayers[i])
@@ -82,7 +82,7 @@ void METHOD CalcVotes(WorldPlayerGalaEntry *entry) {
     // call original
     CallMethod<0x1134EC0>(entry);
 
-    if (GetCurrentYear() == 2024) {
+    if (GetCurrentYear() == 2025) {
         // check all nominantes
         for (auto &n : FifaNominantes) {
             CDBPlayer *p = CallAndReturn<CDBPlayer *, 0xFAF750>(n.first.c_str());
@@ -300,8 +300,8 @@ void ValidateBallonDOrCandidates() {
 }
 
 void AwardBallonDOrWinner() {
-    if (GetCurrentYear() == 2024 && GetCurrentYear() == GetStartingYear()) {
-        WideChar const *Candidates[] = { L"Rodri22061996", L"ViniciusJunior12072000", L"BellinghamJu29062003" };
+    if (GetCurrentYear() == 2025 && GetCurrentYear() == GetStartingYear()) {
+        WideChar const *Candidates[] = { L"DembeleOu15051997", L"LamineYamal13072007", L"MbappeKy20121998" };
         CDBPlayer *winner = nullptr;
         for (UInt i = 0; i < 3; i++) {
             CDBPlayer *player = FindPlayerByStringID(Candidates[i]);
@@ -315,7 +315,7 @@ void AwardBallonDOrWinner() {
                 GetNetwork().AddEvent(NETWORKEVENT_WORLD_PLAYER_GALA, 1, 0);
         }
         else
-            AddPlayerTrophy(PLAYERTROPHY_BALLONDOR, GetCurrentYear(), L"Rodri", L"", Date(22, 6, 1996), FifamNation::Spain, 0x000E000E, false);
+            AddPlayerTrophy(PLAYERTROPHY_BALLONDOR, GetCurrentYear(), L"Dembélé", L"Ousmane", Date(15, 5, 1997), FifamNation::France, 0x0012000F, false);
     }
     else {
         ValidateBallonDOrCandidates();
