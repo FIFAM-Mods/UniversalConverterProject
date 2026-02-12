@@ -67,13 +67,13 @@ void WriteUserFormationsFile(const wchar_t *data, unsigned int elementSize, unsi
 
 void PatchFormations(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
-        patch::SetPointer(0x1176C2F + 1, L"UCPFormations.xml");
+        patch::SetPointer(0x1176C2F + 1, L"Formations.xml");
         patch::RedirectCall(0x1176C50, OnReadFormationsFile);
         patch::RedirectJump(0x1175B9C, (void *)0x1175BD6); // remove decryption
         patch::RedirectCall(0x1175B86, OnReadFormationsFileData);
         if (Settings::GetInstance().UserFormationsXml) {
-            patch::SetPointer(0x1172847 + 1, L"UCPUserFormations.xml");
-            patch::SetPointer(0x1176C6B + 1, L"UCPUserFormations.xml");
+            patch::SetPointer(0x1172847 + 1, L"UserFormations.xml");
+            patch::SetPointer(0x1176C6B + 1, L"UserFormations.xml");
             patch::RedirectCall(0x1176C8C, OnReadFormationsFile);
             patch::RedirectJump(0x1172A10, (void *)0x1172A46); // remove encryption
             patch::RedirectCall(0x1172A59, WriteUserFormationsFile); // xml ident

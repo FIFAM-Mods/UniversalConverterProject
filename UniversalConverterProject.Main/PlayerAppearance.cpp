@@ -519,7 +519,7 @@ void InstallPlayerAppearance_GfxCore() {
         if (!Settings::GetInstance().UseHairLODs || i == 0)
             hairLODs[i] = 0;
         else
-            hairLODs[i] = -i;
+            hairLODs[i] = -(Int)hairTypes[i];
     }
     //patch::SetPointer(GfxCoreAddress(0x920B2 + 3), hairLODs);
 

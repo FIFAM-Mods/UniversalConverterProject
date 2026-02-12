@@ -104,7 +104,10 @@ void METHOD TeamYouthPlayerGenerator_SetNationality(void *t, DUMMY_ARG, CDBPlaye
     // basque
     UInt fifaID = team->GetFifaID();
     if (team->CanBuyOnlyBasquePlayers() || team->YouthPlayersAreBasques() /*fifaID == 463 || fifaID == 448 || fifaID == 457 || fifaID == 467*/) {
-        nationality.first = FifamNation::Spain;
+        if (team->GetYouthPlayersCountry() == FifamNation::Spain || team->GetYouthPlayersCountry() == FifamNation::France)
+            nationality.first = team->GetYouthPlayersCountry();
+        else
+            nationality.first = FifamNation::Spain;
         player->SetIsBasque(true);
     }
     else if (nationality.first == FifamNation::Spain && CRandom::GetRandomInt(100) < CParameterFiles::Instance()->GetProbabilityOfBasquePlayersInYouthTeam())

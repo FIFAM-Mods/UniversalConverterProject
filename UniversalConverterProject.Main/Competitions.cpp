@@ -1253,8 +1253,8 @@ CDBTeam *METHOD WCCHost_Round_GetHostTeam(UInt) {
 }
 
 UChar GetOFCChampionsLeagueQualiGroupHost(UShort year) {
-    if (year == 2024)
-        return FifamCompRegion::Cook_Islands;
+    if (year == 2025)
+        return FifamCompRegion::Samoa;
     UInt numTeams = std::size(Oceania_ParticipantsCountries);
     UInt countryIndex = year % numTeams;
     return Oceania_ParticipantsCountries[countryIndex];
@@ -1327,8 +1327,11 @@ Bool IsContinentalCompetitionWithHost(CCompID const &compId) {
         if (comp && comp->GetRoundType() != ROUND_QUALI && comp->GetRoundType() != ROUND_QUALI2)
             return true;
     }
-    if (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania) // OFC Professional League
-        return true;
+    if (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania) { // OFC Professional League
+        auto comp = GetCompetition(compId);
+        if (comp && comp->GetRoundType() == ROUND_SEMIFINAL && comp->GetRoundType() == ROUND_FINAL)
+            return true;
+    }
     if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica) // U20 Libertadores
         return true;
     if (type == COMP_CONTINENTAL_1 && region == FifamCompRegion::NorthAmerica) // Caribbean Shield

@@ -272,7 +272,7 @@ void PatchExtendedCountry(FM::Version v) {
 		patch::RedirectCall(0xFEEE99, OnLoadFifaRankingFromSaveGame);
 		patch::RedirectCall(0xFEEEAD, OnLoadFifaRankingsFromSaveGame);
 
-		// FIFA ranking screen
+// FIFA ranking screen
 		patch::RedirectCall(0x822CE5, FifaRanking_InitColumnTypes);
 		patch::RedirectCall(0x822CFF, FifaRanking_InitColumnFormatting);
 		patch::RedirectCall(0x822FF7, FifaRanking_AddColumnCountryName);
