@@ -5,10 +5,12 @@
 #include "Utils.h"
 #include "UcpSettings.h"
 #include "FifamAppearanceDefs.h"
+#include "shared.h"
 
 using namespace plugin;
 
-Int hairLODs[std::size(hairTypes)];
+const UInt LAST_FIFA_HAIR_ID = 7729; // TODO: rework this
+Int hairLODs[LAST_FIFA_HAIR_ID + 1] = {}; // FIFA hair ID => FIFA hairlod ID
 
 UChar METHOD OnSetupPlayer3D(void *player3d, DUMMY_ARG, UInt playerId, CTeamIndex *teamID, Int a4, Int a5) {
     UChar result = CallMethodAndReturn<UChar, 0x413CA0>(player3d, playerId, teamID, a4, a5);
@@ -455,16 +457,40 @@ void PatchPlayerAppearance(FM::Version v) {
     }
 }
 
+String GetReduxString(void *str) {
+    Char *data = *raw_ptr<Char *>(str, 0x48);
+    if (data)
+        return ToUTF16(data);
+    return String();
+}
+
+String GetTcmPlayerName(void *player) {
+    String pseudonym = GetReduxString(raw_ptr<void>(player, 0xEC));
+    if (!pseudonym.empty())
+        return pseudonym;
+    String firstName = GetReduxString(raw_ptr<void>(player, 0x8));
+    String lastName = GetReduxString(raw_ptr<void>(player, 0xA0));
+    return firstName + L" " + lastName;
+}
+
 Int METHOD GetLowMedHairId(void *player) {
     if (Settings::GetInstance().UseHairLODs) {
-        Int specialfaceid = *raw_ptr<int>(player, 0x1BC);
+        Int specialfaceid = *raw_ptr<Int>(player, 0x1BC);
         if (specialfaceid != 0 && FmFileExists(Utils::Format("m728__%d.o", specialfaceid))) {
+            //SafeLog::Write(Utils::Format(L"player %s hairlod %d (custom)", GetTcmPlayerName(player).c_str(), specialfaceid));
             return specialfaceid;
         }
-        Int hairstyleid = *raw_ptr<int>(player, 0x1DC);
-        if (hairstyleid < (Int)std::size(hairLODs))
+        Int hairstyleid = *raw_ptr<Int>(player, 0x1DC);
+        if (hairstyleid >= 0 && hairstyleid <= LAST_FIFA_HAIR_ID) {
+            //SafeLog::Write(Utils::Format(L"player %s hairlod %d (hair %d)", GetTcmPlayerName(player).c_str(), hairLODs[hairstyleid], hairstyleid));
             return hairLODs[hairstyleid];
+        }
+        else {
+            //SafeLog::Write(Utils::Format(L"player %s hairlod 0 (hair %d)", GetTcmPlayerName(player).c_str(), hairstyleid));
+            return 0;
+        }
     }
+    //SafeLog::Write(Utils::Format(L"player %s hairlod 0", GetTcmPlayerName(player).c_str()));
     return 0;
 }
 
@@ -516,10 +542,10 @@ void METHOD CountryYouthAppearance_ReadFaceType(void *reader, DUMMY_ARG, UInt *p
 
 void InstallPlayerAppearance_GfxCore() {
     for (Int i = 0; i < (Int)std::size(hairLODs); i++) {
-        if (!Settings::GetInstance().UseHairLODs || i == 0)
-            hairLODs[i] = 0;
+        if (Settings::GetInstance().UseHairLODs)
+            hairLODs[i] = -i;
         else
-            hairLODs[i] = -(Int)hairTypes[i];
+            hairLODs[i] = 0; 
     }
     //patch::SetPointer(GfxCoreAddress(0x920B2 + 3), hairLODs);
 

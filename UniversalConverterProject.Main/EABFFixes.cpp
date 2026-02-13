@@ -1938,7 +1938,7 @@ void PatchEABFFixes(FM::Version v) {
         CopyStrMem(0x24ACA60, L"ParameterFiles\\Player Interactions.txt");
         CopyStrMem(0x24D5700, L"ParameterFiles\\Sponsor List.txt");
         CopyStrMem(0x24ACD68, L"ParameterFiles\\Stadium Periphery.txt");
-        //CopyStrMem(0x2460198, L"ParameterFiles\\Team Presentation*.txt");
+        CopyStrMem(0x2460198, L"ParameterFiles\\Team Presentation*.txt");
         CopyStrMem(0x24ACD20, L"ParameterFiles\\Textmode Match.txt");
         CopyStrMem(0x23B3D20, L"ParameterFiles\\Training Camp New.txt");
         CopyStrMem(0x24ACDB8, L"ParameterFiles\\Training Camp.txt");

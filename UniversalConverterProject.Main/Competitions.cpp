@@ -1329,7 +1329,7 @@ Bool IsContinentalCompetitionWithHost(CCompID const &compId) {
     }
     if (type == COMP_CHAMPIONSLEAGUE && region == FifamCompRegion::Oceania) { // OFC Professional League
         auto comp = GetCompetition(compId);
-        if (comp && comp->GetRoundType() == ROUND_SEMIFINAL && comp->GetRoundType() == ROUND_FINAL)
+        if (comp && (comp->GetRoundType() == ROUND_SEMIFINAL || comp->GetRoundType() == ROUND_FINAL))
             return true;
     }
     if (type == COMP_YOUTH_CHAMPIONSLEAGUE && region == FifamCompRegion::SouthAmerica) // U20 Libertadores
