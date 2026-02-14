@@ -136,5 +136,6 @@ void PatchTranslation(FM::Version v) {
         patch::SetPointer(0x4BE25A + 1, L"%s\\fmdata\\translation\\languages\\%s");
         patch::RedirectCall(0x57571D, FindRangeByHash);
         patch::RedirectCall(0x575774, FindRangeByHash);
+        patch::SetPointer(0x4427E3 + 1, L"fmdata/translation/languages/%s/Tool-EULA.rtf");
     }
 }

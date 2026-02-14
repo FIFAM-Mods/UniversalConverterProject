@@ -254,7 +254,7 @@ Bool METHOD IsForeignNationForCompetition(CDBCompetition *comp, DUMMY_ARG, Int t
             return false;
         break;
     case FifamNation::Italy:
-        if (IsEuropeanUnion(playerNation) || IsEuropeanFreeTradeAssociation(playerNation))
+        if (IsEuropeanFreeTradeAssociation(playerNation) || IsUnitedKingdom(playerNation) || playerNation == FifamNation::Albania)
             return false;
         break;
     case FifamNation::Japan:
@@ -274,6 +274,14 @@ Bool METHOD IsForeignNationForCompetition(CDBCompetition *comp, DUMMY_ARG, Int t
         {
             return false;
         }
+        break;
+    case FifamNation::Australia:
+        if (playerNation == FifamNation::New_Zealand)
+            return false;
+        break;
+    case FifamNation::Portugal:
+        if (IsEuropeanFreeTradeAssociation(playerNation) || playerNation == FifamNation::Andorra)
+            return false;
         break;
     }
     if (isEuTeam)
