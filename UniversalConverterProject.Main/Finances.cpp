@@ -43,19 +43,21 @@ Float GetAIClubsRefundingRate() {
     return 0.65f;
 }
 
-void METHOD OnApplyTeamProfitTax(CDBFinance *finance, DUMMY_ARG, EAGMoney const &profit) { // finance=ecx, profit=edx
+void METHOD OnApplyTeamProfitTax(CDBFinance *finance, DUMMY_ARG, EAGMoney &profit) { // finance=ecx, profit=edx
     Vector<String> logParams;
     String profitStr = std::to_wstring(profit.GetValueInCurrency());
     auto team = finance->GetTeam();
     if (profit > 0) {
         auto taxInfo = GetCountryTax(team->GetCountryId(), GetCurrentYear());
+        EAGMoney tax = 0;
         if (profit >= taxInfo.minProfit) {
-            auto tax = profit * (taxInfo.taxValue / 100.0f);
+            tax = profit * (taxInfo.taxValue / 100.0f);
             finance->SetCash(finance->GetCash() - tax);
             logParams = { CountryName(team->GetCountryId()), TeamName(team), profitStr, std::to_wstring(tax.GetValueInCurrency()), L"0" };
         }
         else
             logParams = { CountryName(team->GetCountryId()), TeamName(team), profitStr, L"0", L"0" };
+        profit -= tax;
     }
     else if (profit < 0 && team->IsManagedByAI()) {
         auto refund = -profit * GetAIClubsRefundingRate();
