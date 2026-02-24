@@ -365,5 +365,7 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x14A9BB8, GetGameTextByHashKey);
 
         patch::SetPointer(0x7B979B + 1, L"fmdata\\Credits.txt");
+        patch::SetPointer(0x12F9883 + 1, L"fmdata/translation/languages/%s/Bedingungen.txt");
+        patch::SetPointer(0x4DA4DE + 1, L"fmdata\\translation\\languages\\"); // language folder (type 12) in CFMResolver::GetGlobalPath()
     }
 }

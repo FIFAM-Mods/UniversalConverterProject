@@ -1842,6 +1842,10 @@ CTeamIndex CDBPlayer::GetCurrentTeam() {
     return result;
 }
 
+void CDBPlayer::UpdateMarketValue() {
+    CallMethod<0xFC9C20>(this);
+}
+
 EAGMoney CDBPlayer::GetMarketValue(CDBEmployee *employee) {
     EAGMoney result;
     CallMethod<0xF9A980>(this, &result, employee);

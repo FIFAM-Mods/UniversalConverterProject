@@ -738,6 +738,7 @@ public:
     UChar GetBasicLevel(Char position, CDBEmployee *employee = nullptr);
     UChar GetLevel(Char position = -1, CDBEmployee *employee = nullptr);
     CTeamIndex GetCurrentTeam();
+    void UpdateMarketValue();
     EAGMoney GetMarketValue(CDBEmployee *employee = nullptr);
     EAGMoney GetDemandValue();
     EAGMoney GetMinRelFee();
@@ -1683,14 +1684,14 @@ public:
     Int value1;
     Int value2;
 
-    void SetSeed(Int seed1, Int seed2);
-    void GetSeed(Int &seed1, Int &seed2);
+    static void SetSeed(Int seed1, Int seed2);
+    static void GetSeed(Int &seed1, Int &seed2);
     // Returns a random integer in [0, maxExclusive)
     static Int GetRandomInt(Int maxExclusive);
     // Returns a random integer in [min, max] (16-bit clamped)
-    Int GetRandomBetween(Int min, Int max);
+    static Int GetRandomBetween(Int min, Int max);
     // Returns a random float in [0.0f, maxExclusive)
-    Float GetRandomFloat(Float maxExclusive);
+    static Float GetRandomFloat(Float maxExclusive);
 };
 
 CRandom &GlobalRandom();
@@ -2527,3 +2528,28 @@ enum eWidget {
 void GetNameStringID(WideChar *out, Int languageId, Int firstNameIndex, Int lastNameIndex, Int commonNameIndex, Bool bMale, UInt birthdate, UInt empicsId);
 
 String GetNameStringID(Int languageId, Int firstNameIndex, Int lastNameIndex, Int commonNameIndex, Bool bMale, UInt birthdate, UInt empicsId);
+
+enum eStartingConditionType {
+    STARTINGCONDITION_NONE = 0,
+    STARTINGCONDITION_INJURY = 1,
+    STARTINGCONDITION_LEAGUEBAN = 2,
+    STARTINGCONDITION_CAREEREND = 3,
+    STARTINGCONDITION_LOAN = 4,
+    STARTINGCONDITION_FUTURETRANSFER = 5,
+    STARTINGCONDITION_FUTURELOAN = 6,
+    STARTINGCONDITION_BANUNTIL = 7,
+    STARTINGCONDITION_FUTUREJOIN = 8,
+    STARTINGCONDITION_FUTURERELOAN = 9
+};
+
+struct StartingCondition {
+    UInt m_nType;
+    CJDate m_startDate;
+    CJDate m_endDate;
+    CTeamIndex m_teamTo;
+    CTeamIndex m_teamFrom;
+    Int m_nValue1;
+    Int m_nValue2;
+    Int m_nPlayerId;
+    Int m_nOfferId;
+};

@@ -137,7 +137,6 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x57571D, FindRangeByHash);
         patch::RedirectCall(0x575774, FindRangeByHash);
         patch::SetPointer(0x4427E3 + 1, L"fmdata/translation/languages/%s/Tool-EULA.rtf");
-        patch::SetPointer(0x12F9883 + 1, L"fmdata/translation/languages/%s/Bedingungen.txt");
-        patch::SetPointer(0x4DA4DE + 1, L"fmdata\\translation\\languages\\"); // language folder (type 12) in CFMResolver::GetGlobalPath()
+
     }
 }
