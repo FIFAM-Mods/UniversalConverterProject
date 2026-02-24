@@ -291,7 +291,7 @@ void METHOD OnReadFifaWorldPlayers(CDBGame *game) {
     ReadPlayerTrophyConfiig(L"fmdata\\historic\\BallonDOr.txt", PLAYERTROPHY_BALLONDOR);
     ReadPlayerTrophyConfiig(L"fmdata\\historic\\BestPlayerInEurope.txt", PLAYERTROPHY_BESTINEUROPE);
     ReadPlayerCompWinConfiig(L"fmdata\\historic\\WorldCupWinners.txt", COMPWINCONFIG_WC);
-    ReadPlayerCompWinConfiig(L"fmdata\\historic\\EuroCupWinners.txt", COMPWINCONFIG_WC);
+    ReadPlayerCompWinConfiig(L"fmdata\\historic\\EuroCupWinners.txt", COMPWINCONFIG_EC);
     ReadGoldenShoeConfiig();
 }
 
@@ -1497,46 +1497,52 @@ Int METHOD OnPlayerInfoCareerFill(CXgFMPanel *screen) {
         }
         UInt counter = 0;
         UInt numBallonDOr = Utils::Clamp(PlayerStatsGetBallonDOrWins(player->GetStats()), 0, 99);
-        if (numBallonDOr) {
+        if (counter < MAX_TROPHIES && numBallonDOr) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\BallonDOr.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("IDS_BALLONDOR"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numBallonDOr).c_str());
         }
         UInt numFIFATheBest = Utils::Clamp(player->GetStats()->GetNumFifaWorldPlayerAwards(), 0, 99);
-        if (numFIFATheBest) {
+        if (counter < MAX_TROPHIES && numFIFATheBest) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\TheBestTrophy.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("IDS_PLAYER_INFO_ALL_TIME_4"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numFIFATheBest).c_str());
         }
         UInt numEuropeanBest = Utils::Clamp(player->GetStats()->GetNumEuropeanPlayerOfTheYear(), 0, 99);
-        if (numEuropeanBest) {
+        if (counter < MAX_TROPHIES && numEuropeanBest) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\BestPlayerInEurope.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("IDS_PLAYER_INFO_ALL_TIME_3"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numEuropeanBest).c_str());
         }
         UInt numGoldenBoot = Utils::Clamp(PlayerStatsGetGoldenShoeWins(player->GetStats()), 0, 99);
-        if (numGoldenBoot) {
+        if (counter < MAX_TROPHIES && numGoldenBoot) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\GoldenBoot.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("IDS_GOLDENBOOT"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numGoldenBoot).c_str());
         }
         UInt numPlayerOfTheYear = Utils::Clamp(player->GetStats()->GetNumPlayerOfTheYear(), 0, 99);
-        if (numPlayerOfTheYear) {
+        if (counter < MAX_TROPHIES && numPlayerOfTheYear) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\PlayerOfTheYear.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("IDS_PLAYER_INFO_ALL_TIME_2"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numPlayerOfTheYear).c_str());
         }
         UInt numPlayerOfTheMonth = Utils::Clamp(player->GetStats()->GetNumPlayerOfTheMonth(), 0, 99);
-        if (numPlayerOfTheMonth) {
+        if (counter < MAX_TROPHIES && numPlayerOfTheMonth) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\PlayerOfTheMonth.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("IDS_PLAYER_INFO_ALL_TIME_1"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numPlayerOfTheMonth).c_str());
         }
         UInt numWC = Utils::Clamp(player->GetStats()->GetNumWCWins(), 0, 99);
-        if (numWC) {
+        if (counter < MAX_TROPHIES && numWC) {
             SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\WorldCup.tga");
             ext->TbTrophy[counter]->SetTooltip(GetTranslation("ID_TOURNAMENT_WORLDCUP"));
             ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numWC).c_str());
+        }
+        UInt numEC = Utils::Clamp(player->GetStats()->GetNumECWins(), 0, 99);
+        if (counter < MAX_TROPHIES && numEC) {
+            SetImageFilename(ext->TbTrophy[counter], L"art_fm\\lib\\Trophies\\64x64\\EuroCup.tga");
+            ext->TbTrophy[counter]->SetTooltip(GetTranslation("ID_TOURNAMENT_EURO"));
+            ext->TbTrophyWins[counter++]->SetText(Utils::Format(L"%d", numEC).c_str());
         }
         for (UInt i = 0; i < counter; i++) {
             ext->TbTrophy[i]->SetVisible(true);
