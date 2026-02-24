@@ -1845,6 +1845,26 @@ EAGMoney *OnUpdateMVMultiplyByPrestigeFactor(EAGMoney *out, Double a, EAGMoney *
     return out;
 }
 
+void METHOD OnLeagueDevelopmentChangeLeague(CXgFMPanel *screen) {
+    struct EffectControlsDesc {
+        CXgTextBox *pTbTitle;
+        CXgTextBox *pTbRows[2];
+        CXgTextBox *pTbPercentage;
+        CXgImage *pImgPhoto;
+    };
+    EffectControlsDesc *controls = raw_ptr<EffectControlsDesc>(screen, 0x494);
+    for (UInt i = 0; i < 4; i++) {
+        controls[i].pTbTitle->SetVisible(false);
+        for (UInt r = 0; r < 2; r++) {
+            controls[i].pTbRows[r]->SetVisible(true);
+            controls[i].pTbRows[r]->SetText(L"");
+        }
+        controls[i].pTbPercentage->SetVisible(false);
+        controls[i].pImgPhoto->SetVisible(false);
+    }
+    CallMethod<0x8BA5D0>(screen);
+}
+
 void PatchEABFFixes(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         //patch::RedirectCall(0xC42936, FormationTest1);
@@ -2537,6 +2557,13 @@ void PatchEABFFixes(FM::Version v) {
         //patch::RedirectCall(0x137CB9A, OnPlayerStartingConditionsLoan_GetMV); // CPlayerStartingConditions::MakeFutureLoan
         patch::RedirectCall(0x108F479, OnPlayerStartingConditions_FinishApply); // DBRealInit
         //patch::RedirectCall(0xFC9F82, OnUpdateMVMultiplyByPrestigeFactor);
+
+        // league development screen fixes
+        patch::RedirectCall(0x8BAAC9, OnLeagueDevelopmentChangeLeague); // CSeasonTransitionLeagueDevelopment::ComboBoxValueChanged
+        patch::RedirectJump(0x8BABC4, OnLeagueDevelopmentChangeLeague); // CSeasonTransitionLeagueDevelopment::Init
+        patch::RedirectJump(0x8BABD6, OnLeagueDevelopmentChangeLeague); // CSeasonTransitionLeagueDevelopment::Init
+        patch::Nop(0x8BA997, 3);
+        patch::Nop(0x8BA9A1, 3);
     }
 }
 
