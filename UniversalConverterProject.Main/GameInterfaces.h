@@ -582,6 +582,7 @@ public:
     CDBGameOptions &GetOptions();
     bool IsCountryPlayable(UChar countryId);
     UShort GetCurrentSeasonNumber();
+    UInt GetLanguage();
 };
 
 CDBGame *Game();

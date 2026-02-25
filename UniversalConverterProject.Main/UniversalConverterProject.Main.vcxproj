@@ -121,6 +121,7 @@
     <ClCompile Include="..\shared\tinyxml\tinyxml.cpp" />
     <ClCompile Include="..\shared\tinyxml\tinyxmlerror.cpp" />
     <ClCompile Include="..\shared\tinyxml\tinyxmlparser.cpp" />
+    <ClCompile Include="..\shared\TranslationShared.cpp" />
     <ClCompile Include="..\shared\UcpSettings.cpp" />
     <ClCompile Include="3dAdboardsAndBanners.cpp" />
     <ClCompile Include="3dMatchStandings.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="..\shared\shared.h" />
     <ClInclude Include="..\shared\tinyxml\tinystr.h" />
     <ClInclude Include="..\shared\tinyxml\tinyxml.h" />
+    <ClInclude Include="..\shared\TranslationShared.h" />
     <ClInclude Include="..\shared\UcpSettings.h" />
     <ClInclude Include="..\shared\WinHeader.h" />
     <ClInclude Include="3dAdboardsAndBanners.h" />

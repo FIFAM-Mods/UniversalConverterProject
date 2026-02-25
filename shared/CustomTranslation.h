@@ -15,3 +15,4 @@ using TranslationTable = Map<UInt, String>; // key hash => text
 TranslationTable &GetTranslationTable(TranslationTableType type);
 void LoadCustomTranslation(String const &langName, Bool editor, Function<void(Path const &)> callback = {});
 void LoadDatabaseCustomTranslation(Vector<String> const &dbNames, String const &langName, Bool editor, Function<void(Path const &)> callback = {});
+String AddSpacesBetweenCJK(String const &src);

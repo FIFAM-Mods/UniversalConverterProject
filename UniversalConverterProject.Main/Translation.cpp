@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include "FifamReadWrite.h"
 #include "CustomTranslation.h"
+#include "TranslationShared.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -11,22 +12,6 @@ Bool IsRussianLanguage = false;
 Bool IsUkrainianLanguage = false;
 eCurrency DefaultCurrency = CURRENCY_EUR;
 Bool IsDefaultImperialUnits = false;
-
-Array<String, 207> &CountryNames() {
-    static Array<String, 207> countryNames;
-    return countryNames;
-};
-
-Bool countryNamesFileRead;
-
-void METHOD OnSetCountryName(void *country, DUMMY_ARG, const WideChar *name) {
-    if (countryNamesFileRead) {
-        auto countryId = *raw_ptr<unsigned char>(country, 0x7C);
-        if (countryId >= 1 && countryId <= 207 && !CountryNames()[countryId - 1].empty())
-            name = CountryNames()[countryId - 1].c_str();
-    }
-    CallMethod<0xFD67C0>(country, name);
-}
 
 String GetLocaleFilename() {
     return L"fmdata\\translation\\languages\\" + GameLanguage() + L"\\Translations.huf";
@@ -295,6 +280,26 @@ WideChar const *METHOD GetGameTextByHashKey(void *t, DUMMY_ARG, UInt key) {
     return CallMethodAndReturn<wchar_t const *, 0x14A9671>(t, key);
 }
 
+UChar METHOD GetNumCountryNameTranslations(void *reader) {
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12))
+        return NUM_TRANSLATION_LANGUAGES;
+    return CallMethodAndReturn<UChar, 0x1338610>(reader);
+}
+
+Int METHOD GetLanguageIdForCountryName(void *reader) {
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12) && !GameLanguage().empty()) {
+        Int languageId = GetTranslationLanguageID(GameLanguage());
+        if (languageId != -1)
+            return languageId;
+    }
+    return Game()->GetLanguage();
+}
+
+Int METHOD ReadCountryNameTranslation(void *reader, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    BinaryReaderReadString(reader, out, maxLen);
+    return GetLanguageIdForCountryName(reader);
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         auto iniPath = FM::GameDirPath(L"locale.ini");
@@ -302,19 +307,6 @@ void PatchTranslation(FM::Version v) {
         if (!GameLanguage().empty()) {
             IsRussianLanguage = GameLanguage() == L"rus";
             IsUkrainianLanguage = GameLanguage() == L"ukr";
-            auto countryNamesFile = path(L"fmdata") / L"translation" / L"languages" / GameLanguage() / L"CountryNames.txt";
-            if (exists(countryNamesFile)) {
-                FifamReader countryNamesReader(countryNamesFile, 14);
-                if (countryNamesReader.Available()) {
-                    countryNamesFileRead = true;
-                    int i = 0;
-                    while (!countryNamesReader.IsEof()) {
-                        countryNamesReader.ReadLine(CountryNames()[i++]);
-                        if (i == 207)
-                            break;
-                    }
-                }
-            }
         }
         else
             GameLanguage() = L"eng";
@@ -329,9 +321,19 @@ void PatchTranslation(FM::Version v) {
             DefaultCurrency = CURRENCY_EUR;
         String units = GetIniOption(L"OPTIONS", L"LANGUAGE_UNITS", L"", iniPath);
         IsDefaultImperialUnits = units == L"imperial";
+        
+        // DBRead
+        patch::RedirectCall(0xF971CD, GetNumCountryNameTranslations);
+        patch::RedirectCall(0xF9721A, GetNumCountryNameTranslations);
+        patch::RedirectCall(0xF971E7, ReadCountryNameTranslation);
+        patch::Nop(0xF971EC, 12);
+        // DBInitQuick
+        patch::RedirectCall(0x108F6B9, GetNumCountryNameTranslations);
+        patch::RedirectCall(0x108F6F7, GetNumCountryNameTranslations);
+        patch::SetBytes(0x108F6C2, "8D 4C 24 58");
+        patch::Nop(0x108F6C2 + 4, 3);
+        patch::RedirectCall(0x108F6C9, GetLanguageIdForCountryName);
 
-        patch::RedirectCall(0xF9720D, OnSetCountryName);
-        patch::RedirectCall(0x108F723, OnSetCountryName);
         patch::RedirectJump(0x14A950B, GetLocaleShortName);
         patch::RedirectCall(0x111920A, OnReadAdditionalTranslationFile<0x13B5820>);
         patch::RedirectCall(0x111924A, OnReadAdditionalTranslationFile<0x13B6C90>);

@@ -200,6 +200,10 @@ UShort CDBGame::GetCurrentSeasonNumber() {
     return plugin::CallMethodAndReturn<UShort, 0xF49A80>(this);
 }
 
+UInt CDBGame::GetLanguage() {
+    return CallMethodAndReturn<UInt, 0xF4A8A0>(this);
+}
+
 bool CDBGameOptions::CheckFlag(unsigned int flag) {
     return plugin::CallMethodAndReturn<bool, 0x10410E0>(this, flag);
 }

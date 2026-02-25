@@ -93,6 +93,7 @@
     <ClCompile Include="..\shared\PlayerAppearanceIDs.cpp" />
     <ClCompile Include="..\shared\CustomTranslation.cpp" />
     <ClCompile Include="..\shared\DatabaseShared.cpp" />
+    <ClCompile Include="..\shared\TranslationShared.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -181,6 +182,7 @@
     <ClInclude Include="..\shared\PlayerAppearanceIDs.h" />
     <ClInclude Include="..\shared\CustomTranslation.h" />
     <ClInclude Include="..\shared\DatabaseShared.h" />
+    <ClInclude Include="..\shared\TranslationShared.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

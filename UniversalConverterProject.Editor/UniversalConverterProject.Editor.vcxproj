@@ -114,6 +114,7 @@
     <ClCompile Include="..\shared\Resolutions.cpp" />
     <ClCompile Include="..\shared\settings\Settings.cpp" />
     <ClCompile Include="..\shared\shared.cpp" />
+    <ClCompile Include="..\shared\TranslationShared.cpp" />
     <ClCompile Include="..\shared\UcpSettings.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Assessment.cpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="..\shared\Resolutions.h" />
     <ClInclude Include="..\shared\settings\Settings.h" />
     <ClInclude Include="..\shared\shared.h" />
+    <ClInclude Include="..\shared\TranslationShared.h" />
     <ClInclude Include="..\shared\UcpSettings.h" />
     <ClInclude Include="..\shared\WinHeader.h" />
     <ClInclude Include="3dPatches.h" />

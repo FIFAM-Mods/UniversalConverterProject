@@ -1,5 +1,4 @@
 #include "Editor.h"
-#include "FifamTypes.h"
 #include "Utils.h"
 #include "TextFileTable.h"
 #include "LicenseCheck.h"
@@ -35,6 +34,14 @@ FmLanguage gCurrentLanguage;
 wchar_t const *GetText(char const *key) {
     void *locale = CallAndReturn<void *, 0x575200>();
     return CallMethodAndReturn<wchar_t const *, 0x5756F0>(locale, key, *raw_ptr<unsigned int>(locale, 0x18));
+}
+
+void BinaryFileWriteString(void *binaryFile, WideChar const *str) {
+    CallMethod<0x550D10>(binaryFile, str);
+}
+
+void BinaryFileWriteInt(void *binaryFile, UInt value) {
+    CallMethod<0x551060>(binaryFile, value);
 }
 
 Set<String> &GetSponsorNames() {
@@ -1063,6 +1070,10 @@ void RemoveUnnededCharsForPortraitName(WideChar *str, WideChar const *src, UInt 
 WideChar * METHOD FixAssessmentFormatNumber(void *locale, DUMMY_ARG, Double value, UInt digits, WideChar *out, UInt outLen) {
 	CallMethod<0x575BC0>(locale, value, digits, out, outLen);
 	return out;
+}
+
+bool ReaderIsVersionGreaterOrEqual(void *reader, UInt year, UShort build) {
+    return CallMethodAndReturn<bool, 0x511C70>(reader, year, build);
 }
 
 void PatchEditor(FM::Version v) {

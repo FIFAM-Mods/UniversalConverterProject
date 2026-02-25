@@ -136,11 +136,12 @@ void SetDatabaseID(String const &id) {
     patch::SetUChar(0x4FAF4B + 2, UChar((std::size(RestoreFolders) - 1) * 4));
 
     // translation
+    LoadCustomCountryNames(FM::GameDirPath(DatabaseFolderName));
     Vector<String> dbNames;
     DatabaseInfo *d = GetDatabaseInfo(Utils::WtoA(id));
     if (d && !d->parentDatabaseId.empty())
         dbNames.push_back(Utils::AtoW(d->parentDatabaseId));
-    dbNames.push_back(id);
+    dbNames.push_back(id.empty() ? L"default" : id);
     LoadDatabaseCustomTranslation(dbNames, GameLanguage(), true);
 }
 
@@ -186,12 +187,18 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             if (notifyCode == BN_CLICKED) {
                 HWND cbDatabase = GetDlgItem(hwndDlg, 2068);
                 int selectedIndex = SendMessageW(cbDatabase, CB_GETCURSEL, 0, 0);
+                Bool customDatabase = false;
                 if (selectedIndex > 0) {
                     int vecIndex = selectedIndex - 1;
                     if (vecIndex < (int)DatabasesVec().size()) {
                         SetDatabaseID(AtoW(DatabasesVec()[vecIndex].id));
                         CurrentDatabase() = DatabasesVec()[vecIndex];
+                        customDatabase = true;
                     }
+                }
+                if (!customDatabase) {
+                    SetDatabaseID(L"");
+                    CurrentDatabase().Clear();
                 }
                 EndDialog(hwndDlg, 1);
             }
@@ -211,9 +218,11 @@ INT_PTR CALLBACK DatabaseOptionsDialog(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 void *CreateDatabaseOptionsDialog() {
     ReadDatabaseIDs(true);
     if (DatabasesVec().size() > 0)
-        DialogBoxParamA(NULL, (LPCSTR)30735, NULL, DatabaseOptionsDialog, 0);
-    //else
-    //    ::Warning("%d", DatabaseIDs().size());
+        DialogBoxParamW(NULL, (LPCWSTR)30735, NULL, DatabaseOptionsDialog, 0);
+    else {
+        SetDatabaseID(L"");
+        CurrentDatabase().Clear();
+    }
     return CallAndReturn<void *, 0x575200>( );
 }
 

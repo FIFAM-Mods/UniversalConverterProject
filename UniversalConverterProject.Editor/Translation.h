@@ -4,4 +4,5 @@
 
 String &GameLanguage();
 
+void LoadCustomCountryNames(Path const &dbFolder);
 void PatchTranslation(FM::Version v);

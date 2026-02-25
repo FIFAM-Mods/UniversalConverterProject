@@ -1,4 +1,5 @@
 #include "ExtendedPlayerEditor.h"
+#include "Editor.h"
 
 using namespace plugin;
 
@@ -8,18 +9,6 @@ void *FmNew(UInt size) {
 
 void FmDelete(void *data) {
     Call<0x5B04A3>(data);
-}
-
-void BinaryFileWriteString(void *binaryFile, WideChar const *str) {
-    CallMethod<0x550D10>(binaryFile, str);
-}
-
-void BinaryFileWriteInt(void *binaryFile, UInt value) {
-    CallMethod<0x551060>(binaryFile, value);
-}
-
-bool ReaderIsVersionGreaterOrEqual(void *reader, UInt year, UShort build) {
-    return CallMethodAndReturn<bool, 0x511C70>(reader, year, build);
 }
 
 const UInt DEF_PLAYER_SZ = 0x2C0;

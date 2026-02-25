@@ -47,14 +47,21 @@ String AddSpacesBetweenCJK(String const &src) {
     return out;
 }
 
-void LoadTranslationFromFile(Path const &fileName, String const &langName, TranslationTable &out, Function<void(Path const &)> callback) {
+enum TranslationFileKeyType {
+    TRANSLATIONFILE_KEY_ID,
+    TRANSLATIONFILE_KEY_HASH
+};
+
+void LoadTranslationFromFile(Path const &fileName, String const &langName, TranslationTable &out, TranslationFileKeyType keyType,
+    Function<void(Path const &)> callback)
+{
     TextFileTable file;
     if (!file.ReadUnicodeText(fileName))
         return; // failed to read file
     if (file.Rows().size() > 1) {
         for (size_t i = 1; i < file.Rows().size(); i++) {
             if (file.Rows()[i - 1].size() != file.Rows()[i].size()) {
-                ::Error(L"Error in custom translation file: " + fileName.wstring() + Utils::Format(L"at row %u (%u/%u)", i,
+                ::Error(L"Error in translation file: " + fileName.wstring() + Utils::Format(L"at row %u (%u/%u)", i,
                     file.Rows()[i - 1].size(), file.Rows()[i].size()));
                 return;
             }
@@ -84,19 +91,20 @@ void LoadTranslationFromFile(Path const &fileName, String const &langName, Trans
     else
         addSpacing = langName == L"chi";
     for (UInt row = 1; row < file.NumRows(); row++) {
-        String const &key = file.Cell(0, row);
-        if (!key.empty()) {
+        String const &keyStr = file.Cell(0, row);
+        if (!keyStr.empty()) {
+            UInt key = (keyType == TRANSLATIONFILE_KEY_ID) ? Utils::SafeConvertInt<UInt>(keyStr) : GetTranslationHash(keyStr);
             String const &text = file.Cell(langColumn, row);
             if (!text.empty()) {
                 if (text.size() == 1 && text[0] == L' ')
-                    out[GetTranslationHash(key)] = L"";
+                    out[key] = L"";
                 else if (addSpacing)
-                    out[GetTranslationHash(key)] = AddSpacesBetweenCJK(text);
+                    out[key] = AddSpacesBetweenCJK(text);
                 else
-                    out[GetTranslationHash(key)] = text;
+                    out[key] = text;
             }
             else if (defaultColumn != 0 && defaultColumn != langColumn)
-                out[GetTranslationHash(key)] = file.Cell(defaultColumn, row);
+                out[key] = file.Cell(defaultColumn, row);
         }
     }
 }
@@ -107,7 +115,7 @@ void LoadTranslationFilesInFolder(Path const &folderPath, String const &langName
             path const &p = i.path();
             String ext = Utils::ToLower(p.extension().c_str());
             if (ext == L".txt")
-                LoadTranslationFromFile(p, langName, out, callback);
+                LoadTranslationFromFile(p, langName, out, TRANSLATIONFILE_KEY_HASH, callback);
         }
     }
 }
