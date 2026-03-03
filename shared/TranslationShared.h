@@ -3,11 +3,6 @@
 #include "FifamTypes.h"
 
 // Note: adding new language will require database version change
-const Int NUM_DEFAULT_TRANSLATION_LANGUAGES = 6;
-const Int NUM_CUSTOM_TRANSLATION_LANGUAGES = 8;
-const Int NUM_TRANSLATION_LANGUAGES = NUM_DEFAULT_TRANSLATION_LANGUAGES + NUM_CUSTOM_TRANSLATION_LANGUAGES;
-extern const Char *TranslationLanguages[NUM_TRANSLATION_LANGUAGES];
-extern const WideChar *TranslationLanguagesW[NUM_TRANSLATION_LANGUAGES];
 
 enum TranslationLanguageID {
     TRANSLATIONLANGUAGE_ENG = 0,
@@ -25,6 +20,23 @@ enum TranslationLanguageID {
     TRANSLATIONLANGUAGE_KOR = 12,
     TRANSLATIONLANGUAGE_CHI = 13
 };
+
+enum EditorTranslationID {
+    EDITORTRANSLATION_GER = 0,
+    EDITORTRANSLATION_ENG = 1,
+    EDITORTRANSLATION_FRE = 2,
+    EDITORTRANSLATION_ITA = 3,
+    EDITORTRANSLATION_SPA = 4,
+    EDITORTRANSLATION_POL = 5
+};
+
+const Int NUM_DEFAULT_TRANSLATION_LANGUAGES = 6;
+const Int NUM_CUSTOM_TRANSLATION_LANGUAGES = 8;
+const Int NUM_TRANSLATION_LANGUAGES = NUM_DEFAULT_TRANSLATION_LANGUAGES + NUM_CUSTOM_TRANSLATION_LANGUAGES;
+extern const Char *TranslationLanguages[NUM_TRANSLATION_LANGUAGES];
+extern const WideChar *TranslationLanguagesW[NUM_TRANSLATION_LANGUAGES];
+extern TranslationLanguageID EditorLanguageToTranslationLanguage[NUM_DEFAULT_TRANSLATION_LANGUAGES];
+extern EditorTranslationID TranslationLanguageToEditorLanguage[NUM_TRANSLATION_LANGUAGES];
 
 Bool IsDefaultTranslationLanguage(Int langID);
 Bool IsCustomTranslationLanguage(Int langID);

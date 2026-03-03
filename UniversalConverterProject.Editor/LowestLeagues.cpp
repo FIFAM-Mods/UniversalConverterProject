@@ -1,11 +1,7 @@
 #include "LowestLeagues.h"
+#include "EditorInterfaces.h"
 
 using namespace plugin;
-
-class CDBCompetition;
-class CComboBox;
-class CCountry;
-class CClub;
 
 void METHOD SetupLowestLeagues_13(int _this) {
     if (*(DWORD *)(_this + 15560) && *(DWORD *)(_this + 15556)) {

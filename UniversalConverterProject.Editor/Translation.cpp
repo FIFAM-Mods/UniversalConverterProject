@@ -16,6 +16,7 @@ CountryNamesArray &CountryNames() {
     return countryNames;
 }
 
+Int CurrentLanguageId = 0;
 Int CustomLanguageIndex = -1;
 
 String GetTranslationFileModifiedPath(String const &originalPath) {
@@ -45,15 +46,6 @@ void METHOD OnSetCountryName(void *country, DUMMY_ARG, const WideChar *name) {
             name = CountryNames()[CustomLanguageIndex][countryId - 1].c_str();
     }
     CallMethod<0xFD67C0>(country, name);
-}
-
-void METHOD OnSetCountryNameEditor(void *country, DUMMY_ARG, Int langId, const WideChar *name) {
-    if (CustomLanguageIndex != -1) {
-        auto countryId = *raw_ptr<Int>(country, 0x1A4);
-        if (countryId >= 1 && countryId <= 207)
-            name = CountryNames()[CustomLanguageIndex][countryId - 1].c_str();
-    }
-    CallMethod<0x4DCE80>(country, langId, name);
 }
 
 WideChar const *METHOD OnGetCountryNameEditor(void *country) {
@@ -183,10 +175,12 @@ void PatchTranslation(FM::Version v) {
         CustomLanguageIndex = -1;
         if (!GameLanguage().empty()) {
             LoadCustomTranslation(GameLanguage(), true);
-            Int languageId = GetTranslationLanguageID(GameLanguage());
-            if (languageId != -1 && IsCustomTranslationLanguage(languageId))
-                CustomLanguageIndex = TranslationLanguageIdToCustomLanguageId(languageId);
+            CurrentLanguageId = GetTranslationLanguageID(GameLanguage());
+            if (CurrentLanguageId != -1 && IsCustomTranslationLanguage(CurrentLanguageId))
+                CustomLanguageIndex = TranslationLanguageIdToCustomLanguageId(CurrentLanguageId);
         }
+        if (CurrentLanguageId == -1)
+            CurrentLanguageId = 0;
         patch::RedirectCall(0x4BF101, OnSetLocaleCurrentLanguage);
         patch::RedirectCall(0x4BF0C9, OnReadLocalisationFile);
         patch::RedirectCall(0x4BF0E0, OnReadLocalisationFile);

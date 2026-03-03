@@ -3,6 +3,7 @@
 #include "Editor.h"
 #include "CustomTranslation.h"
 #include "Translation.h"
+#include "CitiesAndRegions.h"
 #include "shared.h"
 #include <Windows.h>
 
@@ -136,13 +137,16 @@ void SetDatabaseID(String const &id) {
     patch::SetUChar(0x4FAF4B + 2, UChar((std::size(RestoreFolders) - 1) * 4));
 
     // translation
-    LoadCustomCountryNames(FM::GameDirPath(DatabaseFolderName));
+    Path dbFolder = FM::GameDirPath(DatabaseFolderName);
+    LoadCustomCountryNames(dbFolder);
     Vector<String> dbNames;
     DatabaseInfo *d = GetDatabaseInfo(Utils::WtoA(id));
     if (d && !d->parentDatabaseId.empty())
         dbNames.push_back(Utils::AtoW(d->parentDatabaseId));
     dbNames.push_back(id.empty() ? L"default" : id);
     LoadDatabaseCustomTranslation(dbNames, GameLanguage(), true);
+    // other databases
+    ReadCitiesAndRegions(dbFolder);
 }
 
 int METHOD EULACloseApp(void *) {

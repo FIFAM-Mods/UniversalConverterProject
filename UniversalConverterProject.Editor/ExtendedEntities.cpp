@@ -1,5 +1,7 @@
-#include "ExtendedPlayerEditor.h"
+#include "ExtendedEntities.h"
 #include "Editor.h"
+#include "EditorInterfaces.h"
+#include "Utils.h"
 
 using namespace plugin;
 
@@ -21,7 +23,7 @@ PlayerExtension *GetPlayerExtension(void *player) {
 }
 
 ClubExtension *GetClubExtension(void *club) {
-    return raw_ptr<ClubExtension>(club, DEF_CLUB_SZ);
+    return raw_ptr<ClubExtension>(club, 0x454);
 }
 
 void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, void *world) {
@@ -226,6 +228,49 @@ void METHOD OnWriteRefereeType(void *t, DUMMY_ARG, UChar *in) {
     CallMethod<0x514510>(t, &ext->footballManagerId);
 }
 
+void *METHOD OnConstructClub(void *club, DUMMY_ARG, UInt uniqueId) {
+    CallMethod<0x4C3BE0>(club, uniqueId);
+    auto ext = GetClubExtension(club);
+    ext->footballManagerId = -1;
+    ext->tmDeId = 0;
+    ext->tmDeReserveId = 0;
+    for (UInt i = 0; i < 10; i++)
+        ext->tmDeOtherIds[i] = 0;
+    ext->cityId = -1;
+    return club;
+}
+
+Bool METHOD OnReadClubFifaID(CKLFile *file, DUMMY_ARG, UInt *pFifaId) {
+    Bool result = file->ReadUInt(pFifaId);
+    void *club = raw_ptr(pFifaId, -4);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
+        result = file->ReadInt(GetClubExtension(club)->footballManagerId) && result;
+        result = file->ReadUInt(GetClubExtension(club)->tmDeId) && result;
+        result = file->ReadUInt(GetClubExtension(club)->tmDeReserveId) && result;
+        WideChar line[512];
+        result = file->ReadString(line, std::size(line)) && result;
+        auto youthIDs = Utils::Split(line, L',', true, true, false);
+        for (UInt i = 0; i < Utils::Min(10u, youthIDs.size()); i++)
+            GetClubExtension(club)->tmDeOtherIds[i] = Utils::SafeConvertInt<UInt>(youthIDs[i]);
+    }
+    return result;
+}
+
+Bool METHOD OnWriteClubFifaID(CKLFile *file, DUMMY_ARG, UInt *pFifaId) {
+    Bool result = file->WriteUInt(pFifaId);
+    void *club = raw_ptr(pFifaId, -4);
+    result = file->WriteInt(GetClubExtension(club)->footballManagerId) && result;
+    result = file->WriteUInt(GetClubExtension(club)->tmDeId) && result;
+    result = file->WriteUInt(GetClubExtension(club)->tmDeReserveId) && result;
+    Vector<String> youthIDs;
+    for (UInt i = 0; i < 10; i++) {
+        if (GetClubExtension(club)->tmDeOtherIds[i] != 0)
+        youthIDs.push_back(std::to_wstring(GetClubExtension(club)->tmDeOtherIds[i]));
+    }
+    result = file->WriteString(Utils::Join(youthIDs, L',').c_str()) && result;
+    return result;
+}
+
 UInt METHOD GetCountryFifaRanking(void *country) {
 	Float *pFifaRanking = raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET);
 	return *(UInt *)pFifaRanking;
@@ -317,6 +362,14 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::RedirectCall(0x4E9842, OnAllocReferee);
         patch::RedirectCall(0x53FDF5, OnReadRefereeType);
         patch::RedirectCall(0x53FDA1, OnWriteRefereeType);
+
+        patch::RedirectCall(0x4E8128, OnConstructClub);
+        patch::RedirectCall(0x4E9789, OnConstructClub);
+        patch::RedirectCall(0x4E9BA5, OnConstructClub);
+        // foom id - club
+        patch::RedirectCall(0x4C52A5, OnReadClubFifaID);
+        patch::SetUChar(0x4C5A72, 0x8D); // mov ecx, [esi+4] => lea ecx, [esi+4]
+        patch::RedirectCall(0x4C5A78, OnWriteClubFifaID);
 
 		// CCountry extension
 		patch::SetUInt(0x4EA26B + 1, 196 - 4);

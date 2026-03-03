@@ -1,4 +1,5 @@
 #include "Editor.h"
+#include "EditorInterfaces.h"
 #include "Utils.h"
 #include "TextFileTable.h"
 #include "LicenseCheck.h"
@@ -8,7 +9,7 @@
 #include "Competitions.h"
 #include "png.h"
 #include "UcpSettings.h"
-#include "ExtendedPlayerEditor.h"
+#include "ExtendedEntities.h"
 #include "CompetitionsShared.h"
 #include "FifamLanguage.h"
 #include "shared.h"
@@ -927,22 +928,6 @@ void *ComboBoxConstruct(void *t) {
 
 void ComboBoxDestruct(void *t) {
     CallMethod<0x5BDD37>(t);
-}
-
-HWND ComboBoxHWND(void *t) {
-    return *raw_ptr<HWND>(t, 0x20);
-}
-
-LRESULT ComboBoxAddItem(void *t, const WideChar *itemName, LPARAM itemIndex) {
-    return CallMethodAndReturn<LRESULT, 0x4138A0>(0, t, itemName, itemIndex);
-}
-
-LRESULT ComboBoxSetCurrentItem(void *t, Int itemIndex) {
-    return CallMethodAndReturn<LRESULT, 0x4138E0>(0, t, itemIndex);
-}
-
-Int ComboBoxGetCurrentItem(void *t, Int defaultValue = 0) {
-    return CallMethodAndReturn<Int, 0x413990>(0, t, defaultValue);
 }
 
 void ReadSponsorNames() {

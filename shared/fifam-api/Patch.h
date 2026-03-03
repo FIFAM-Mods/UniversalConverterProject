@@ -228,8 +228,8 @@ namespace plugin
         }
     };
 	
-    template<typename RawType, typename Type>
-    RawType *raw_ptr(Type *p, unsigned int offset = 0) {
+    template<typename RawType = void, typename Type>
+    RawType *raw_ptr(Type *p, OffsetType offset = 0) {
         return reinterpret_cast<RawType *>(reinterpret_cast<AddrType>(p) + offset);
     }
 
@@ -289,12 +289,20 @@ namespace plugin
             injector::MakeNOP(address, size, true);
         }
 
+        inline static void NopFromTo(AddrType addressFrom, AddrType addressTo) {
+            injector::MakeNOP(addressFrom, addressTo - addressFrom, true);
+        }
+
         inline static AddrType RedirectCall(AddrType address, void *func) {
             return injector::MakeCALL(address, (AddrType)func, true);
         }
 
         inline static AddrType RedirectJump(AddrType address, void *func) {
             return injector::MakeJMP(address, (AddrType)func, true);
+        }
+
+        inline static AddrType RedirectJump(AddrType from, AddrType to) {
+            return injector::MakeJMP(from, to, true);
         }
 
         inline static void SetChar(AddrType address, char value, bool vp = true) {

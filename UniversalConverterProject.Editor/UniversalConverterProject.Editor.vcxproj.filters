@@ -17,7 +17,7 @@
     <ClCompile Include="RendererHook.cpp" />
     <ClCompile Include="3dPatches.cpp" />
     <ClCompile Include="Translation.cpp" />
-    <ClCompile Include="ExtendedPlayerEditor.cpp" />
+    <ClCompile Include="ExtendedEntities.cpp" />
     <ClCompile Include="GenericKits.cpp" />
     <ClCompile Include="Kits.cpp" />
     <ClCompile Include="DatabaseOptions.cpp" />
@@ -39,6 +39,8 @@
     <ClCompile Include="..\shared\CustomTranslation.cpp" />
     <ClCompile Include="..\shared\DatabaseShared.cpp" />
     <ClCompile Include="..\shared\TranslationShared.cpp" />
+    <ClCompile Include="CitiesAndRegions.cpp" />
+    <ClCompile Include="EditorInterfaces.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClubIDs.h" />
@@ -56,7 +58,7 @@
     <ClInclude Include="RendererHook.h" />
     <ClInclude Include="3dPatches.h" />
     <ClInclude Include="Translation.h" />
-    <ClInclude Include="ExtendedPlayerEditor.h" />
+    <ClInclude Include="ExtendedEntities.h" />
     <ClInclude Include="GenericKits.h" />
     <ClInclude Include="Kits.h" />
     <ClInclude Include="DatabaseOptions.h" />
@@ -79,6 +81,8 @@
     <ClInclude Include="..\shared\CustomTranslation.h" />
     <ClInclude Include="..\shared\DatabaseShared.h" />
     <ClInclude Include="..\shared\TranslationShared.h" />
+    <ClInclude Include="CitiesAndRegions.h" />
+    <ClInclude Include="EditorInterfaces.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

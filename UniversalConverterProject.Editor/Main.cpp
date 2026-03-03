@@ -14,7 +14,7 @@
 #include "Translation.h"
 #include "RendererHook.h"
 #include "GenerateBigIdx.h"
-#include "ExtendedPlayerEditor.h"
+#include "ExtendedEntities.h"
 #include "UcpSettings.h"
 #include "GenericKits.h"
 #include "Kits.h"
@@ -24,6 +24,7 @@
 #include "Assessment.h"
 #include "Resolutool.h"
 #include "PlayerAppearance.h"
+#include "CitiesAndRegions.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -76,6 +77,7 @@ public:
             PatchReserveNames(v);
             PatchAssessment(v);
             PatchPlayerAppearance(v);
+            PatchCitiesAndRegions(v);
         }
         else if (v.id() == ID_RESOLUTOOL_13_1000) {
             PatchResolutool(v);
