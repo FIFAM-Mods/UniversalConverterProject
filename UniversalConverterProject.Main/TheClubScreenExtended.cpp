@@ -1,6 +1,7 @@
 #include "TheClubScreenExtended.h"
 #include "FifamTypes.h"
 #include "GameInterfaces.h"
+#include "Utils.h"
 #include <algorithm>
 
 using namespace plugin;
@@ -117,6 +118,21 @@ void METHOD OnTeamResolveLinks(CDBTeam *team) {
     }
 }
 
+void METHOD OnMarketingFansCreateUI(CXgFMPanel *screen) {
+    CallMethod<0x628630>(screen); // C08MarketingFans::CreateUI
+    CDBTeam *team = *raw_ptr<CDBTeam *>(screen, 0xC9C);
+    for (UInt i = 1; i <= 2; i++) {
+        auto image = screen->GetControlIfExists(i == 1 ? "ImgPhoto1" : "ImgPhoto2");
+        if (image) {
+            String imgPath;
+            if (GetFilenameForImageIfExists(imgPath, L"art\\Lib\\Fans", Utils::Format(L"%08X_%u", team->GetTeamUniqueID(), i)))
+                SetImageFilename(image, imgPath.c_str(), 4, 4);
+            else if (GetFilenameForImageIfExists(imgPath, L"custom_pictures", Utils::Format(L"%08X_%02u", team->GetTeamUniqueID(), i)))
+                SetImageFilename(image, imgPath.c_str(), 4, 4);
+        }
+    }
+}
+
 void PatchTheClubScreenExtended(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         static UInt NEW_CCLUBHISTORY_SIZE = DEFAULT_CCLUBHISTORY_SIZE + sizeof(ClubHistoryScreenExtension);
@@ -126,5 +142,8 @@ void PatchTheClubScreenExtended(FM::Version v) {
         patch::RedirectCall(0x656B96, OnGetTeamAddress);
         patch::RedirectCall(0x6590F5, OnSetupClubHistoryScreen);
         patch::RedirectCall(0xFDC597, OnTeamResolveLinks);
+
+        // Fans screen
+        patch::SetPointer(0x23DAC4C, OnMarketingFansCreateUI);
     }
 }
