@@ -94,6 +94,7 @@
     <ClCompile Include="..\shared\CustomTranslation.cpp" />
     <ClCompile Include="..\shared\DatabaseShared.cpp" />
     <ClCompile Include="..\shared\TranslationShared.cpp" />
+    <ClCompile Include="CitiesAndRegions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="..\shared\CustomTranslation.h" />
     <ClInclude Include="..\shared\DatabaseShared.h" />
     <ClInclude Include="..\shared\TranslationShared.h" />
+    <ClInclude Include="CitiesAndRegions.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

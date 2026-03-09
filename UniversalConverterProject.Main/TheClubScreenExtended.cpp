@@ -127,8 +127,8 @@ void METHOD OnMarketingFansCreateUI(CXgFMPanel *screen) {
             String imgPath;
             if (GetFilenameForImageIfExists(imgPath, L"art\\Lib\\Fans", Utils::Format(L"%08X_%u", team->GetTeamUniqueID(), i)))
                 SetImageFilename(image, imgPath.c_str(), 4, 4);
-            else if (GetFilenameForImageIfExists(imgPath, L"custom_pictures", Utils::Format(L"%08X_%02u", team->GetTeamUniqueID(), i)))
-                SetImageFilename(image, imgPath.c_str(), 4, 4);
+            else
+                break;
         }
     }
 }

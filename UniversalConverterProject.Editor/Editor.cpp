@@ -62,6 +62,35 @@ int METHOD RetTrue(void *) {
     return 1;
 }
 
+void METHOD SetPlayerAdditionalInfoText(void *wnd, DUMMY_ARG, WideChar const *) {
+    HWND hwnd = *raw_ptr<HWND>(wnd, 0x20);
+    static HFONT hMonoFont = NULL;
+    if (hMonoFont == NULL) {
+        LOGFONTW lf = {};
+        lf.lfHeight = -11;
+        lf.lfWeight = FW_NORMAL;
+        lf.lfCharSet = DEFAULT_CHARSET;
+        lf.lfPitchAndFamily = FIXED_PITCH | FF_MODERN;
+        wcscpy(lf.lfFaceName, L"Consolas");
+        hMonoFont = CreateFontIndirectW(&lf);
+    }
+    SendMessageW(hwnd, WM_SETFONT, (WPARAM)hMonoFont, MAKELPARAM(TRUE, 0));
+    void *dlg = raw_ptr(wnd, -0x24A8);
+    void *player = *raw_ptr<void *>(dlg, 0x220C);
+    auto ext = GetPlayerExtension(player);
+    String text;
+    WideChar uniqueID[128];
+    CallMethod<0x51CD10>(player, true, uniqueID, 128);
+    text += L"UID: " + String(uniqueID) + L"\r\n";
+    text += L"FIFAID: " + to_wstring(ext->fifaId) + L"\r\n";
+    text += L"FoomID: " + to_wstring(ext->footballManagerId) + L"\r\n";
+    text += L"tmdeID: " + to_wstring(ext->tmDeId) + L"\r\n";
+    static WideChar const *CreatorName[] = { L"Editor", L"Online Editor", L"Other" };
+    String creator = (ext->creator < std::size(CreatorName)) ? CreatorName[ext->creator] : L"Unknown";
+    text += L"Creator: " + creator;
+    CallMethod<0x5B9C9F>(wnd, text.c_str());
+}
+
 Int gWritingStatus = -1;
 Int gReadingStatus = -1;
 Vector<CompDesc> gCompiledComps;
@@ -930,6 +959,26 @@ void ComboBoxDestruct(void *t) {
     CallMethod<0x5BDD37>(t);
 }
 
+void *GroupBoxConstruct(void *t) {
+    return CallMethodAndReturn<void *, 0x4B3B30>(t);
+}
+
+void GroupBoxDestruct(void *t) {
+    CallMethod<0x4B3B00>(t);
+}
+
+void *BFComboBoxConstruct(void *t) {
+    return CallMethodAndReturn<void *, 0x422C10>(t);
+}
+
+void BFComboBoxDestruct(void *t) {
+    CallMethod<0x4228A0>(t);
+}
+
+LRESULT BFComboBoxGetSelectedItemData(void *t) {
+    return CallMethodAndReturn<LRESULT, 0x57F2A0>(t);
+}
+
 void ReadSponsorNames() {
     FifamReader r(L"fmdata\\ParameterFiles\\Sponsor List.txt");
     if (r.Available()) {
@@ -1211,9 +1260,8 @@ void PatchEditor(FM::Version v) {
         patch::RedirectCall(0x52769C, OnPlayerCommentFormat);
 
         // player bio additional info
-        patch::RedirectCall(0x46E665, RetTrue);
-        patch::RedirectCall(0x46E695, RetTrue);
-
+        // patch::RedirectCall(0x46E665, RetTrue);
+        patch::RedirectCall(0x46E79A, SetPlayerAdditionalInfoText);
 
         if (Settings::GetInstance().NamesForAllLanguages) {
             patch::RedirectCall(0x42A324, SetClubNameForCurrentLanguage<0x4C1CF0>);

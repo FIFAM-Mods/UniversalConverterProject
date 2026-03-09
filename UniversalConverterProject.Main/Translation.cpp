@@ -8,6 +8,7 @@
 
 using namespace plugin;
 
+Int CurrentLanguageId = 0;
 Bool IsRussianLanguage = false;
 Bool IsUkrainianLanguage = false;
 eCurrency DefaultCurrency = CURRENCY_EUR;
@@ -305,11 +306,14 @@ void PatchTranslation(FM::Version v) {
         auto iniPath = FM::GameDirPath(L"locale.ini");
         GameLanguage() = GetIniOption(L"OPTIONS", L"TEXT_LANGUAGE", L"eng", iniPath);
         if (!GameLanguage().empty()) {
-            IsRussianLanguage = GameLanguage() == L"rus";
-            IsUkrainianLanguage = GameLanguage() == L"ukr";
+            CurrentLanguageId = GetTranslationLanguageID(GameLanguage());
+            IsRussianLanguage = CurrentLanguageId == TRANSLATIONLANGUAGE_RUS;
+            IsUkrainianLanguage = CurrentLanguageId == TRANSLATIONLANGUAGE_UKR;
         }
         else
             GameLanguage() = L"eng";
+        if (CurrentLanguageId == -1)
+            CurrentLanguageId = 0;
         String currency = GetIniOption(L"OPTIONS", L"LANGUAGE_CURRENCY", L"", iniPath);
         if (currency == L"usd")
             DefaultCurrency = CURRENCY_USD;

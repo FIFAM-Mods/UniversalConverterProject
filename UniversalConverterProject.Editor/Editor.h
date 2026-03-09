@@ -9,4 +9,6 @@ bool ReaderIsVersionGreaterOrEqual(void *reader, UInt year, UShort build);
 void DDX_Control(void *pDX, int nIDC, void *rControl);
 void *ComboBoxConstruct(void *t);
 void ComboBoxDestruct(void *t);
+void *GroupBoxConstruct(void *t);
+void GroupBoxDestruct(void *t);
 void PatchEditor(FM::Version v);

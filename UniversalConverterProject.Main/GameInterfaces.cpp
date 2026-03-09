@@ -1501,6 +1501,46 @@ Float CDBTeam::GetAverageAge(CTeamIndex const &teamID) {
     return CallMethodAndReturn<Float, 0xECEA70>(this, &teamID);
 }
 
+WideChar const *CDBTeam::GetTown() {
+    return CallMethodAndReturn<WideChar const *, 0xED2340>(this);
+}
+
+void CDBTeam::SetTown(WideChar const *name) {
+    CallMethod<0xED2730>(this, name);
+}
+
+Int CDBTeam::GetLongitude() {
+    return CallMethodAndReturn<Int, 0xED2710>(this);
+}
+
+Int CDBTeam::GetLatitude() {
+    return CallMethodAndReturn<Int, 0xED2720>(this);
+}
+
+void CDBTeam::SetLongitude(Int value) {
+    CallMethod<0xED2790>(this, value);
+}
+
+void CDBTeam::SetLatitude(Int value) {
+    CallMethod<0xED27A0>(this, value);
+}
+
+Int CDBTeam::GetLatitudeDegrees() {
+    return CallMethodAndReturn<Int, 0xED2470>(this);
+}
+
+Int CDBTeam::GetLatitudeMinutes() {
+    return CallMethodAndReturn<Int, 0xED2490>(this);
+}
+
+Int CDBTeam::GetLongitudeDegrees() {
+    return CallMethodAndReturn<Int, 0xED24B0>(this);
+}
+
+Int CDBTeam::GetLongitudeMinutes() {
+    return CallMethodAndReturn<Int, 0xED24D0>(this);
+}
+
 UInt CDBTeam::GetAllStaff(FmVec<UInt> const &vec) {
     return CallMethodAndReturn<UInt, 0x1017290>(this, &vec);
 }
@@ -2199,6 +2239,10 @@ void BinaryReaderReadUInt32(void *reader, UInt *out) {
     CallMethod<0x1338B10>(reader, out);
 }
 
+void BinaryReaderReadInt32(void *reader, Int *out) {
+    CallMethod<0x1338B10>(reader, out);
+}
+
 bool BinaryReaderCheckFourcc(void *reader, UInt fourcc) {
     return CallMethodAndReturn<bool, 0x1338EC0>(reader, fourcc);
 }
@@ -2227,15 +2271,27 @@ void SaveGameWriteString(void *save, WideChar const *str) {
     CallMethod<0x1080130>(save, str);
 }
 
-void SaveGameReadInt8(void *save, UChar &out) {
+void SaveGameReadInt8(void *save, Char &out) {
     CallMethod<0x1080390>(save, &out);
 }
 
-void SaveGameReadInt32(void *save, UInt &out) {
+void SaveGameReadUInt8(void *save, UChar &out) {
+    CallMethod<0x1080390>(save, &out);
+}
+
+void SaveGameReadInt32(void *save, Int &out) {
     CallMethod<0x10802D0>(save, &out);
 }
 
-UInt SaveGameReadInt32(void *save) {
+void SaveGameReadUInt32(void *save, UInt &out) {
+    CallMethod<0x10802D0>(save, &out);
+}
+
+Int SaveGameReadInt32(void *save) {
+    return CallMethodAndReturn<Int, 0x10802F0>(save);
+}
+
+UInt SaveGameReadUInt32(void *save) {
     return CallMethodAndReturn<UInt, 0x10802F0>(save);
 }
 
@@ -2259,11 +2315,19 @@ void SaveGameReadData(void *save, void *data, UInt size) {
     CallMethod<0x1080690>(save, data, size);
 }
 
-void SaveGameWriteInt8(void *save, UChar value) {
+void SaveGameWriteInt8(void *save, Char value) {
     CallMethod<0x107F400>(save, value);
 }
 
-void SaveGameWriteInt32(void *save, UInt value) {
+void SaveGameWriteUInt8(void *save, UChar value) {
+    CallMethod<0x107F400>(save, value);
+}
+
+void SaveGameWriteInt32(void *save, Int value) {
+    CallMethod<0x107F380>(save, value);
+}
+
+void SaveGameWriteUInt32(void *save, UInt value) {
     CallMethod<0x107F380>(save, value);
 }
 

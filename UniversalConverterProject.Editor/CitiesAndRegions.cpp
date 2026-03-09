@@ -169,7 +169,7 @@ void ReadCitiesAndRegions(Path const &dbFolder) {
 
 void *METHOD OnDlgClubConstructor(void *t, DUMMY_ARG, UShort id, void *parent) {
     CallMethod<0x4133C0>(t, id, parent); // CDialogB::CDialogB
-    ComboBoxDestruct(CityCombobox);
+    ComboBoxConstruct(CityCombobox);
     return t;
 }
 
@@ -282,15 +282,30 @@ void METHOD OnDlgClubLoadClub(void *t, DUMMY_ARG, CClub *club, CCountry *country
         ComboBoxAddItem(CityCombobox, L"-", -1);
         ComboBoxSetCurrentItem(CityCombobox, -1);
         Vector<DBCity const *> countryCities;
+        Int clubCityID = GetClubExtension(club)->cityId;
+        Bool hasClubCity = false;
         for (auto const &[id, city] : DBCities()) {
-            if (city.countryId == country->GetID())
-                countryCities.push_back(&city);
+            if (city.countryId == country->GetID()) {
+                ComboBoxAddItem(CityCombobox, city.names[CurrentLanguageId].c_str(), city.id);
+                if (city.id == clubCityID)
+                    hasClubCity = true;
+            }
         }
-        for (auto city : countryCities)
-            ComboBoxAddItem(CityCombobox, city->names[CurrentLanguageId].c_str(), city->id);
-        ComboBoxSetCurrentItem(CityCombobox, GetClubExtension(club)->cityId);
+        if (!hasClubCity && Utils::Contains(DBCities(), clubCityID)) {
+            ComboBoxAddItem(CityCombobox, DBCities()[clubCityID].names[CurrentLanguageId].c_str(), clubCityID);
+            hasClubCity = true;
+        }
+        if (hasClubCity)
+            ComboBoxSetCurrentItem(CityCombobox, clubCityID);
     }
     CallMethod<0x42B0A0>(t, club, country);
+}
+
+void METHOD OnDlgClubSaveClub(void *t) {
+    CallMethod<0x42A240>(t);
+    auto club = *raw_ptr<void *>(t, 0x3CC8);
+    if (club)
+        GetClubExtension(club)->cityId = ComboBoxGetCurrentItem(CityCombobox, -1);
 }
 
 WideChar const *METHOD OnGetClubTownName(CClub *club) {
@@ -382,6 +397,8 @@ void PatchCitiesAndRegions(FM::Version v) {
         patch::RedirectCall(0x45C858, OnSaveDatabase);
         patch::RedirectCall(0x432FCE, OnDlgClubLoadClub);
         patch::RedirectCall(0x42B823, OnDlgClubLoadClub);
+        patch::RedirectCall(0x42B80E, OnDlgClubSaveClub);
+        patch::RedirectCall(0x433060, OnDlgClubSaveClub);
 
         // text database
         patch::RedirectCall(0x4C530E, OnReadClubTown);

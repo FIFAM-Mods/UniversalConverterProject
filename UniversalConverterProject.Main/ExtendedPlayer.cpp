@@ -18,6 +18,7 @@ const UShort PLAYER_EXT_VERSION = 0x2;
 struct PlayerExtension {
     WideChar *jerseyName;
     UInt fifaId;
+    Int birthCityId;
     //struct ExtensionStats {
     //    UChar worldCupMatches;
     //    UChar worldCupGoals;

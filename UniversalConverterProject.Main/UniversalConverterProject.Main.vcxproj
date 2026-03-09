@@ -131,6 +131,7 @@
     <ClCompile Include="Assessment.cpp" />
     <ClCompile Include="Balls.cpp" />
     <ClCompile Include="Beta.cpp" />
+    <ClCompile Include="CitiesAndRegions.cpp" />
     <ClCompile Include="DebugPrint.cpp" />
     <ClCompile Include="EuropeanGoldenShoe.cpp" />
     <ClCompile Include="Finances.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="Assessment.h" />
     <ClInclude Include="Balls.h" />
     <ClInclude Include="Beta.h" />
+    <ClInclude Include="CitiesAndRegions.h" />
     <ClInclude Include="DebugPrint.h" />
     <ClInclude Include="EuropeanGoldenShoe.h" />
     <ClInclude Include="Finances.h" />

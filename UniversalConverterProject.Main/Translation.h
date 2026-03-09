@@ -4,6 +4,7 @@
 #include "GameInterfaces.h"
 
 String &GameLanguage();
+extern Int CurrentLanguageId;
 extern Bool IsRussianLanguage;
 extern Bool IsUkrainianLanguage;
 extern eCurrency DefaultCurrency;

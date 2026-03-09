@@ -1569,7 +1569,7 @@ void METHOD OnPlayerStatsLoad(CPlayerStats *stats) {
     CallMethod<0x10057F0>(stats);
     void *save = *(void **)0x3179DD8;
     if (SaveGameLoadGetVersion(save) >= 47) {
-        SaveGameReadInt8(save, *raw_ptr<UChar>(stats, PLAYER_STATS_GS_AND_BD_OFFSET));
+        SaveGameReadUInt8(save, *raw_ptr<UChar>(stats, PLAYER_STATS_GS_AND_BD_OFFSET));
     }
 }
 

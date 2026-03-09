@@ -64,6 +64,7 @@
 #include "PlayerLevelPatches.h"
 #include "WidgetContinental.h"
 #include "Finances.h"
+#include "CitiesAndRegions.h"
 #include "Shared.h"
 #include <ShlObj.h>
 
@@ -118,7 +119,7 @@ public:
             patch::SetPointer(0x30655F4, L"jpg"); // loadscreens tpi patch
             //patch::SetUInt(0x108F675 + 1, 0x2019);
             patch::SetUInt(0x1338FE4 + 1, 0x10000000); // 64 MB > 256 MB master.dat size limit
-            const UInt SaveGameVersion = 48; // 48 - FM 2026 1.0 savefile
+            const UInt SaveGameVersion = 49; // 49 - FM 2026 1.1 savefile
             patch::SetUInt(0x1082C02 + 3, SaveGameVersion); // new savegame version
             patch::SetUChar(0x1080E29 + 2, UChar(SaveGameVersion)); // remake the code if version >= 128 is needed
 
@@ -203,6 +204,7 @@ public:
             PatchPlayerLevelPatches(v);
             PatchWidgetContinental(v);
             PatchFinances(v);
+            PatchCitiesAndRegions(v);
 
 #ifdef BETA
             DoBetaPatches(v);

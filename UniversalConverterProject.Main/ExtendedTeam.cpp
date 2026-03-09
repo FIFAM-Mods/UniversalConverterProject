@@ -10,9 +10,9 @@ const UShort TEAM_EXT_VERSION = 0x1;
 const UInt FORMATION_OFFSET = DEF_TEAM_SZ;
 UInt gTeamExtenderTeamLoaderAddr[5] = {};
 
-struct TeamExtension {
-    UInt bestFormationID[5];
-};
+TeamExtension *GetTeamExtension(CDBTeam *team) {
+    return raw_ptr<TeamExtension>(team, DEF_TEAM_SZ);
+}
 
 void METHOD TeamClearBestFormations(CDBTeam *team) {
     TeamExtension *ext = raw_ptr<TeamExtension>(team, DEF_TEAM_SZ);
@@ -86,10 +86,10 @@ void __declspec(naked) TeamFormationExt4() {
 
 void METHOD TeamLoadBestFormation(void *loader, DUMMY_ARG, UInt *out) {
     if (SaveGameLoadGetVersion(loader) >= 43)
-        SaveGameReadInt32(loader, *out);
+        SaveGameReadUInt32(loader, *out);
     else {
         UChar value = 0;
-        SaveGameReadInt8(loader, value);
+        SaveGameReadUInt8(loader, value);
         *out = value;
     }
 }

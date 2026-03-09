@@ -16,6 +16,7 @@ struct RefereeExtension {
     UInt creator;
     Int footballManagerId;
     UInt tmDeId;
+    Bool isFemale;
 };
 
 struct ClubExtension {

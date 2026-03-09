@@ -1,9 +1,15 @@
 #include "ExtendedEntities.h"
 #include "Editor.h"
 #include "EditorInterfaces.h"
+#include "CitiesAndRegions.h"
+#include "Translation.h"
 #include "Utils.h"
 
 using namespace plugin;
+
+UChar BirthCountryCombobox[0x54];
+UChar BirthCityCombobox[0x54];
+UChar BirthplaceGroupbox[0x54];
 
 void *FmNew(UInt size) {
     return CallAndReturn<void *, 0x5B0474>(size);
@@ -33,7 +39,9 @@ void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, void *world) {
     ext->creator = 0;
     ext->fifaId = 0;
     ext->footballManagerId = -1;
-    //ext->isFemale = false;
+    ext->tmDeId = 0;
+    ext->cityOfBirth = -1;
+    ext->isFemale = false;
     return player;
 }
 
@@ -55,6 +63,7 @@ void METHOD OnWritePlayerToMaster(void *binaryFile, DUMMY_ARG, void *) {
     else
         BinaryFileWriteString(binaryFile, L"");
     BinaryFileWriteInt(binaryFile, ext->fifaId);
+    BinaryFileWriteInt(binaryFile, ext->cityOfBirth);
     CallMethod<0x550640>(binaryFile, 0);
 }
 
@@ -111,23 +120,29 @@ UChar METHOD OnWritePlayerJerseyNameToDatabase(void *file, DUMMY_ARG, WideChar c
 
 void *gDatabasePlayer = nullptr;
 
-Bool METHOD OnReadPlayerFoomIdFromDatabase(void *t, DUMMY_ARG, Char const *name) {
+Bool METHOD OnReadPlayerFoomIdFromDatabase(CKLFile *file, DUMMY_ARG, Char const *name) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabasePlayer, DEF_PLAYER_SZ);
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE)) {
-        CallMethod<0x513560>(t, &ext->creator);
-        CallMethod<0x513560>(t, &ext->fifaId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12))
+        file->ReadInt(ext->cityOfBirth);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0xE)) {
+        file->ReadUInt(ext->creator);
+        file->ReadUInt(ext->fifaId);
     }
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
-        CallMethod<0x513560>(t, &ext->footballManagerId);
-    return CallMethodAndReturn<Bool, 0x512190>(t, name);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0xC))
+        file->ReadInt(ext->footballManagerId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12))
+        file->ReadUInt(ext->tmDeId);
+    return CallMethodAndReturn<Bool, 0x512190>(file, name);
 }
 
-Bool METHOD OnWritePlayerFoomIdToDatabase(void *t, DUMMY_ARG, WideChar const *name) {
+Bool METHOD OnWritePlayerFoomIdToDatabase(CKLFile *file, DUMMY_ARG, WideChar const *name) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabasePlayer, DEF_PLAYER_SZ);
-    CallMethod<0x514510>(t, &ext->creator);
-    CallMethod<0x514510>(t, &ext->fifaId);
-    CallMethod<0x514510>(t, &ext->footballManagerId);
-    return CallMethodAndReturn<Bool, 0x513290>(t, name);
+    file->WriteInt(ext->cityOfBirth);
+    file->WriteUInt(ext->creator);
+    file->WriteUInt(ext->fifaId);
+    file->WriteInt(ext->footballManagerId);
+    file->WriteUInt(ext->tmDeId);
+    return CallMethodAndReturn<Bool, 0x513290>(file, name);
 }
 
 void METHOD OnReadPlayer(void *t, DUMMY_ARG, void *reader, const WideChar *clubName) {
@@ -144,27 +159,39 @@ void METHOD OnWritePlayer(void *t, DUMMY_ARG, void *writer) {
 
 void *gDatabaseStaff = nullptr;
 
-Bool METHOD OnReadStaffFoomIdFromDatabase(void *t, DUMMY_ARG, Char const *name) {
-    PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
-    //if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0x11)) {
-    //    UInt isFemale = 0;
-    //    CallMethod<0x513560>(t, &isFemale);
-    //    ext->isFemale = isFemale;
-    //}
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE))
-        CallMethod<0x513560>(t, &ext->creator);
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
-        CallMethod<0x513560>(t, &ext->footballManagerId);
-    return CallMethodAndReturn<Bool, 0x512190>(t, name);
+void ReadStaffExtension(void *staff, CKLFile *file) {
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(staff, DEF_PLAYER_SZ);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
+        UInt isFemale = 0;
+        file->ReadUInt(isFemale);
+        ext->isFemale = isFemale != 0;
+        file->ReadInt(ext->cityOfBirth);
+    }
+    if (file->IsVersionGreaterOrEqual(0x2013, 0xE))
+        file->ReadUInt(ext->creator);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0xC))
+        file->ReadInt(ext->footballManagerId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12))
+        file->ReadUInt(ext->tmDeId);
 }
 
-Bool METHOD OnWriteStaffFoomIdToDatabase(void *t, DUMMY_ARG, WideChar const *name) {
+void WriteStaffExtension(void *staff, CKLFile *file) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
-    //UInt isFemale = ext->isFemale;
-    //CallMethod<0x514510>(t, &isFemale);
-    CallMethod<0x514510>(t, &ext->creator);
-    CallMethod<0x514510>(t, &ext->footballManagerId);
-    return CallMethodAndReturn<Bool, 0x513290>(t, name);
+    file->WriteUInt(ext->isFemale);
+    file->WriteInt(ext->cityOfBirth);
+    file->WriteUInt(ext->creator);
+    file->WriteInt(ext->footballManagerId);
+    file->WriteUInt(ext->tmDeId);
+}
+
+Bool METHOD OnReadStaffFoomIdFromDatabase(CKLFile *file, DUMMY_ARG, Char const *name) {
+    ReadStaffExtension(gDatabaseStaff, file);
+    return CallMethodAndReturn<Bool, 0x512190>(file, name);
+}
+
+Bool METHOD OnWriteStaffFoomIdToDatabase(CKLFile *file, DUMMY_ARG, WideChar const *name) {
+    WriteStaffExtension(gDatabaseStaff, file);
+    return CallMethodAndReturn<Bool, 0x513290>(file, name);
 }
 
 void METHOD OnReadStaff(void *t, DUMMY_ARG, void *reader) {
@@ -179,27 +206,14 @@ void METHOD OnWriteStaff(void *t, DUMMY_ARG, void *writer) {
     gDatabaseStaff = nullptr;
 }
 
-void METHOD OnReadStaffNoHeader(void **ps, DUMMY_ARG, void *reader) {
-    CallMethod<0x5738E0>(ps, reader);
-    PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
-    //if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0x11)) {
-    //    UInt isFemale = 0;
-    //    CallMethod<0x513560>(reader, &isFemale);
-    //    ext->isFemale = isFemale;
-    //}
-    if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xE))
-        CallMethod<0x513560>(reader, &ext->creator);
-    if (CallMethodAndReturn<Bool, 0x511C70>(reader, 0x2013, 0xC))
-        CallMethod<0x513560>(reader, &ext->footballManagerId);
+void METHOD OnReadStaffNoHeader(void **ps, DUMMY_ARG, CKLFile *file) {
+    CallMethod<0x5738E0>(ps, file);
+    ReadStaffExtension(*ps, file);
 }
 
-void METHOD OnWriteStaffNoHeader(void **ps, DUMMY_ARG, void *writer) {
-    CallMethod<0x5736F0>(ps, writer);
-    PlayerExtension *ext = raw_ptr<PlayerExtension>(*ps, DEF_PLAYER_SZ);
-    //UInt isFemale = ext->isFemale;
-    //CallMethod<0x514510>(writer, &isFemale);
-    CallMethod<0x514510>(writer, &ext->creator);
-    CallMethod<0x514510>(writer, &ext->footballManagerId);
+void METHOD OnWriteStaffNoHeader(void **ps, DUMMY_ARG, CKLFile *file) {
+    CallMethod<0x5736F0>(ps, file);
+    WriteStaffExtension(*ps, file);
 }
 
 void *OnAllocReferee(UInt size) {
@@ -208,24 +222,35 @@ void *OnAllocReferee(UInt size) {
         RefereeExtension *ext = raw_ptr<RefereeExtension>(result, DEF_REFEREE_SZ);
         ext->creator = 0;
         ext->footballManagerId = -1;
+        ext->tmDeId = 0;
+        ext->isFemale = false;
     }
     return result;
 }
 
-void METHOD OnReadRefereeType(void *t, DUMMY_ARG, UChar *out) {
-    CallMethod<0x5133A0>(t, out);
+void METHOD OnReadRefereeType(CKLFile *file, DUMMY_ARG, UChar *out) {
+    CallMethod<0x5133A0>(file, out);
     RefereeExtension *ext = raw_ptr<RefereeExtension>(out, 2);
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xE))
-        CallMethod<0x513560>(t, &ext->creator);
-    if (CallMethodAndReturn<Bool, 0x511C70>(t, 0x2013, 0xC))
-        CallMethod<0x513560>(t, &ext->footballManagerId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
+        UInt isFemale = 0;
+        file->ReadUInt(isFemale);
+        ext->isFemale = isFemale != 0;
+    }
+    if (file->IsVersionGreaterOrEqual(0x2013, 0xE))
+        file->ReadUInt(ext->creator);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0xC))
+        file->ReadInt(ext->footballManagerId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12))
+        file->ReadUInt(ext->tmDeId);
 }
 
-void METHOD OnWriteRefereeType(void *t, DUMMY_ARG, UChar *in) {
-    CallMethod<0x514630>(t, in);
+void METHOD OnWriteRefereeType(CKLFile *file, DUMMY_ARG, UChar *in) {
+    CallMethod<0x514630>(file, in);
     RefereeExtension *ext = raw_ptr<RefereeExtension>(in, 2);
-    CallMethod<0x514510>(t, &ext->creator);
-    CallMethod<0x514510>(t, &ext->footballManagerId);
+    file->WriteUInt(ext->isFemale);
+    file->WriteUInt(ext->creator);
+    file->WriteInt(ext->footballManagerId);
+    file->WriteUInt(ext->tmDeId);
 }
 
 void *METHOD OnConstructClub(void *club, DUMMY_ARG, UInt uniqueId) {
@@ -322,6 +347,82 @@ void METHOD OnWriteFifaRankingToMaster(void *binaryFile, DUMMY_ARG, void *countr
 	CallMethod<0x551160>(binaryFile, *raw_ptr<Float>(country, COUNTRY_FIFARANKING_OFFSET));
 }
 
+void *METHOD OnDlgPlayerAllRightConstructor(void *t, DUMMY_ARG, UShort id, void *parent) {
+    CallMethod<0x4133C0>(t, id, parent); // CDialogB::CDialogB
+    ComboBoxConstruct(BirthCountryCombobox);
+    ComboBoxConstruct(BirthCityCombobox);
+    GroupBoxConstruct(BirthplaceGroupbox);
+    return t;
+}
+
+void *METHOD OnDlgPlayerAllRightDestructor(void *t) {
+    ComboBoxDestruct(BirthCountryCombobox);
+    ComboBoxDestruct(BirthCityCombobox);
+    GroupBoxDestruct(BirthplaceGroupbox);
+    CallMethod<0x401380>(t); // CDialogB::~CDialogB
+    return t;
+}
+
+void METHOD OnDlgPlayerAllRightDoDataExchange(void *t, DUMMY_ARG, void *pDX) {
+    CallMethod<0x46CAE0>(t, pDX); // CDlgPlayerAllRight::DoDataExchange
+    DDX_Control(pDX, 3000, BirthplaceGroupbox);
+    DDX_Control(pDX, 3001, BirthCountryCombobox);
+    DDX_Control(pDX, 3002, BirthCityCombobox);
+}
+
+Bool32 METHOD OnDlgPlayerAllRightOnInit(void *t) {
+    CallMethod<0x46CE70>(t); // CDlgPlayerAllRight::Init
+    CallMethod<0x413CA0>(t, BirthCountryCombobox, 0, 2);
+    return true;
+}
+
+void SetCityListCountry(void *countryComboBox, void *cityComboBox, UChar countryId) {
+    ComboBoxSetCurrentItem(countryComboBox, countryId);
+    SendMessageW(ComboBoxHWND(cityComboBox), CB_RESETCONTENT, 0, 0);
+    ComboBoxAddItem(cityComboBox, L"-", -1);
+    ComboBoxSetCurrentItem(cityComboBox, -1);
+    if (countryId != 0) {
+        for (auto const &[id, city] : DBCities()) {
+            if (city.countryId == countryId)
+                ComboBoxAddItem(cityComboBox, city.names[CurrentLanguageId].c_str(), city.id);
+        }
+    }
+}
+
+void SetCityListCity(void *countryComboBox, void *cityComboBox, Int cityID) {
+    if (cityID != -1) {
+        DBCity *city = GetCity(cityID);
+        if (city && city->countryId != 0) {
+            SetCityListCountry(countryComboBox, cityComboBox, city->countryId);
+            ComboBoxSetCurrentItem(cityComboBox, city->id);
+            return;
+        }
+    }
+    SetCityListCountry(countryComboBox, cityComboBox, 0);
+}
+
+void METHOD OnDlgPlayerAllRightLoadPlayer(void *t, DUMMY_ARG, void *player, CClub *club) {
+    CallMethod<0x46DC20>(t, player, club);
+    if (player)
+        SetCityListCity(BirthCountryCombobox, BirthCityCombobox, GetPlayerExtension(player)->cityOfBirth);
+    else
+        SetCityListCity(BirthCountryCombobox, BirthCityCombobox, -1);
+}
+
+void METHOD OnDlgPlayerAllRightSavePlayer(void *t) {
+    CallMethod<0x46D230>(t);
+    auto player = *raw_ptr<void *>(t, 0x220C);
+    if (player)
+        GetPlayerExtension(player)->cityOfBirth = ComboBoxGetCurrentItem(BirthCityCombobox, -1);
+}
+
+BOOL METHOD OnDlgPlayerAllRightOnWndMsg(void *pThis, DUMMY_ARG, UINT msg, WPARAM wp, LPARAM lp, LRESULT *pResult) {
+    if (msg == WM_COMMAND && LOWORD(wp) == 3001 && HIWORD(wp) == CBN_SELCHANGE) {
+        SetCityListCountry(BirthCountryCombobox, BirthCityCombobox, ComboBoxGetCurrentItem(BirthCountryCombobox, 0));
+    }
+    return CallMethodAndReturn<BOOL, 0x5B7FE7>(pThis, msg, wp, lp, pResult);
+}
+
 void PatchExtendedPlayer(FM::Version v) {
     if (v.id() == VERSION_ED_13) {
         patch::RedirectCall(0x48953C, OnConstructPlayer);
@@ -387,5 +488,14 @@ void PatchExtendedPlayer(FM::Version v) {
 		patch::RedirectCall(0x4EA22E, OnReadFifaRanking);
 		patch::SetUChar(0x4E850D, 0x56); // push esi
 		patch::RedirectCall(0x4E8510, OnWriteFifaRankingToMaster);
+
+        // player birth place
+        patch::RedirectCall(0x46D888, OnDlgPlayerAllRightConstructor);
+        patch::RedirectCall(0x460015, OnDlgPlayerAllRightDestructor);
+        patch::SetPointer(0x65AA40, OnDlgPlayerAllRightDoDataExchange);
+        patch::SetPointer(0x65AA94, OnDlgPlayerAllRightOnInit);
+        patch::SetPointer(0x65AA58, OnDlgPlayerAllRightOnWndMsg);
+        patch::RedirectCall(0x47DC8A, OnDlgPlayerAllRightLoadPlayer);
+        patch::RedirectCall(0x47DEFA, OnDlgPlayerAllRightSavePlayer);
     }
 }

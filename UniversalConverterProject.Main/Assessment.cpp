@@ -243,29 +243,29 @@ struct Assessment {
 
     void Load(void *save) {
         UInt count = 0;
-        SaveGameReadInt32(save, count);
+        SaveGameReadUInt32(save, count);
         for (UInt c = 0; c < count; c++) {
             UChar countryId = 0;
-            SaveGameReadInt8(save, countryId);
+            SaveGameReadUInt8(save, countryId);
             InfoType _info;
-            SaveGameReadInt8(save, _info.position);
+            SaveGameReadUInt8(save, _info.position);
             SaveGameReadFloat(save, _info.total);
             SaveGameReadFloatArray(save, _info.coeff, NumEntries);
             SaveGameReadFloat(save, _info.prelimStagePoints);
-            SaveGameReadInt32(save, _info.randomValue);
+            SaveGameReadUInt32(save, _info.randomValue);
             info[countryId] = _info;
         }
     }
 
     void Save(void *save) {
-        SaveGameWriteInt32(save, info.size());
+        SaveGameWriteUInt32(save, info.size());
         for (auto const &[_countryId, _info] : info) {
-            SaveGameWriteInt8(save, _countryId);
-            SaveGameWriteInt8(save, _info.position);
+            SaveGameWriteUInt8(save, _countryId);
+            SaveGameWriteUInt8(save, _info.position);
             SaveGameWriteFloat(save, _info.total);
             SaveGameWriteFloatArray(save, _info.coeff, NumEntries);
             SaveGameWriteFloat(save, _info.prelimStagePoints);
-            SaveGameWriteInt32(save, _info.randomValue);
+            SaveGameWriteUInt32(save, _info.randomValue);
         }
     }
 

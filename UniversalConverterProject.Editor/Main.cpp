@@ -43,19 +43,21 @@ public:
             }
             Settings::GetInstance().Load();
             GenerateBigIdx();
-            patch::SetUInt(0x5504D5 + 3, 0x20130012); // 20130012 - FM 26 Update 1
+            const UChar TextDatabaseVersion = 0x12;
+            const UChar BinaryDatabaseVersion = 0x12;
+            patch::SetUInt(0x5504D5 + 3, 0x20130000 | BinaryDatabaseVersion); // 20130012 - FM 26 Update 1
             // set version (0x2013)
-            patch::SetUChar(0x4C7ACA + 1, 0xF); // CClub::Write
-            patch::SetUChar(0x4E4F66 + 1, 0xF); // CCountry::SaveFileData
-            patch::SetUChar(0x53AE37 + 1, 0xF); // Without.sav
-            patch::SetUChar(0x541565 + 1, 0xF); // Rules.sav
+            patch::SetUChar(0x4C7ACA + 1, TextDatabaseVersion); // CClub::Write
+            patch::SetUChar(0x4E4F66 + 1, TextDatabaseVersion); // CCountry::SaveFileData
+            patch::SetUChar(0x53AE37 + 1, TextDatabaseVersion); // Without.sav
+            patch::SetUChar(0x541565 + 1, TextDatabaseVersion); // Rules.sav
             // validate version (0x2013)
-            patch::SetUChar(0x545493 + 8, 0xF); // 
-            patch::SetUChar(0x4C527C + 1, 0xF); // CClub::Read
-            patch::SetUChar(0x4C7B8C + 1, 0xF); // loading .clb file
-            patch::SetUChar(0x4E9A1A + 1, 0xF); // CCountry::LoadFileData
-            patch::SetUChar(0x53B5B9 + 1, 0xF); // Without.sav
-            patch::SetUChar(0x541847 + 1, 0xF); // Rules.sav
+            patch::SetUChar(0x545493 + 8, TextDatabaseVersion); // 
+            patch::SetUChar(0x4C527C + 1, TextDatabaseVersion); // CClub::Read
+            patch::SetUChar(0x4C7B8C + 1, TextDatabaseVersion); // loading .clb file
+            patch::SetUChar(0x4E9A1A + 1, TextDatabaseVersion); // CCountry::LoadFileData
+            patch::SetUChar(0x53B5B9 + 1, TextDatabaseVersion); // Without.sav
+            patch::SetUChar(0x541847 + 1, TextDatabaseVersion); // Rules.sav
             PatchRendererHook(v);
             PatchTranslation(v);
             PatchClubIDs(v);
