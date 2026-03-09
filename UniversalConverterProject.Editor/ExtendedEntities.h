@@ -21,8 +21,8 @@ struct RefereeExtension {
 
 struct ClubExtension {
     Int footballManagerId;
-    UInt tmDeId;
-    UInt tmDeReserveId;
+    UInt tmDeId[5];
+    UInt tmDeReserveId[5];
     UInt tmDeOtherIds[10];
     Int cityId;
 };

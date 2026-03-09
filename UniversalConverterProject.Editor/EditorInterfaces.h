@@ -53,6 +53,17 @@ public:
     CCountry *GetCountry(Int countryId);
 };
 
+class CPlayer {
+public:
+};
+
+class CStaff {
+public:
+    CPlayer *m_pPlayer;
+
+    Bool32 IsValid();
+};
+
 class CClub {
 public:
     CCompleteWorld *GetWorld();

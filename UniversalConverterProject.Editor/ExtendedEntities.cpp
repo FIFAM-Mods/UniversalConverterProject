@@ -10,6 +10,8 @@ using namespace plugin;
 UChar BirthCountryCombobox[0x54];
 UChar BirthCityCombobox[0x54];
 UChar BirthplaceGroupbox[0x54];
+UChar IsFemaleCheckbox[0x58];
+UChar IsFemaleStaffCheckbox[0x58];
 
 void *FmNew(UInt size) {
     return CallAndReturn<void *, 0x5B0474>(size);
@@ -257,12 +259,23 @@ void *METHOD OnConstructClub(void *club, DUMMY_ARG, UInt uniqueId) {
     CallMethod<0x4C3BE0>(club, uniqueId);
     auto ext = GetClubExtension(club);
     ext->footballManagerId = -1;
-    ext->tmDeId = 0;
-    ext->tmDeReserveId = 0;
+    for (UInt i = 0; i < 5; i++) {
+        ext->tmDeId[i] = 0;
+        ext->tmDeReserveId[i] = 0;
+    }
     for (UInt i = 0; i < 10; i++)
         ext->tmDeOtherIds[i] = 0;
     ext->cityId = -1;
     return club;
+}
+
+Bool ReadTmDeIDs(CKLFile *file, UInt *out, UInt count) {
+    WideChar line[512];
+    Bool result = file->ReadString(line, std::size(line));
+    auto tmDeIDs = Utils::Split(line, L',', true, true, false);
+    for (UInt i = 0; i < Utils::Min(count, tmDeIDs.size()); i++)
+        out[i] = Utils::SafeConvertInt<UInt>(tmDeIDs[i]);
+    return result;
 }
 
 Bool METHOD OnReadClubFifaID(CKLFile *file, DUMMY_ARG, UInt *pFifaId) {
@@ -270,29 +283,29 @@ Bool METHOD OnReadClubFifaID(CKLFile *file, DUMMY_ARG, UInt *pFifaId) {
     void *club = raw_ptr(pFifaId, -4);
     if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
         result = file->ReadInt(GetClubExtension(club)->footballManagerId) && result;
-        result = file->ReadUInt(GetClubExtension(club)->tmDeId) && result;
-        result = file->ReadUInt(GetClubExtension(club)->tmDeReserveId) && result;
-        WideChar line[512];
-        result = file->ReadString(line, std::size(line)) && result;
-        auto youthIDs = Utils::Split(line, L',', true, true, false);
-        for (UInt i = 0; i < Utils::Min(10u, youthIDs.size()); i++)
-            GetClubExtension(club)->tmDeOtherIds[i] = Utils::SafeConvertInt<UInt>(youthIDs[i]);
+        result = ReadTmDeIDs(file, GetClubExtension(club)->tmDeId, 5) && result;
+        result = ReadTmDeIDs(file, GetClubExtension(club)->tmDeReserveId, 5) && result;
+        result = ReadTmDeIDs(file, GetClubExtension(club)->tmDeOtherIds, 10) && result;
     }
     return result;
+}
+
+Bool WriteTmDeIDs(CKLFile *file, UInt *ids, UInt count) {
+    Vector<String> tmDeIDs;
+    for (UInt i = 0; i < count; i++) {
+        if (ids[i] != 0)
+            tmDeIDs.push_back(std::to_wstring(ids[i]));
+    }
+    return file->WriteString(Utils::Join(tmDeIDs, L',').c_str());
 }
 
 Bool METHOD OnWriteClubFifaID(CKLFile *file, DUMMY_ARG, UInt *pFifaId) {
     Bool result = file->WriteUInt(pFifaId);
     void *club = raw_ptr(pFifaId, -4);
     result = file->WriteInt(GetClubExtension(club)->footballManagerId) && result;
-    result = file->WriteUInt(GetClubExtension(club)->tmDeId) && result;
-    result = file->WriteUInt(GetClubExtension(club)->tmDeReserveId) && result;
-    Vector<String> youthIDs;
-    for (UInt i = 0; i < 10; i++) {
-        if (GetClubExtension(club)->tmDeOtherIds[i] != 0)
-        youthIDs.push_back(std::to_wstring(GetClubExtension(club)->tmDeOtherIds[i]));
-    }
-    result = file->WriteString(Utils::Join(youthIDs, L',').c_str()) && result;
+    result = WriteTmDeIDs(file, GetClubExtension(club)->tmDeId, 5) && result;
+    result = WriteTmDeIDs(file, GetClubExtension(club)->tmDeReserveId, 5) && result;
+    result = WriteTmDeIDs(file, GetClubExtension(club)->tmDeOtherIds, 10) && result;
     return result;
 }
 
@@ -352,6 +365,7 @@ void *METHOD OnDlgPlayerAllRightConstructor(void *t, DUMMY_ARG, UShort id, void 
     ComboBoxConstruct(BirthCountryCombobox);
     ComboBoxConstruct(BirthCityCombobox);
     GroupBoxConstruct(BirthplaceGroupbox);
+    CheckBoxConstruct(IsFemaleCheckbox);
     return t;
 }
 
@@ -359,6 +373,7 @@ void *METHOD OnDlgPlayerAllRightDestructor(void *t) {
     ComboBoxDestruct(BirthCountryCombobox);
     ComboBoxDestruct(BirthCityCombobox);
     GroupBoxDestruct(BirthplaceGroupbox);
+    CheckBoxDestruct(IsFemaleCheckbox);
     CallMethod<0x401380>(t); // CDialogB::~CDialogB
     return t;
 }
@@ -368,10 +383,11 @@ void METHOD OnDlgPlayerAllRightDoDataExchange(void *t, DUMMY_ARG, void *pDX) {
     DDX_Control(pDX, 3000, BirthplaceGroupbox);
     DDX_Control(pDX, 3001, BirthCountryCombobox);
     DDX_Control(pDX, 3002, BirthCityCombobox);
+    DDX_Control(pDX, 3003, IsFemaleCheckbox);
 }
 
 Bool32 METHOD OnDlgPlayerAllRightOnInit(void *t) {
-    CallMethod<0x46CE70>(t); // CDlgPlayerAllRight::Init
+    CallMethod<0x46CE70>(t); // CDlgPlayerAllRight::OnInit
     CallMethod<0x413CA0>(t, BirthCountryCombobox, 0, 2);
     return true;
 }
@@ -403,6 +419,13 @@ void SetCityListCity(void *countryComboBox, void *cityComboBox, Int cityID) {
 
 void METHOD OnDlgPlayerAllRightLoadPlayer(void *t, DUMMY_ARG, void *player, CClub *club) {
     CallMethod<0x46DC20>(t, player, club);
+    Bool isPlayer = player && CallMethodAndReturn<UInt, 0x51B420>(player) == 0;
+    CheckBoxSetIsChecked(IsFemaleCheckbox, (player && GetPlayerExtension(player)->isFemale));
+    Int birthCmdShow = (player && isPlayer) ? SW_SHOW : SW_HIDE;
+    WndShowWindow(BirthplaceGroupbox, birthCmdShow);
+    WndShowWindow(BirthCountryCombobox, birthCmdShow);
+    WndShowWindow(BirthCityCombobox, birthCmdShow);
+    WndShowWindow(IsFemaleCheckbox, (player && !isPlayer) ? SW_SHOW : SW_HIDE);
     if (player)
         SetCityListCity(BirthCountryCombobox, BirthCityCombobox, GetPlayerExtension(player)->cityOfBirth);
     else
@@ -412,8 +435,10 @@ void METHOD OnDlgPlayerAllRightLoadPlayer(void *t, DUMMY_ARG, void *player, CClu
 void METHOD OnDlgPlayerAllRightSavePlayer(void *t) {
     CallMethod<0x46D230>(t);
     auto player = *raw_ptr<void *>(t, 0x220C);
-    if (player)
+    if (player) {
         GetPlayerExtension(player)->cityOfBirth = ComboBoxGetCurrentItem(BirthCityCombobox, -1);
+        GetPlayerExtension(player)->isFemale = CheckBoxGetIsChecked(IsFemaleCheckbox);
+    }
 }
 
 BOOL METHOD OnDlgPlayerAllRightOnWndMsg(void *pThis, DUMMY_ARG, UINT msg, WPARAM wp, LPARAM lp, LRESULT *pResult) {
@@ -421,6 +446,36 @@ BOOL METHOD OnDlgPlayerAllRightOnWndMsg(void *pThis, DUMMY_ARG, UINT msg, WPARAM
         SetCityListCountry(BirthCountryCombobox, BirthCityCombobox, ComboBoxGetCurrentItem(BirthCountryCombobox, 0));
     }
     return CallMethodAndReturn<BOOL, 0x5B7FE7>(pThis, msg, wp, lp, pResult);
+}
+
+void *METHOD OnDlgStaffGeneralConstructor(void *t, DUMMY_ARG, UShort id, void *parent) {
+    CallMethod<0x4133C0>(t, id, parent); // CDialogB::CDialogB
+    CheckBoxConstruct(IsFemaleStaffCheckbox);
+    return t;
+}
+
+void *METHOD OnDlgStaffGeneralDestructor(void *t) {
+    CheckBoxDestruct(IsFemaleStaffCheckbox);
+    CallMethod<0x401380>(t); // CDialogB::~CDialogB
+    return t;
+}
+
+void METHOD OnDlgStaffGeneralDoDataExchange(void *t, DUMMY_ARG, void *pDX) {
+    CallMethod<0x494AD0>(t, pDX); // CDlgStaffGeneral::DoDataExchange
+    DDX_Control(pDX, 3000, IsFemaleStaffCheckbox);
+}
+
+void METHOD OnDlgStaffGeneralLoadStaff(void *t, DUMMY_ARG, CStaff *staff) {
+    CallMethod<0x4954F0>(t, staff);
+    if (staff->IsValid())
+        CheckBoxSetIsChecked(IsFemaleStaffCheckbox, GetPlayerExtension(staff->m_pPlayer)->isFemale);
+}
+
+void METHOD OnDlgStaffGeneralSaveStaff(void *t) {
+    CallMethod<0x494E30>(t);
+    CStaff *staff = raw_ptr<CStaff>(t, 0x6E8);
+    if (staff->IsValid())
+        GetPlayerExtension(staff->m_pPlayer)->isFemale = CheckBoxGetIsChecked(IsFemaleStaffCheckbox);
 }
 
 void PatchExtendedPlayer(FM::Version v) {
@@ -489,7 +544,7 @@ void PatchExtendedPlayer(FM::Version v) {
 		patch::SetUChar(0x4E850D, 0x56); // push esi
 		patch::RedirectCall(0x4E8510, OnWriteFifaRankingToMaster);
 
-        // player birth place
+        // player birth place and manager isFemale flag
         patch::RedirectCall(0x46D888, OnDlgPlayerAllRightConstructor);
         patch::RedirectCall(0x460015, OnDlgPlayerAllRightDestructor);
         patch::SetPointer(0x65AA40, OnDlgPlayerAllRightDoDataExchange);
@@ -497,5 +552,16 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::SetPointer(0x65AA58, OnDlgPlayerAllRightOnWndMsg);
         patch::RedirectCall(0x47DC8A, OnDlgPlayerAllRightLoadPlayer);
         patch::RedirectCall(0x47DEFA, OnDlgPlayerAllRightSavePlayer);
+
+        // staff isFemale flag
+        patch::RedirectCall(0x494FA8, OnDlgStaffGeneralConstructor);
+        patch::RedirectCall(0x495333, OnDlgStaffGeneralDestructor);
+        patch::SetPointer(0x660180, OnDlgStaffGeneralDoDataExchange);
+        patch::RedirectJump(0x441430, OnDlgStaffGeneralLoadStaff);
+        patch::RedirectCall(0x4645E7, OnDlgStaffGeneralLoadStaff);
+        patch::RedirectCall(0x47DDAE, OnDlgStaffGeneralLoadStaff);
+        patch::RedirectCall(0x44148A, OnDlgStaffGeneralSaveStaff);
+        patch::RedirectCall(0x464731, OnDlgStaffGeneralSaveStaff);
+        patch::RedirectCall(0x47DF6C, OnDlgStaffGeneralSaveStaff);
     }
 }

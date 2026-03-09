@@ -959,12 +959,32 @@ void ComboBoxDestruct(void *t) {
     CallMethod<0x5BDD37>(t);
 }
 
+void *CheckBoxConstruct(void *t) {
+    return CallMethodAndReturn<void *, 0x4B5010>(t);
+}
+
+void CheckBoxDestruct(void *t) {
+    CallMethod<0x4B4990>(t);
+}
+
 void *GroupBoxConstruct(void *t) {
     return CallMethodAndReturn<void *, 0x4B3B30>(t);
 }
 
 void GroupBoxDestruct(void *t) {
     CallMethod<0x4B3B00>(t);
+}
+
+void CheckBoxSetIsChecked(void *t, Bool checked) {
+    CallMethod<0x414090>(0, t, checked);
+}
+
+Bool CheckBoxGetIsChecked(void *t) {
+    return CallMethodAndReturn<Bool32, 0x414070>(0, t);
+}
+
+int WndShowWindow(void *t, int nCmdShow) {
+    return CallMethodAndReturn<int, 0x5B9D6A>(t, nCmdShow);
 }
 
 void *BFComboBoxConstruct(void *t) {

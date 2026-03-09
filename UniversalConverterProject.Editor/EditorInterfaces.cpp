@@ -111,3 +111,7 @@ CCompleteWorld *CClub::GetWorld() {
 WideChar const *CClub::GetName(UInt languageId) {
     return CallMethodAndReturn<WideChar const *, 0x4C1CB0>(this, languageId);
 }
+
+Bool32 CStaff::IsValid() {
+    return CallMethodAndReturn<Bool32, 0x572990>(this);
+}
