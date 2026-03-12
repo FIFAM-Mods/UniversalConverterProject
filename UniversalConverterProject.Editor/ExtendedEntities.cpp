@@ -24,6 +24,7 @@ void FmDelete(void *data) {
 const UInt DEF_PLAYER_SZ = 0x2C0;
 const UInt DEF_CLUB_SZ = 0x391C;
 const UInt DEF_REFEREE_SZ = 0x4A;
+const UInt DEF_LEAGUE_SZ = 0x77C;
 const UInt COUNTRY_FIFARANKING_OFFSET = 0x1B0C;
 
 PlayerExtension *GetPlayerExtension(void *player) {
@@ -32,6 +33,10 @@ PlayerExtension *GetPlayerExtension(void *player) {
 
 ClubExtension *GetClubExtension(void *club) {
     return raw_ptr<ClubExtension>(club, 0x454);
+}
+
+LeagueExtension *GetLeagueExtension(void *league) {
+    return raw_ptr<LeagueExtension>(league, DEF_LEAGUE_SZ);
 }
 
 void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, void *world) {
@@ -57,16 +62,15 @@ void *METHOD OnDestructPlayer(void *player) {
     return player;
 }
 
-void METHOD OnWritePlayerToMaster(void *binaryFile, DUMMY_ARG, void *) {
-    void *player = *raw_ptr<void *>(binaryFile, 0x2C);
-    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+void METHOD OnWritePlayerToMaster(CBinaryFile *file, DUMMY_ARG, void *) {
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(file->m_pPlayer, DEF_PLAYER_SZ);
     if (ext->jerseyName)
-        BinaryFileWriteString(binaryFile, ext->jerseyName);
+        file->WriteString(ext->jerseyName);
     else
-        BinaryFileWriteString(binaryFile, L"");
-    BinaryFileWriteInt(binaryFile, ext->fifaId);
-    BinaryFileWriteInt(binaryFile, ext->cityOfBirth);
-    CallMethod<0x550640>(binaryFile, 0);
+        file->WriteString(L"");
+    file->WriteInt(ext->fifaId);
+    file->WriteInt(ext->cityOfBirth);
+    CallMethod<0x550640>(file, 0);
 }
 
 void SetPlayerJerseyName(void *player, WideChar const *name) {
@@ -478,6 +482,20 @@ void METHOD OnDlgStaffGeneralSaveStaff(void *t) {
         GetPlayerExtension(staff->m_pPlayer)->isFemale = CheckBoxGetIsChecked(IsFemaleStaffCheckbox);
 }
 
+void *METHOD OnConstructLeague(void *t, DUMMY_ARG, Int compStructType, Int id, Int countryId, UChar leagueLevel, Int roundTypeId) {
+    CallMethod<0x500B10>(t, compStructType, id, countryId, leagueLevel, roundTypeId);
+    auto ext = GetLeagueExtension(t);
+    ext->regions = nullptr;
+    return t;
+}
+
+void METHOD OnDestructLeague(void *t) {
+    auto ext = GetLeagueExtension(t);
+    delete[] ext->regions;
+    ext->regions = nullptr;
+    CallMethod<0x5003B0>(t);
+}
+
 void PatchExtendedPlayer(FM::Version v) {
     if (v.id() == VERSION_ED_13) {
         patch::RedirectCall(0x48953C, OnConstructPlayer);
@@ -563,5 +581,13 @@ void PatchExtendedPlayer(FM::Version v) {
         patch::RedirectCall(0x44148A, OnDlgStaffGeneralSaveStaff);
         patch::RedirectCall(0x464731, OnDlgStaffGeneralSaveStaff);
         patch::RedirectCall(0x47DF6C, OnDlgStaffGeneralSaveStaff);
+
+        // league extension
+        const UInt NEW_LEAGUE_SZ = DEF_LEAGUE_SZ + sizeof(LeagueExtension);
+        patch::SetUInt(0x4DFCAF + 1, NEW_LEAGUE_SZ);
+        patch::SetUInt(0x4E14C3 + 1, NEW_LEAGUE_SZ);
+        patch::SetUInt(0x50253E + 1, NEW_LEAGUE_SZ);
+        patch::RedirectCall(0x500E27, OnConstructLeague);
+        patch::RedirectJump(0x50048D, OnDestructLeague);
     }
 }

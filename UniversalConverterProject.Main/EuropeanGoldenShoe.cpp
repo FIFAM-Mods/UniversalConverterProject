@@ -1484,7 +1484,7 @@ void METHOD OnPlayerInfoCareerCreateUI(CXgFMPanel *screen) {
     }
 }
 
-Int METHOD OnPlayerInfoCareerFill(CXgFMPanel *screen) {
+UInt METHOD OnPlayerInfoCareerFill(CXgFMPanel *screen) {
     UInt playerId = CallMethodAndReturn<Int, 0x5DE220>(screen); // CPlayerInfoPanel::GetCurrentPlayerId
     CDBPlayer *player = GetPlayer(playerId);
     if (player) {

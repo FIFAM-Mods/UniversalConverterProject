@@ -1,4 +1,5 @@
 #include "ReserveNames.h"
+#include "EditorInterfaces.h"
 #include "FifamTypes.h"
 #include "Editor.h"
 

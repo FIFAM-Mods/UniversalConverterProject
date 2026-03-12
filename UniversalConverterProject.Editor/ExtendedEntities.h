@@ -29,6 +29,19 @@ struct ClubExtension {
 
 static_assert(sizeof(ClubExtension) <= 320, "ClubExtension size can't be greater than 320");
 
+struct LeagueRegion {
+    Int regionID;
+    UChar priority;
+    UChar direction;
+};
+
+struct LeagueExtension {
+    UChar order;
+    UChar numberOfRegions;
+    LeagueRegion *regions;
+};
+
 PlayerExtension *GetPlayerExtension(void *player);
 ClubExtension *GetClubExtension(void *club);
 void PatchExtendedPlayer(FM::Version v);
+LeagueExtension *GetLeagueExtension(void *league);

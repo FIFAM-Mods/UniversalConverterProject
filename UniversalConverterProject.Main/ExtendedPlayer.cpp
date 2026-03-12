@@ -1,6 +1,7 @@
 #include "ExtendedPlayer.h"
 #include "FifamTypes.h"
 #include "GameInterfaces.h"
+#include "CitiesAndRegions.h"
 #include "FifamReadWrite.h"
 #include "FifamCompID.h"
 
@@ -44,6 +45,7 @@ void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, UInt playerId) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     ext->jerseyName = nullptr;
     ext->fifaId = 0;
+    ext->birthCityId = -1;
     //ext->extensionStats.worldCupMatches = 0;
     //ext->extensionStats.worldCupGoals = 0;
     //ext->extensionStats.euroMatches = 0;
@@ -100,17 +102,21 @@ void SetPlayerFifaID(void *player, UInt id) {
 }
 
 template<UInt id>
-void METHOD OnReadPlayerFromMaster(void *player, DUMMY_ARG, void *reader) {
+void METHOD OnReadPlayerFromMaster(CDBPlayer *player, DUMMY_ARG, void *reader) {
     CallMethodDynGlobal(gPlayerExtenderPlayerLoaderAddr[id], player, reader);
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0B)) {
         WideChar jerseyName[20];
         jerseyName[0] = 0;
         BinaryReaderReadString(reader, jerseyName, std::size(jerseyName));
         SetPlayerJerseyName(player, jerseyName);
     }
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0E)) {
-        PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0E))
         BinaryReaderReadUInt32(reader, &ext->fifaId);
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12)) {
+        BinaryReaderReadInt32(reader, &ext->birthCityId);
+        if (player->GetRegionalAffiliation() == PLAYER_REGIONAL_NONE && IsCatalanCity(ext->birthCityId))
+            player->SetRegionalAffiliation(PLAYER_REGIONAL_CATALAN);
     }
 }
 
@@ -143,6 +149,16 @@ UInt METHOD OnGetPlayerFifaId(void *player) {
     return GetPlayerFifaID(player);
 }
 
+void SetPlayerBirthCityID(void *player, Int cityID) {
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+    ext->birthCityId = cityID;
+}
+
+Int GetPlayerBirthCityID(void *player) {
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
+    return ext->birthCityId;
+}
+
 void METHOD OnReadPlayerFromSaveGame(void *player) {
     CallMethod<0xFC40B0>(player);
     void *loader = *(void **)0x3179DD8;
@@ -152,7 +168,9 @@ void METHOD OnReadPlayerFromSaveGame(void *player) {
         SaveGameReadString(loader, jerseyName, std::size(jerseyName));
     SetPlayerJerseyName(player, jerseyName);
     if (SaveGameLoadGetVersion(loader) >= 44)
-        SetPlayerFifaID(player, SaveGameReadInt32(loader));
+        SetPlayerFifaID(player, SaveGameReadUInt32(loader));
+    if (SaveGameLoadGetVersion(loader) >= 49)
+        SetPlayerBirthCityID(player, SaveGameReadInt32(loader));
     //if (SaveGameLoadGetVersion(loader) >= 46) {
     //    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //    SaveGameReadInt8(loader, ext->extensionStats.worldCupMatches);
@@ -174,7 +192,8 @@ void METHOD OnWritePlayerToSaveGame(void *player) {
     CallMethod<0xFC33F0>(player);
     void *writer = *(void **)0x3179DD4;
     SaveGameWriteString(writer, GetPlayerJerseyName(player));
-    SaveGameWriteInt32(writer, GetPlayerFifaID(player));
+    SaveGameWriteUInt32(writer, GetPlayerFifaID(player));
+    SaveGameWriteInt32(writer, GetPlayerBirthCityID(player));
     //PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //SaveGameWriteInt8(writer, ext->extensionStats.worldCupMatches);
     //SaveGameWriteInt8(writer, ext->extensionStats.worldCupGoals);

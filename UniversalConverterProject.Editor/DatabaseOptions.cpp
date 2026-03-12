@@ -1,4 +1,5 @@
 #include "DatabaseOptions.h"
+#include "EditorInterfaces.h"
 #include "FifamReadWrite.h"
 #include "Editor.h"
 #include "CustomTranslation.h"

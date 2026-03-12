@@ -32,19 +32,6 @@ enum FmLanguage {
 
 FmLanguage gCurrentLanguage;
 
-wchar_t const *GetText(char const *key) {
-    void *locale = CallAndReturn<void *, 0x575200>();
-    return CallMethodAndReturn<wchar_t const *, 0x5756F0>(locale, key, *raw_ptr<unsigned int>(locale, 0x18));
-}
-
-void BinaryFileWriteString(void *binaryFile, WideChar const *str) {
-    CallMethod<0x550D10>(binaryFile, str);
-}
-
-void BinaryFileWriteInt(void *binaryFile, UInt value) {
-    CallMethod<0x551060>(binaryFile, value);
-}
-
 Set<String> &GetSponsorNames() {
     static Set<String> SponsorNames;
     return SponsorNames;
@@ -945,58 +932,6 @@ WideChar const * METHOD RefereeFoomID_ShortName(void *r) {
     }
     else
         return CallMethodAndReturn<WideChar const *, 0x53FE80>(r);
-}
-
-void DDX_Control(void *pDX, int nIDC, void *rControl) {
-    CallMethod<0x5B13D5>(0, pDX, nIDC, rControl);
-}
-
-void *ComboBoxConstruct(void *t) {
-    return CallMethodAndReturn<void *, 0x402710>(t);
-}
-
-void ComboBoxDestruct(void *t) {
-    CallMethod<0x5BDD37>(t);
-}
-
-void *CheckBoxConstruct(void *t) {
-    return CallMethodAndReturn<void *, 0x4B5010>(t);
-}
-
-void CheckBoxDestruct(void *t) {
-    CallMethod<0x4B4990>(t);
-}
-
-void *GroupBoxConstruct(void *t) {
-    return CallMethodAndReturn<void *, 0x4B3B30>(t);
-}
-
-void GroupBoxDestruct(void *t) {
-    CallMethod<0x4B3B00>(t);
-}
-
-void CheckBoxSetIsChecked(void *t, Bool checked) {
-    CallMethod<0x414090>(0, t, checked);
-}
-
-Bool CheckBoxGetIsChecked(void *t) {
-    return CallMethodAndReturn<Bool32, 0x414070>(0, t);
-}
-
-int WndShowWindow(void *t, int nCmdShow) {
-    return CallMethodAndReturn<int, 0x5B9D6A>(t, nCmdShow);
-}
-
-void *BFComboBoxConstruct(void *t) {
-    return CallMethodAndReturn<void *, 0x422C10>(t);
-}
-
-void BFComboBoxDestruct(void *t) {
-    CallMethod<0x4228A0>(t);
-}
-
-LRESULT BFComboBoxGetSelectedItemData(void *t) {
-    return CallMethodAndReturn<LRESULT, 0x57F2A0>(t);
 }
 
 void ReadSponsorNames() {

@@ -1,10 +1,10 @@
 #include "Translation.h"
+#include "EditorInterfaces.h"
 #include "Utils.h"
 #include "FifamReadWrite.h"
 #include "CustomTranslation.h"
 #include "TranslationShared.h"
 #include "TextFileTable.h"
-#include "Editor.h"
 #include "shared.h"
 
 using namespace plugin;
@@ -153,18 +153,18 @@ void LoadCustomCountryNames(Path const &dbFolder) {
     }
 }
 
-void METHOD WriteCountryNameToMasterDatabase(void *file, DUMMY_ARG, UInt iterationIndex, WideChar const *name) {
+void METHOD WriteCountryNameToMasterDatabase(CBinaryFile *file, DUMMY_ARG, UInt iterationIndex, WideChar const *name) {
     UInt languageId = NUM_TRANSLATION_LANGUAGES - iterationIndex;
     if (IsDefaultTranslationLanguage(languageId))
-        BinaryFileWriteString(file, name + languageId * 30);
+        file->WriteString(name + languageId * 30);
     else if (IsCustomTranslationLanguage(languageId)) {
         void *country = (void *)((UInt)name - 4);
         UInt countryId = *raw_ptr<UInt>(country, 0x1A4);
         Int customLanguageId = TranslationLanguageIdToCustomLanguageId(languageId);
-        BinaryFileWriteString(file, CountryNames()[customLanguageId][countryId - 1].c_str());
+        file->WriteString(CountryNames()[customLanguageId][countryId - 1].c_str());
     }
     else
-        BinaryFileWriteString(file, L"");
+        file->WriteString(L"");
 }
 
 void PatchTranslation(FM::Version v) {

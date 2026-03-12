@@ -1,6 +1,7 @@
 #include "YouthGenCountries.h"
 #include "FifamDatabase.h"
 #include "GameInterfaces.h"
+#include "CitiesAndRegions.h"
 #include "FifamReadWrite.h"
 #include "Random.h"
 #include "shared.h"
@@ -101,17 +102,25 @@ void METHOD TeamYouthPlayerGenerator_SetNationality(void *t, DUMMY_ARG, CDBPlaye
     Pair<UChar, UChar> nationality = { countryId, 0 };
     if (nationality.first == 255) // if country is still not selected
         nationality = SelectNationalityForYouthPlayer(team);
-    // basque
-    UInt fifaID = team->GetFifaID();
-    if (team->CanBuyOnlyBasquePlayers() || team->YouthPlayersAreBasques() /*fifaID == 463 || fifaID == 448 || fifaID == 457 || fifaID == 467*/) {
+    // regional affiliation
+    if (team->GetRegionalAffiliationRestriction() == PLAYER_REGIONAL_BASQUE || team->YouthPlayersAreBasques()) {
         if (team->GetYouthPlayersCountry() == FifamNation::Spain || team->GetYouthPlayersCountry() == FifamNation::France)
             nationality.first = team->GetYouthPlayersCountry();
         else
             nationality.first = FifamNation::Spain;
-        player->SetIsBasque(true);
+        player->SetRegionalAffiliation(PLAYER_REGIONAL_BASQUE);
     }
-    else if (nationality.first == FifamNation::Spain && CRandom::GetRandomInt(100) < CParameterFiles::Instance()->GetProbabilityOfBasquePlayersInYouthTeam())
-        player->SetIsBasque(true);
+    else if (team->GetRegionalAffiliationRestriction() == PLAYER_REGIONAL_CATALAN) {
+        nationality.first = FifamNation::Spain;
+        player->SetRegionalAffiliation(PLAYER_REGIONAL_CATALAN);
+    }
+    else if (nationality.first == FifamNation::Spain) {
+        Int rnd = CRandom::GetRandomInt(100);
+        if (rnd < CParameterFiles::Instance()->GetProbabilityOfBasquePlayersInYouthTeam())
+            player->SetRegionalAffiliation(PLAYER_REGIONAL_BASQUE);
+        else if (IsTeamCatalan(team) || rnd < CParameterFiles::Instance()->GetProbabilityOfBasquePlayersInYouthTeam() * 2)
+            player->SetRegionalAffiliation(PLAYER_REGIONAL_CATALAN);
+    }
     player->SetNationality(0, nationality.first);
     player->SetNationality(1, nationality.second);
 }

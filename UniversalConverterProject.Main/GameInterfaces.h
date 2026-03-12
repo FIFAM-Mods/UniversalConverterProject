@@ -729,6 +729,12 @@ public:
 
 static_assert(sizeof(CManagerAppearance) == 0xC, "Failed");
 
+enum ePlayerRegionalAffiliation {
+    PLAYER_REGIONAL_NONE = 0,
+    PLAYER_REGIONAL_BASQUE = 1,
+    PLAYER_REGIONAL_CATALAN = 2
+};
+
 class CDBPlayer {
 public:
     // 0 to 20
@@ -750,7 +756,8 @@ public:
     void SetDemandValue(EAGMoney const &money);
     void SetMinRelFee(EAGMoney const &money);
     void SetNationality(UChar index, UChar nation);
-    void SetIsBasque(bool basque);
+    UChar GetRegionalAffiliation();
+    void SetRegionalAffiliation(UChar regionalAffiliation);
     UChar GetNumKnownLanguages();
     UChar GetLanguage(UChar number = 0);
     void SetLanguage(UChar index, UChar language);
@@ -1471,7 +1478,8 @@ public:
     UInt GetNumPlayers();
     UInt GetPlayer(UChar index);
     UInt GetFifaID();
-    bool CanBuyOnlyBasquePlayers();
+    UChar GetRegionalAffiliationRestriction();
+    void SetRegionalAffiliationRestriction(UChar regionalAffiliation);
     bool YouthPlayersAreBasques();
     UChar GetYouthPlayersCountry();
     UChar GetCountryId();

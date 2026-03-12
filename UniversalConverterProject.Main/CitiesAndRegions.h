@@ -26,5 +26,8 @@ Map<Int, DBCity> &DBCities();
 Map<Int, DBRegion> &DBRegions();
 DBCity *GetCity(Int id);
 DBRegion *GetRegion(Int id);
+Bool IsCatalanCity(Int cityID);
+class CDBTeam;
+Bool IsTeamCatalan(CDBTeam *team);
 
 void PatchCitiesAndRegions(FM::Version v);

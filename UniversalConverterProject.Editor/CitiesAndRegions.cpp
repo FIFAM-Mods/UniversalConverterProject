@@ -207,7 +207,7 @@ Bool METHOD OnReadClubAddress(CKLFile *file, DUMMY_ARG, WideChar *out, UInt maxL
 
 Bool METHOD OnReadClubLatitude(CKLFile *file, DUMMY_ARG, Int *pLatitude, WideChar sep) {
     ClubLatitude = 0;
-    Bool result = file->ReadIntAndSymbol(pLatitude, sep);
+    Bool result = file->ReadIntAndDelimiter(pLatitude, sep);
     if (result)
         ClubLatitude = *pLatitude;
     return result;
@@ -349,41 +349,85 @@ void OnCopyTownName(WideChar *dst, CClub *club) {
     wcscpy(dst, cityName);
 }
 
-Bool METHOD OnWriteAppearanceDefsToBinaryDatabase(void *binaryFile) {
-    Bool result = CallMethodAndReturn<Bool, 0x5A1C60>(binaryFile);
+Bool METHOD OnWriteAppearanceDefsToBinaryDatabase(CBinaryFile *file) {
+    Bool result = CallMethodAndReturn<Bool, 0x5A1C60>(file);
 
     // binary database version 20130012
-    auto WriteFourcc = [&binaryFile](UInt fourcc) { CallMethod<0x5511C0>(binaryFile, fourcc); };
-    auto WriteUInt = [&binaryFile](UInt value) { CallMethod<0x551060>(binaryFile, value); };
-    auto WriteInt = [&binaryFile](Int value) { CallMethod<0x551060>(binaryFile, value); };
-    auto WriteUChar = [&binaryFile](UChar value) { CallMethod<0x550E80>(binaryFile, value); };
-    auto WriteFloat = [&binaryFile](Float value) { CallMethod<0x551160>(binaryFile, value); };
-    auto WriteString = [&binaryFile](String const &value) { CallMethod<0x550D10>(binaryFile, value.c_str()); };
-
-    WriteFourcc('CTRG');
-    WriteUInt(DBCities().size());
+    file->WriteFourcc('CTRG');
+    file->WriteUInt(DBCities().size());
     for (auto &[id, city] : DBCities()) {
-        WriteInt(city.id);
-        WriteUChar(city.countryId);
-        WriteUChar(city.population);
-        WriteFloat(city.latitude);
-        WriteFloat(city.longitude);
-        WriteInt(city.regionId);
+        file->WriteInt(city.id);
+        file->WriteUChar(city.countryId);
+        file->WriteUChar(city.population);
+        file->WriteFloat(city.latitude);
+        file->WriteFloat(city.longitude);
+        file->WriteInt(city.regionId);
         for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++)
-            WriteString(city.names[i]);
+            file->WriteString(city.names[i].c_str());
     }
-    WriteUInt(DBRegions().size());
+    file->WriteUInt(DBRegions().size());
     for (auto &[id, region] : DBRegions()) {
-        WriteInt(region.id);
-        WriteUChar(region.countryId);
-        WriteFloat(region.latitude);
-        WriteFloat(region.longitude);
+        file->WriteInt(region.id);
+        file->WriteUChar(region.countryId);
+        file->WriteFloat(region.latitude);
+        file->WriteFloat(region.longitude);
         for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++)
-            WriteString(region.names[i]);
+            file->WriteString(region.names[i].c_str());
     }
-    WriteFourcc('CTRG');
+    file->WriteFourcc('CTRG');
 
     return result;
+}
+
+void METHOD OnBinaryFileWriteClubMascot(CBinaryFile *file, DUMMY_ARG, WideChar const *str) {
+    auto club = raw_ptr(str, -0xD3C);
+    file->WriteInt(GetClubExtension(club)->cityId);
+    file->WriteString(str);
+}
+
+void METHOD OnReadLeague(void *league, DUMMY_ARG, CKLFile *file) {
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
+        auto ext = GetLeagueExtension(league);
+        file->ReadUChar(ext->order);
+        file->ReadUChar(ext->numberOfRegions);
+        if (ext->numberOfRegions) {
+            ext->regions = new LeagueRegion[ext->numberOfRegions];
+            for (UInt i = 0; i < ext->numberOfRegions; i++) {
+                file->ReadIntAndDelimiter(ext->regions[i].regionID, L',');
+                file->ReadUCharAndDelimiter(ext->regions[i].priority, L',');
+                file->ReadUChar(ext->regions[i].direction);
+            }
+        }
+    }
+    CallMethod<0x5046C0>(league, file);
+}
+
+void METHOD OnWriteLeague(void *league, DUMMY_ARG, CKLFile *file, Int countryId) {
+    auto ext = GetLeagueExtension(league);
+    file->WriteUChar(ext->order);
+    file->WriteUChar(ext->numberOfRegions);
+    if (ext->numberOfRegions) {
+        for (UInt i = 0; i < ext->numberOfRegions; i++) {
+            file->WriteIntAndDelimiter(ext->regions[i].regionID, L',');
+            file->WriteUCharAndDelimiter(ext->regions[i].priority, L',');
+            file->WriteUChar(ext->regions[i].direction);
+        }
+    }
+    CallMethod<0x503640>(league, file);
+}
+
+void METHOD OnWriteLeagueToMasterDb(void *league, DUMMY_ARG, CBinaryFile *file) {
+    CallMethod<0x4FEE50>(league, file);
+    auto ext = GetLeagueExtension(league);
+    file->WriteUChar(ext->order);
+    file->WriteUChar(ext->numberOfRegions);
+    if (ext->numberOfRegions) {
+        for (UInt i = 0; i < ext->numberOfRegions; i++) {
+            file->WriteInt(ext->regions[i].regionID);
+            file->WriteUChar(ext->regions[i].priority);
+            file->WriteUChar(ext->regions[i].direction);
+        }
+    }
 }
 
 void PatchCitiesAndRegions(FM::Version v) {
@@ -411,6 +455,8 @@ void PatchCitiesAndRegions(FM::Version v) {
         // binary database
         patch::RedirectCall(0x4D95FF, OnWriteAppearanceDefsToBinaryDatabase);
         patch::RedirectCall(0x4D9A10, OnWriteAppearanceDefsToBinaryDatabase);
+        patch::Nop(0x4C49B0, 8);
+        patch::RedirectCall(0x4C4A44, OnBinaryFileWriteClubMascot);
 
         // old town references
         patch::RedirectJump(0x42B37A, 0x42B3EA); // CDlgClub::LoadClub
@@ -428,5 +474,10 @@ void PatchCitiesAndRegions(FM::Version v) {
         // CIDResolverToTownName
         patch::SetBytes(0x4C7506, "8B D6 90 90 90 90 90"); // lea edx, [esi+ecx*4+454h] => mov edx, esi
         patch::RedirectCall(0x4C7513, OnCopyTownName);
+
+        // league regions
+        patch::RedirectCall(0x50542C, OnReadLeague);
+        patch::RedirectCall(0x503D6B, OnWriteLeague);
+        patch::RedirectCall(0x4FEEBE, OnWriteLeagueToMasterDb);
     }
 }

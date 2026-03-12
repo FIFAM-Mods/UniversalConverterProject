@@ -1393,8 +1393,12 @@ UInt CDBTeam::GetFifaID() {
     return CallMethodAndReturn<UInt, 0xEC9550>(this);
 }
 
-bool CDBTeam::CanBuyOnlyBasquePlayers() {
-    return CallMethodAndReturn<bool, 0xEC9520>(this);
+UChar CDBTeam::GetRegionalAffiliationRestriction() {
+    return CallMethodAndReturn<UChar, 0xEC9520>(this);
+}
+
+void CDBTeam::SetRegionalAffiliationRestriction(UChar regionalAffiliation) {
+    CallMethod<0xEC9530>(this, regionalAffiliation);
 }
 
 bool CDBTeam::YouthPlayersAreBasques() {
@@ -1920,8 +1924,12 @@ void CDBPlayer::SetNationality(UChar index, UChar nation) {
     CallMethod<0xF9AF00>(this, index, nation);
 }
 
-void CDBPlayer::SetIsBasque(bool basque) {
-    CallMethod<0xF9AF50>(this, basque);
+UChar CDBPlayer::GetRegionalAffiliation() {
+    return CallMethodAndReturn<UChar, 0xF9AF40>(this) == 1;
+}
+
+void CDBPlayer::SetRegionalAffiliation(UChar regionalAffiliation) {
+    CallMethod<0xF9AF50>(this, regionalAffiliation);
 }
 
 UChar CDBPlayer::GetNumKnownLanguages() {

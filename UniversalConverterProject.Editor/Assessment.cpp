@@ -1,4 +1,5 @@
 #include "Assessment.h"
+#include "EditorInterfaces.h"
 #include "DatabaseOptions.h"
 #include "FifamReadWrite.h"
 
@@ -57,29 +58,24 @@ Bool METHOD OnLoadAssessmentSav(void *world, DUMMY_ARG, WideChar const *filePath
     return true;
 }
 
-void METHOD OnWriteAssessmentToBinaryDatabase(void *t, DUMMY_ARG, void *binaryFile) {
-    CallMethod<0x538CA0>(t, binaryFile);
+void METHOD OnWriteAssessmentToBinaryDatabase(void *t, DUMMY_ARG, CBinaryFile *file) {
+    CallMethod<0x538CA0>(t, file);
     
     // binary database version 20130010
-    auto WriteFourcc = [&binaryFile](UInt fourcc) { CallMethod<0x5511C0>(binaryFile, fourcc); };
-    auto WriteUInt = [&binaryFile](UInt value) { CallMethod<0x551060>(binaryFile, value); };
-    auto WriteUChar = [&binaryFile](UChar value) { CallMethod<0x550E80>(binaryFile, value); };
-    auto WriteFloat = [&binaryFile](Float value) { CallMethod<0x551160>(binaryFile, value); };
-
-    WriteFourcc('ASSM');
-    WriteUInt(GetAssessmentInfoAFC().size());
+    file->WriteFourcc('ASSM');
+    file->WriteUInt(GetAssessmentInfoAFC().size());
     for (auto &[countryId, info] : GetAssessmentInfoAFC()) {
-        WriteUChar(countryId);
+        file->WriteUChar(countryId);
         for (UInt i = 0; i < 9; i++)
-            WriteFloat(info[i]);
+            file->WriteFloat(info[i]);
     }
-    WriteUInt(GetAssessmentInfoCAF().size());
+    file->WriteUInt(GetAssessmentInfoCAF().size());
     for (auto &[countryId, info] : GetAssessmentInfoCAF()) {
-        WriteUChar(countryId);
+        file->WriteUChar(countryId);
         for (UInt i = 0; i < 5; i++)
-            WriteFloat(info[i]);
+            file->WriteFloat(info[i]);
     }
-    WriteFourcc('ASSM');
+    file->WriteFourcc('ASSM');
 }
 
 void PatchAssessment(FM::Version v) {

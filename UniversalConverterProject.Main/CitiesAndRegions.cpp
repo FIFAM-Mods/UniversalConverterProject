@@ -4,6 +4,7 @@
 #include "Translation.h"
 #include "ExtendedTeam.h"
 #include "FifamClubTeamType.h"
+#include "ExtendedPlayer.h"
 #include "Utils.h"
 
 Map<Int, DBCity> &DBCities() {
@@ -17,15 +18,30 @@ Map<Int, DBRegion> &DBRegions() {
 }
 
 DBCity *GetCity(Int id) {
-    if (Utils::Contains(DBCities(), id))
+    if (id != -1 && Utils::Contains(DBCities(), id))
         return &DBCities()[id];
     return nullptr;
 }
 
 DBRegion *GetRegion(Int id) {
-    if (Utils::Contains(DBRegions(), id))
+    if (id != -1 && Utils::Contains(DBRegions(), id))
         return &DBRegions()[id];
     return nullptr;
+}
+
+Bool IsCatalanCity(Int cityID) {
+    if (cityID != -1) {
+        auto it = DBCities().find(cityID);
+        if (it != DBCities().end()) {
+            Int regionID = (*it).second.regionId;
+            return regionID == 67023595;
+        }
+    }
+    return false;
+}
+
+Bool IsTeamCatalan(CDBTeam *team) {
+    return IsCatalanCity(GetTeamExtension(team)->cityId);
 }
 
 void ClearCities() {
@@ -221,7 +237,29 @@ void *OnAfterCountriesLoaded() {
         }
     }
     return CallAndReturn<void *, 0x61FC60>();
-} 
+}
+
+void METHOD OnReadTeamTownFromMasterDb(void *reader, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    if (!BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12))
+        BinaryReaderReadString(reader, out, maxLen);
+}
+
+void METHOD OnReadTeamMascotFromMasterDb(void *reader, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12)) {
+        CDBTeam *team = raw_ptr<CDBTeam>(out, -0x29A);
+        BinaryReaderReadInt32(reader, &GetTeamExtension(team)->cityId);
+    }
+    BinaryReaderReadString(reader, out, maxLen);
+}
+
+void METHOD OnReadTeamFifaIdFromMasterDb(void *reader, DUMMY_ARG, UInt *out) {
+    BinaryReaderReadUInt32(reader, out);
+    CDBTeam *team = raw_ptr<CDBTeam>(out, -0xEC);
+    if (team->GetTeamUniqueID() == 0x002D0001) // Athletic Club
+        team->SetRegionalAffiliationRestriction(PLAYER_REGIONAL_BASQUE);
+    else if (team->GetTeamUniqueID() == 0x002D1038) // U.E. Olot
+        team->SetRegionalAffiliationRestriction(PLAYER_REGIONAL_CATALAN);
+}
 
 WideChar *METHOD OnGetTeamTown(CDBTeam *team) {
     auto city = GetCity(GetTeamExtension(team)->cityId);
@@ -247,6 +285,84 @@ void OnClearCountries() {
     ClearCitiesAndRegions();
 }
 
+const UInt PlayerInfoPersonalDefaultSize = 0x80C;
+
+struct PlayerInfoPersonalExtended {
+    CTrfmNode *TrfmLeadershipAndDiscipline;
+    CTrfmNode *TrfmRelatives;
+    CXgTextBox *TbBirthplaceUnknown;
+    CXgTextBox *TbBirthplace;
+    CXgImage *ImgBirthCountry;
+    CXgTextBox *TbRegionBlank;
+    CXgTextBox *TbRegion;
+    CXgImage *ImgRegion;
+    CXgTextButton *BtRelatives;
+    CXgTextButton *BtLeadershipAndDiscipline;
+};
+
+void METHOD OnPlayerInfoPersonalCreateUI(CXgFMPanel *screen) {
+    CallMethod<0x5DE530>(screen); // CPlayerInfoPersonal::CreateUI
+    auto ext = raw_ptr<PlayerInfoPersonalExtended>(screen, PlayerInfoPersonalDefaultSize);
+    ext->TrfmLeadershipAndDiscipline = screen->GetTransform("TrfmLeadershipAndDiscipline");
+    ext->TrfmRelatives = screen->GetTransform("TrfmRelatives");
+    ext->TbBirthplaceUnknown = screen->GetTextBox("TbBirthplaceUnknown");
+    ext->TbBirthplace = screen->GetTextBox("TbBirthplace");
+    ext->ImgBirthCountry = screen->GetImage("ImgBirthCountry");
+    ext->TbRegionBlank = screen->GetTextBox("TbRegionBlank");
+    ext->TbRegion = screen->GetTextBox("TbRegion");
+    ext->ImgRegion = screen->GetImage("ImgRegion");
+    ext->BtRelatives = screen->GetTextButton("BtRelatives");
+    ext->BtLeadershipAndDiscipline = screen->GetTextButton("BtLeadershipAndDiscipline");
+}
+
+UInt METHOD OnPlayerInfoPersonalFill(CXgFMPanel *screen) {
+    UInt playerId = CallMethodAndReturn<Int, 0x5DE220>(screen); // CPlayerInfoPanel::GetCurrentPlayerId
+    CDBPlayer *player = GetPlayer(playerId);
+    if (player) {
+        auto ext = raw_ptr<PlayerInfoPersonalExtended>(screen, PlayerInfoPersonalDefaultSize);
+        SetTransformVisible(ext->TrfmLeadershipAndDiscipline, true);
+        SetTransformVisible(ext->TrfmRelatives, false);
+        // Birthplace
+        Bool cityFound = false;
+        auto city = GetCity(GetPlayerBirthCityID(player));
+        if (city) {
+            String cityName = city->name;
+            String regionName;
+            auto region = GetRegion(city->regionId);
+            if (region)
+                regionName = region->name;
+            String text = cityName + L", " + CountryName(city->countryId);
+            String tooltip = cityName;
+            if (!regionName.empty())
+                tooltip += L", " + regionName;
+            tooltip += L", " + CountryName(city->countryId);
+            ext->TbBirthplace->SetText(text.c_str());
+            ext->TbBirthplace->SetTooltip(tooltip.c_str());
+            SetControlCountryFlag(ext->ImgBirthCountry, city->countryId);
+            cityFound = true;
+        }
+        ext->TbBirthplace->SetVisible(cityFound);
+        ext->ImgBirthCountry->SetVisible(cityFound);
+        ext->TbBirthplaceUnknown->SetVisible(!cityFound);
+        // Affiliated region
+        Bool regionFound = false;
+        if (player->GetRegionalAffiliation() == PLAYER_REGIONAL_BASQUE) {
+            ext->TbRegion->SetText(GetTranslation("IDS_BASQUE"));
+            SetImageFilename(ext->ImgRegion, L"art/Lib/CountryFlags/32x32/basque.tga", 4, 4);
+            regionFound = true;
+        }
+        else if (player->GetRegionalAffiliation() == PLAYER_REGIONAL_CATALAN) {
+            ext->TbRegion->SetText(GetTranslation("IDS_CATALAN"));
+            SetImageFilename(ext->ImgRegion, L"art/Lib/CountryFlags/32x32/catalan.tga", 4, 4);
+            regionFound = true;
+        }
+        ext->TbRegion->SetVisible(regionFound);
+        ext->ImgRegion->SetVisible(regionFound);
+        ext->TbRegionBlank->SetVisible(!regionFound);
+    }
+    return playerId;
+}
+
 void PatchCitiesAndRegions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0xF9745E, OnReadAppearanceDefsFromBinaryDatabase);
@@ -257,6 +373,19 @@ void PatchCitiesAndRegions(FM::Version v) {
         patch::RedirectCall(0x10840F4, OnAfterCountriesLoaded);
         patch::RedirectJump(0xED2340, OnGetTeamTown);
         patch::RedirectCall(0x108D80C, OnClearCountries);
+
+        patch::RedirectCall(0xF3307E, OnReadTeamTownFromMasterDb);
+        patch::RedirectCall(0xF331C1, OnReadTeamMascotFromMasterDb);
+
+        // CPlayerInfoPersonal
+        patch::SetUInt(0x5C9594 + 1, PlayerInfoPersonalDefaultSize + sizeof(PlayerInfoPersonalExtended));
+        patch::SetUInt(0x5C959B + 1, PlayerInfoPersonalDefaultSize + sizeof(PlayerInfoPersonalExtended));
+        patch::SetPointer(0x23D2064, OnPlayerInfoPersonalCreateUI);
+        patch::RedirectCall(0x5DE827, OnPlayerInfoPersonalFill);
+
+        // regional status
+        patch::RedirectCall(0xF332E1, OnReadTeamFifaIdFromMasterDb);
+        patch::Nop(0xF332EF, 7);
 
         //patch::RedirectCall(0x11C51F3, OnGetNumTeams1);
         //patch::RedirectCall(0x11C527B, OnGetNumTeams1);
