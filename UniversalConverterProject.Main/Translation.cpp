@@ -303,6 +303,10 @@ Int METHOD ReadCountryNameTranslation(CBinaryFile *file, DUMMY_ARG, WideChar *ou
     return GetLanguageIdForCountryName(file);
 }
 
+void OnFormatCreditsFilename(WideChar *dst, WideChar const *, WideChar const *) {
+    swprintf(dst, L"fmdata\\translation\\languages\\%s\\Credits2.txt", GameLanguage().c_str());
+}
+
 void PatchTranslation(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         auto iniPath = FM::GameDirPath(L"locale.ini");
@@ -372,7 +376,7 @@ void PatchTranslation(FM::Version v) {
         patch::RedirectCall(0x14A9B9B, GetGameTextByHashKey);
         patch::RedirectCall(0x14A9BB8, GetGameTextByHashKey);
 
-        patch::SetPointer(0x7B979B + 1, L"fmdata\\Credits.txt");
+        patch::RedirectCall(0x7B97A1, OnFormatCreditsFilename);
         patch::SetPointer(0x12F9883 + 1, L"fmdata/translation/languages/%s/Bedingungen.txt");
         patch::SetPointer(0x4DA4DE + 1, L"fmdata\\translation\\languages\\"); // language folder (type 12) in CFMResolver::GetGlobalPath()
     }
