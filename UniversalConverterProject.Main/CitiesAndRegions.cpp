@@ -439,6 +439,10 @@ void METHOD OnReadLeagueFromMasterDb(CDBLeague *league, DUMMY_ARG, CBinaryFile *
     }
 }
 
+UChar METHOD OnPlayerInfoScreen_GetIsBasque(CDBPlayer *) {
+    return 0;
+}
+
 void PatchCitiesAndRegions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0xF9745E, OnReadAppearanceDefsFromBinaryDatabase);
@@ -462,6 +466,21 @@ void PatchCitiesAndRegions(FM::Version v) {
         // regional status
         patch::RedirectCall(0xF332E1, OnReadTeamFifaIdFromMasterDb);
         patch::Nop(0xF332EF, 7);
+
+        // remove basque flag on player info screens
+        patch::RedirectCall(0x510A8B, OnPlayerInfoScreen_GetIsBasque); // CSeasonTrialDayResults
+        patch::RedirectCall(0x5CD3AD, OnPlayerInfoScreen_GetIsBasque); // CPlayerInfo
+        patch::RedirectCall(0x5D92A4, OnPlayerInfoScreen_GetIsBasque); // CPlayerInfoCompare
+        patch::RedirectCall(0x5E7BE0, OnPlayerInfoScreen_GetIsBasque); // CPlayerInfoYouth
+        patch::RedirectCall(0x8224CB, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0x828C28, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0x82BB3B, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0x8E5F2C, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0x9259A2, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0x9B52F6, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0xA2ABBC, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0xDDC51B, OnPlayerInfoScreen_GetIsBasque);
+        patch::RedirectCall(0xDDC5F6, OnPlayerInfoScreen_GetIsBasque);
 
         // league regions
         const UInt NEW_LEAGUE_SZ = DEF_LEAGUE_SZ + sizeof(LeagueExtension);
