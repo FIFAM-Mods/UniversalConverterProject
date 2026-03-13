@@ -23,6 +23,13 @@ enum ScreenshotFileNameFormat {
     SCREENSHOTNAME_TITLE_AND_NUMBER
 };
 
+enum eUnexploredAbilityColors {
+    UNEXPLOREDABILITIES_NONE,
+    UNEXPLOREDABILITIES_GREYED_OUT,
+    UNEXPLOREDABILITIES_DESATURATED,
+    UNEXPLOREDABILITIES_SEMITRANSPARENT
+};
+
 #define SCREENSHOT_PNG_RECONVERTED 9
 
 class Settings : public SettingsAbstract {
@@ -90,6 +97,7 @@ public:
     SETTINGS_PARAMETER(int,    ScreenshotFormat,            "SCREENSHOT_FORMAT",              1); // D3DXIFF_JPG
     SETTINGS_PARAMETER(int,    ScreenshotName,              "SCREENSHOT_NAME",                SCREENSHOTNAME_TIME);
     SETTINGS_PARAMETER(wstring, AbilitiesColorSchema,       "ABILITIES_COLOR_SCHEMA",         L"IDS_ABILITIES_SCHEMA_DEFAULT");
+    SETTINGS_PARAMETER(int,    UnexploredAbilityColors,     "ABILITIES_UNEXPLORED",           UNEXPLOREDABILITIES_NONE);
     SETTINGS_PARAMETER(bool,   AbilitiesBoldFont,           "ABILITIES_BOLD_FONT",            false);
     SETTINGS_PARAMETER(bool,   AbilitiesAutoReload,         "ABILITIES_AUTO_RELOAD",          false);
     SETTINGS_PARAMETER(bool,   UserFormationsXml,           "USER_FORMATIONS_XML",            false);

@@ -143,8 +143,31 @@ void ReadPlayerAbilityColorSchemas() {
     }
 }
 
-UInt GetCustomColorForAbility(Char abilityValue) {
-    if (abilityValue >= 1 && abilityValue <= 99 && !GetPlayerAbilityColorSchemas().empty()) {
+UInt DesaturateLuma(UInt rgba, Float amount) {
+    amount = std::clamp(amount, 0.0f, 1.0f);
+    UChar r = (rgba >> 16) & 0xFF;
+    UChar g = (rgba >> 8) & 0xFF;
+    UChar b = (rgba) & 0xFF;
+    UChar a = (rgba >> 24) & 0xFF;
+    Float gray = 0.299f * r + 0.587f * g + 0.114f * b;
+    auto mix = [&](UChar c) -> UChar {
+        Float v = (1.0f - amount) * c + amount * gray;
+        return static_cast<UChar>(std::round(std::clamp(v, 0.0f, 255.0f)));
+    };
+    UChar nr = mix(r);
+    UChar ng = mix(g);
+    UChar nb = mix(b);
+    return (static_cast<UInt>(a) << 24) | (static_cast<UInt>(nr) << 16) | (static_cast<UInt>(ng) << 8) | (static_cast<UInt>(nb));
+}
+
+UInt GetCustomColorForAbility(Char abilityValue, Bool unexplored = false) {
+    Bool isProperAbilityValue = abilityValue >= 1 && abilityValue <= 99;
+    if (!isProperAbilityValue)
+        unexplored = true;
+    if (unexplored && Settings::GetInstance().UnexploredAbilityColors == UNEXPLOREDABILITIES_GREYED_OUT)
+        return 0xFF808080;
+    UInt color = GetGuiColor(COL_TEXT_STANDARD);
+    if (isProperAbilityValue && !GetPlayerAbilityColorSchemas().empty()) {
         AbilitiesColorSchema schema;
         Bool schemaFound = false;
         for (auto &i : GetPlayerAbilityColorSchemas()) {
@@ -159,17 +182,25 @@ UInt GetCustomColorForAbility(Char abilityValue) {
         for (auto it = schema.values.rbegin(); it != schema.values.rend(); it++) {
             if (abilityValue >= (*it).first) {
                 if (((*it).second & 0xFFFFFF00) == AbilityColorMarker)
-                    return GetGuiColor((*it).second & 0xFF);
+                    color = GetGuiColor((*it).second & 0xFF);
                 else
-                    return (*it).second;
+                    color = (*it).second;
+                break;
             }
         }
     }
-    return GetGuiColor(COL_TEXT_STANDARD);
+    if (unexplored) {
+        if (Settings::GetInstance().UnexploredAbilityColors == UNEXPLOREDABILITIES_DESATURATED)
+            return DesaturateLuma(color, 0.75f);
+        else if (Settings::GetInstance().UnexploredAbilityColors == UNEXPLOREDABILITIES_SEMITRANSPARENT)
+            return (color & 0xFFFFFF) | 0x80000000;
+    }
+    return color;
 }
 
 UInt GetCustomColorForPlayerAbility(CDBPlayer *player, UShort ability, CDBEmployee *employee) {
-    return GetCustomColorForAbility(player->GetAbility(ability, employee));
+    Bool unexplored = employee && employee->GetPlayerKnowledge(player) != 10;
+    return GetCustomColorForAbility(player->GetAbility(ability, employee), unexplored);
 }
 
 void SetListBoxColumnFont(CFMListBox *listBox, Int columnIndex, Char const *fontName) {
@@ -210,6 +241,7 @@ void UpdateStaffAbilityColors(void *screen) {
 
 struct OptionsGeneralExtension {
     CXgComboBox *CbAbilitiesColorSchema;
+    CXgComboBox *CbUnexploredAbilityColors;
     CXgCheckBox *ChkAbilitiesBoldFont;
 };
 
@@ -227,6 +259,12 @@ CXgCheckBox *METHOD OnOptionsGeneralSetupUI(CXgFMPanel *screen, DUMMY_ARG, Char 
         ext->CbAbilitiesColorSchema->AddItem(schemaTitle.c_str(), schemaIndex++);
     }
     ext->CbAbilitiesColorSchema->SetCurrentIndex(selectedIndex);
+    ext->CbUnexploredAbilityColors = screen->GetComboBox("CbUnexploredAbilityColors");
+    ext->CbUnexploredAbilityColors->AddItem(GetTranslation("IDS_ABILITIES_DEFAULT"), UNEXPLOREDABILITIES_NONE);
+    ext->CbUnexploredAbilityColors->AddItem(GetTranslation("IDS_ABILITIES_GREYED_OUT"), UNEXPLOREDABILITIES_GREYED_OUT);
+    ext->CbUnexploredAbilityColors->AddItem(GetTranslation("IDS_ABILITIES_DESATURATED"), UNEXPLOREDABILITIES_DESATURATED);
+    ext->CbUnexploredAbilityColors->AddItem(GetTranslation("IDS_ABILITIES_SEMITRANSPARENT"), UNEXPLOREDABILITIES_SEMITRANSPARENT);
+    ext->CbUnexploredAbilityColors->SetCurrentValue(Settings::GetInstance().UnexploredAbilityColors);
     ext->ChkAbilitiesBoldFont = screen->GetCheckBox("ChkAbilitiesBoldFont");
     ext->ChkAbilitiesBoldFont->SetIsChecked(Settings::GetInstance().AbilitiesBoldFont);
     return screen->GetCheckBox(name);
@@ -247,6 +285,10 @@ void METHOD OnOptionsGeneralProcessComboBoxes(CXgFMPanel *screen, DUMMY_ARG, Gui
         Int currentIndex = ext->CbAbilitiesColorSchema->GetCurrentIndex();
         if (currentIndex >= 0 && currentIndex < (Int)GetPlayerAbilityColorSchemas().size())
             Settings::GetInstance().AbilitiesColorSchema = GetPlayerAbilityColorSchemas()[currentIndex].name;
+        return;
+    }
+    else if (msg->node == ext->CbUnexploredAbilityColors->GetGuiNode()) {
+        Settings::GetInstance().UnexploredAbilityColors = (Int)ext->CbUnexploredAbilityColors->GetCurrentValue(UNEXPLOREDABILITIES_NONE);
         return;
     }
     CallMethod<0x7AE640>(screen, msg, unk1, unk2);

@@ -182,8 +182,10 @@ void METHOD OnTeamLoadTown(CDBLoad *file, DUMMY_ARG, WideChar *out, UInt maxLen)
         // TODO: remove this (copying new city name to an old destination)
         if (GetTeamExtension(team)->cityId != -1) {
             auto city = GetCity(GetTeamExtension(team)->cityId);
-            if (city)
-                wcscpy_s(out, 30, city->name);
+            if (city) {
+                wcsncpy(out, city->name, maxLen - 1);
+                out[maxLen - 1] = L'\0';
+            }
         }
     }
     else
@@ -196,7 +198,7 @@ void METHOD OnTeamSaveTown(CDBSave *file, DUMMY_ARG, WideChar const *str) {
 }
 
 void *OnAfterCountriesLoaded() {
-    if (GetDBSave()->GetVersion() < 49) {
+    if (GetDBLoad()->GetVersion() < 49) {
         Int NewCityId = 2100000001;
         for (UInt countryId = 1; countryId <= 207; countryId++) {
             auto country = GetCountry(countryId);
