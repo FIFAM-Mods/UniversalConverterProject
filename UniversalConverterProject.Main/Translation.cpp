@@ -281,24 +281,26 @@ WideChar const *METHOD GetGameTextByHashKey(void *t, DUMMY_ARG, UInt key) {
     return CallMethodAndReturn<wchar_t const *, 0x14A9671>(t, key);
 }
 
-UChar METHOD GetNumCountryNameTranslations(void *reader) {
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12))
+UChar METHOD GetNumCountryNameTranslations(CBinaryFile *file) {
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12))
         return NUM_TRANSLATION_LANGUAGES;
-    return CallMethodAndReturn<UChar, 0x1338610>(reader);
+    return file->GetNumLanguages();
 }
 
-Int METHOD GetLanguageIdForCountryName(void *reader) {
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12) && !GameLanguage().empty()) {
-        Int languageId = GetTranslationLanguageID(GameLanguage());
-        if (languageId != -1)
-            return languageId;
+Int METHOD GetLanguageIdForCountryName(CBinaryFile *file) {
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12) && !GameLanguage().empty()) {
+        if (CurrentLanguageId != -1) {
+            if (IsDefaultTranslationLanguage(CurrentLanguageId))
+                return TranslationLanguageToEditorLanguage[CurrentLanguageId];
+            return CurrentLanguageId;
+        }
     }
     return Game()->GetLanguage();
 }
 
-Int METHOD ReadCountryNameTranslation(void *reader, DUMMY_ARG, WideChar *out, UInt maxLen) {
-    BinaryReaderReadString(reader, out, maxLen);
-    return GetLanguageIdForCountryName(reader);
+Int METHOD ReadCountryNameTranslation(CBinaryFile *file, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    file->ReadString(out, maxLen);
+    return GetLanguageIdForCountryName(file);
 }
 
 void PatchTranslation(FM::Version v) {

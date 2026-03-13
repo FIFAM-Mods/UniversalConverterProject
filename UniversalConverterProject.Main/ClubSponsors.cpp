@@ -10,12 +10,12 @@ UInt gSponsorAmount = 0;
 UChar gSponsorDuration = 0;
 Bool gSponsorSpecial = false;
 
-void METHOD OnReadClubSponsorAmount(void *reader, DUMMY_ARG, UInt *amount) {
+void METHOD OnReadClubSponsorAmount(CBinaryFile *file, DUMMY_ARG, UInt *amount) {
     gSponsorName[0] = 0;
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0D)) {
-        BinaryReaderReadString(reader, gSponsorName, std::size(gSponsorName));
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x0D)) {
+        file->ReadString(gSponsorName, std::size(gSponsorName));
     }
-    CallMethod<0x1338AB0>(reader, amount);
+    file->ReadUInt(amount);
     gSponsorAmount = *amount;
     if (gSponsorName[0] && *amount == 0)
         *amount = INT32_MAX;

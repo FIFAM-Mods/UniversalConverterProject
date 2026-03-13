@@ -49,6 +49,8 @@ public:
             // set version (0x2013)
             patch::SetUChar(0x4C7ACA + 1, TextDatabaseVersion); // CClub::Write
             patch::SetUChar(0x4E4F66 + 1, TextDatabaseVersion); // CCountry::SaveFileData
+            patch::SetUChar(0x4DD126 + 1, TextDatabaseVersion); // CCountry::SaveFileCompetition
+            patch::SetUChar(0x4DD346 + 1, TextDatabaseVersion); // CCountry::SaveFileFixture
             patch::SetUChar(0x53AE37 + 1, TextDatabaseVersion); // Without.sav
             patch::SetUChar(0x541565 + 1, TextDatabaseVersion); // Rules.sav
             // validate version (0x2013)
@@ -58,6 +60,7 @@ public:
             patch::SetUChar(0x4E9A1A + 1, TextDatabaseVersion); // CCountry::LoadFileData
             patch::SetUChar(0x53B5B9 + 1, TextDatabaseVersion); // Without.sav
             patch::SetUChar(0x541847 + 1, TextDatabaseVersion); // Rules.sav
+
             PatchRendererHook(v);
             PatchTranslation(v);
             PatchClubIDs(v);

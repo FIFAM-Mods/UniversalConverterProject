@@ -1925,7 +1925,7 @@ void CDBPlayer::SetNationality(UChar index, UChar nation) {
 }
 
 UChar CDBPlayer::GetRegionalAffiliation() {
-    return CallMethodAndReturn<UChar, 0xF9AF40>(this) == 1;
+    return CallMethodAndReturn<UChar, 0xF9AF40>(this);
 }
 
 void CDBPlayer::SetRegionalAffiliation(UChar regionalAffiliation) {
@@ -2227,140 +2227,20 @@ Bool IsPlayerForeignerForCompetition(CDBPlayer *player, CCompID const &compID) {
     return CallAndReturn<Bool, 0x13D2510>(player, &compID);
 }
 
+CDBLoad *GetDBLoad() {
+    return *(CDBLoad **)0x3179DD8;
+}
+
+CDBSave *GetDBSave() {
+    return *(CDBSave **)0x3179DD4;
+}
+
 void *FmNew(UInt size) {
     return CallAndReturn<void *, 0x15738F3>(size);
 }
 
 void FmDelete(void *data) {
     Call<0x157347A>(data);
-}
-
-bool BinaryReaderIsVersionGreaterOrEqual(void *reader, UInt year, UInt build) {
-    return CallMethodAndReturn<bool, 0x1338EA0>(reader, year, build);
-}
-
-void BinaryReaderReadString(void *reader, WideChar *out, UInt maxLen) {
-    CallMethod<0x1338700>(reader, out, maxLen);
-}
-
-void BinaryReaderReadUInt32(void *reader, UInt *out) {
-    CallMethod<0x1338B10>(reader, out);
-}
-
-void BinaryReaderReadInt32(void *reader, Int *out) {
-    CallMethod<0x1338B10>(reader, out);
-}
-
-bool BinaryReaderCheckFourcc(void *reader, UInt fourcc) {
-    return CallMethodAndReturn<bool, 0x1338EC0>(reader, fourcc);
-}
-
-void BinaryReaderReadUInt16(void *reader, UShort *out) {
-    CallMethod<0x13389E0>(reader, out);
-}
-
-void BinaryReaderReadUInt8(void *reader, UChar *out) {
-    CallMethod<0x1338890>(reader, out);
-}
-
-void BinaryReaderReadFloat(void *reader, Float *out) {
-    CallMethod<0x1338BF0>(reader, out);
-}
-
-void BinaryReaderReadUInt32Array(void *reader, UInt *out, UInt count) {
-    CallMethod<0x1338B30>(reader, out, count);
-}
-
-void SaveGameReadString(void *save, WideChar *out, UInt maxLen) {
-    CallMethod<0x1080EB0>(save, out, maxLen);
-}
-
-void SaveGameWriteString(void *save, WideChar const *str) {
-    CallMethod<0x1080130>(save, str);
-}
-
-void SaveGameReadInt8(void *save, Char &out) {
-    CallMethod<0x1080390>(save, &out);
-}
-
-void SaveGameReadUInt8(void *save, UChar &out) {
-    CallMethod<0x1080390>(save, &out);
-}
-
-void SaveGameReadInt32(void *save, Int &out) {
-    CallMethod<0x10802D0>(save, &out);
-}
-
-void SaveGameReadUInt32(void *save, UInt &out) {
-    CallMethod<0x10802D0>(save, &out);
-}
-
-Int SaveGameReadInt32(void *save) {
-    return CallMethodAndReturn<Int, 0x10802F0>(save);
-}
-
-UInt SaveGameReadUInt32(void *save) {
-    return CallMethodAndReturn<UInt, 0x10802F0>(save);
-}
-
-void SaveGameReadFloat(void *save, Float &out) {
-    CallMethod<0x1080650>(save, &out);
-}
-
-Float SaveGameReadFloat(void *save) {
-    return CallMethodAndReturn<Float, 0x1080670>(save);
-}
-
-void SaveGameReadFloatArray(void *save, Float *values, UInt count) {
-    CallMethod<0x1080630>(save, values, count);
-}
-
-UInt SaveGameReadSize(void *save) {
-    return CallMethodAndReturn<UInt, 0x1080780>(save);
-}
-
-void SaveGameReadData(void *save, void *data, UInt size) {
-    CallMethod<0x1080690>(save, data, size);
-}
-
-void SaveGameWriteInt8(void *save, Char value) {
-    CallMethod<0x107F400>(save, value);
-}
-
-void SaveGameWriteUInt8(void *save, UChar value) {
-    CallMethod<0x107F400>(save, value);
-}
-
-void SaveGameWriteInt32(void *save, Int value) {
-    CallMethod<0x107F380>(save, value);
-}
-
-void SaveGameWriteUInt32(void *save, UInt value) {
-    CallMethod<0x107F380>(save, value);
-}
-
-void SaveGameWriteFloat(void *save, Float value) {
-    CallMethod<0x107F5F0>(save, value);
-}
-
-void SaveGameWriteFloatArray(void *save, Float const *values, UInt count) {
-    CallMethod<0x107F5D0>(save, values, count);
-}
-
-void SaveGameWriteSize(void *save, UInt value) {
-    CallMethod<0x107F670>(save, value);
-}
-
-void SaveGameWriteData(void *save, void *data, UInt size) {
-    CallMethod<0x107F610>(save, data, size);
-}
-
-void SaveGameWriteString(void *save, FmString const &value) {
-    CallMethod<0x1080C80>(save, &value);
-}
-
-UInt SaveGameLoadGetVersion(void *save) {
-    return CallMethodAndReturn<UInt, 0x107F730>(save);
 }
 
 CDBPlayer *FindPlayerByStringID(WideChar const *stringID) {
@@ -3799,3 +3679,295 @@ void CPlayerAppearance::Clear() {
 CPlayerAppearance *CRegenPlayer::GetAppearance() {
     return CallMethodAndReturn<CPlayerAppearance *, 0x135FF10>(this);
 }
+
+CDBSave::CDBSave(FILE *file) { CallMethod<0x107F270>(this, file); }
+
+void CDBSave::EnableSizeCheck(Bool enable) { CallMethod<0x107F2A0>(this, enable); }
+
+void CDBSave::Close() { CallMethod<0x107F2D0>(this); }
+
+UInt CDBSave::GetVersion() { return CallMethodAndReturn<UInt, 0x107F310>(this); }
+
+void CDBSave::WriteInt64Array(Int64 value) { CallMethod<0x107F320>(this, value); }
+
+void CDBSave::WriteInt64(Int64 value) { CallMethod<0x107F340>(this, value); }
+
+void CDBSave::WriteIntArray(Int const *values, UInt count) { CallMethod<0x107F360>(this, values, count); }
+
+void CDBSave::WriteInt(Int value) { CallMethod<0x107F380>(this, value); }
+
+void CDBSave::WriteShortArray(Short const *values, UInt count) { CallMethod<0x107F3A0>(this, values, count); }
+
+void CDBSave::WriteShort(Short value) { CallMethod<0x107F3C0>(this, value); }
+
+void CDBSave::WriteCharArray(Char const *values, UInt count) { CallMethod<0x107F3E0>(this, values, count); }
+
+void CDBSave::WriteChar(Char value) { CallMethod<0x107F400>(this, value); }
+
+void CDBSave::WriteUInt64Array(UInt64 const *values, UInt count) { CallMethod<0x107F320>(this, values, count); }
+
+void CDBSave::WriteUInt64(UInt64 value) { CallMethod<0x107F340>(this, value); }
+
+void CDBSave::WriteUIntArray(UInt const *values, UInt count) { CallMethod<0x107F360>(this, values, count); }
+
+void CDBSave::WriteUInt(UInt value) { CallMethod<0x107F380>(this, value); }
+
+void CDBSave::WriteUShortArray(UShort const *values, UInt count) { CallMethod<0x107F3A0>(this, values, count); }
+
+void CDBSave::WriteUShort(UShort value) { CallMethod<0x107F3C0>(this, value); }
+
+void CDBSave::WriteUCharArray(UChar const *values, UInt count) { CallMethod<0x107F3E0>(this, values, count); }
+
+void CDBSave::WriteUChar(UChar value) { CallMethod<0x107F400>(this, value); }
+
+void CDBSave::WriteBoolArray(Bool const *values, UInt count) { CallMethod<0x107F530>(this, values, count); }
+
+void CDBSave::WriteBool(Bool value) { CallMethod<0x107F550>(this, value); }
+
+void CDBSave::WriteDate(CJDate date) { CallMethod<0x107F570>(this, date); }
+
+void CDBSave::WriteDoubleArray(Double const *values, UInt count) { CallMethod<0x107F590>(this, values, count); }
+
+void CDBSave::WriteDouble(Double value) { CallMethod<0x107F5B0>(this, value); }
+
+void CDBSave::WriteFloatArray(Float const *values, UInt count) { CallMethod<0x107F5D0>(this, values, count); }
+
+void CDBSave::WriteFloat(Float value) { CallMethod<0x107F5F0>(this, value); }
+
+void CDBSave::WriteMem(void const *data, UInt size) { CallMethod<0x107F610>(this, data, size); }
+
+void CDBSave::WriteNameDesc(NameDesc const &name) { CallMethod<0x107F650>(this, &name); }
+
+void CDBSave::WriteSize(UInt value) { CallMethod<0x107F670>(this, value); }
+
+void CDBSave::WriteString(WideChar const *str) { CallMethod<0x1080130>(this, str); }
+
+void CDBSave::WriteString(FmString const &str) { CallMethod<0x1080C80>(this, &str); }
+
+CDBLoad::CDBLoad(FILE *file) { CallMethod<0x107F6C0>(this, file); }
+
+void CDBLoad::Init(Bool sizeValidationUsed) { CallMethod<0x107F6F0>(this, sizeValidationUsed); }
+
+UInt CDBLoad::GetVersion() { return CallMethodAndReturn<UInt, 0x107F730>(this); }
+
+void CDBLoad::SetVersion(UInt version) { CallMethod<0x107F740>(this, version); }
+
+void CDBLoad::SetError(Char const *errorText, UInt errorType) { CallMethod<0x107F760>(this, errorText, errorType); }
+
+UInt CDBLoad::GetErrorType() { return CallMethodAndReturn<UInt, 0x107F790>(this); }
+
+Char const *CDBLoad::GetErrorMessage() { return CallMethodAndReturn<Char const *, 0x107F7A0>(this); }
+
+void CDBLoad::Read(void *out, UInt size, UInt count, FILE *file) { CallMethod<0x107F7B0>(this, out, size, count, file); }
+
+void CDBLoad::Skip(UInt size) { CallMethod<0x10801D0>(this, size); }
+
+void CDBLoad::ReadInt64Array(Int64 *out, UInt count) { CallMethod<0x1080250>(this, out, count); }
+
+void CDBLoad::ReadIntArray(Int *out, UInt count) { CallMethod<0x10802B0>(this, out, count); }
+
+void CDBLoad::ReadShortArray(Short *out, UInt count) { CallMethod<0x1080310>(this, out, count); }
+
+void CDBLoad::ReadCharArray(Char *out, UInt count) { CallMethod<0x1080370>(this, out, count); }
+
+void CDBLoad::ReadUInt64Array(UInt64 *out, UInt count) { CallMethod<0x1080250>(this, out, count); }
+
+void CDBLoad::ReadUIntArray(UInt *out, UInt count) { CallMethod<0x10802B0>(this, out, count); }
+
+void CDBLoad::ReadUShortArray(UShort *out, UInt count) { CallMethod<0x1080310>(this, out, count); }
+
+void CDBLoad::ReadUCharArray(UChar *out, UInt count) { CallMethod<0x1080370>(this, out, count); }
+
+void CDBLoad::ReadBoolArray(Bool *out, UInt count) { CallMethod<0x1080550>(this, out, count); }
+
+void CDBLoad::ReadFloatArray(Float *out, UInt count) { CallMethod<0x1080630>(this, out, count); }
+
+void CDBLoad::ReadDoubleArray(Double *out, UInt count) { CallMethod<0x10805D0>(this, out, count); }
+
+void CDBLoad::ReadInt64(Int64 *out) { CallMethod<0x1080270>(this, out); }
+
+void CDBLoad::ReadInt(Int *out) { CallMethod<0x10802D0>(this, out); }
+
+void CDBLoad::ReadShort(Short *out) { CallMethod<0x1080330>(this, out); }
+
+void CDBLoad::ReadChar(Char *out) { CallMethod<0x1080390>(this, out); }
+
+void CDBLoad::ReadUInt64(UInt64 *out) { CallMethod<0x1080270>(this, out); }
+
+void CDBLoad::ReadUInt(UInt *out) { CallMethod<0x10802D0>(this, out); }
+
+void CDBLoad::ReadUShort(UShort *out) { CallMethod<0x1080330>(this, out); }
+
+void CDBLoad::ReadUChar(UChar *out) { CallMethod<0x1080390>(this, out); }
+
+void CDBLoad::ReadBool(Bool *out) { CallMethod<0x1080570>(this, out); }
+
+void CDBLoad::ReadDate(CJDate *out) { CallMethod<0x10805B0>(this, out); }
+
+void CDBLoad::ReadNameDesc(NameDesc *out) { CallMethod<0x1080700>(this, out); }
+
+void CDBLoad::ReadDouble(Double *out) { CallMethod<0x10805F0>(this, out); }
+
+void CDBLoad::ReadFloat(Float *out) { CallMethod<0x1080650>(this, out); }
+
+void CDBLoad::ReadInt64(Int64 &out) { CallMethod<0x1080270>(this, &out); }
+
+void CDBLoad::ReadInt(Int &out) { CallMethod<0x10802D0>(this, &out); }
+
+void CDBLoad::ReadShort(Short &out) { CallMethod<0x1080330>(this, &out); }
+
+void CDBLoad::ReadChar(Char &out) { CallMethod<0x1080390>(this, &out); }
+
+void CDBLoad::ReadUInt64(UInt64 &out) { CallMethod<0x1080270>(this, &out); }
+
+void CDBLoad::ReadUInt(UInt &out) { CallMethod<0x10802D0>(this, &out); }
+
+void CDBLoad::ReadUShort(UShort &out) { CallMethod<0x1080330>(this, &out); }
+
+void CDBLoad::ReadUChar(UChar &out) { CallMethod<0x1080390>(this, &out); }
+
+void CDBLoad::ReadBool(Bool &out) { CallMethod<0x1080570>(this, &out); }
+
+void CDBLoad::ReadDate(CJDate &out) { CallMethod<0x10805B0>(this, &out); }
+
+void CDBLoad::ReadNameDesc(NameDesc &out) { CallMethod<0x1080700>(this, &out); }
+
+void CDBLoad::ReadDouble(Double &out) { CallMethod<0x10805F0>(this, &out); }
+
+void CDBLoad::ReadFloat(Float &out) { CallMethod<0x1080650>(this, &out); }
+
+Int64 CDBLoad::ReadInt64() { return CallMethodAndReturn<Int64, 0x1080290>(this); }
+
+Int CDBLoad::ReadInt() { return CallMethodAndReturn<Int, 0x10802F0>(this); }
+
+Short CDBLoad::ReadShort() { return CallMethodAndReturn<Short, 0x1080350>(this); }
+
+Char CDBLoad::ReadChar() { return CallMethodAndReturn<Char, 0x10803B0>(this); }
+
+UInt64 CDBLoad::ReadUInt64() { return CallMethodAndReturn<UInt64, 0x1080290>(this); }
+
+UInt CDBLoad::ReadUInt() { return CallMethodAndReturn<UInt, 0x10802F0>(this); }
+
+UShort CDBLoad::ReadUShort() { return CallMethodAndReturn<UShort, 0x1080350>(this); }
+
+UChar CDBLoad::ReadUChar() { return CallMethodAndReturn<UChar, 0x10803B0>(this); }
+
+Bool CDBLoad::ReadBool() { return CallMethodAndReturn<Bool, 0x1080590>(this); }
+
+Double CDBLoad::ReadDouble() { return CallMethodAndReturn<Double, 0x1080610>(this); }
+
+Float CDBLoad::ReadFloat() { return CallMethodAndReturn<Float, 0x1080670>(this); }
+
+UInt CDBLoad::ReadMem(void *out, UInt maxSize) { return CallMethodAndReturn<UInt, 0x1080690>(this, out, maxSize); }
+
+void CDBLoad::ReadString(WideChar *out, UInt maxLen) { CallMethod<0x1080EB0>(this, out, maxLen); }
+
+void CDBLoad::ReadString(FmString &out) { CallMethod<0x1080720>(this, &out); }
+
+UInt CDBLoad::ReadValidateMemsize() { return CallMethodAndReturn<UInt, 0x1080780>(this); }
+
+CBinaryFile::CBinaryFile() { CallMethod<0x13385B0>(this); }
+
+CBinaryFile::~CBinaryFile() { CallMethod<0x1338E50>(this); }
+
+Bool CBinaryFile::Open(WideChar const *filename, void *compressor) { return CallMethodAndReturn<Bool, 0x1338F20>(this, filename, compressor); }
+
+Bool CBinaryFile::Close() { return CallMethodAndReturn<Bool, 0x1338660>(this); }
+
+WideChar const *CBinaryFile::GetPath() { return CallMethodAndReturn<WideChar const *, 0x1338600>(this); }
+
+UChar CBinaryFile::GetNumLanguages() { return CallMethodAndReturn<UChar, 0x1338610>(this); }
+
+UInt CBinaryFile::GetSize() { return CallMethodAndReturn<UInt, 0x1338620>(this); }
+
+UInt CBinaryFile::GetVersion() { return CallMethodAndReturn<UInt, 0x1338640>(this); }
+
+UInt CBinaryFile::GetCurrentPos() { return CallMethodAndReturn<UInt, 0x13386A0>(this); }
+
+void CBinaryFile::SetCurrentPos(UInt pos) { CallMethod<0x13386B0>(this, pos); }
+
+void CBinaryFile::Skip(UInt size) { CallMethod<0x13386C0>(this, size); }
+
+UInt CBinaryFile::CalcChecksum() { return CallMethodAndReturn<UInt, 0x13386D0>(this); }
+
+Bool CBinaryFile::IsVersionGreaterOrEqual(UInt year, UInt build) { return CallMethodAndReturn<Bool, 0x1338EA0>(this, year, build); }
+
+Char CBinaryFile::ReadChar() { return CallMethodAndReturn<Char, 0x13388F0>(this); }
+
+Short CBinaryFile::ReadShort() { return CallMethodAndReturn<Short, 0x1338A10>(this); }
+
+Int CBinaryFile::ReadInt() { return CallMethodAndReturn<Int, 0x1338A30>(this); }
+
+Int64 CBinaryFile::ReadInt64() { return CallMethodAndReturn<Int64, 0x1338E20>(this); }
+
+UChar CBinaryFile::ReadUChar() { return CallMethodAndReturn<Char, 0x13388F0>(this); }
+
+UShort CBinaryFile::ReadUShort() { return CallMethodAndReturn<Short, 0x1338A10>(this); }
+
+UInt CBinaryFile::ReadUInt() { return CallMethodAndReturn<Int, 0x1338A30>(this); }
+
+UInt64 CBinaryFile::ReadUInt64() { return CallMethodAndReturn<Int64, 0x1338E20>(this); }
+
+void CBinaryFile::ReadChar(Char *out) { CallMethod<0x1338830>(this, out); }
+
+void CBinaryFile::ReadShort(Short *out) { CallMethod<0x1338970>(this, out); }
+
+void CBinaryFile::ReadInt(Int *out) { CallMethod<0x1338AB0>(this, out); }
+
+void CBinaryFile::ReadInt64(Int64 *out) { CallMethod<0x1338C50>(this, out); }
+
+void CBinaryFile::ReadUChar(UChar *out) { CallMethod<0x1338830>(this, out); }
+
+void CBinaryFile::ReadUShort(UShort *out) { CallMethod<0x1338970>(this, out); }
+
+void CBinaryFile::ReadUInt(UInt *out) { CallMethod<0x1338AB0>(this, out); }
+
+void CBinaryFile::ReadUInt64(UInt64 *out) { CallMethod<0x1338C50>(this, out); }
+
+void CBinaryFile::ReadFloat(Float *out) { CallMethod<0x1338BF0>(this, out); }
+
+void CBinaryFile::ReadChar(Char &out) { CallMethod<0x1338830>(this, &out); }
+
+void CBinaryFile::ReadShort(Short &out) { CallMethod<0x1338970>(this, &out); }
+
+void CBinaryFile::ReadInt(Int &out) { CallMethod<0x1338AB0>(this, &out); }
+
+void CBinaryFile::ReadInt64(Int64 &out) { CallMethod<0x1338C50>(this, &out); }
+
+void CBinaryFile::ReadUChar(UChar &out) { CallMethod<0x1338830>(this, &out); }
+
+void CBinaryFile::ReadUShort(UShort &out) { CallMethod<0x1338970>(this, &out); }
+
+void CBinaryFile::ReadUInt(UInt &out) { CallMethod<0x1338AB0>(this, &out); }
+
+void CBinaryFile::ReadUInt64(UInt64 &out) { CallMethod<0x1338C50>(this, &out); }
+
+void CBinaryFile::ReadFloat(Float &out) { CallMethod<0x1338BF0>(this, &out); }
+
+void CBinaryFile::ReadCharArray(Char *out, UInt count) { CallMethod<0x1338850>(this, out, count); }
+
+void CBinaryFile::ReadShortArray(Short *out, UInt count) { CallMethod<0x13389A0>(this, out, count); }
+
+void CBinaryFile::ReadIntArray(Int *out, UInt count) { CallMethod<0x1338AD0>(this, out, count); }
+
+void CBinaryFile::ReadInt64Array(Int64 *out, UInt count) { CallMethod<0x1338C80>(this, out, count); }
+
+void CBinaryFile::ReadUCharArray(UChar *out, UInt count) { CallMethod<0x1338850>(this, out, count); }
+
+void CBinaryFile::ReadUShortArray(UShort *out, UInt count) { CallMethod<0x13389A0>(this, out, count); }
+
+void CBinaryFile::ReadUIntArray(UInt *out, UInt count) { CallMethod<0x1338AD0>(this, out, count); }
+
+void CBinaryFile::ReadUInt64Array(UInt64 *out, UInt count) { CallMethod<0x1338C80>(this, out, count); }
+
+Bool CBinaryFile::ValidateFourcc(UInt value) { return CallMethodAndReturn<Bool, 0x1338EC0>(this, value); }
+
+void CBinaryFile::ReadString(WideChar *out, UInt maxLen) { CallMethod<0x1338700>(this, out, maxLen); }
+
+void CBinaryFile::ReadString(Char *out, UInt maxLen) { CallMethod<0x1338740>(this, out, maxLen); }
+
+void CBinaryFile::ReadTranslations(WideChar *out, UInt maxLen, UInt language) { CallMethod<0x1338780>(this, out, maxLen, language); }
+
+UInt CBinaryFile::ReadMem(void *out) { return CallMethodAndReturn<UInt, 0x1338CD0>(this, out); }
+
+Bool CBinaryFile::ReadAndValidateMem(void *out, UInt size) { return CallMethodAndReturn<Bool, 0x1338D10>(this, out, size); }

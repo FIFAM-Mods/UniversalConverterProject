@@ -12,16 +12,15 @@ UInt FixRankingFromOlderVersion(UInt ranking) {
 	return 32'000;
 }
 
-void METHOD OnReadFifaRankingFromMaster(void *reader, DUMMY_ARG, UChar *country) {
-	if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0F)) {
+void METHOD OnReadFifaRankingFromMaster(CBinaryFile *file, DUMMY_ARG, UChar *country) {
+	if (file->IsVersionGreaterOrEqual(0x2013, 0x0F)) {
 		Float rankingFloat = 0.0f;
-		CallMethod<0x1338BF0>(reader, &rankingFloat);
+		file->ReadFloat(rankingFloat);
 		*raw_ptr<Float>(country, 0x284) = rankingFloat;
 		*raw_ptr<UShort>(country, 0x27E) = (UShort)roundf(rankingFloat);
 	}
 	else {
-		UShort ranking = 0;
-		CallMethod<0x1338970>(reader, &ranking);
+		UShort ranking = file->ReadUShort();
 		ranking = (UShort)FixRankingFromOlderVersion(ranking);
 		*raw_ptr<Float>(country, 0x284) = (Float)ranking;
 		*raw_ptr<UShort>(country, 0x27E) = ranking;
@@ -237,15 +236,15 @@ void METHOD FifaRanking_FillTable(void *t) {
 	CallMethod<0x822E70>(t);
 }
 
-void METHOD OnLoadFifaRankingFromSaveGame(void *loader, DUMMY_ARG, UShort *out) {
-	CallMethod<0x10804B0>(loader, out);
-	if (SaveGameLoadGetVersion(loader) < 45)
+void METHOD OnLoadFifaRankingFromSaveGame(CDBLoad *file, DUMMY_ARG, UShort *out) {
+	file->ReadUShort(out);
+	if (file->GetVersion() < 45)
 		*out = FixRankingFromOlderVersion(*out);
 }
 
-void METHOD OnLoadFifaRankingsFromSaveGame(void *loader, DUMMY_ARG, UInt *out, UInt count) {
-	CallMethod<0x1080430>(loader, out, count);
-	if (SaveGameLoadGetVersion(loader) < 45)
+void METHOD OnLoadFifaRankingsFromSaveGame(CDBLoad *file, DUMMY_ARG, UInt *out, UInt count) {
+	file->ReadUIntArray(out, count);
+	if (file->GetVersion() < 45)
 		*(Float *)out = (Float)FixRankingFromOlderVersion((UShort)out[0] + (UShort)out[1] + (UShort)out[2] + (UShort)out[3]);
 	out[1] = out[2] = out[3] = 0;
 }

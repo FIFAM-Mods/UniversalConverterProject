@@ -88,14 +88,14 @@ class CPlayer;
 class CBinaryFile {
 public:
     UInt m_nCurrByte;
-    void *m_pFile;
+    FILE *m_pFile;
     void *m_pData;
-    UInt m_acType;
+    UInt m_nType;
     UInt m_nVersion;
-    UInt m_nDataSize;
-    UInt m_nMagic;
+    UInt m_nSize;
+    UInt m_nChecksum;
     UInt m_nNumTranslations;
-    UInt dword20;
+    Int unk_0;
     CCountry *m_pCountry;
     CClub *m_pClub;
     CPlayer *m_pPlayer;
@@ -123,7 +123,7 @@ public:
     void WriteFloat(Float value);
     void WriteFloatArray(Float *values, UInt count);
     void WriteFourcc(UInt value);
-    void WriteChunk(void const *data, UInt size);
+    void WriteMem(void const *data, UInt size);
 };
 
 class CCountry {

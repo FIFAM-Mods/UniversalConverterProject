@@ -84,18 +84,18 @@ void __declspec(naked) TeamFormationExt4() {
     }
 }
 
-void METHOD TeamLoadBestFormation(void *loader, DUMMY_ARG, UInt *out) {
-    if (SaveGameLoadGetVersion(loader) >= 43)
-        SaveGameReadUInt32(loader, *out);
+void METHOD TeamLoadBestFormation(CDBLoad *file, DUMMY_ARG, UInt *out) {
+    if (file->GetVersion() >= 43)
+        file->ReadUInt(out);
     else {
         UChar value = 0;
-        SaveGameReadUInt8(loader, value);
+        file->ReadUChar(value);
         *out = value;
     }
 }
 
-void METHOD TeamSaveBestFormation(void *writer, DUMMY_ARG, UInt value) {
-    SaveGameWriteInt32(writer, value);
+void METHOD TeamSaveBestFormation(CDBSave *file, DUMMY_ARG, UInt value) {
+    file->WriteUInt(value);
 }
 
 void __declspec(naked) TeamFormationExt2() {

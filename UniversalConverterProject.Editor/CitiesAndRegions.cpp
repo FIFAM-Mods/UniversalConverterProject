@@ -349,8 +349,8 @@ void OnCopyTownName(WideChar *dst, CClub *club) {
     wcscpy(dst, cityName);
 }
 
-Bool METHOD OnWriteAppearanceDefsToBinaryDatabase(CBinaryFile *file) {
-    Bool result = CallMethodAndReturn<Bool, 0x5A1C60>(file);
+Bool OnWriteAppearanceDefsToBinaryDatabase(CBinaryFile *file) {
+    Bool result = CallAndReturn<Bool, 0x5A1C60>(file);
 
     // binary database version 20130012
     file->WriteFourcc('CTRG');
@@ -413,7 +413,7 @@ void METHOD OnWriteLeague(void *league, DUMMY_ARG, CKLFile *file, Int countryId)
             file->WriteUChar(ext->regions[i].direction);
         }
     }
-    CallMethod<0x503640>(league, file);
+    CallMethod<0x503640>(league, file, countryId);
 }
 
 void METHOD OnWriteLeagueToMasterDb(void *league, DUMMY_ARG, CBinaryFile *file) {

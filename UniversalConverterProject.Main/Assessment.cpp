@@ -241,43 +241,39 @@ struct Assessment {
         }
     }
 
-    void Load(void *save) {
-        UInt count = 0;
-        SaveGameReadUInt32(save, count);
+    void Load(CDBLoad *file) {
+        UInt count = file->ReadUInt();
         for (UInt c = 0; c < count; c++) {
-            UChar countryId = 0;
-            SaveGameReadUInt8(save, countryId);
+            UChar countryId = file->ReadUChar();
             InfoType _info;
-            SaveGameReadUInt8(save, _info.position);
-            SaveGameReadFloat(save, _info.total);
-            SaveGameReadFloatArray(save, _info.coeff, NumEntries);
-            SaveGameReadFloat(save, _info.prelimStagePoints);
-            SaveGameReadUInt32(save, _info.randomValue);
+            file->ReadUChar(_info.position);
+            file->ReadFloat(_info.total);
+            file->ReadFloatArray(_info.coeff, NumEntries);
+            file->ReadFloat(_info.prelimStagePoints);
+            file->ReadUInt(_info.randomValue);
             info[countryId] = _info;
         }
     }
 
-    void Save(void *save) {
-        SaveGameWriteUInt32(save, info.size());
+    void Save(CDBSave *file) {
+        file->WriteUInt(info.size());
         for (auto const &[_countryId, _info] : info) {
-            SaveGameWriteUInt8(save, _countryId);
-            SaveGameWriteUInt8(save, _info.position);
-            SaveGameWriteFloat(save, _info.total);
-            SaveGameWriteFloatArray(save, _info.coeff, NumEntries);
-            SaveGameWriteFloat(save, _info.prelimStagePoints);
-            SaveGameWriteUInt32(save, _info.randomValue);
+            file->WriteUChar(_countryId);
+            file->WriteUChar(_info.position);
+            file->WriteFloat(_info.total);
+            file->WriteFloatArray(_info.coeff, NumEntries);
+            file->WriteFloat(_info.prelimStagePoints);
+            file->WriteUInt(_info.randomValue);
         }
     }
 
-    void ReadFromMasterDatabase(void *reader) {
-        UInt count = 0;
-        BinaryReaderReadUInt32(reader, &count);
+    void ReadFromMasterDatabase(CBinaryFile *file) {
+        UInt count = file->ReadUInt();
         for (UInt c = 0; c < count; c++) {
-            UChar countryId = 0;
-            BinaryReaderReadUInt8(reader, &countryId);
+            UChar countryId = file->ReadUChar();
             InfoType _info;
             for (UInt i = 1; i <= (NumEntries - 1); i++)
-                BinaryReaderReadFloat(reader, &_info.coeff[i]);
+                file->ReadFloat(_info.coeff[i]);
             if (countryId >= 1 && countryId <= 207 && GetCountry(countryId)->GetContinent() == Continent) {
                 _info.coeff[0] = 0.0f;
                 info[countryId] = _info;
@@ -348,13 +344,13 @@ void AddAsianAssessmentCountryPoints(UChar countryId, Float points, Bool prelimS
     GetAssessmentInfoAFC().AddPoints(countryId, points, prelimStage);
 }
 
-void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, void *reader) {
-    CallMethod<0x12988B0>(t, reader);
+void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, CBinaryFile *file) {
+    CallMethod<0x12988B0>(t, file);
     // binary database version 20130010
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x10) && BinaryReaderCheckFourcc(reader, 'ASSM')) {
-        GetAssessmentInfoAFC().ReadFromMasterDatabase(reader);
-        GetAssessmentInfoCAF().ReadFromMasterDatabase(reader);
-        BinaryReaderCheckFourcc(reader, 'ASSM');
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x10) && file->ValidateFourcc('ASSM')) {
+        GetAssessmentInfoAFC().ReadFromMasterDatabase(file);
+        GetAssessmentInfoCAF().ReadFromMasterDatabase(file);
+        file->ValidateFourcc('ASSM');
     }
     GetAssessmentInfoAFC().Init();
     GetAssessmentInfoCAF().Init();
@@ -362,18 +358,18 @@ void METHOD OnReadAssessmentFromBinaryDatabase(void *t, DUMMY_ARG, void *reader)
 
 void METHOD OnLoadAssessmentTable(void *table) {
     CallMethod<0x121D8E0>(table); // CAssessmentTable::Load()
-    void *save = *(void **)0x3179DD8;
-    if (SaveGameLoadGetVersion(save) >= 46) {
-        GetAssessmentInfoAFC().Load(save);
-        GetAssessmentInfoCAF().Load(save);
+    auto file = GetDBLoad();
+    if (file->GetVersion() >= 46) {
+        GetAssessmentInfoAFC().Load(file);
+        GetAssessmentInfoCAF().Load(file);
     }
 }
 
 void METHOD OnSaveAssessmentTable(void *table) {
     CallMethod<0x121D1F0>(table); // CAssessmentTable::Save()
-    void *save = *(void **)0x3179DD4;
-    GetAssessmentInfoAFC().Save(save);
-    GetAssessmentInfoCAF().Save(save);
+    auto file = GetDBSave();
+    GetAssessmentInfoAFC().Save(file);
+    GetAssessmentInfoCAF().Save(file);
 }
 
 class StatsAssesment {

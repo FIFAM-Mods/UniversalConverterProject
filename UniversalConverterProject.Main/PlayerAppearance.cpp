@@ -499,45 +499,43 @@ struct CountryAppearanceEntry {
     UInt total;
 };
 
-Bool ReaderUsesNewAppearance(void *reader) {
-    return BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x11);
+Bool DbFileUsesNewAppearance(CBinaryFile *file) {
+    return file->IsVersionGreaterOrEqual(0x2013, 0x11);
 }
 
-void METHOD CountryYouthAppearance_ReadNewVersion(void *reader, DUMMY_ARG, UInt *pOut) {
-    if (ReaderUsesNewAppearance(reader)) {
+void METHOD CountryYouthAppearance_ReadNewVersion(CBinaryFile *file, DUMMY_ARG, UInt *pOut) {
+    if (DbFileUsesNewAppearance(file)) {
         void *country = (UChar *)pOut - 0x1C8;
         using AppVec = FmVec<CountryAppearanceEntry>;
         AppVec &vec = *raw_ptr<AppVec>(country, 0x264);
-        UInt count = 0;
-        BinaryReaderReadUInt32(reader, &count);
+        UInt count = file->ReadUInt();
         CallMethod<0x5032D0>(&vec, count, 0, 0);
         for (UInt i = 0; i < vec.size(); i++) {
-            BinaryReaderReadUInt32(reader, &vec[i].type);
-            BinaryReaderReadUInt32(reader, &vec[i].total);
+            file->ReadUInt(vec[i].type);
+            file->ReadUInt(vec[i].total);
         }
     }
     else
-        BinaryReaderReadUInt32(reader, pOut);
+        file->ReadUInt(pOut);
 }
 
-Bool METHOD CountryYouthAppearance_ShouldReadOldVersion(void *reader, DUMMY_ARG, UInt year, UInt version) {
-    return BinaryReaderIsVersionGreaterOrEqual(reader, 0x2011, 0x1)
-        && !ReaderUsesNewAppearance(reader);
+Bool METHOD CountryYouthAppearance_ShouldReadOldVersion(CBinaryFile *file, DUMMY_ARG, UInt year, UInt version) {
+    return file->IsVersionGreaterOrEqual(0x2011, 0x1) && !DbFileUsesNewAppearance(file);
 }
 
-void METHOD CountryYouthAppearance_ReadHairStyle(void *reader, DUMMY_ARG, UInt *pOut, UInt count) {
-    if (!ReaderUsesNewAppearance(reader))
-        BinaryReaderReadUInt32Array(reader, pOut, count);
+void METHOD CountryYouthAppearance_ReadHairStyle(CBinaryFile *file, DUMMY_ARG, UInt *pOut, UInt count) {
+    if (!DbFileUsesNewAppearance(file))
+        file->ReadUIntArray(pOut, count);
 }
 
-void METHOD CountryYouthAppearance_ReadBeard(void *reader, DUMMY_ARG, UInt *pOut) {
-    if (!ReaderUsesNewAppearance(reader))
-        BinaryReaderReadUInt32(reader, pOut);
+void METHOD CountryYouthAppearance_ReadBeard(CBinaryFile *file, DUMMY_ARG, UInt *pOut) {
+    if (!DbFileUsesNewAppearance(file))
+        file->ReadUInt(pOut);
 }
 
-void METHOD CountryYouthAppearance_ReadFaceType(void *reader, DUMMY_ARG, UInt *pOut, UInt count) {
-    if (!ReaderUsesNewAppearance(reader))
-        BinaryReaderReadUInt32Array(reader, pOut, count);
+void METHOD CountryYouthAppearance_ReadFaceType(CBinaryFile *file, DUMMY_ARG, UInt *pOut, UInt count) {
+    if (!DbFileUsesNewAppearance(file))
+        file->ReadUIntArray(pOut, count);
 }
 
 void InstallPlayerAppearance_GfxCore() {

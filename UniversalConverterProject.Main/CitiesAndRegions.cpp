@@ -61,97 +61,89 @@ void ClearCitiesAndRegions() {
     ClearRegions();
 }
 
-Bool OnReadAppearanceDefsFromBinaryDatabase(void *reader) {
-    Bool result = CallMethodAndReturn<Bool, 0x1382F10>(reader);
+Bool OnReadAppearanceDefsFromBinaryDatabase(CBinaryFile *file) {
+    Bool result = CallAndReturn<Bool, 0x1382F10>(file);
     // binary database version 20130012
     ClearCitiesAndRegions();
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12) && BinaryReaderCheckFourcc(reader, 'CTRG')) {
-        UInt cityCount = 0;
-        BinaryReaderReadUInt32(reader, &cityCount);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12) && file->ValidateFourcc('CTRG')) {
+        UInt cityCount = file->ReadUInt();
         for (UInt c = 0; c < cityCount; c++) {
-            Int cityId = -1;
-            BinaryReaderReadInt32(reader, &cityId);
+            Int cityId = file->ReadInt();
             DBCity &city = DBCities()[cityId];
             city.id = cityId;
-            BinaryReaderReadUInt8(reader, &city.countryId);
-            BinaryReaderReadUInt8(reader, &city.population);
-            BinaryReaderReadFloat(reader, &city.latitude);
-            BinaryReaderReadFloat(reader, &city.longitude);
-            BinaryReaderReadInt32(reader, &city.regionId);
+            file->ReadUChar(city.countryId);
+            file->ReadUChar(city.population);
+            file->ReadFloat(city.latitude);
+            file->ReadFloat(city.longitude);
+            file->ReadInt(city.regionId);
             delete[] city.name;
             city.name = nullptr;
             for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++) {
                 WideChar cityName[256];
-                BinaryReaderReadString(reader, cityName, std::size(cityName));
+                file->ReadString(cityName, std::size(cityName));
                 if (i == CurrentLanguageId) {
                     city.name = new WideChar[wcslen(cityName) + 1];
                     wcscpy(city.name, cityName);
                 }
             }
         }
-        UInt regionCount = 0;
-        BinaryReaderReadUInt32(reader, &regionCount);
+        UInt regionCount = file->ReadUInt();
         for (UInt r = 0; r < regionCount; r++) {
-            Int regionId = -1;
-            BinaryReaderReadInt32(reader, &regionId);
+            Int regionId = file->ReadInt();
             DBRegion &region = DBRegions()[regionId];
             region.id = regionId;
-            BinaryReaderReadUInt8(reader, &region.countryId);
-            BinaryReaderReadFloat(reader, &region.latitude);
-            BinaryReaderReadFloat(reader, &region.longitude);
+            file->ReadUChar(region.countryId);
+            file->ReadFloat(region.latitude);
+            file->ReadFloat(region.longitude);
             delete[] region.name;
             region.name = nullptr;
             for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++) {
                 WideChar regionName[256];
-                BinaryReaderReadString(reader, regionName, std::size(regionName));
+                file->ReadString(regionName, std::size(regionName));
                 if (i == CurrentLanguageId) {
                     region.name = new WideChar[wcslen(regionName) + 1];
                     wcscpy(region.name, regionName);
                 }
             }
         }
-        BinaryReaderCheckFourcc(reader, 'CTRG');
+        file->ValidateFourcc('CTRG');
     }
     return result;
 }
 
 void OnLoadCompetitions() {
-    void *save = *(void **)0x3179DD8;
+    auto file = GetDBLoad();
     ClearCitiesAndRegions();
-    if (SaveGameLoadGetVersion(save) >= 49) {
-        UInt cityCount = 0;
-        SaveGameReadUInt32(save, cityCount);
+    if (file->GetVersion() >= 49) {
+        UInt cityCount = file->ReadUInt();
         for (UInt c = 0; c < cityCount; c++) {
-            Int cityId = -1;
-            SaveGameReadInt32(save, cityId);
+            Int cityId = file->ReadInt();
             DBCity &city = DBCities()[cityId];
             city.id = cityId;
-            SaveGameReadUInt8(save, city.countryId);
-            SaveGameReadUInt8(save, city.population);
-            SaveGameReadFloat(save, city.latitude);
-            SaveGameReadFloat(save, city.longitude);
-            SaveGameReadInt32(save, city.regionId);
+            file->ReadUChar(city.countryId);
+            file->ReadUChar(city.population);
+            file->ReadFloat(city.latitude);
+            file->ReadFloat(city.longitude);
+            file->ReadInt(city.regionId);
             delete[] city.name;
             city.name = nullptr;
             WideChar cityName[256];
-            SaveGameReadString(save, cityName, std::size(cityName));
+            file->ReadString(cityName, std::size(cityName));
             city.name = new WideChar[wcslen(cityName) + 1];
             wcscpy(city.name, cityName);
         }
-        UInt regionCount = 0;
-        SaveGameReadUInt32(save, regionCount);
+        UInt regionCount = file->ReadUInt();
         for (UInt r = 0; r < regionCount; r++) {
-            Int regionId = -1;
-            SaveGameReadInt32(save, regionId);
+            Int regionId = file->ReadInt();
             DBRegion &region = DBRegions()[regionId];
             region.id = regionId;
-            SaveGameReadUInt8(save, region.countryId);
-            SaveGameReadFloat(save, region.latitude);
-            SaveGameReadFloat(save, region.longitude);
+            file->ReadUChar(region.countryId);
+            file->ReadFloat(region.latitude);
+            file->ReadFloat(region.longitude);
             delete[] region.name;
             region.name = nullptr;
             WideChar regionName[256];
-            SaveGameReadString(save, regionName, std::size(regionName));
+            file->ReadString(regionName, std::size(regionName));
             region.name = new WideChar[wcslen(regionName) + 1];
             wcscpy(region.name, regionName);
         }
@@ -160,32 +152,32 @@ void OnLoadCompetitions() {
 }
 
 void OnSaveCompetitions() {
-    void *save = *(void **)0x3179DD4;
-    SaveGameWriteUInt32(save, DBCities().size());
+    auto file = GetDBSave();
+    file->WriteUInt(DBCities().size());
     for (auto const &[id, city] : DBCities()) {
-        SaveGameWriteInt32(save, city.id);
-        SaveGameWriteUInt8(save, city.countryId);
-        SaveGameWriteUInt8(save, city.population);
-        SaveGameWriteFloat(save, city.latitude);
-        SaveGameWriteFloat(save, city.longitude);
-        SaveGameWriteInt32(save, city.regionId);
-        SaveGameWriteString(save, city.name);
+        file->WriteInt(city.id);
+        file->WriteUChar(city.countryId);
+        file->WriteUChar(city.population);
+        file->WriteFloat(city.latitude);
+        file->WriteFloat(city.longitude);
+        file->WriteInt(city.regionId);
+        file->WriteString(city.name);
     }
-    SaveGameWriteUInt32(save, DBRegions().size());
+    file->WriteUInt(DBRegions().size());
     for (auto const &[id, region] : DBRegions()) {
-        SaveGameWriteInt32(save, region.id);
-        SaveGameWriteUInt8(save, region.countryId);
-        SaveGameWriteFloat(save, region.latitude);
-        SaveGameWriteFloat(save, region.longitude);
-        SaveGameWriteString(save, region.name);
+        file->WriteInt(region.id);
+        file->WriteUChar(region.countryId);
+        file->WriteFloat(region.latitude);
+        file->WriteFloat(region.longitude);
+        file->WriteString(region.name);
     }
     Call<0xF90F00>(); // CDBCompetition::SaveAll
 }
 
-void METHOD OnTeamLoadTown(void *save, DUMMY_ARG, WideChar *out, UInt maxLen) {
-    if (SaveGameLoadGetVersion(save) >= 49) {
+void METHOD OnTeamLoadTown(CDBLoad *file, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    if (file->GetVersion() >= 49) {
         CDBTeam *team = raw_ptr<CDBTeam>(out, -0x11C);
-        SaveGameReadInt32(save, GetTeamExtension(team)->cityId);
+        file->ReadInt(GetTeamExtension(team)->cityId);
         *out = L'\0';
         // TODO: remove this (copying new city name to an old destination)
         if (GetTeamExtension(team)->cityId != -1) {
@@ -195,17 +187,16 @@ void METHOD OnTeamLoadTown(void *save, DUMMY_ARG, WideChar *out, UInt maxLen) {
         }
     }
     else
-        SaveGameReadString(save, out, maxLen);
+        file->ReadString(out, maxLen);
 }
 
-void METHOD OnTeamSaveTown(void *save, DUMMY_ARG, WideChar const *str) {
+void METHOD OnTeamSaveTown(CDBSave *file, DUMMY_ARG, WideChar const *str) {
     CDBTeam *team = raw_ptr<CDBTeam>(str, -0x11C);
-    SaveGameWriteInt32(save, GetTeamExtension(team)->cityId);
+    file->WriteInt(GetTeamExtension(team)->cityId);
 }
 
 void *OnAfterCountriesLoaded() {
-    void *save = *(void **)0x3179DD8;
-    if (SaveGameLoadGetVersion(save) < 49) {
+    if (GetDBSave()->GetVersion() < 49) {
         Int NewCityId = 2100000001;
         for (UInt countryId = 1; countryId <= 207; countryId++) {
             auto country = GetCountry(countryId);
@@ -239,21 +230,21 @@ void *OnAfterCountriesLoaded() {
     return CallAndReturn<void *, 0x61FC60>();
 }
 
-void METHOD OnReadTeamTownFromMasterDb(void *reader, DUMMY_ARG, WideChar *out, UInt maxLen) {
-    if (!BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12))
-        BinaryReaderReadString(reader, out, maxLen);
+void METHOD OnReadTeamTownFromMasterDb(CBinaryFile *file, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    if (!file->IsVersionGreaterOrEqual(0x2013, 0x12))
+        file->ReadString(out, maxLen);
 }
 
-void METHOD OnReadTeamMascotFromMasterDb(void *reader, DUMMY_ARG, WideChar *out, UInt maxLen) {
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12)) {
+void METHOD OnReadTeamMascotFromMasterDb(CBinaryFile *file, DUMMY_ARG, WideChar *out, UInt maxLen) {
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
         CDBTeam *team = raw_ptr<CDBTeam>(out, -0x29A);
-        BinaryReaderReadInt32(reader, &GetTeamExtension(team)->cityId);
+        file->ReadInt(GetTeamExtension(team)->cityId);
     }
-    BinaryReaderReadString(reader, out, maxLen);
+    file->ReadString(out, maxLen);
 }
 
-void METHOD OnReadTeamFifaIdFromMasterDb(void *reader, DUMMY_ARG, UInt *out) {
-    BinaryReaderReadUInt32(reader, out);
+void METHOD OnReadTeamFifaIdFromMasterDb(CBinaryFile *file, DUMMY_ARG, UInt *out) {
+    file->ReadUInt(out);
     CDBTeam *team = raw_ptr<CDBTeam>(out, -0xEC);
     if (team->GetTeamUniqueID() == 0x002D0001) // Athletic Club
         team->SetRegionalAffiliationRestriction(PLAYER_REGIONAL_BASQUE);
@@ -363,6 +354,91 @@ UInt METHOD OnPlayerInfoPersonalFill(CXgFMPanel *screen) {
     return playerId;
 }
 
+const UInt DEF_LEAGUE_SZ = 0x3EC8;
+
+struct LeagueRegion {
+    Int regionID;
+    UChar priority;
+    UChar direction;
+};
+
+struct LeagueExtension {
+    UChar order;
+    UChar numberOfRegions;
+    LeagueRegion *regions;
+};
+
+LeagueExtension *GetLeagueExtension(CDBLeague *league) {
+    return raw_ptr<LeagueExtension>(league, DEF_LEAGUE_SZ);
+}
+
+CDBLeague *METHOD OnConstructLeague(CDBLeague *league, DUMMY_ARG, UInt dbType, UInt compID, UInt rootID) {
+    CallMethod<0x10CE180>(league, dbType, compID, rootID); // CDBLeagueBase::CDBLeagueBase
+    auto ext = GetLeagueExtension(league);
+    ext->order = 0;
+    ext->numberOfRegions = 0;
+    ext->regions = nullptr;
+    return league;
+}
+
+void METHOD OnDestructLeague(CDBLeague *league) {
+    auto ext = GetLeagueExtension(league);
+    delete[] ext->regions;
+    ext->regions = nullptr;
+    CallMethod<0x10CD950>(league); // CDBLeagueBase::~CDBLeagueBase
+}
+
+void METHOD OnLeagueLoad(CDBLeague *league) {
+    CallMethod<0x10CE2F0>(league); // CDBLeagueBase::Load
+    auto file = GetDBLoad();
+    if (file->GetVersion() >= 49) {
+        auto ext = GetLeagueExtension(league);
+        file->ReadUChar(ext->order);
+        file->ReadUChar(ext->numberOfRegions);
+        if (ext->numberOfRegions) {
+            ext->regions = new LeagueRegion[ext->numberOfRegions];
+            for (UInt i = 0; i < ext->numberOfRegions; i++) {
+                file->ReadInt(ext->regions[i].regionID);
+                file->ReadUChar(ext->regions[i].priority);
+                file->ReadUChar(ext->regions[i].direction);
+            }
+        }
+    }
+}
+
+void METHOD OnLeagueSave(CDBLeague *league) {
+    CallMethod<0x10CBF20>(league); // CDBLeagueBase::Save
+    auto file = GetDBSave();
+    auto ext = GetLeagueExtension(league);
+    file->WriteUChar(ext->order);
+    file->WriteUChar(ext->numberOfRegions);
+    if (ext->numberOfRegions) {
+        for (UInt i = 0; i < ext->numberOfRegions; i++) {
+            file->WriteInt(ext->regions[i].regionID);
+            file->WriteUChar(ext->regions[i].priority);
+            file->WriteUChar(ext->regions[i].direction);
+        }
+    }
+}
+
+void METHOD OnReadLeagueFromMasterDb(CDBLeague *league, DUMMY_ARG, CBinaryFile *file) {
+    CallMethod<0x10CBE80>(league, file); // CDBLeagueBase::ReadFromMasterDb
+    auto ext = GetLeagueExtension(league);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
+        auto ext = GetLeagueExtension(league);
+        file->ReadUChar(ext->order);
+        file->ReadUChar(ext->numberOfRegions);
+        if (ext->numberOfRegions) {
+            ext->regions = new LeagueRegion[ext->numberOfRegions];
+            for (UInt i = 0; i < ext->numberOfRegions; i++) {
+                file->ReadInt(ext->regions[i].regionID);
+                file->ReadUChar(ext->regions[i].priority);
+                file->ReadUChar(ext->regions[i].direction);
+            }
+        }
+    }
+}
+
 void PatchCitiesAndRegions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0xF9745E, OnReadAppearanceDefsFromBinaryDatabase);
@@ -386,6 +462,18 @@ void PatchCitiesAndRegions(FM::Version v) {
         // regional status
         patch::RedirectCall(0xF332E1, OnReadTeamFifaIdFromMasterDb);
         patch::Nop(0xF332EF, 7);
+
+        // league regions
+        const UInt NEW_LEAGUE_SZ = DEF_LEAGUE_SZ + sizeof(LeagueExtension);
+        patch::SetUInt(0xF92827 + 1, NEW_LEAGUE_SZ);
+        patch::SetUInt(0xF92B6B + 1, NEW_LEAGUE_SZ);
+        patch::SetUInt(0xF9386F + 1, NEW_LEAGUE_SZ);
+        patch::SetUInt(0xFF2314 + 1, NEW_LEAGUE_SZ);
+        patch::RedirectCall(0x106457B, OnConstructLeague);
+        patch::RedirectCall(0x10614EC, OnDestructLeague);
+        patch::RedirectCall(0x105FD08, OnLeagueLoad);
+        patch::RedirectCall(0x1059AD5, OnLeagueSave);
+        patch::RedirectCall(0x1055FFC, OnReadLeagueFromMasterDb);
 
         //patch::RedirectCall(0x11C51F3, OnGetNumTeams1);
         //patch::RedirectCall(0x11C527B, OnGetNumTeams1);

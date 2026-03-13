@@ -102,19 +102,19 @@ void SetPlayerFifaID(void *player, UInt id) {
 }
 
 template<UInt id>
-void METHOD OnReadPlayerFromMaster(CDBPlayer *player, DUMMY_ARG, void *reader) {
-    CallMethodDynGlobal(gPlayerExtenderPlayerLoaderAddr[id], player, reader);
+void METHOD OnReadPlayerFromMaster(CDBPlayer *player, DUMMY_ARG, CBinaryFile *file) {
+    CallMethodDynGlobal(gPlayerExtenderPlayerLoaderAddr[id], player, file);
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0B)) {
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x0B)) {
         WideChar jerseyName[20];
         jerseyName[0] = 0;
-        BinaryReaderReadString(reader, jerseyName, std::size(jerseyName));
+        file->ReadString(jerseyName, std::size(jerseyName));
         SetPlayerJerseyName(player, jerseyName);
     }
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x0E))
-        BinaryReaderReadUInt32(reader, &ext->fifaId);
-    if (BinaryReaderIsVersionGreaterOrEqual(reader, 0x2013, 0x12)) {
-        BinaryReaderReadInt32(reader, &ext->birthCityId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x0E))
+        file->ReadUInt(ext->fifaId);
+    if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
+        file->ReadInt(ext->birthCityId);
         if (player->GetRegionalAffiliation() == PLAYER_REGIONAL_NONE && IsCatalanCity(ext->birthCityId))
             player->SetRegionalAffiliation(PLAYER_REGIONAL_CATALAN);
     }
@@ -161,52 +161,52 @@ Int GetPlayerBirthCityID(void *player) {
 
 void METHOD OnReadPlayerFromSaveGame(void *player) {
     CallMethod<0xFC40B0>(player);
-    void *loader = *(void **)0x3179DD8;
+    auto file = GetDBLoad();
     static WideChar jerseyName[20];
     jerseyName[0] = 0;
-    if (SaveGameLoadGetVersion(loader) >= 42)
-        SaveGameReadString(loader, jerseyName, std::size(jerseyName));
+    if (file->GetVersion() >= 42)
+        file->ReadString(jerseyName, std::size(jerseyName));
     SetPlayerJerseyName(player, jerseyName);
-    if (SaveGameLoadGetVersion(loader) >= 44)
-        SetPlayerFifaID(player, SaveGameReadUInt32(loader));
-    if (SaveGameLoadGetVersion(loader) >= 49)
-        SetPlayerBirthCityID(player, SaveGameReadInt32(loader));
-    //if (SaveGameLoadGetVersion(loader) >= 46) {
+    if (file->GetVersion() >= 44)
+        SetPlayerFifaID(player, file->ReadUInt());
+    if (file->GetVersion() >= 49)
+        SetPlayerBirthCityID(player, file->ReadInt());
+    //if (file->GetVersion() >= 46) {
     //    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
-    //    SaveGameReadInt8(loader, ext->extensionStats.worldCupMatches);
-    //    SaveGameReadInt8(loader, ext->extensionStats.worldCupGoals);
-    //    SaveGameReadInt8(loader, ext->extensionStats.euroMatches);
-    //    SaveGameReadInt8(loader, ext->extensionStats.euroGoals);
-    //    SaveGameReadInt8(loader, ext->extensionStats.copaAmericaMatches);
-    //    SaveGameReadInt8(loader, ext->extensionStats.copaAmericaGoals);
-    //    SaveGameReadInt8(loader, ext->extensionStats.championsLeagueMatches);
-    //    SaveGameReadInt8(loader, ext->extensionStats.championsLeagueGoals);
-    //    SaveGameReadInt8(loader, ext->extensionStats.europaLeagueMatches);
-    //    SaveGameReadInt8(loader, ext->extensionStats.europaLeagueGoals);
-    //    SaveGameReadInt8(loader, ext->extensionStats.copaLibertadoresMatches);
-    //    SaveGameReadInt8(loader, ext->extensionStats.copaLibertadoresGoals);
+    //    file->ReadUChar(ext->extensionStats.worldCupMatches);
+    //    file->ReadUChar(ext->extensionStats.worldCupGoals);
+    //    file->ReadUChar(ext->extensionStats.euroMatches);
+    //    file->ReadUChar(ext->extensionStats.euroGoals);
+    //    file->ReadUChar(ext->extensionStats.copaAmericaMatches);
+    //    file->ReadUChar(ext->extensionStats.copaAmericaGoals);
+    //    file->ReadUChar(ext->extensionStats.championsLeagueMatches);
+    //    file->ReadUChar(ext->extensionStats.championsLeagueGoals);
+    //    file->ReadUChar(ext->extensionStats.europaLeagueMatches);
+    //    file->ReadUChar(ext->extensionStats.europaLeagueGoals);
+    //    file->ReadUChar(ext->extensionStats.copaLibertadoresMatches);
+    //    file->ReadUChar(ext->extensionStats.copaLibertadoresGoals);
     //}
 }
 
 void METHOD OnWritePlayerToSaveGame(void *player) {
     CallMethod<0xFC33F0>(player);
-    void *writer = *(void **)0x3179DD4;
-    SaveGameWriteString(writer, GetPlayerJerseyName(player));
-    SaveGameWriteUInt32(writer, GetPlayerFifaID(player));
-    SaveGameWriteInt32(writer, GetPlayerBirthCityID(player));
+    auto file = GetDBSave();
+    file->WriteString(GetPlayerJerseyName(player));
+    file->WriteUInt(GetPlayerFifaID(player));
+    file->WriteInt(GetPlayerBirthCityID(player));
     //PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
-    //SaveGameWriteInt8(writer, ext->extensionStats.worldCupMatches);
-    //SaveGameWriteInt8(writer, ext->extensionStats.worldCupGoals);
-    //SaveGameWriteInt8(writer, ext->extensionStats.euroMatches);
-    //SaveGameWriteInt8(writer, ext->extensionStats.euroGoals);
-    //SaveGameWriteInt8(writer, ext->extensionStats.copaAmericaMatches);
-    //SaveGameWriteInt8(writer, ext->extensionStats.copaAmericaGoals);
-    //SaveGameWriteInt8(writer, ext->extensionStats.championsLeagueMatches);
-    //SaveGameWriteInt8(writer, ext->extensionStats.championsLeagueGoals);
-    //SaveGameWriteInt8(writer, ext->extensionStats.europaLeagueMatches);
-    //SaveGameWriteInt8(writer, ext->extensionStats.europaLeagueGoals);
-    //SaveGameWriteInt8(writer, ext->extensionStats.copaLibertadoresMatches);
-    //SaveGameWriteInt8(writer, ext->extensionStats.copaLibertadoresGoals);
+    //file->WriteUChar(ext->extensionStats.worldCupMatches);
+    //file->WriteUChar(ext->extensionStats.worldCupGoals);
+    //file->WriteUChar(ext->extensionStats.euroMatches);
+    //file->WriteUChar(ext->extensionStats.euroGoals);
+    //file->WriteUChar(ext->extensionStats.copaAmericaMatches);
+    //file->WriteUChar(ext->extensionStats.copaAmericaGoals);
+    //file->WriteUChar(ext->extensionStats.championsLeagueMatches);
+    //file->WriteUChar(ext->extensionStats.championsLeagueGoals);
+    //file->WriteUChar(ext->extensionStats.europaLeagueMatches);
+    //file->WriteUChar(ext->extensionStats.europaLeagueGoals);
+    //file->WriteUChar(ext->extensionStats.copaLibertadoresMatches);
+    //file->WriteUChar(ext->extensionStats.copaLibertadoresGoals);
 }
 
 void METHOD MyShowMsg23(void *t, DUMMY_ARG, const unsigned __int16 *a2, int a3, WideChar const *text) {

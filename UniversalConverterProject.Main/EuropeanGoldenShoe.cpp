@@ -657,27 +657,27 @@ Pair<UInt, Vector<GoldenBootPlayerInfo>> CalcGoldenBootWinner() {
     return result;
 }
 
-UInt METHOD OnLoadGameData_LoadGoldenShoeWinners(void *save) {
+UInt METHOD OnLoadGameData_LoadGoldenShoeWinners(CDBLoad *file) {
     ClearGoldenShoeWinners();
     ClearBallonDOrCandidates();
-    if (SaveGameLoadGetVersion(save) >= 47) {
-        UInt count = SaveGameReadSize(save);
+    if (file->GetVersion() >= 47) {
+        UInt count = file->ReadValidateMemsize();
         GoldenShoeWinners().resize(count);
         for (UInt i = 0; i < count; i++)
-            SaveGameReadData(save, &GoldenShoeWinners()[i], sizeof(GoldenShoeWinner));
+            file->ReadMem(&GoldenShoeWinners()[i], sizeof(GoldenShoeWinner));
         for (UInt i = 0; i < 3; i++)
-            GetBallonDOrCandidates()[i] = SaveGameReadInt32(save);
+            GetBallonDOrCandidates()[i] = file->ReadInt();
     }
-    return SaveGameReadSize(save);
+    return file->ReadValidateMemsize();
 }
 
-void METHOD OnSaveGameData_SaveGoldenShoeWinners(void *save, DUMMY_ARG, UInt size) {
-    SaveGameWriteSize(save, GoldenShoeWinners().size());
+void METHOD OnSaveGameData_SaveGoldenShoeWinners(CDBSave *file, DUMMY_ARG, UInt size) {
+    file->WriteSize(GoldenShoeWinners().size());
     for (UInt i = 0; i < GoldenShoeWinners().size(); i++)
-        SaveGameWriteData(save, &GoldenShoeWinners()[i], sizeof(GoldenShoeWinner));
+        file->WriteMem(&GoldenShoeWinners()[i], sizeof(GoldenShoeWinner));
     for (UInt i = 0; i < 3; i++)
-        SaveGameWriteInt32(save, GetBallonDOrCandidates()[i]);
-    SaveGameWriteSize(save, size);
+        file->WriteInt(GetBallonDOrCandidates()[i]);
+    file->WriteSize(size);
 }
 
 void METHOD OnInitGame(CDBGame *game) {
@@ -1561,15 +1561,14 @@ void METHOD OnPlayerStatsInit(CPlayerStats *stats) {
 
 void METHOD OnPlayerStatsSave(CPlayerStats *stats) {
     CallMethod<0x10054B0>(stats);
-    void *save = *(void **)0x3179DD4;
-    SaveGameWriteInt8(save, *raw_ptr<UChar>(stats, PLAYER_STATS_GS_AND_BD_OFFSET));
+    GetDBSave()->WriteUChar(*raw_ptr<UChar>(stats, PLAYER_STATS_GS_AND_BD_OFFSET));
 }
 
 void METHOD OnPlayerStatsLoad(CPlayerStats *stats) {
     CallMethod<0x10057F0>(stats);
-    void *save = *(void **)0x3179DD8;
-    if (SaveGameLoadGetVersion(save) >= 47) {
-        SaveGameReadUInt8(save, *raw_ptr<UChar>(stats, PLAYER_STATS_GS_AND_BD_OFFSET));
+    auto file = GetDBLoad();
+    if (file->GetVersion() >= 47) {
+        file->ReadUChar(raw_ptr<UChar>(stats, PLAYER_STATS_GS_AND_BD_OFFSET));
     }
 }
 

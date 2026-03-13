@@ -182,7 +182,7 @@ void ReadStaffExtension(void *staff, CKLFile *file) {
 }
 
 void WriteStaffExtension(void *staff, CKLFile *file) {
-    PlayerExtension *ext = raw_ptr<PlayerExtension>(gDatabaseStaff, DEF_PLAYER_SZ);
+    PlayerExtension *ext = raw_ptr<PlayerExtension>(staff, DEF_PLAYER_SZ);
     file->WriteUInt(ext->isFemale);
     file->WriteInt(ext->cityOfBirth);
     file->WriteUInt(ext->creator);
@@ -485,6 +485,8 @@ void METHOD OnDlgStaffGeneralSaveStaff(void *t) {
 void *METHOD OnConstructLeague(void *t, DUMMY_ARG, Int compStructType, Int id, Int countryId, UChar leagueLevel, Int roundTypeId) {
     CallMethod<0x500B10>(t, compStructType, id, countryId, leagueLevel, roundTypeId);
     auto ext = GetLeagueExtension(t);
+    ext->order = 0;
+    ext->numberOfRegions = 0;
     ext->regions = nullptr;
     return t;
 }
@@ -493,6 +495,7 @@ void METHOD OnDestructLeague(void *t) {
     auto ext = GetLeagueExtension(t);
     delete[] ext->regions;
     ext->regions = nullptr;
+    ext->numberOfRegions = 0;
     CallMethod<0x5003B0>(t);
 }
 

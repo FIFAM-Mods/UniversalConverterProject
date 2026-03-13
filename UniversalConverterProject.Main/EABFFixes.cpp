@@ -1556,20 +1556,20 @@ Bool OnStopMusicWhenFocusLost(UChar u) {
     return CallAndReturn<Bool, 0x45C210>(u);
 }
 
-void SaveStaffRoles_Fix(void *save) {
+void SaveStaffRoles_Fix(CDBSave *file) {
     auto &roles = GetRoleFactory()->roles;
-    SaveGameWriteSize(save, roles.size());
+    file->WriteSize(roles.size());
     for (auto &[id, role] : roles) {
         if (role->positionId && role->id >= 31) {
-            SaveGameWriteInt32(save, role->positionId);
-            SaveGameWriteInt32(save, role->id);
-            SaveGameWriteString(save, role->name);
-            SaveGameWriteInt8(save, role->importance);
-            SaveGameWriteInt32(save, role->locationType);
-            SaveGameWriteInt32(save, role->locationId);
+            file->WriteUInt(role->positionId);
+            file->WriteUInt(role->id);
+            file->WriteString(role->name);
+            file->WriteUChar(role->importance);
+            file->WriteUInt(role->locationType);
+            file->WriteUInt(role->locationId);
             continue;
         }
-        SaveGameWriteInt32(save, 0);
+        file->WriteInt(0);
     }
 }
 

@@ -376,4 +376,4 @@ void CBinaryFile::WriteFloatArray(Float *values, UInt count) { CallMethod<0x5511
 
 void CBinaryFile::WriteFourcc(UInt value) { CallMethod<0x5511C0>(this, value); }
 
-void CBinaryFile::WriteChunk(void const *data, UInt size) { CallMethod<0x551210>(this, data, size); }
+void CBinaryFile::WriteMem(void const *data, UInt size) { CallMethod<0x551210>(this, data, size); }

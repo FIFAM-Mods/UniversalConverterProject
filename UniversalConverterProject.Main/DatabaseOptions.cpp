@@ -318,20 +318,20 @@ void __declspec(naked) OnLoadKLFile() {
 
 void METHOD OnLoadDBLoadInfo(void *loadInfo) {
     CurrentDatabase().Clear();
-    void *save = *(void **)0x3179DD8;
-    if (SaveGameLoadGetVersion(save) >= 48) {
+    auto file = GetDBLoad();
+    if (file->GetVersion() >= 48) {
         auto &db = CurrentDatabase();
         WideChar bufId[256];
         bufId[0] = L'\0';
-        SaveGameReadString(save, bufId, std::size(bufId));
+        file->ReadString(bufId, std::size(bufId));
         db.id = WtoA(bufId);
         bufId[0] = L'\0';
-        SaveGameReadString(save, bufId, std::size(bufId));
+        file->ReadString(bufId, std::size(bufId));
         db.parentDatabaseId = WtoA(bufId);
-        db.isWomenDatabase = SaveGameReadInt32(save);
-        db.hasEditorDatabase = SaveGameReadInt32(save);
-        db.isEditorDatabase = SaveGameReadInt32(save);
-        db.index = (Int)SaveGameReadInt32(save);
+        db.isWomenDatabase = file->ReadInt();
+        db.hasEditorDatabase = file->ReadInt();
+        db.isEditorDatabase = file->ReadInt();
+        db.index = file->ReadInt();
     }
     Vector<String> dbNames;
     if (!CurrentDatabase().parentDatabaseId.empty())
@@ -344,14 +344,14 @@ void METHOD OnLoadDBLoadInfo(void *loadInfo) {
 }
 
 void METHOD OnSaveDBLoadInfo(void *loadInfo) {
-    void *save = *(void **)0x3179DD4;
+    auto file = GetDBSave();
     auto const &db = CurrentDatabase();
-    SaveGameWriteString(save, Utils::AtoW(db.id).c_str());
-    SaveGameWriteString(save, Utils::AtoW(db.parentDatabaseId).c_str());
-    SaveGameWriteInt32(save, db.isWomenDatabase);
-    SaveGameWriteInt32(save, db.hasEditorDatabase);
-    SaveGameWriteInt32(save, db.isEditorDatabase);
-    SaveGameWriteInt32(save, (UInt)db.index);
+    file->WriteString(Utils::AtoW(db.id).c_str());
+    file->WriteString(Utils::AtoW(db.parentDatabaseId).c_str());
+    file->WriteInt(db.isWomenDatabase);
+    file->WriteInt(db.hasEditorDatabase);
+    file->WriteInt(db.isEditorDatabase);
+    file->WriteInt(db.index);
     CallMethod<0x14F291E>(loadInfo);
 }
 
