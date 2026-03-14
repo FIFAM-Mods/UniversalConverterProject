@@ -95,6 +95,8 @@
     <ClCompile Include="..\shared\DatabaseShared.cpp" />
     <ClCompile Include="..\shared\TranslationShared.cpp" />
     <ClCompile Include="CitiesAndRegions.cpp" />
+    <ClCompile Include="GameOptionsScreen.cpp" />
+    <ClCompile Include="PlayerMarks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NationalTeamManagers.h" />
@@ -185,6 +187,8 @@
     <ClInclude Include="..\shared\DatabaseShared.h" />
     <ClInclude Include="..\shared\TranslationShared.h" />
     <ClInclude Include="CitiesAndRegions.h" />
+    <ClInclude Include="GameOptionsScreen.h" />
+    <ClInclude Include="PlayerMarks.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="settings">

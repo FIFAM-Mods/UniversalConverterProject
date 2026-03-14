@@ -13,7 +13,6 @@ struct AbilitiesColorSchema {
 };
 
 const UInt AbilityColorMarker = 0xABCDEF00;
-const UInt OptionsGeneralDefaultSize = 0x580;
 
 Vector<AbilitiesColorSchema> &GetPlayerAbilityColorSchemas() {
     static Vector<AbilitiesColorSchema> schemas;
@@ -239,16 +238,9 @@ void UpdateStaffAbilityColors(void *screen) {
     }
 }
 
-struct OptionsGeneralExtension {
-    CXgComboBox *CbAbilitiesColorSchema;
-    CXgComboBox *CbUnexploredAbilityColors;
-    CXgCheckBox *ChkAbilitiesBoldFont;
-};
-
-CXgCheckBox *METHOD OnOptionsGeneralSetupUI(CXgFMPanel *screen, DUMMY_ARG, Char const *name) {
+void AbilityColors_CreateUI(CXgFMPanel *screen, OptionsGeneral_AbilityColorsExtension *ext) {
     if (Settings::GetInstance().AbilitiesAutoReload)
         ReadPlayerAbilityColorSchemas();
-    auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
     ext->CbAbilitiesColorSchema = screen->GetComboBox("CbAbilitiesColorSchema");
     Int schemaIndex = 0;
     Int selectedIndex = -1;
@@ -267,31 +259,28 @@ CXgCheckBox *METHOD OnOptionsGeneralSetupUI(CXgFMPanel *screen, DUMMY_ARG, Char 
     ext->CbUnexploredAbilityColors->SetCurrentValue(Settings::GetInstance().UnexploredAbilityColors);
     ext->ChkAbilitiesBoldFont = screen->GetCheckBox("ChkAbilitiesBoldFont");
     ext->ChkAbilitiesBoldFont->SetIsChecked(Settings::GetInstance().AbilitiesBoldFont);
-    return screen->GetCheckBox(name);
 }
 
-void METHOD OnOptionsGeneralProcessCheckBoxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk) {
-    auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
+Bool AbilityColors_ProcessCheckBoxes(OptionsGeneral_AbilityColorsExtension *ext, GuiMessage *msg) {
     if (msg->node == ext->ChkAbilitiesBoldFont->GetGuiNode()) {
         Settings::GetInstance().AbilitiesBoldFont = ext->ChkAbilitiesBoldFont->GetIsChecked();
-        return;
+        return true;
     }
-    CallMethod<0x7AFCF0>(screen, msg, unk);
+    return false;
 }
 
-void METHOD OnOptionsGeneralProcessComboBoxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk1, Int unk2) {
-    auto ext = raw_ptr<OptionsGeneralExtension>(screen, OptionsGeneralDefaultSize);
+Bool AbilityColors_ProcessComboBoxes(OptionsGeneral_AbilityColorsExtension *ext, GuiMessage *msg) {
     if (msg->node == ext->CbAbilitiesColorSchema->GetGuiNode()) {
         Int currentIndex = ext->CbAbilitiesColorSchema->GetCurrentIndex();
         if (currentIndex >= 0 && currentIndex < (Int)GetPlayerAbilityColorSchemas().size())
             Settings::GetInstance().AbilitiesColorSchema = GetPlayerAbilityColorSchemas()[currentIndex].name;
-        return;
+        return true;
     }
     else if (msg->node == ext->CbUnexploredAbilityColors->GetGuiNode()) {
         Settings::GetInstance().UnexploredAbilityColors = (Int)ext->CbUnexploredAbilityColors->GetCurrentValue(UNEXPLOREDABILITIES_NONE);
-        return;
+        return true;
     }
-    CallMethod<0x7AE640>(screen, msg, unk1, unk2);
+    return false;
 }
 
 void PatchAbilityColors(FM::Version v) {
@@ -299,12 +288,5 @@ void PatchAbilityColors(FM::Version v) {
         ReadPlayerAbilityColorSchemas();
         patch::RedirectJump(0x4E8CB0, GetCustomColorForPlayerAbility);
         patch::SetPointer(0x23D23BC, OnPlayerInfoSkillsCreateUI);
-
-        const UInt OptionsGeneralNewSize = OptionsGeneralDefaultSize + sizeof(OptionsGeneralExtension);
-        patch::SetUInt(0x573004 + 1, OptionsGeneralNewSize);
-        patch::SetUInt(0x57300B + 1, OptionsGeneralNewSize);
-        patch::RedirectCall(0x7AF893, OnOptionsGeneralSetupUI);
-        patch::SetPointer(0x2400C9C, OnOptionsGeneralProcessCheckBoxes);
-        patch::SetPointer(0x2400C88, OnOptionsGeneralProcessComboBoxes);
     }
 }

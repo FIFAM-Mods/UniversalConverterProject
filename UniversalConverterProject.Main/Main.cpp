@@ -65,6 +65,8 @@
 #include "WidgetContinental.h"
 #include "Finances.h"
 #include "CitiesAndRegions.h"
+#include "GameOptionsScreen.h"
+#include "PlayerMarks.h"
 #include "Shared.h"
 #include <ShlObj.h>
 
@@ -205,6 +207,8 @@ public:
             PatchWidgetContinental(v);
             PatchFinances(v);
             PatchCitiesAndRegions(v);
+            PatchGameOptionsScreen(v);
+            PatchPlayerMarks(v);
 
 #ifdef BETA
             DoBetaPatches(v);

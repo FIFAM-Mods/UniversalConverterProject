@@ -30,6 +30,26 @@ enum eUnexploredAbilityColors {
     UNEXPLOREDABILITIES_SEMITRANSPARENT
 };
 
+enum ePlayerMarkType {
+    PLAYERMARK_TYPE_DEFAULT,
+    PLAYERMARK_TYPE_ENGLISH, // 3-10
+    PLAYERMARK_TYPE_GERMAN, // 6-1
+    PLAYERMARK_TYPE_FRENCH, // 5-18
+    PLAYERMARK_TYPE_SPANISH, // 0-3
+    PLAYERMARK_TYPE_POLISH, // 1-6
+    PLAYERMARK_TYPE_UNITED_STATES, // A-F
+    PLAYERMARK_TYPE_ALT1, // 1-5
+    PLAYERMARK_TYPE_ALT2, // 1-10
+    PLAYERMARK_TYPE_ALT3, // 0-20
+    PLAYERMARK_COUNT
+};
+
+enum ePlayerMarkFormat {
+    PLAYERMARK_FORMAT_DEFAULT,
+    PLAYERMARK_FORMAT_INTEGER,
+    PLAYERMARK_FORMAT_FLOAT
+};
+
 #define SCREENSHOT_PNG_RECONVERTED 9
 
 class Settings : public SettingsAbstract {
@@ -103,6 +123,8 @@ public:
     SETTINGS_PARAMETER(bool,   UserFormationsXml,           "USER_FORMATIONS_XML",            false);
     SETTINGS_PARAMETER(bool,   ExportBudgets,               "EXPORT_BUDGETS",                 false);
     SETTINGS_PARAMETER(bool,   ImportBudgets,               "IMPORT_BUDGETS",                 false);
+    SETTINGS_PARAMETER(int,    PlayerMarksType,             "PLAYER_MARKS_TYPE",              PLAYERMARK_TYPE_DEFAULT);
+    SETTINGS_PARAMETER(int,    PlayerMarksFormat,           "PLAYER_MARKS_FORMAT",            PLAYERMARK_FORMAT_DEFAULT);
 
     bool TeamControlDisabledAtGameStart = false;
     bool WindowedModeStartValue = false;
