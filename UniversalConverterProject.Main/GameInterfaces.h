@@ -779,6 +779,7 @@ public:
     Bool IsCaptain();
     UChar GetTeamPart();
     CPlayerAppearance *GetAppearance();
+    UInt GetNumRelatives(UInt type);
 };
 
 class CDBStaff {

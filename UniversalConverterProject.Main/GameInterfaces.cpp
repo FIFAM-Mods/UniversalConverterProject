@@ -2018,6 +2018,10 @@ CPlayerAppearance *CDBPlayer::GetAppearance() {
     return CallMethodAndReturn<CPlayerAppearance *, 0xF9B340>(this);
 }
 
+UInt CDBPlayer::GetNumRelatives(UInt type) {
+    return CallMethodAndReturn<UInt, 0xF9E930>(this, type);
+}
+
 UChar CDBPlayer::GetNationality(UChar number) {
     return CallMethodAndReturn<UChar, 0xF9AF10>(this, number);
 }

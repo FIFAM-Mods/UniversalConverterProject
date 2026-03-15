@@ -313,8 +313,6 @@ UInt METHOD OnPlayerInfoPersonalFill(CXgFMPanel *screen) {
     CDBPlayer *player = GetPlayer(playerId);
     if (player) {
         auto ext = raw_ptr<PlayerInfoPersonalExtended>(screen, PlayerInfoPersonalDefaultSize);
-        SetTransformVisible(ext->TrfmLeadershipAndDiscipline, true);
-        SetTransformVisible(ext->TrfmRelatives, false);
         // Birthplace
         Bool cityFound = false;
         auto city = GetCity(GetPlayerBirthCityID(player));
@@ -352,8 +350,25 @@ UInt METHOD OnPlayerInfoPersonalFill(CXgFMPanel *screen) {
         ext->TbRegion->SetVisible(regionFound);
         ext->ImgRegion->SetVisible(regionFound);
         ext->TbRegionBlank->SetVisible(!regionFound);
+        // Relatives
+        SetTransformVisible(ext->TrfmLeadershipAndDiscipline, true);
+        SetTransformVisible(ext->TrfmRelatives, false);
+        UInt numRelatives = player->GetNumRelatives(1) + player->GetNumRelatives(2);
+        ext->BtRelatives->SetVisible(numRelatives > 0);
     }
     return playerId;
+}
+
+void METHOD OnPlayerInfoPersonalButtonReleased(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int) {
+    auto ext = raw_ptr<PlayerInfoPersonalExtended>(screen, PlayerInfoPersonalDefaultSize);
+    if (msg->node == ext->BtRelatives->GetGuiNode()) {
+        SetTransformVisible(ext->TrfmRelatives, true);
+        SetTransformVisible(ext->TrfmLeadershipAndDiscipline, false);
+    }
+    else if (msg->node == ext->BtLeadershipAndDiscipline->GetGuiNode()) {
+        SetTransformVisible(ext->TrfmLeadershipAndDiscipline, true);
+        SetTransformVisible(ext->TrfmRelatives, false);
+    }
 }
 
 const UInt DEF_LEAGUE_SZ = 0x3EC8;
@@ -712,6 +727,7 @@ void PatchCitiesAndRegions(FM::Version v) {
         patch::SetUInt(0x5C959B + 1, PlayerInfoPersonalDefaultSize + sizeof(PlayerInfoPersonalExtended));
         patch::SetPointer(0x23D2064, OnPlayerInfoPersonalCreateUI);
         patch::RedirectCall(0x5DE827, OnPlayerInfoPersonalFill);
+        patch::SetPointer(0x23D20B4, OnPlayerInfoPersonalButtonReleased);
 
         // regional status
         patch::RedirectCall(0xF332E1, OnReadTeamFifaIdFromMasterDb);
