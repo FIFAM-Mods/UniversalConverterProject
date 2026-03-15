@@ -445,6 +445,254 @@ UChar METHOD OnPlayerInfoScreen_GetIsBasque(CDBPlayer *) {
     return 0;
 }
 
+const UInt TfTransferMarketPlayerSearchOrigSize = 0x6D0;
+
+struct TfTransferMarketPlayerSearchExtension {
+    CXgComboBox *CbBirthplaceCountry;
+    CXgComboBox *CbBirthplaceRegion;
+    CXgComboBox *CbBirthplaceCity;
+};
+
+struct TfTransferListSearchDescExtension {
+    UInt countryId;
+    Int regionId;
+    Int cityId;
+
+    void Clear() {
+        countryId = 0;
+        regionId = -1;
+        cityId = -1;
+    }
+};
+
+void *GetTransferListScreenStructForCurrentManager() {
+    return CallAndReturn<void *, 0x8DC090>();
+}
+
+void AddCititesToCombobox(CXgComboBox *comboBox, Vector<DBCity const *> &cities) {
+    UInt maxSize = comboBox->GetTable()->GetMaxRows();
+    if (cities.size() > maxSize) {
+        Utils::Sort(cities, [](DBCity const *a, DBCity const *b) {
+            if (a->population > b->population)
+                return true;
+            if (b->population > a->population)
+                return false;
+            return a->id < b->id;
+        });
+        cities.resize(maxSize);
+    }
+    for (auto const &city : cities)
+        comboBox->AddItem(city->name, city->id);
+}
+
+void BirthplaceComboBoxCountryChanged(TfTransferMarketPlayerSearchExtension *ext, TfTransferListSearchDescExtension *dataExt, Bool init) {
+    Int countryId = ext->CbBirthplaceCountry->GetCurrentValue(0);
+    ext->CbBirthplaceRegion->Clear();
+    ext->CbBirthplaceCity->Clear();
+    ext->CbBirthplaceRegion->AddItem(GetTranslation("AC_Blank"), -1);
+    ext->CbBirthplaceCity->AddItem(GetTranslation("AC_Blank"), -1);
+    if (countryId != 0) {
+        for (auto const &[id, region] : DBRegions()) {
+            if (region.countryId == countryId)
+                ext->CbBirthplaceRegion->AddItem(region.name, region.id);
+        }
+    }
+    ext->CbBirthplaceRegion->SortByString();
+    ext->CbBirthplaceRegion->SetCurrentValue(-1);
+    if (init && dataExt->regionId != -1)
+        ext->CbBirthplaceRegion->SetCurrentValue(dataExt->regionId);
+    if (countryId != 0) {
+        Vector<DBCity const *> cities;
+        for (auto const &[id, city] : DBCities()) {
+            if (city.countryId == countryId)
+                cities.push_back(&city);
+        }
+        AddCititesToCombobox(ext->CbBirthplaceCity, cities);
+    }
+    ext->CbBirthplaceCity->SortByString();
+    ext->CbBirthplaceCity->SetCurrentValue(-1);
+    if (init && dataExt->cityId != -1)
+        ext->CbBirthplaceCity->SetCurrentValue(dataExt->cityId);
+    dataExt->countryId = countryId;
+    dataExt->regionId = ext->CbBirthplaceRegion->GetCurrentValue(-1);
+    dataExt->cityId = ext->CbBirthplaceCity->GetCurrentValue(-1);
+}
+
+void BirthplaceComboBoxRegionChanged(TfTransferMarketPlayerSearchExtension *ext, TfTransferListSearchDescExtension *dataExt) {
+    Int regionId = ext->CbBirthplaceRegion->GetCurrentValue(-1);
+    ext->CbBirthplaceCity->Clear();
+    ext->CbBirthplaceCity->AddItem(GetTranslation("AC_Blank"), -1);
+    Vector<DBCity const *> cities;
+    if (regionId != -1) {
+        for (auto const &[id, city] : DBCities()) {
+            if (city.regionId == regionId)
+                cities.push_back(&city);
+        }
+    }
+    else {
+        Int countryId = ext->CbBirthplaceCountry->GetCurrentValue(0);
+        if (countryId != 0) {
+            for (auto const &[id, city] : DBCities()) {
+                if (city.countryId == countryId)
+                    cities.push_back(&city);
+            }
+        }
+    }
+    AddCititesToCombobox(ext->CbBirthplaceCity, cities);
+    ext->CbBirthplaceCity->SortByString();
+    ext->CbBirthplaceCity->SetCurrentValue(-1);
+    dataExt->regionId = regionId;
+    dataExt->cityId = -1;
+}
+
+void BirthplaceComboBoxCityChanged(TfTransferMarketPlayerSearchExtension *ext, TfTransferListSearchDescExtension *dataExt) {
+    dataExt->cityId = ext->CbBirthplaceCity->GetCurrentValue(-1);
+}
+
+CXgComboBox *METHOD OnTfTransferMarketPlayerSearchCreateUI(CXgFMPanel *screen, DUMMY_ARG, Char const *name) {
+    TfTransferMarketPlayerSearchExtension *ext = raw_ptr<TfTransferMarketPlayerSearchExtension>(screen, TfTransferMarketPlayerSearchOrigSize);
+    ext->CbBirthplaceCountry = screen->GetComboBox("CbBirthplaceCountry");
+    ext->CbBirthplaceRegion = screen->GetComboBox("CbBirthplaceRegion");
+    ext->CbBirthplaceCity = screen->GetComboBox("CbBirthplaceCity");
+
+    auto table = ext->CbBirthplaceCity->GetTable();
+    return screen->GetComboBox(name);
+}
+
+void METHOD OnTfTransferMarketPlayerSearchSetup(CXgFMPanel *screen) {
+    UChar &counter = *raw_ptr<UChar>(screen, 0x4D0);
+    counter++;
+    TfTransferMarketPlayerSearchExtension *ext = raw_ptr<TfTransferMarketPlayerSearchExtension>(screen, TfTransferMarketPlayerSearchOrigSize);
+    auto data = GetTransferListScreenStructForCurrentManager();
+    auto dataExt = raw_ptr<TfTransferListSearchDescExtension>(data, 4 + 1 + 60 * 2);
+    ext->CbBirthplaceCountry->AddItem(GetTranslation("AC_Blank"), 0);
+    for (UInt i = 1; i <= 207; i++)
+        ext->CbBirthplaceCountry->AddItem(GetCountry(i)->GetName(), i);
+    ext->CbBirthplaceCountry->SortByString();
+    if (dataExt->countryId > 207)
+        dataExt->Clear();
+    ext->CbBirthplaceCountry->SetCurrentValue(dataExt->countryId);
+    BirthplaceComboBoxCountryChanged(ext, dataExt, true);
+    counter--;
+    CallMethod<0x8DC230>(screen);
+}
+
+void METHOD OnTfTransferMarketPlayerSearchProcessComboBoxes(CXgFMPanel *screen, DUMMY_ARG, GuiMessage *msg, Int unk1, Int unk2) {
+    UChar &counter = *raw_ptr<UChar>(screen, 0x4D0);
+    Bool &bApplytingSearchFile = *raw_ptr<Bool>(screen, 0x4D4);
+    if (!counter && !bApplytingSearchFile) {
+        TfTransferMarketPlayerSearchExtension *ext = raw_ptr<TfTransferMarketPlayerSearchExtension>(screen, TfTransferMarketPlayerSearchOrigSize);
+        auto data = GetTransferListScreenStructForCurrentManager();
+        auto dataExt = raw_ptr<TfTransferListSearchDescExtension>(data, 4 + 1 + 60 * 2);
+        if (msg->node == ext->CbBirthplaceCountry->GetGuiNode())
+            BirthplaceComboBoxCountryChanged(ext, dataExt, false);
+        else if (msg->node == ext->CbBirthplaceRegion->GetGuiNode())
+            BirthplaceComboBoxRegionChanged(ext, dataExt);
+        else if (msg->node == ext->CbBirthplaceCity->GetGuiNode())
+            BirthplaceComboBoxCityChanged(ext, dataExt);
+    }
+    CallMethod<0x8E1F50>(screen, msg, unk1, unk2);
+}
+
+void METHOD OnTfTransferMarketPlayerSearchGetSearchDesc(CXgFMPanel *screen, DUMMY_ARG, void *out) {
+    CallMethod<0x8DCB80>(screen, out);
+    TfTransferMarketPlayerSearchExtension *ext = raw_ptr<TfTransferMarketPlayerSearchExtension>(screen, TfTransferMarketPlayerSearchOrigSize);
+    TfTransferListSearchDescExtension *descExt = raw_ptr< TfTransferListSearchDescExtension>(out, 4 + 1 + 60 * 2);
+    descExt->countryId = ext->CbBirthplaceCountry->GetCurrentValue(0);
+    descExt->regionId = ext->CbBirthplaceRegion->GetCurrentValue(-1);
+    descExt->cityId = ext->CbBirthplaceCity->GetCurrentValue(-1);
+}
+
+Bool METHOD OnTfTransferMarketPlayerSearchIsEmpty(CXgFMPanel *screen, DUMMY_ARG, void *data) {
+    Bool isEmpty = CallMethodAndReturn<Bool, 0x8DD220>(screen, data);
+    if (isEmpty) {
+        auto dataExt = raw_ptr<TfTransferListSearchDescExtension>(data, 4 + 1 + 60 * 2);
+        if (dataExt->countryId != 0)
+            return false;
+    }
+    return isEmpty;
+}
+
+void METHOD OnTfTransferMarketPlayerSearchReset(CXgFMPanel *screen, DUMMY_ARG, void *data) {
+    UChar &counter = *raw_ptr<UChar>(screen, 0x4D0);
+    counter++;
+    TfTransferMarketPlayerSearchExtension *ext = raw_ptr<TfTransferMarketPlayerSearchExtension>(screen, TfTransferMarketPlayerSearchOrigSize);
+    auto dataExt = raw_ptr<TfTransferListSearchDescExtension>(data, 4 + 1 + 60 * 2);
+    ext->CbBirthplaceCountry->SetCurrentValue(dataExt->countryId);
+    BirthplaceComboBoxCountryChanged(ext, dataExt, true);
+    counter--;
+    CallMethod<0x8E1440>(screen, data);
+}
+
+void OnTfTransferListSearchDescAssign(WideChar *dst, WideChar *src) {
+    wcscpy(dst, src);
+    TfTransferListSearchDescExtension *extDst = raw_ptr<TfTransferListSearchDescExtension>(dst, 60 * 2);
+    TfTransferListSearchDescExtension *extSrc = raw_ptr<TfTransferListSearchDescExtension>(src, 60 * 2);
+    *extDst = *extSrc;
+}
+
+void METHOD OnTfTransferListSearchDescClear(void *t) {
+    CallMethod<0xF9D400>(t);
+    TfTransferListSearchDescExtension *ext = raw_ptr<TfTransferListSearchDescExtension>(t, 1 + 60 * 2);
+    ext->Clear();
+}
+
+void METHOD OnTfTransferListScreenStructLoad(void *t) {
+    CallMethod<0x1222210>(t);
+    auto file = GetDBLoad();
+    TfTransferListSearchDescExtension *ext = raw_ptr<TfTransferListSearchDescExtension>(t, 1 + 60 * 2);
+    ext->Clear();
+    if (file->GetVersion() >= 49) {
+        file->ReadUInt(ext->countryId);
+        file->ReadInt(ext->regionId);
+        file->ReadInt(ext->cityId);
+    }
+}
+
+void METHOD OnTfTransferListScreenStructSave(void *t) {
+    CallMethod<0x1222520>(t);
+    TfTransferListSearchDescExtension *ext = raw_ptr<TfTransferListSearchDescExtension>(t, 1 + 60 * 2);
+    auto file = GetDBSave();
+    file->WriteUInt(ext->countryId);
+    file->WriteInt(ext->regionId);
+    file->WriteInt(ext->cityId);
+}
+
+void METHOD OnPlayerMakeSearchDescription(CDBPlayer *player, DUMMY_ARG, void *out, UChar countryId, CTeamIndex teamID, void *desc, CDBEmployee *manager, void *unk) {
+    CallMethod<0xFCC330>(player, out, countryId, teamID, desc, manager, unk);
+    TfTransferListSearchDescExtension *outExt = raw_ptr<TfTransferListSearchDescExtension>(out, 0x158 + 60 * 2);
+    Int birthCityID = GetPlayerBirthCityID(player);
+    outExt->cityId = birthCityID;
+    outExt->regionId = -1;
+    outExt->countryId = 0;
+    if (birthCityID) {
+        auto city = GetCity(birthCityID);
+        if (city) {
+            outExt->countryId = city->countryId;
+            outExt->regionId = city->regionId;
+        }
+    }
+}
+
+Bool METHOD OnTfTransferListSearchDescComparePlayer(void *t, DUMMY_ARG, void *ps) {
+    Bool result = CallMethodAndReturn<Bool, 0xF9D910>(t, ps);
+    if (result) {
+        TfTransferListSearchDescExtension *playerData = raw_ptr<TfTransferListSearchDescExtension>(ps, 0x158 + 60 * 2);
+        TfTransferListSearchDescExtension *searchData = raw_ptr<TfTransferListSearchDescExtension>(t, 1 + 60 * 2);
+        if (searchData->countryId != 0) {
+            if (searchData->countryId != playerData->countryId)
+                result = false;
+            else {
+                if (searchData->cityId != -1)
+                    result = searchData->cityId == playerData->cityId;
+                else if (searchData->regionId != -1)
+                    result = searchData->regionId == playerData->regionId;
+            }
+        }
+    }
+    return result;
+}
+
 void PatchCitiesAndRegions(FM::Version v) {
     if (v.id() == ID_FM_13_1030_RLD) {
         patch::RedirectCall(0xF9745E, OnReadAppearanceDefsFromBinaryDatabase);
@@ -495,6 +743,36 @@ void PatchCitiesAndRegions(FM::Version v) {
         patch::RedirectCall(0x105FD08, OnLeagueLoad);
         patch::RedirectCall(0x1059AD5, OnLeagueSave);
         patch::RedirectCall(0x1055FFC, OnReadLeagueFromMasterDb);
+
+        // player search by birthplace
+        const UInt NewTfTransferMarketPlayerSearchSize = TfTransferMarketPlayerSearchOrigSize + sizeof(TfTransferMarketPlayerSearchExtension);
+        patch::SetUInt(0x56FE14 + 1, NewTfTransferMarketPlayerSearchSize);
+        patch::SetUInt(0x56FE1B + 1, NewTfTransferMarketPlayerSearchSize);
+        patch::RedirectCall(0x8E2F3D, OnTfTransferMarketPlayerSearchCreateUI);
+        patch::RedirectCall(0x8E2FD1, OnTfTransferMarketPlayerSearchSetup);
+        patch::SetPointer(0x2425158, OnTfTransferMarketPlayerSearchProcessComboBoxes);
+        patch::SetUChar(0x8E2938 + 1, 59); // limit of characters for TbNameValue EditBox
+        patch::RedirectCall(0x8DD8FA, OnTfTransferMarketPlayerSearchGetSearchDesc);
+        patch::RedirectCall(0x8DDF72, OnTfTransferMarketPlayerSearchGetSearchDesc);
+        patch::RedirectCall(0x8E39FD, OnTfTransferMarketPlayerSearchGetSearchDesc);
+        patch::RedirectCall(0x8E3A45, OnTfTransferMarketPlayerSearchGetSearchDesc);
+        patch::RedirectCall(0x8E3D70, OnTfTransferMarketPlayerSearchGetSearchDesc);
+        patch::RedirectCall(0x8DDFF1, OnTfTransferMarketPlayerSearchIsEmpty);
+        patch::RedirectCall(0x8E23F2, OnTfTransferMarketPlayerSearchReset);
+        patch::RedirectCall(0x8E39A9, OnTfTransferMarketPlayerSearchReset);
+        patch::RedirectCall(0xF9D646, OnTfTransferListSearchDescAssign);
+        patch::RedirectCall(0x8DD848, OnTfTransferListSearchDescClear);
+        patch::RedirectJump(0x1222873, OnTfTransferListSearchDescClear);
+        patch::SetPointer(0x2424AC8, OnTfTransferListScreenStructLoad);
+        patch::SetPointer(0x2424ACC, OnTfTransferListScreenStructSave);
+        patch::RedirectCall(0x927207, OnPlayerMakeSearchDescription);
+        patch::RedirectCall(0x928B4F, OnPlayerMakeSearchDescription);
+        patch::RedirectCall(0x928C4E, OnPlayerMakeSearchDescription);
+        patch::RedirectCall(0x928E05, OnPlayerMakeSearchDescription);
+        patch::RedirectJump(0x926B75, OnTfTransferListSearchDescComparePlayer);
+        patch::RedirectCall(0x928B5E, OnTfTransferListSearchDescComparePlayer);
+        patch::RedirectCall(0x928C5D, OnTfTransferListSearchDescComparePlayer);
+        patch::RedirectCall(0x928E14, OnTfTransferListSearchDescComparePlayer);
 
         //patch::RedirectCall(0x11C51F3, OnGetNumTeams1);
         //patch::RedirectCall(0x11C527B, OnGetNumTeams1);

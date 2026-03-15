@@ -3106,6 +3106,15 @@ Int CXgComboCompound::GetCurrentIndex() {
     return CallVirtualMethodAndReturn<Int, 71>(this);
 }
 
+CXgTable *CXgComboCompound::GetTable() {
+    return CallVirtualMethodAndReturn<CXgTable *, 68>(this);
+}
+
+void CXgComboCompound::SortByString(Bool reverse) {
+    CXgTableSortByString sorter(GetTable());
+    GetTable()->Sort(&sorter, reverse, 0, GetNumberOfItems());
+}
+
 Int CXgComboBox::AddItem(WideChar const *text, Int64 value) {
     return CallVirtualMethodAndReturn<Int, 83>(this, text, value);
 }
@@ -3971,3 +3980,23 @@ void CBinaryFile::ReadTranslations(WideChar *out, UInt maxLen, UInt language) { 
 UInt CBinaryFile::ReadMem(void *out) { return CallMethodAndReturn<UInt, 0x1338CD0>(this, out); }
 
 Bool CBinaryFile::ReadAndValidateMem(void *out, UInt size) { return CallMethodAndReturn<Bool, 0x1338D10>(this, out, size); }
+
+CXgTableSortByString::CXgTableSortByString(CXgTable *table, UInt columnIndex, UInt numRows) {
+    CallMethod<0x547270>(this, table, columnIndex, numRows);
+}
+
+Int CXgTable::GetNumRows() {
+    return CallVirtualMethodAndReturn<Int, 68>(this);
+}
+
+Int CXgTable::GetMaxRows() {
+    return CallVirtualMethodAndReturn<Int, 69>(this);
+}
+
+Int CXgTable::GetNumColumns() {
+    return CallVirtualMethodAndReturn<Int, 70>(this);
+}
+
+void CXgTable::Sort(NBui::IXgTable::ITableSort *sorter, Bool bReverse, UInt startRow, UInt numRows) {
+    CallVirtualMethod<91>(this, sorter, bReverse, startRow, numRows);
+}

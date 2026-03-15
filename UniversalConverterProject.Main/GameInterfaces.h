@@ -2102,6 +2102,28 @@ struct CompMatchResult {
     Char _pad1D[3];
 };
 
+class CXgTable;
+
+namespace NBui::IXgTable {
+
+class ITableSort {
+public:
+    void *vtable;
+};
+
+}
+
+class CXgTableSortByString : public NBui::IXgTable::ITableSort {
+public:
+    UInt m_nNumRows;
+    CXgTable *m_pTable;
+    UInt m_nColumnIndex;
+
+    CXgTableSortByString(CXgTable *table, UInt columnIndex = 0, UInt numRows = 0);
+};
+
+VALIDATE_SIZE(CXgTableSortByString, 0x10);
+
 class CTrfmNode {
 public:
 };
@@ -2189,12 +2211,22 @@ class CXgTextButton : public CXgButton {
 public:
 };
 
+class CXgTable {
+public:
+    Int GetNumRows();
+    Int GetMaxRows();
+    Int GetNumColumns();
+    void Sort(NBui::IXgTable::ITableSort *sorter, Bool bReverse, UInt startRow, UInt numRows);
+};
+
 class CXgComboCompound : public CXgVisibleControl {
 public:
     void Clear();
     Int GetNumberOfItems();
     void SetCurrentIndex(Int index);
     Int GetCurrentIndex();
+    CXgTable *GetTable();
+    void SortByString(Bool reverse = false);
 };
 
 class CXgComboBox : public CXgComboCompound {

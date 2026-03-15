@@ -61,7 +61,7 @@ void ReadCities(Path const &dbFolder) {
     Int defaultColumnIndex = -1;
     for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++)
         languageColumnIndexes[i] = -1;
-    for (UInt columnIndex = 8; columnIndex < header.size(); columnIndex++) {
+    for (UInt columnIndex = 0; columnIndex < header.size(); columnIndex++) {
         auto columnName = ToLower(header[columnIndex]);
         Bool isDefaultColumn = false;
         if (defaultColumnIndex == -1) {
@@ -131,7 +131,7 @@ void ReadRegions(Path const &dbFolder) {
     Int defaultColumnIndex = -1;
     for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++)
         languageColumnIndexes[i] = -1;
-    for (UInt columnIndex = 8; columnIndex < header.size(); columnIndex++) {
+    for (UInt columnIndex = 0; columnIndex < header.size(); columnIndex++) {
         auto columnName = ToLower(header[columnIndex]);
         Bool isDefaultColumn = false;
         if (defaultColumnIndex == -1) {
