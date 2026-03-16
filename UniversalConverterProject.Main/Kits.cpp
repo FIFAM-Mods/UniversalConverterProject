@@ -826,7 +826,7 @@ void SetupKitNumberForKit(UChar kitType, UInt kitNumberFifaId, team_kit_desc &ki
     if (kitNumberFifaId > 0)
         *raw_ptr<Int>((void *)GfxCoreAddress(0xABEB50), 0x6C * kitType + 0x5C) = kitNumberFifaId;
     else if (kitDesc.used && kitDesc.jerseynumbercolor != 15)
-        * raw_ptr<Int>((void *)GfxCoreAddress(0xABEB50), 0x6C * kitType + 0x5C) = GetFifaKitNumberIdFromFifamId(kitDesc.jerseynumbercolor);
+        *raw_ptr<Int>((void *)GfxCoreAddress(0xABEB50), 0x6C * kitType + 0x5C) = GetFifaKitNumberIdFromFifamId(kitDesc.jerseynumbercolor);
 }
 
 void METHOD OnSetupDynamicTexturesFor3dMatch(void *dynTextures, DUMMY_ARG, Bool localizeKits) {
@@ -858,6 +858,7 @@ void METHOD OnSetupDynamicTexturesFor3dMatch(void *dynTextures, DUMMY_ARG, Bool 
                 }
             }
             else {
+                *raw_ptr<Int>((void *)GfxCoreAddress(0xABEB50), 0x6C * kitid + 0x40) = 7;
                 UInt homeTeamId = gfxGetVarInt("HOME_TEAMID", 0);
                 if ((homeTeamId & 0xFFFF) == 0xFFFF) {
                     *raw_ptr<Int>((void *)GfxCoreAddress(0xABEB50), 0x6C * 0 + 0x4C) = 1;
@@ -1652,6 +1653,7 @@ void SetDefaultKitRenderDataKit(DefaultKitRenderData *data, CTeamIndex const &te
         return KitColorsRGBA[index] | 0xFF000000;
     };
     if (team) {
+        Call<0x43F6C0>(team);
         auto kit = team->GetKit();
         data->nShirtType = kit->GetPartType(kitTypeId, 0);
         data->nShortsType = kit->GetPartType(kitTypeId, 1);
@@ -2087,6 +2089,19 @@ void InstallKits_FM13() {
     patch::SetUChar(GfxCoreAddress(0x384DF0 + 1), 2); // remove wrtl from kit fsh
     patch::Nop(GfxCoreAddress(0x384E33), 25); // remove wrtl from kit fsh
     patch::SetPointer(GfxCoreAddress(0x384E1C + 1), "heab"); // replace wrtr by heab
+
+    // generic kit badge size
+    const UChar BadgeOffset = 20 + 10; // 30
+    const UChar BadgeSize = 40 + 20; // 60
+    patch::SetUChar(GfxCoreAddress(0x384B75 + 2), BadgeOffset); // offset X
+    patch::SetUChar(GfxCoreAddress(0x384B86 + 2), BadgeOffset); // offset Y
+    patch::SetUChar(GfxCoreAddress(0x384B64 + 1), BadgeSize); // scale X
+    patch::SetUChar(GfxCoreAddress(0x384B66 + 1), BadgeSize); // scale X
+    patch::SetUChar(GfxCoreAddress(0x384B9C + 1), BadgeSize);
+    patch::SetUChar(GfxCoreAddress(0x384BA2 + 2), BadgeSize);
+    patch::SetUInt(GfxCoreAddress(0x384BB1 + 6), BadgeSize);
+    patch::SetUInt(GfxCoreAddress(0x384BBB + 6), BadgeSize);
+    patch::SetUChar(GfxCoreAddress(0x384BC5 + 1), BadgeSize);
 }
 
 void PatchKits(FM::Version v) {
