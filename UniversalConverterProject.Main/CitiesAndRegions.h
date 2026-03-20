@@ -4,29 +4,48 @@
 
 using namespace plugin;
 
+struct CityID {
+    UChar countryId;
+    UChar regionIndex;
+    UShort index;
+
+    CityID();
+    CityID(UChar CountryId, UShort Index, UChar regionIndex);
+    void Clear();
+    Bool IsValid();
+};
+
+struct RegionID {
+    UChar countryId;
+    UChar index;
+
+    RegionID();
+    RegionID(UChar CountryId, UChar Index);
+    void Clear();
+    Bool IsValid();
+};
+
 struct DBCity {
-    Int id = -1;
-    UChar countryId = 0;
+    Int EditorID = -1;
+    CityID ID;
     UChar population = 0;
+    UShort weight;
     Float latitude = 0.0f;
     Float longitude = 0.0f;
-    Int regionId = -1;
     WideChar *name = nullptr;
 };
 
 struct DBRegion {
-    Int id = -1;
-    UChar countryId = 0;
+    Int EditorID = -1;
+    RegionID ID;
     Float latitude = 0.0f;
     Float longitude = 0.0f;
     WideChar *name = nullptr;
 };
 
-Map<Int, DBCity> &DBCities();
-Map<Int, DBRegion> &DBRegions();
-DBCity *GetCity(Int id);
-DBRegion *GetRegion(Int id);
-Bool IsCatalanCity(Int cityID);
+DBCity *GetCity(CityID ID);
+DBRegion *GetRegion(RegionID ID);
+Bool IsCatalanCity(CityID cityID);
 class CDBTeam;
 Bool IsTeamCatalan(CDBTeam *team);
 

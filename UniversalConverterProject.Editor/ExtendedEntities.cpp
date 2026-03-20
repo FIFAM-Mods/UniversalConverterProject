@@ -69,7 +69,22 @@ void METHOD OnWritePlayerToMaster(CBinaryFile *file, DUMMY_ARG, void *) {
     else
         file->WriteString(L"");
     file->WriteInt(ext->fifaId);
-    file->WriteInt(ext->cityOfBirth);
+    Bool written = false;
+    Int cityID = ext->cityOfBirth;
+    if (cityID != -1) {
+        auto city = GetCity(cityID);
+        if (city) {
+            file->WriteUChar(city->countryId);
+            file->WriteUChar(city->regionIndex);
+            file->WriteUShort(city->index);
+            written = true;
+        }
+    }
+    if (!written) {
+        file->WriteUChar(0);
+        file->WriteUChar(255);
+        file->WriteUShort(0);
+    }
     CallMethod<0x550640>(file, 0);
 }
 
@@ -402,10 +417,9 @@ void SetCityListCountry(void *countryComboBox, void *cityComboBox, UChar country
     ComboBoxAddItem(cityComboBox, L"-", -1);
     ComboBoxSetCurrentItem(cityComboBox, -1);
     if (countryId != 0) {
-        for (auto const &[id, city] : DBCities()) {
-            if (city.countryId == countryId)
-                ComboBoxAddItem(cityComboBox, city.names[CurrentLanguageId].c_str(), city.id);
-        }
+        auto const &countryCities = CountryCities()[countryId];
+        for (auto const &city : countryCities)
+            ComboBoxAddItem(cityComboBox, city.names[CurrentLanguageId].c_str(), city.id);
     }
 }
 

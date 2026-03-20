@@ -7,53 +7,92 @@
 #include "ExtendedPlayer.h"
 #include "Utils.h"
 
-Map<Int, DBCity> &DBCities() {
-    static Map<Int, DBCity> dbCities;
-    return dbCities;
+Array<DBCity *, 208> CountryCities;
+Array<DBRegion *, 208> CountryRegions;
+Array<UShort, 208> CountryNumCities = {};
+Array<UChar, 208> CountryNumRegions = {};
+Array<UShort, 208> CountryCityTotalWeight = {};
+
+CityID::CityID() {
+    countryId = 0;
+    regionIndex = 255;
+    index = 0;
 }
 
-Map<Int, DBRegion> &DBRegions() {
-    static Map<Int, DBRegion> dbRegions;
-    return dbRegions;
+CityID::CityID(UChar CountryId, UShort Index, UChar RegionIndex) {
+    countryId = CountryId;
+    index = Index;
+    regionIndex = RegionIndex;
 }
 
-DBCity *GetCity(Int id) {
-    if (id != -1 && Utils::Contains(DBCities(), id))
-        return &DBCities()[id];
+void CityID::Clear() {
+    countryId = 0;
+    index = 0;
+}
+
+Bool CityID::IsValid() {
+    return countryId != 0;
+}
+
+RegionID::RegionID() {
+    countryId = 0;
+    index = 0;
+}
+
+RegionID::RegionID(UChar CountryId, UChar Index) {
+    countryId = CountryId;
+    index = Index;
+}
+
+void RegionID::Clear() {
+    countryId = 0;
+    index = 0;
+}
+
+Bool RegionID::IsValid() {
+    return countryId != 0;
+}
+
+DBCity *GetCity(CityID ID) {
+    if (ID.countryId >= 1 && ID.countryId <= 207 && ID.index < CountryNumCities[ID.countryId])
+        return &CountryCities[ID.countryId][ID.index];
     return nullptr;
 }
 
-DBRegion *GetRegion(Int id) {
-    if (id != -1 && Utils::Contains(DBRegions(), id))
-        return &DBRegions()[id];
+DBRegion *GetRegion(RegionID ID) {
+    if (ID.index != 255 && ID.countryId >= 1 && ID.countryId <= 207 && ID.index < CountryNumRegions[ID.countryId])
+        return &CountryRegions[ID.countryId][ID.index];
     return nullptr;
 }
 
-Bool IsCatalanCity(Int cityID) {
-    if (cityID != -1) {
-        auto it = DBCities().find(cityID);
-        if (it != DBCities().end()) {
-            Int regionID = (*it).second.regionId;
-            return regionID == 67023595;
-        }
-    }
-    return false;
+Bool IsCatalanCity(CityID cityID) {
+    auto region = GetRegion(RegionID(cityID.countryId, cityID.regionIndex));
+    return region && region->EditorID == 67023595;
 }
 
 Bool IsTeamCatalan(CDBTeam *team) {
-    return IsCatalanCity(GetTeamExtension(team)->cityId);
+    return IsCatalanCity(GetTeamExtension(team)->cityID);
 }
 
 void ClearCities() {
-    for (auto const &[id, city] : DBCities())
-        delete[] city.name;
-    DBCities().clear();
+    for (UChar countryId = 1; countryId <= 207; countryId++) {
+        for (UShort i = 0; i < CountryNumCities[countryId]; i++)
+            delete[] CountryCities[countryId]->name;
+        delete[] CountryCities[countryId];
+        CountryCities[countryId] = nullptr;
+        CountryNumCities[countryId] = 0;
+        CountryCityTotalWeight[countryId] = 0;
+    }
 }
 
 void ClearRegions() {
-    for (auto const &[id, region] : DBRegions())
-        delete[] region.name;
-    DBRegions().clear();
+    for (UChar countryId = 1; countryId <= 207; countryId++) {
+        for (UChar i = 0; i < CountryNumRegions[countryId]; i++)
+            delete[] CountryRegions[countryId]->name;
+        delete[] CountryRegions[countryId];
+        CountryRegions[countryId] = nullptr;
+        CountryNumRegions[countryId] = 0;
+    }
 }
 
 void ClearCitiesAndRegions() {
@@ -66,43 +105,51 @@ Bool OnReadAppearanceDefsFromBinaryDatabase(CBinaryFile *file) {
     // binary database version 20130012
     ClearCitiesAndRegions();
     if (file->IsVersionGreaterOrEqual(0x2013, 0x12) && file->ValidateFourcc('CTRG')) {
-        UInt cityCount = file->ReadUInt();
-        for (UInt c = 0; c < cityCount; c++) {
-            Int cityId = file->ReadInt();
-            DBCity &city = DBCities()[cityId];
-            city.id = cityId;
-            file->ReadUChar(city.countryId);
-            file->ReadUChar(city.population);
-            file->ReadFloat(city.latitude);
-            file->ReadFloat(city.longitude);
-            file->ReadInt(city.regionId);
-            delete[] city.name;
-            city.name = nullptr;
-            for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++) {
-                WideChar cityName[256];
-                file->ReadString(cityName, std::size(cityName));
-                if (i == CurrentLanguageId) {
-                    city.name = new WideChar[wcslen(cityName) + 1];
-                    wcscpy(city.name, cityName);
+        for (UChar countryId = 1; countryId <= 207; countryId++) {
+            CountryNumCities[countryId] = file->ReadUShort();
+            CountryCities[countryId] = new DBCity[CountryNumCities[countryId]];
+            for (UShort c = 0; c < CountryNumCities[countryId]; c++) {
+                DBCity &city = CountryCities[countryId][c];
+                city.ID.index = c;
+                file->ReadInt(city.EditorID);
+                file->ReadUChar(city.ID.countryId);
+                file->ReadUChar(city.ID.regionIndex);
+                file->ReadUChar(city.population);
+                file->ReadUShort(city.weight);
+                file->ReadFloat(city.latitude);
+                file->ReadFloat(city.longitude);
+                delete[] city.name;
+                city.name = nullptr;
+                for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++) {
+                    WideChar cityName[256];
+                    file->ReadString(cityName, std::size(cityName));
+                    if (i == CurrentLanguageId) {
+                        city.name = new WideChar[wcslen(cityName) + 1];
+                        wcscpy(city.name, cityName);
+                    }
                 }
             }
+            CountryCityTotalWeight[countryId] = file->ReadUShort();
         }
-        UInt regionCount = file->ReadUInt();
-        for (UInt r = 0; r < regionCount; r++) {
-            Int regionId = file->ReadInt();
-            DBRegion &region = DBRegions()[regionId];
-            region.id = regionId;
-            file->ReadUChar(region.countryId);
-            file->ReadFloat(region.latitude);
-            file->ReadFloat(region.longitude);
-            delete[] region.name;
-            region.name = nullptr;
-            for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++) {
-                WideChar regionName[256];
-                file->ReadString(regionName, std::size(regionName));
-                if (i == CurrentLanguageId) {
-                    region.name = new WideChar[wcslen(regionName) + 1];
-                    wcscpy(region.name, regionName);
+        for (UChar countryId = 1; countryId <= 207; countryId++) {
+            CountryNumRegions[countryId] = file->ReadUChar();
+            CountryRegions[countryId] = new DBRegion[CountryNumRegions[countryId]];
+            for (UChar r = 0; r < CountryNumRegions[countryId]; r++) {
+                DBRegion &region = CountryRegions[countryId][r];
+                region.ID.index = r;
+                file->ReadInt(region.EditorID);
+                file->ReadUChar(region.ID.countryId);
+                file->ReadFloat(region.latitude);
+                file->ReadFloat(region.longitude);
+                delete[] region.name;
+                region.name = nullptr;
+                for (UInt i = 0; i < NUM_TRANSLATION_LANGUAGES; i++) {
+                    WideChar regionName[256];
+                    file->ReadString(regionName, std::size(regionName));
+                    if (i == CurrentLanguageId) {
+                        region.name = new WideChar[wcslen(regionName) + 1];
+                        wcscpy(region.name, regionName);
+                    }
                 }
             }
         }
@@ -115,37 +162,45 @@ void OnLoadCompetitions() {
     auto file = GetDBLoad();
     ClearCitiesAndRegions();
     if (file->GetVersion() >= 49) {
-        UInt cityCount = file->ReadUInt();
-        for (UInt c = 0; c < cityCount; c++) {
-            Int cityId = file->ReadInt();
-            DBCity &city = DBCities()[cityId];
-            city.id = cityId;
-            file->ReadUChar(city.countryId);
-            file->ReadUChar(city.population);
-            file->ReadFloat(city.latitude);
-            file->ReadFloat(city.longitude);
-            file->ReadInt(city.regionId);
-            delete[] city.name;
-            city.name = nullptr;
-            WideChar cityName[256];
-            file->ReadString(cityName, std::size(cityName));
-            city.name = new WideChar[wcslen(cityName) + 1];
-            wcscpy(city.name, cityName);
+        for (UChar countryId = 1; countryId <= 207; countryId++) {
+            CountryNumCities[countryId] = file->ReadUShort();
+            CountryCities[countryId] = new DBCity[CountryNumCities[countryId]];
+            for (UShort c = 0; c < CountryNumCities[countryId]; c++) {
+                DBCity &city = CountryCities[countryId][c];
+                city.ID.index = c;
+                file->ReadInt(city.EditorID);
+                file->ReadUChar(city.ID.countryId);
+                file->ReadUChar(city.ID.regionIndex);
+                file->ReadUChar(city.population);
+                file->ReadUShort(city.weight);
+                file->ReadFloat(city.latitude);
+                file->ReadFloat(city.longitude);
+                delete[] city.name;
+                city.name = nullptr;
+                WideChar cityName[256];
+                file->ReadString(cityName, std::size(cityName));
+                city.name = new WideChar[wcslen(cityName) + 1];
+                wcscpy(city.name, cityName);
+            }
+            CountryCityTotalWeight[countryId] = file->ReadUShort();
         }
-        UInt regionCount = file->ReadUInt();
-        for (UInt r = 0; r < regionCount; r++) {
-            Int regionId = file->ReadInt();
-            DBRegion &region = DBRegions()[regionId];
-            region.id = regionId;
-            file->ReadUChar(region.countryId);
-            file->ReadFloat(region.latitude);
-            file->ReadFloat(region.longitude);
-            delete[] region.name;
-            region.name = nullptr;
-            WideChar regionName[256];
-            file->ReadString(regionName, std::size(regionName));
-            region.name = new WideChar[wcslen(regionName) + 1];
-            wcscpy(region.name, regionName);
+        for (UChar countryId = 1; countryId <= 207; countryId++) {
+            CountryNumRegions[countryId] = file->ReadUChar();
+            CountryRegions[countryId] = new DBRegion[CountryNumRegions[countryId]];
+            for (UChar r = 0; r < CountryNumRegions[countryId]; r++) {
+                DBRegion &region = CountryRegions[countryId][r];
+                region.ID.index = r;
+                file->ReadInt(region.EditorID);
+                file->ReadUChar(region.ID.countryId);
+                file->ReadFloat(region.latitude);
+                file->ReadFloat(region.longitude);
+                delete[] region.name;
+                region.name = nullptr;
+                WideChar regionName[256];
+                file->ReadString(regionName, std::size(regionName));
+                region.name = new WideChar[wcslen(regionName) + 1];
+                wcscpy(region.name, regionName);
+            }
         }
     }
     Call<0xF93760>(); // CDBCompetition::LoadAll
@@ -153,23 +208,31 @@ void OnLoadCompetitions() {
 
 void OnSaveCompetitions() {
     auto file = GetDBSave();
-    file->WriteUInt(DBCities().size());
-    for (auto const &[id, city] : DBCities()) {
-        file->WriteInt(city.id);
-        file->WriteUChar(city.countryId);
-        file->WriteUChar(city.population);
-        file->WriteFloat(city.latitude);
-        file->WriteFloat(city.longitude);
-        file->WriteInt(city.regionId);
-        file->WriteString(city.name);
+    for (UChar countryId = 1; countryId <= 207; countryId++) {
+        file->WriteUShort(CountryNumCities[countryId]);
+        for (UShort c = 0; c < CountryNumCities[countryId]; c++) {
+            DBCity &city = CountryCities[countryId][c];
+            file->WriteInt(city.EditorID);
+            file->WriteUChar(city.ID.countryId);
+            file->WriteUChar(city.ID.regionIndex);
+            file->WriteUChar(city.population);
+            file->WriteUShort(city.weight);
+            file->WriteFloat(city.latitude);
+            file->WriteFloat(city.longitude);
+            file->WriteString(city.name);
+        }
+        file->WriteUShort(CountryCityTotalWeight[countryId]);
     }
-    file->WriteUInt(DBRegions().size());
-    for (auto const &[id, region] : DBRegions()) {
-        file->WriteInt(region.id);
-        file->WriteUChar(region.countryId);
-        file->WriteFloat(region.latitude);
-        file->WriteFloat(region.longitude);
-        file->WriteString(region.name);
+    for (UChar countryId = 1; countryId <= 207; countryId++) {
+        file->WriteUChar(CountryNumRegions[countryId]);
+        for (UChar r = 0; r < CountryNumRegions[countryId]; r++) {
+            DBRegion &region = CountryRegions[countryId][r];
+            file->WriteInt(region.EditorID);
+            file->WriteUChar(region.ID.countryId);
+            file->WriteFloat(region.latitude);
+            file->WriteFloat(region.longitude);
+            file->WriteString(region.name);
+        }
     }
     Call<0xF90F00>(); // CDBCompetition::SaveAll
 }
@@ -177,15 +240,16 @@ void OnSaveCompetitions() {
 void METHOD OnTeamLoadTown(CDBLoad *file, DUMMY_ARG, WideChar *out, UInt maxLen) {
     if (file->GetVersion() >= 49) {
         CDBTeam *team = raw_ptr<CDBTeam>(out, -0x11C);
-        file->ReadInt(GetTeamExtension(team)->cityId);
+        auto ext = GetTeamExtension(team);
+        file->ReadUChar(ext->cityID.countryId);
+        file->ReadUChar(ext->cityID.regionIndex);
+        file->ReadUShort(ext->cityID.index);
         *out = L'\0';
         // TODO: remove this (copying new city name to an old destination)
-        if (GetTeamExtension(team)->cityId != -1) {
-            auto city = GetCity(GetTeamExtension(team)->cityId);
-            if (city) {
-                wcsncpy(out, city->name, maxLen - 1);
-                out[maxLen - 1] = L'\0';
-            }
+        auto city = GetCity(ext->cityID);
+        if (city) {
+            wcsncpy(out, city->name, maxLen - 1);
+            out[maxLen - 1] = L'\0';
         }
     }
     else
@@ -194,11 +258,15 @@ void METHOD OnTeamLoadTown(CDBLoad *file, DUMMY_ARG, WideChar *out, UInt maxLen)
 
 void METHOD OnTeamSaveTown(CDBSave *file, DUMMY_ARG, WideChar const *str) {
     CDBTeam *team = raw_ptr<CDBTeam>(str, -0x11C);
-    file->WriteInt(GetTeamExtension(team)->cityId);
+    auto cityID = GetTeamExtension(team)->cityID;
+    file->WriteUChar(cityID.countryId);
+    file->WriteUChar(cityID.regionIndex);
+    file->WriteUShort(cityID.index);
 }
 
 void *OnAfterCountriesLoaded() {
     if (GetDBLoad()->GetVersion() < 49) {
+        ClearCitiesAndRegions();
         Int NewCityId = 2100000001;
         for (UInt countryId = 1; countryId <= 207; countryId++) {
             auto country = GetCountry(countryId);
@@ -207,26 +275,32 @@ void *OnAfterCountriesLoaded() {
                 auto team = GetTeam(CTeamIndex::make(country->GetCountryId(), FifamClubTeamType::First, t));
                 if (team) {
                     auto cityName = raw_ptr<WideChar const>(team, 0x11C);
-                    Int cityId = -1;
+                    CityID cityId;
                     auto it = countryCities.find(cityName);
                     if (it == countryCities.end()) {
                         auto &city = countryCities[cityName];
-                        city.id = NewCityId++;
-                        city.countryId = countryId;
+                        city.EditorID = NewCityId++;
+                        city.ID.countryId = countryId;
+                        city.ID.index = (UShort)(countryCities.size() - 1);
+                        city.weight = city.ID.index + 1;
                         city.latitude = (Float)team->GetLatitude() / 60.0f;
                         city.longitude = (Float)team->GetLongitude() / 60.0f;
                         delete[] city.name;
                         city.name = new WideChar[wcslen(cityName) + 1];
                         wcscpy(city.name, cityName);
-                        cityId = city.id;
+                        cityId = city.ID;
                     }
                     else
-                        cityId = (*it).second.id;
-                    GetTeamExtension(team)->cityId = cityId;
+                        cityId = (*it).second.ID;
+                    GetTeamExtension(team)->cityID = cityId;
                 }
             }
+            CountryNumCities[countryId] = (UShort)countryCities.size();
+            CountryCityTotalWeight[countryId] = (UShort)countryCities.size();
+            CountryCities[countryId] = new DBCity[countryCities.size()];
+            UShort cityIndex = 0;
             for (auto const &[name, city] : countryCities)
-                DBCities()[city.id] = city;
+                CountryCities[countryId][cityIndex++] = city;
         }
     }
     return CallAndReturn<void *, 0x61FC60>();
@@ -240,7 +314,10 @@ void METHOD OnReadTeamTownFromMasterDb(CBinaryFile *file, DUMMY_ARG, WideChar *o
 void METHOD OnReadTeamMascotFromMasterDb(CBinaryFile *file, DUMMY_ARG, WideChar *out, UInt maxLen) {
     if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
         CDBTeam *team = raw_ptr<CDBTeam>(out, -0x29A);
-        file->ReadInt(GetTeamExtension(team)->cityId);
+        auto ext = GetTeamExtension(team);
+        file->ReadUChar(ext->cityID.countryId);
+        file->ReadUChar(ext->cityID.regionIndex);
+        file->ReadUShort(ext->cityID.index);
     }
     file->ReadString(out, maxLen);
 }
@@ -255,7 +332,7 @@ void METHOD OnReadTeamFifaIdFromMasterDb(CBinaryFile *file, DUMMY_ARG, UInt *out
 }
 
 WideChar *METHOD OnGetTeamTown(CDBTeam *team) {
-    auto city = GetCity(GetTeamExtension(team)->cityId);
+    auto city = GetCity(GetTeamExtension(team)->cityID);
     if (city)
         return city->name;
     return L"City";
@@ -319,17 +396,17 @@ UInt METHOD OnPlayerInfoPersonalFill(CXgFMPanel *screen) {
         if (city) {
             String cityName = city->name;
             String regionName;
-            auto region = GetRegion(city->regionId);
+            auto region = GetRegion(RegionID(city->ID.countryId, city->ID.regionIndex));
             if (region)
                 regionName = region->name;
-            String text = cityName + L", " + CountryName(city->countryId);
+            String text = cityName + L", " + CountryName(city->ID.countryId);
             String tooltip = cityName;
             if (!regionName.empty())
                 tooltip += L", " + regionName;
-            tooltip += L", " + CountryName(city->countryId);
+            tooltip += L", " + CountryName(city->ID.countryId);
             ext->TbBirthplace->SetText(text.c_str());
             ext->TbBirthplace->SetTooltip(tooltip.c_str());
-            SetControlCountryFlag(ext->ImgBirthCountry, city->countryId);
+            SetControlCountryFlag(ext->ImgBirthCountry, city->ID.countryId);
             cityFound = true;
         }
         ext->TbBirthplace->SetVisible(cityFound);
@@ -374,7 +451,7 @@ void METHOD OnPlayerInfoPersonalButtonReleased(CXgFMPanel *screen, DUMMY_ARG, Gu
 const UInt DEF_LEAGUE_SZ = 0x3EC8;
 
 struct LeagueRegion {
-    Int regionID;
+    RegionID regionID;
     UChar priority;
     UChar direction;
 };
@@ -415,7 +492,8 @@ void METHOD OnLeagueLoad(CDBLeague *league) {
         if (ext->numberOfRegions) {
             ext->regions = new LeagueRegion[ext->numberOfRegions];
             for (UInt i = 0; i < ext->numberOfRegions; i++) {
-                file->ReadInt(ext->regions[i].regionID);
+                file->ReadUChar(ext->regions[i].regionID.countryId);
+                file->ReadUChar(ext->regions[i].regionID.index);
                 file->ReadUChar(ext->regions[i].priority);
                 file->ReadUChar(ext->regions[i].direction);
             }
@@ -431,7 +509,8 @@ void METHOD OnLeagueSave(CDBLeague *league) {
     file->WriteUChar(ext->numberOfRegions);
     if (ext->numberOfRegions) {
         for (UInt i = 0; i < ext->numberOfRegions; i++) {
-            file->WriteInt(ext->regions[i].regionID);
+            file->WriteUChar(ext->regions[i].regionID.countryId);
+            file->WriteUChar(ext->regions[i].regionID.index);
             file->WriteUChar(ext->regions[i].priority);
             file->WriteUChar(ext->regions[i].direction);
         }
@@ -448,7 +527,8 @@ void METHOD OnReadLeagueFromMasterDb(CDBLeague *league, DUMMY_ARG, CBinaryFile *
         if (ext->numberOfRegions) {
             ext->regions = new LeagueRegion[ext->numberOfRegions];
             for (UInt i = 0; i < ext->numberOfRegions; i++) {
-                file->ReadInt(ext->regions[i].regionID);
+                file->ReadUChar(ext->regions[i].regionID.countryId);
+                file->ReadUChar(ext->regions[i].regionID.index);
                 file->ReadUChar(ext->regions[i].priority);
                 file->ReadUChar(ext->regions[i].direction);
             }
@@ -470,13 +550,13 @@ struct TfTransferMarketPlayerSearchExtension {
 
 struct TfTransferListSearchDescExtension {
     UInt countryId;
-    Int regionId;
-    Int cityId;
+    Int regionIndex;
+    Int cityIndex;
 
     void Clear() {
         countryId = 0;
-        regionId = -1;
-        cityId = -1;
+        regionIndex = -1;
+        cityIndex = -1;
     }
 };
 
@@ -492,12 +572,12 @@ void AddCititesToCombobox(CXgComboBox *comboBox, Vector<DBCity const *> &cities)
                 return true;
             if (b->population > a->population)
                 return false;
-            return a->id < b->id;
+            return a->EditorID < b->EditorID;
         });
         cities.resize(maxSize);
     }
     for (auto const &city : cities)
-        comboBox->AddItem(city->name, city->id);
+        comboBox->AddItem(city->name, city->ID.index);
 }
 
 void BirthplaceComboBoxCountryChanged(TfTransferMarketPlayerSearchExtension *ext, TfTransferListSearchDescExtension *dataExt, Bool init) {
@@ -507,61 +587,49 @@ void BirthplaceComboBoxCountryChanged(TfTransferMarketPlayerSearchExtension *ext
     ext->CbBirthplaceRegion->AddItem(GetTranslation("AC_Blank"), -1);
     ext->CbBirthplaceCity->AddItem(GetTranslation("AC_Blank"), -1);
     if (countryId != 0) {
-        for (auto const &[id, region] : DBRegions()) {
-            if (region.countryId == countryId)
-                ext->CbBirthplaceRegion->AddItem(region.name, region.id);
-        }
+        for (UChar i = 0; i < CountryNumRegions[countryId]; i++)
+            ext->CbBirthplaceRegion->AddItem(CountryRegions[countryId][i].name, i);
     }
     ext->CbBirthplaceRegion->SortByString();
     ext->CbBirthplaceRegion->SetCurrentValue(-1);
-    if (init && dataExt->regionId != -1)
-        ext->CbBirthplaceRegion->SetCurrentValue(dataExt->regionId);
+    if (init && dataExt->regionIndex != -1)
+        ext->CbBirthplaceRegion->SetCurrentValue(dataExt->regionIndex);
     if (countryId != 0) {
         Vector<DBCity const *> cities;
-        for (auto const &[id, city] : DBCities()) {
-            if (city.countryId == countryId)
-                cities.push_back(&city);
-        }
+        for (UShort i = 0; i < CountryNumCities[countryId]; i++)
+            cities.push_back(&CountryCities[countryId][i]);
         AddCititesToCombobox(ext->CbBirthplaceCity, cities);
     }
     ext->CbBirthplaceCity->SortByString();
     ext->CbBirthplaceCity->SetCurrentValue(-1);
-    if (init && dataExt->cityId != -1)
-        ext->CbBirthplaceCity->SetCurrentValue(dataExt->cityId);
+    if (init && dataExt->cityIndex != -1)
+        ext->CbBirthplaceCity->SetCurrentValue(dataExt->cityIndex);
     dataExt->countryId = countryId;
-    dataExt->regionId = ext->CbBirthplaceRegion->GetCurrentValue(-1);
-    dataExt->cityId = ext->CbBirthplaceCity->GetCurrentValue(-1);
+    dataExt->regionIndex = ext->CbBirthplaceRegion->GetCurrentValue(-1);
+    dataExt->cityIndex = ext->CbBirthplaceCity->GetCurrentValue(-1);
 }
 
 void BirthplaceComboBoxRegionChanged(TfTransferMarketPlayerSearchExtension *ext, TfTransferListSearchDescExtension *dataExt) {
-    Int regionId = ext->CbBirthplaceRegion->GetCurrentValue(-1);
+    Int countryId = ext->CbBirthplaceCountry->GetCurrentValue(0);
+    Int regionIndex = ext->CbBirthplaceRegion->GetCurrentValue(-1);
     ext->CbBirthplaceCity->Clear();
     ext->CbBirthplaceCity->AddItem(GetTranslation("AC_Blank"), -1);
-    Vector<DBCity const *> cities;
-    if (regionId != -1) {
-        for (auto const &[id, city] : DBCities()) {
-            if (city.regionId == regionId)
-                cities.push_back(&city);
+    if (countryId != 0) {
+        Vector<DBCity const *> cities;
+        for (UShort i = 0; i < CountryNumCities[countryId]; i++) {
+            if (regionIndex == -1 || regionIndex == CountryCities[countryId][i].ID.regionIndex)
+                cities.push_back(&CountryCities[countryId][i]);
         }
+        AddCititesToCombobox(ext->CbBirthplaceCity, cities);
+        ext->CbBirthplaceCity->SortByString();
     }
-    else {
-        Int countryId = ext->CbBirthplaceCountry->GetCurrentValue(0);
-        if (countryId != 0) {
-            for (auto const &[id, city] : DBCities()) {
-                if (city.countryId == countryId)
-                    cities.push_back(&city);
-            }
-        }
-    }
-    AddCititesToCombobox(ext->CbBirthplaceCity, cities);
-    ext->CbBirthplaceCity->SortByString();
     ext->CbBirthplaceCity->SetCurrentValue(-1);
-    dataExt->regionId = regionId;
-    dataExt->cityId = -1;
+    dataExt->regionIndex = regionIndex;
+    dataExt->cityIndex = -1;
 }
 
 void BirthplaceComboBoxCityChanged(TfTransferMarketPlayerSearchExtension *ext, TfTransferListSearchDescExtension *dataExt) {
-    dataExt->cityId = ext->CbBirthplaceCity->GetCurrentValue(-1);
+    dataExt->cityIndex = ext->CbBirthplaceCity->GetCurrentValue(-1);
 }
 
 CXgComboBox *METHOD OnTfTransferMarketPlayerSearchCreateUI(CXgFMPanel *screen, DUMMY_ARG, Char const *name) {
@@ -569,8 +637,6 @@ CXgComboBox *METHOD OnTfTransferMarketPlayerSearchCreateUI(CXgFMPanel *screen, D
     ext->CbBirthplaceCountry = screen->GetComboBox("CbBirthplaceCountry");
     ext->CbBirthplaceRegion = screen->GetComboBox("CbBirthplaceRegion");
     ext->CbBirthplaceCity = screen->GetComboBox("CbBirthplaceCity");
-
-    auto table = ext->CbBirthplaceCity->GetTable();
     return screen->GetComboBox(name);
 }
 
@@ -614,8 +680,8 @@ void METHOD OnTfTransferMarketPlayerSearchGetSearchDesc(CXgFMPanel *screen, DUMM
     TfTransferMarketPlayerSearchExtension *ext = raw_ptr<TfTransferMarketPlayerSearchExtension>(screen, TfTransferMarketPlayerSearchOrigSize);
     TfTransferListSearchDescExtension *descExt = raw_ptr< TfTransferListSearchDescExtension>(out, 4 + 1 + 60 * 2);
     descExt->countryId = ext->CbBirthplaceCountry->GetCurrentValue(0);
-    descExt->regionId = ext->CbBirthplaceRegion->GetCurrentValue(-1);
-    descExt->cityId = ext->CbBirthplaceCity->GetCurrentValue(-1);
+    descExt->regionIndex = ext->CbBirthplaceRegion->GetCurrentValue(-1);
+    descExt->cityIndex = ext->CbBirthplaceCity->GetCurrentValue(-1);
 }
 
 Bool METHOD OnTfTransferMarketPlayerSearchIsEmpty(CXgFMPanel *screen, DUMMY_ARG, void *data) {
@@ -659,8 +725,8 @@ void METHOD OnTfTransferListScreenStructLoad(void *t) {
     ext->Clear();
     if (file->GetVersion() >= 49) {
         file->ReadUInt(ext->countryId);
-        file->ReadInt(ext->regionId);
-        file->ReadInt(ext->cityId);
+        file->ReadInt(ext->regionIndex);
+        file->ReadInt(ext->cityIndex);
     }
 }
 
@@ -669,24 +735,17 @@ void METHOD OnTfTransferListScreenStructSave(void *t) {
     TfTransferListSearchDescExtension *ext = raw_ptr<TfTransferListSearchDescExtension>(t, 1 + 60 * 2);
     auto file = GetDBSave();
     file->WriteUInt(ext->countryId);
-    file->WriteInt(ext->regionId);
-    file->WriteInt(ext->cityId);
+    file->WriteInt(ext->regionIndex);
+    file->WriteInt(ext->cityIndex);
 }
 
 void METHOD OnPlayerMakeSearchDescription(CDBPlayer *player, DUMMY_ARG, void *out, UChar countryId, CTeamIndex teamID, void *desc, CDBEmployee *manager, void *unk) {
     CallMethod<0xFCC330>(player, out, countryId, teamID, desc, manager, unk);
     TfTransferListSearchDescExtension *outExt = raw_ptr<TfTransferListSearchDescExtension>(out, 0x158 + 60 * 2);
-    Int birthCityID = GetPlayerBirthCityID(player);
-    outExt->cityId = birthCityID;
-    outExt->regionId = -1;
-    outExt->countryId = 0;
-    if (birthCityID) {
-        auto city = GetCity(birthCityID);
-        if (city) {
-            outExt->countryId = city->countryId;
-            outExt->regionId = city->regionId;
-        }
-    }
+    CityID birthCityID = GetPlayerBirthCityID(player);
+    outExt->cityIndex = birthCityID.IsValid() ? birthCityID.index : -1;
+    outExt->regionIndex = (birthCityID.IsValid() && birthCityID.regionIndex != 255) ? birthCityID.regionIndex : -1;
+    outExt->countryId = birthCityID.countryId;
 }
 
 Bool METHOD OnTfTransferListSearchDescComparePlayer(void *t, DUMMY_ARG, void *ps) {
@@ -698,10 +757,10 @@ Bool METHOD OnTfTransferListSearchDescComparePlayer(void *t, DUMMY_ARG, void *ps
             if (searchData->countryId != playerData->countryId)
                 result = false;
             else {
-                if (searchData->cityId != -1)
-                    result = searchData->cityId == playerData->cityId;
-                else if (searchData->regionId != -1)
-                    result = searchData->regionId == playerData->regionId;
+                if (searchData->cityIndex != -1)
+                    result = searchData->cityIndex == playerData->cityIndex;
+                else if (searchData->regionIndex != -1)
+                    result = searchData->regionIndex == playerData->regionIndex;
             }
         }
     }

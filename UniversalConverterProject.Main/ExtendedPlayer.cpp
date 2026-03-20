@@ -19,7 +19,7 @@ const UShort PLAYER_EXT_VERSION = 0x2;
 struct PlayerExtension {
     WideChar *jerseyName;
     UInt fifaId;
-    Int birthCityId;
+    CityID birthCityId;
     //struct ExtensionStats {
     //    UChar worldCupMatches;
     //    UChar worldCupGoals;
@@ -45,7 +45,7 @@ void *METHOD OnConstructPlayer(void *player, DUMMY_ARG, UInt playerId) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     ext->jerseyName = nullptr;
     ext->fifaId = 0;
-    ext->birthCityId = -1;
+    ext->birthCityId.Clear();
     //ext->extensionStats.worldCupMatches = 0;
     //ext->extensionStats.worldCupGoals = 0;
     //ext->extensionStats.euroMatches = 0;
@@ -114,7 +114,9 @@ void METHOD OnReadPlayerFromMaster(CDBPlayer *player, DUMMY_ARG, CBinaryFile *fi
     if (file->IsVersionGreaterOrEqual(0x2013, 0x0E))
         file->ReadUInt(ext->fifaId);
     if (file->IsVersionGreaterOrEqual(0x2013, 0x12)) {
-        file->ReadInt(ext->birthCityId);
+        file->ReadUChar(ext->birthCityId.countryId);
+        file->ReadUChar(ext->birthCityId.regionIndex);
+        file->ReadUShort(ext->birthCityId.index);
         if (player->GetRegionalAffiliation() == PLAYER_REGIONAL_NONE && IsCatalanCity(ext->birthCityId))
             player->SetRegionalAffiliation(PLAYER_REGIONAL_CATALAN);
     }
@@ -149,12 +151,12 @@ UInt METHOD OnGetPlayerFifaId(void *player) {
     return GetPlayerFifaID(player);
 }
 
-void SetPlayerBirthCityID(void *player, Int cityID) {
+void SetPlayerBirthCityID(void *player, CityID cityID) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     ext->birthCityId = cityID;
 }
 
-Int GetPlayerBirthCityID(void *player) {
+CityID GetPlayerBirthCityID(void *player) {
     PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     return ext->birthCityId;
 }
@@ -169,8 +171,13 @@ void METHOD OnReadPlayerFromSaveGame(void *player) {
     SetPlayerJerseyName(player, jerseyName);
     if (file->GetVersion() >= 44)
         SetPlayerFifaID(player, file->ReadUInt());
-    if (file->GetVersion() >= 49)
-        SetPlayerBirthCityID(player, file->ReadInt());
+    if (file->GetVersion() >= 49) {
+        CityID birthCityId;
+        file->ReadUChar(birthCityId.countryId);
+        file->ReadUChar(birthCityId.regionIndex);
+        file->ReadUShort(birthCityId.index);
+        SetPlayerBirthCityID(player, birthCityId);
+    }
     //if (file->GetVersion() >= 46) {
     //    PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //    file->ReadUChar(ext->extensionStats.worldCupMatches);
@@ -193,7 +200,10 @@ void METHOD OnWritePlayerToSaveGame(void *player) {
     auto file = GetDBSave();
     file->WriteString(GetPlayerJerseyName(player));
     file->WriteUInt(GetPlayerFifaID(player));
-    file->WriteInt(GetPlayerBirthCityID(player));
+    CityID birthCityId = GetPlayerBirthCityID(player);
+    file->WriteUChar(birthCityId.countryId);
+    file->WriteUChar(birthCityId.regionIndex);
+    file->WriteUShort(birthCityId.index);
     //PlayerExtension *ext = raw_ptr<PlayerExtension>(player, DEF_PLAYER_SZ);
     //file->WriteUChar(ext->extensionStats.worldCupMatches);
     //file->WriteUChar(ext->extensionStats.worldCupGoals);

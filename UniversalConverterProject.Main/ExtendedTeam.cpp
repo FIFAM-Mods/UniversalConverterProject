@@ -39,7 +39,10 @@ void ClearTeamFormationInfo(CDBTeam *team) {
 template<Bool Constructor>
 void METHOD OnClearTeam(CDBTeam *team) {
     CallMethod<0xF1D8B0>(team);
+    auto ext = GetTeamExtension(team);
     TeamClearBestFormations(team);
+    if (Constructor)
+        ext->cityID.Clear();
 }
 
 UInt METHOD TeamGetBestFormation(CDBTeam *team, DUMMY_ARG, UChar index) {
